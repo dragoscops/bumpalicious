@@ -3,10 +3,10 @@ description: "GitHub Action for automated version management based on convention
 author: "dragoscops"
 
 inputs:
-  workspaces:
-    description: 'Comma-separated workspace definitions with format "path:type", e.g., ".:text,packages/node:node"'
-    required: false
-    default: ".:text"
+  # workspaces:
+  #   description: 'Comma-separated workspace definitions with format "path:type", e.g., ".:text,packages/node:node"'
+  #   required: false
+  #   default: ".:text"
   token:
     description: "GitHub token for actions like creating pull requests"
     required: false
