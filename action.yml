@@ -1,40 +1,40 @@
-name: 'Version Update'
-description: 'GitHub Action for automated version management based on conventional commits'
-author: 'dragoscops'
+name: "Version Update"
+description: "GitHub Action for automated version management based on conventional commits"
+author: "dragoscops"
 
 inputs:
   workspaces:
     description: 'Comma-separated workspace definitions with format "path:type", e.g., ".:text,packages/node:node"'
     required: false
-    default: '.:text'
+    default: ".:text"
   token:
-    description: 'GitHub token for actions like creating pull requests'
+    description: "GitHub token for actions like creating pull requests"
     required: false
     default: ${{ github.token }}
   create-pr:
-    description: 'Whether to create a pull request with version changes'
+    description: "Whether to create a pull request with version changes"
     required: false
-    default: 'false'
+    default: "false"
   create-tags:
-    description: 'Whether to create tags for version changes'
+    description: "Whether to create tags for version changes"
     required: false
-    default: 'true'
+    default: "true"
   merge-branch:
-    description: 'Target branch for pull requests'
+    description: "Target branch for pull requests"
     required: false
-    default: 'main'
+    default: "main"
   update-changelog:
-    description: 'Whether to update the changelog with changes since last tag'
+    description: "Whether to update the changelog with changes since last tag"
     required: false
-    default: 'true'
+    default: "true"
   automatic-merge:
-    description: 'Whether to automatically merge the PR if all checks pass'
+    description: "Whether to automatically merge the PR if all checks pass"
     required: false
-    default: 'false'
+    default: "false"
   git-platform:
-    description: 'The Git platform to use (github or gitea)'
+    description: "The Git platform to use (github or gitea)"
     required: false
-    default: 'github'
+    default: "github"
 
 outputs:
   changed_workspaces_info:
@@ -42,16 +42,17 @@ outputs:
   updated_workspaces_info:
     description: 'Comma-separated list of updated workspaces with format "path:type:name:version"'
   version:
-    description: 'The new version after update'
+    description: "The new version after update"
   pr_number:
-    description: 'Pull request number if one was created'
+    description: "Pull request number if one was created"
   pr_url:
-    description: 'Pull request URL if one was created'
+    description: "Pull request URL if one was created"
 
 runs:
-  using: 'node20'
-  main: 'dist/index.js'
+  using: "node20"
+  # main: 'dist/index.js'
+  main: "src/index.js"
 
 branding:
-  icon: 'tag'
-  color: 'blue'
+  icon: "tag"
+  color: "blue"
