@@ -38,7 +38,7 @@ jobs:
       # Only run version increase on push to main, not on pull requests
       - name: Increase Version
         id: version_step
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        # if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: ./
         with:
           github_token: ${{ secrets.GH_TOKEN }}
