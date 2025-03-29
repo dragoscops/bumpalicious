@@ -8,15 +8,21 @@
 
 import * as core from "@actions/core";
 import * as github from "@actions/github";
+import * as workspace from "./core/workspaces.js";
 import * as git from "./utils/git.js";
-// import { storeOutput, createPullRequest } from './utils/github.js';
-// import { gatherChangedWorkspacesInfo, increaseWorkspacesVersions, updateWorkspacesVersions } from './core/workspaces.js';
-// import { validateGitPlatform } from './js/utils/git.js';
+
+/**
+ * @typedef {Object} Workspace
+ * @property {string} name
+ * @property {string} path
+ * @property {string} type
+ * @property {string} version
+ */
 
 /**
  * Action configuration options
  * @typedef {Object} ActionOptions
- * @property {string} workspaces - Comma-separated workspace definitions with format "path:type"
+ * @property {Workspace[]} workspaces - Comma-separated workspace definitions with format "path:type"
  * @property {string} token - GitHub/Gitea token for actions like creating pull requests
  * @property {boolean} createPR - Whether to create a pull request with version changes
  * @property {boolean} createTags - Whether to create tags for version changes
@@ -34,7 +40,9 @@ const run = async () => {
     // Get input parameters as a single options object
     /** @type {ActionOptions} */
     const options = {
-      // workspaces: core.getInput('workspaces') || '.:text',
+      workspaces: (core.getInput("workspaces") || ".:text")
+        .split(";")
+        .map(workspace.fromString),
       token: core.getInput("token"),
       // createPR: core.getInput('create-pr') === 'true',
       // createTags: core.getInput('create-tags') === 'true',
@@ -57,11 +65,11 @@ const run = async () => {
     console.log(`Last tag: ${lastTag}`);
     console.log(`Latest commit message: ${commitMessage}`);
 
-    //   // Get information about which workspaces have changed
-    //   const changedWorkspaces = await gatherChangedWorkspacesInfo({
-    //     workspacesSpec: options.workspaces,
-    //     lastTag
-    //   });
+    // Get information about which workspaces have changed
+    const changedWorkspaces = await gatherChangedWorkspacesInfo({
+      workspacesSpec: options.workspaces,
+      lastTag,
+    });
 
     //   // Store changed workspaces information as output
     //   const changedWorkspacesInfo = changedWorkspaces.map(ws =>
