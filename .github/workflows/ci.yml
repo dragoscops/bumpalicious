@@ -41,10 +41,10 @@ jobs:
         # if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: ./
         with:
-          github_token: ${{ secrets.GH_TOKEN }}
-          target_branch: ${{ github.ref }}
-          no_pr: true
-          refresh_minor: true
+          github-token: ${{ secrets.GH_TOKEN }}
+          # target-branch: ${{ github.ref }}
+          # no-pr: true
+          # refresh-minor: true
 
       - name: Output Results
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'

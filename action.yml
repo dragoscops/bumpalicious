@@ -11,42 +11,42 @@ inputs:
     description: "GitHub token for actions like creating pull requests"
     required: false
     default: ${{ github.token }}
-  create-pr:
-    description: "Whether to create a pull request with version changes"
-    required: false
-    default: "false"
-  create-tags:
-    description: "Whether to create tags for version changes"
-    required: false
-    default: "true"
-  merge-branch:
-    description: "Target branch for pull requests"
-    required: false
-    default: "main"
-  update-changelog:
-    description: "Whether to update the changelog with changes since last tag"
-    required: false
-    default: "true"
-  automatic-merge:
-    description: "Whether to automatically merge the PR if all checks pass"
-    required: false
-    default: "false"
-  git-platform:
-    description: "The Git platform to use (github or gitea)"
-    required: false
-    default: "github"
+  # create-pr:
+  #   description: "Whether to create a pull request with version changes"
+  #   required: false
+  #   default: "false"
+  # create-tags:
+  #   description: "Whether to create tags for version changes"
+  #   required: false
+  #   default: "true"
+  # merge-branch:
+  #   description: "Target branch for pull requests"
+  #   required: false
+  #   default: "main"
+  # update-changelog:
+  #   description: "Whether to update the changelog with changes since last tag"
+  #   required: false
+  #   default: "true"
+  # automatic-merge:
+  #   description: "Whether to automatically merge the PR if all checks pass"
+  #   required: false
+  #   default: "false"
+  # git-platform:
+  #   description: "The Git platform to use (github or gitea)"
+  #   required: false
+  #   default: "github"
 
-outputs:
-  changed_workspaces_info:
-    description: 'Comma-separated list of changed workspaces with format "path:type:name:version"'
-  updated_workspaces_info:
-    description: 'Comma-separated list of updated workspaces with format "path:type:name:version"'
-  version:
-    description: "The new version after update"
-  pr_number:
-    description: "Pull request number if one was created"
-  pr_url:
-    description: "Pull request URL if one was created"
+# outputs:
+#   changed_workspaces_info:
+#     description: 'Comma-separated list of changed workspaces with format "path:type:name:version"'
+#   updated_workspaces_info:
+#     description: 'Comma-separated list of updated workspaces with format "path:type:name:version"'
+#   version:
+#     description: "The new version after update"
+#   pr_number:
+#     description: "Pull request number if one was created"
+#   pr_url:
+#     description: "Pull request URL if one was created"
 
 runs:
   using: "node20"

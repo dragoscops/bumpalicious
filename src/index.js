@@ -9,9 +9,9 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
 import * as git from './utils/git.js';
-import { storeOutput, createPullRequest } from './utils/github.js';
-import { gatherChangedWorkspacesInfo, increaseWorkspacesVersions, updateWorkspacesVersions } from './core/workspaces.js';
-import { validateGitPlatform } from './js/utils/git.js';
+// import { storeOutput, createPullRequest } from './utils/github.js';
+// import { gatherChangedWorkspacesInfo, increaseWorkspacesVersions, updateWorkspacesVersions } from './core/workspaces.js';
+// import { validateGitPlatform } from './js/utils/git.js';
 
 /**
  * Action configuration options
@@ -34,13 +34,13 @@ const run = async () => {
     // Get input parameters as a single options object
     /** @type {ActionOptions} */
     const options = {
-      workspaces: core.getInput('workspaces') || '.:text',
+      // workspaces: core.getInput('workspaces') || '.:text',
       token: core.getInput('token'),
-      createPR: core.getInput('create-pr') === 'true',
-      createTags: core.getInput('create-tags') === 'true',
-      mergeBranch: core.getInput('merge-branch') || 'main',
-      updateChangelog: core.getInput('update-changelog') === 'true',
-      automaticMerge: core.getInput('automatic-merge') === 'true',
+      // createPR: core.getInput('create-pr') === 'true',
+      // createTags: core.getInput('create-tags') === 'true',
+      // mergeBranch: core.getInput('merge-branch') || 'main',
+      // updateChangelog: core.getInput('update-changelog') === 'true',
+      // automaticMerge: core.getInput('automatic-merge') === 'true',
       platform: (core.getInput('git-platform') || 'github').toLowerCase(),
     };
 
