@@ -10,18 +10,11 @@ import path from "path";
  * Detect version from a Deno project
  * Looking for deno.json, deno.jsonc, jsr.json, or package.json files
  *
+ * @param {string} projectPath - Project to read details from
  * @returns {Promise<string>} - Detected version
  * @throws {Error} - If version could not be detected
  */
-export const detectVersion = async () => {
-  // Check for deno.json
-  if (await fs.pathExists("deno.json")) {
-    const denoConfig = await fs.readJson("deno.json");
-    if (denoConfig.version) {
-      return denoConfig.version;
-    }
-  }
-
+export const detectVersion = async (projectPath) => {
   // Check for deno.jsonc (JSON with comments)
   if (await fs.pathExists("deno.jsonc")) {
     try {
@@ -42,19 +35,13 @@ export const detectVersion = async () => {
     }
   }
 
-  // Check for jsr.json
-  if (await fs.pathExists("jsr.json")) {
-    const jsr = await fs.readJson("jsr.json");
-    if (jsr.version) {
-      return jsr.version;
-    }
-  }
-
-  // Check for package.json (some Deno projects use it too)
-  if (await fs.pathExists("package.json")) {
-    const pkg = await fs.readJson("package.json");
-    if (pkg.version) {
-      return pkg.version;
+  // Check for deno.json, js.json, package.json
+  for (const file of ["deno.json", "jsr.json", "package.json"]) {
+    if (await fs.pathExists(file)) {
+      const denoConfig = await fs.readJson(file);
+      if (denoConfig.version) {
+        return denoConfig.version;
+      }
     }
   }
 
@@ -65,9 +52,10 @@ export const detectVersion = async () => {
  * Detect name from a Deno project
  * Looking for deno.json, deno.jsonc, jsr.json, or package.json files
  *
+ * @param {string} projectPath - Project to read details from
  * @returns {Promise<string>} - Detected name
  */
-export const detectName = async () => {
+export const detectName = async (projectPath) => {
   // Check for deno.json
   if (await fs.pathExists("deno.json")) {
     const denoConfig = await fs.readJson("deno.json");
@@ -113,5 +101,5 @@ export const detectName = async () => {
   }
 
   // Default to current directory name
-  return path.basename(process.cwd());
+  return path.basename(path.normalize(projectPath));
 };
