@@ -1,0 +1,152 @@
+/**
+ * GitHub API utilities
+ * @module utils/github
+ */
+
+import * as core from '@actions/core';
+import { getOctokit } from '@actions/github';
+import * as logging from './logging.js';
+
+/**
+ * Get authenticated Octokit client
+ * 
+ * @returns {Object|null} - Octokit client or null if no token
+ */
+export const getGitHubClient = () => {
+  const token = process.env.GITHUB_TOKEN || core.getInput('github_token');
+  
+  if (!token) {
+    logging.error('No GitHub token provided. Set the GITHUB_TOKEN environment variable or github_token input.');
+    return null;
+  }
+  
+  try {
+    return getOctokit(token);
+  } catch (error) {
+    logging.error('Failed to create GitHub API client', error);
+    return null;
+  }
+};
+
+/**
+ * Parse GitHub repository from environment
+ * 
+ * @returns {Object|null} - Repository object with owner and name properties or null
+ */
+export const getRepository = () => {
+  const repoEnv = process.env.GITHUB_REPOSITORY;
+  
+  if (!repoEnv) {
+    logging.error('GITHUB_REPOSITORY environment variable not found');
+    return null;
+  }
+  
+  const [owner, repo] = repoEnv.split('/');
+  
+  if (!owner || !repo) {
+    logging.error(`Invalid repository format: ${repoEnv}`);
+    return null;
+  }
+  
+  return { owner, repo };
+};
+
+/**
+ * Create a GitHub release for a version
+ * 
+ * @param {Object} options - Release options
+ * @param {string} options.version - Version number (e.g. 1.0.0)
+ * @param {string} options.tagName - Tag name (e.g. v1.0.0)
+ * @param {string} options.title - Release title
+ * @param {string} options.body - Release body/notes
+ * @param {boolean} [options.draft=false] - Whether this is a draft release
+ * @param {boolean} [options.prerelease=false] - Whether this is a prerelease
+ * @returns {Promise<Object|null>} - Release data or null on failure
+ */
+export const createRelease = async ({
+  version,
+  tagName,
+  title,
+  body,
+  draft = false,
+  prerelease = false
+}) => {
+  const octokit = getGitHubClient();
+  const repo = getRepository();
+  
+  if (!octokit || !repo) {
+    return null;
+  }
+  
+  try {
+    const { data: release } = await octokit.rest.repos.createRelease({
+      ...repo,
+      tag_name: tagName,
+      name: title || `Release ${version}`,
+      body: body || '',
+      draft,
+      prerelease
+    });
+    
+    logging.success(`Created GitHub release: ${release.html_url}`);
+    return release;
+  } catch (error) {
+    logging.error(`Failed to create GitHub release for ${version}`, error);
+    return null;
+  }
+};
+
+/**
+ * Get the latest release from GitHub
+ * 
+ * @returns {Promise<Object|null>} - Latest release data or null
+ */
+export const getLatestRelease = async () => {
+  const octokit = getGitHubClient();
+  const repo = getRepository();
+  
+  if (!octokit || !repo) {
+    return null;
+  }
+  
+  try {
+    const { data: release } = await octokit.rest.repos.getLatestRelease({
+      ...repo
+    });
+    
+    return release;
+  } catch (error) {
+    // Not an error if no releases exist yet
+    logging.warning('No releases found in the repository');
+    return null;
+  }
+};
+
+/**
+ * Generate release notes based on commits since last release
+ * 
+ * @param {string} previousTag - Previous release tag
+ * @param {string} newTag - New release tag
+ * @returns {Promise<string>} - Generated release notes
+ */
+export const generateReleaseNotes = async (previousTag, newTag) => {
+  const octokit = getGitHubClient();
+  const repo = getRepository();
+  
+  if (!octokit || !repo) {
+    return '';
+  }
+  
+  try {
+    const { data: notes } = await octokit.rest.repos.generateReleaseNotes({
+      ...repo,
+      tag_name: newTag,
+      previous_tag_name: previousTag
+    });
+    
+    return notes.body;
+  } catch (error) {
+    logging.error('Failed to generate release notes', error);
+    return '';
+  }
+};

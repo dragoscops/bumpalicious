@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - 2_0_node
   pull_request:
     branches:
       - main
@@ -28,32 +29,11 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 22
-      - name: Setup Deno
-        uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.x
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: ">=1.17.0"
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-      - name: Install Dependencies
-        run: |
-          sudo apt update
-          sudo apt install -y jq
-
-          curl -sSL https://github.com/mikefarah/yq/releases/download/v4.45.1/yq_linux_amd64 -o /usr/local/bin/yq
-          chmod +x /usr/local/bin/yq
-
-          cargo install cargo-set-version
+          node-version: 20
       - name: Run Tests
         run: |
           task test
-      
+
       # Only run version increase on push to main, not on pull requests
       - name: Increase Version
         id: version_step

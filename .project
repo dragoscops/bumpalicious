@@ -1,0 +1,13 @@
+The project:
+- represents a Github/Gitea action for increasing versions on a monno/multi repo project
+- is written with NodeJs (ES6 / ESM), using JSDoc for documentation
+- it is tested using Vitest
+
+Code needs to be written:
+- respecting KISS and DRY principles
+- as unitary as possible (simple functions, easy to test, easy to read and understand) as human readable as possible
+- respecting Uncle Bob's clean code principles
+- using functional programming
+
+DO NOT:
+- remove commented code, unless told so; sometimes, to better understand the code step I am analyzing, I am commenting the rest of the code around it

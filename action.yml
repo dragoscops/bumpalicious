@@ -1,201 +1,57 @@
-name: version-update
-description: Github Action for Updating Versions
+name: 'Version Update'
+description: 'GitHub Action for automated version management based on conventional commits'
+author: 'dragoscops'
 
 inputs:
-  github_token:
-    description: Github Token for git commit or gh pr create
-    required: true
   workspaces:
-    default: ".:text"
-    description: Paths to the workspaces (separated by comma)
-  version_message:
-    default: version pull request
-    description: Version pull request message
-  no_pr:
-    description: Use pull request to increase the version
-  target_branch:
-    description: Branch to save the version changes to (pull request or direct commit)
-    default: main
+    description: 'Comma-separated workspace definitions with format "path:type", e.g., ".:text,packages/node:node"'
+    required: false
+    default: '.:text'
+  token:
+    description: 'GitHub token for actions like creating pull requests'
+    required: false
+    default: ${{ github.token }}
+  create-pr:
+    description: 'Whether to create a pull request with version changes'
+    required: false
+    default: 'false'
+  create-tags:
+    description: 'Whether to create tags for version changes'
+    required: false
+    default: 'true'
+  merge-branch:
+    description: 'Target branch for pull requests'
+    required: false
+    default: 'main'
+  update-changelog:
+    description: 'Whether to update the changelog with changes since last tag'
+    required: false
+    default: 'true'
+  automatic-merge:
+    description: 'Whether to automatically merge the PR if all checks pass'
+    required: false
+    default: 'false'
+  git-platform:
+    description: 'The Git platform to use (github or gitea)'
+    required: false
+    default: 'github'
 
 outputs:
-  tag:
-    description: Tag to have been pushed
-    value: "${{ steps.push_new_version.outputs.tag || steps.git_create_tag.outputs.tag || '' }}"
-  status:
-    description: Status of the version increase
-    value: "${{ (steps.push_new_version.outcome == 'success' || steps.git_create_tag.outcome == 'success') && 'success' || 'failed' }}"
+  changed_workspaces_info:
+    description: 'Comma-separated list of changed workspaces with format "path:type:name:version"'
+  updated_workspaces_info:
+    description: 'Comma-separated list of updated workspaces with format "path:type:name:version"'
+  version:
+    description: 'The new version after update'
+  pr_number:
+    description: 'Pull request number if one was created'
+  pr_url:
+    description: 'Pull request URL if one was created'
 
 runs:
-  using: "composite"
-  steps:
-    # Gathering Generic Data
-    #
+  using: 'node20'
+  main: 'dist/index.js'
 
-    - name: Git Prerequisites
-      id: git_prerequisites
-      run: |
-        source $GITHUB_ACTION_PATH/src/logging.sh
-        source $GITHUB_ACTION_PATH/src/utils.sh
-        source $GITHUB_ACTION_PATH/src/github.sh
-        source $GITHUB_ACTION_PATH/src/git.sh
-
-        source $GITHUB_ACTION_PATH/src/package_version_detect.sh
-        source $GITHUB_ACTION_PATH/src/package_name_detect.sh
-        source $GITHUB_ACTION_PATH/src/project.sh
-
-        git_get_commit_message --store
-        git_get_last_created_tag --store
-        gather_workspaces_info --workspaces "${{ inputs.workspaces }}" --store
-      shell: bash
-
-    # Gathering Version Increase Data
-    #
-
-    - name: Workspace Prerequisites
-      id: ws_prerequisites
-      if: ${{ github.event_name == 'push' }}
-      run: |
-        source $GITHUB_ACTION_PATH/src/logging.sh
-        source $GITHUB_ACTION_PATH/src/utils.sh
-        source $GITHUB_ACTION_PATH/src/github.sh
-
-        source $GITHUB_ACTION_PATH/src/package_version_detect.sh
-        source $GITHUB_ACTION_PATH/src/package_name_detect.sh
-        source $GITHUB_ACTION_PATH/src/project.sh
-
-        gather_changed_workspaces_info \
-          --workspaces "${{ inputs.workspaces }}" \
-          --tag "${{ steps.git_prerequisites.outputs.last_tag }}" \
-          --store
-      shell: bash
-
-    # Increasing Version
-    #
-
-    - name: Increase Version and Commit the Changes
-      id: version_increase
-      if: ${{ github.event_name == 'push' }}
-      run: |
-        source $GITHUB_ACTION_PATH/src/logging.sh
-        source $GITHUB_ACTION_PATH/src/utils.sh
-        source $GITHUB_ACTION_PATH/src/git.sh
-        source $GITHUB_ACTION_PATH/src/github.sh
-        source $GITHUB_ACTION_PATH/src/version.sh
-
-        source $GITHUB_ACTION_PATH/src/package_version_detect.sh
-        source $GITHUB_ACTION_PATH/src/package_version_update.sh
-        source $GITHUB_ACTION_PATH/src/project.sh
-
-        increase_workspaces_versions \
-          --workspaces-info "${{ steps.ws_prerequisites.outputs.changed_workspaces_info }}" \
-          --commit-message "${{ steps.git_prerequisites.outputs.commit_message }}" \
-          --tag "${{ steps.git_prerequisites.outputs.last_tag }}" \
-          --store
-      shell: bash
-
-    - name: Set up Git with Authentication
-      env:
-        GH_TOKEN: ${{ inputs.github_token }}
-      if: ${{ github.event_name == 'push' && steps.ws_prerequisites.outputs.changed_workspaces_info != steps.version_increase.outputs.updated_workspaces_info }}
-      run: |
-        source $GITHUB_ACTION_PATH/src/logging.sh
-        source $GITHUB_ACTION_PATH/src/utils.sh
-        source $GITHUB_ACTION_PATH/src/github.sh
-        source $GITHUB_ACTION_PATH/src/git.sh
-
-        source $GITHUB_ACTION_PATH/src/package_version_detect.sh
-        source $GITHUB_ACTION_PATH/src/package_version_update.sh
-        source $GITHUB_ACTION_PATH/src/project.sh
-
-        git_setup_user
-
-        update_workspaces_versions --workspaces-info "${{ steps.version_increase.outputs.updated_workspaces_info }}"
-
-        # Configure git with authentication token
-        git config --global url."https://x-access-token:${{ inputs.github_token }}@github.com/".insteadOf "https://github.com/"
-      shell: bash
-
-    - name: Push new Version via Pull Request or Direct Commit
-      env:
-        GH_TOKEN: ${{ inputs.github_token }}
-      id: push_new_version
-      if: ${{ github.event_name == 'push' && steps.ws_prerequisites.outputs.changed_workspaces_info != steps.version_increase.outputs.updated_workspaces_info }}
-      run: |
-        source $GITHUB_ACTION_PATH/src/logging.sh
-        source $GITHUB_ACTION_PATH/src/utils.sh
-        source $GITHUB_ACTION_PATH/src/github.sh
-        source $GITHUB_ACTION_PATH/src/git.sh
-
-        source $GITHUB_ACTION_PATH/src/package_version_detect.sh
-        source $GITHUB_ACTION_PATH/src/package_version_update.sh
-        source $GITHUB_ACTION_PATH/src/project.sh
-
-        set -ex
-
-        updated_version=$(echo "${{ steps.version_increase.outputs.updated_workspaces_info }}" |
-          awk -F';' '{print $1}' |
-          awk -F':' '{ print $NF }')
-
-        echo "tag=v${updated_version}"
-        echo "tag<<EOF" >> $GITHUB_OUTPUT
-        echo "v${updated_version}" >> $GITHUB_OUTPUT
-        echo "EOF" >> $GITHUB_OUTPUT
-
-        changelog=$(git_build_changelog \
-          --last-tag "${{ steps.git_prerequisites.outputs.last_tag }}" \
-          --format markdown --group-by-type)
-
-        if [[ -z "${{ inputs.no_pr }}" ]]; then
-          git_create_version_branch \
-            --version "${updated_version}" \
-            --merge-branch "${{ inputs.target_branch }}" \
-            --pr-title "${{ inputs.version_message }} ${updated_version}" \
-            --pr-message "$changelog"
-        else
-          git_commit_version_changes \
-            --version "${updated_version}" \
-            --branch "${{ inputs.target_branch }}" \
-            --title "${{ inputs.version_message }} ${updated_version}" \
-            --message "${{ inputs.version_message }} ${updated_version}" \
-            --changelog "$changelog" ${{ inputs.refresh_minor && '\
-            --refresh-minor' || '' }}
-
-          git_create_tag \
-            --version "${updated_version}" \
-            --tag-message "${{ inputs.version_message }} ${updated_version}" ${{ inputs.refresh_minor && '\
-            --refresh-minor' || '' }}
-        fi
-      shell: bash
-
-    # Create Git Tag
-    #
-
-    - name: Create Git Tag
-      env:
-        GH_TOKEN: ${{ inputs.github_token }}
-      id: git_create_tag
-      if: ${{ github.event_name == 'push' && contains(steps.git_prerequisites.outputs.commit_message, inputs.version_message) }}
-      run: |
-        source $GITHUB_ACTION_PATH/src/logging.sh
-        source $GITHUB_ACTION_PATH/src/utils.sh
-        source $GITHUB_ACTION_PATH/src/github.sh
-        source $GITHUB_ACTION_PATH/src/git.sh
-
-        source $GITHUB_ACTION_PATH/src/package_version_detect.sh
-        source $GITHUB_ACTION_PATH/src/package_version_update.sh
-        source $GITHUB_ACTION_PATH/src/project.sh
-
-        git_setup_user
-
-        updated_version=$(echo "${{ steps.git_prerequisites.outputs.workspaces_info }}" | awk -F';' '{print $1}' | awk -F':' '{ print $NF }')
-
-        git_create_tag \
-          --version "${updated_version}" \
-          --tag-message "${{ inputs.version_message }} ${updated_version}" ${{ inputs.refresh_minor && '\
-          --refresh-minor' || '' }}
-
-        echo "tag=v${updated_version}"
-        echo "tag<<EOF" >> $GITHUB_OUTPUT
-        echo "v${updated_version}" >> $GITHUB_OUTPUT
-        echo "EOF" >> $GITHUB_OUTPUT
-      shell: bash
+branding:
+  icon: 'tag'
+  color: 'blue'
