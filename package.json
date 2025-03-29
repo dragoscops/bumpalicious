@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
-    "build": "ncc build src/js/index.js -o dist --source-map",
+    "build": "echo ncc build src/js/index.js -o dist --source-map",
     "lint": "eslint .",
     "test": "npx vitest run",
     "prepare": "npm run build"
