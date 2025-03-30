@@ -7,6 +7,11 @@ import fs from "fs-extra";
 import path from "path";
 
 /**
+ * List of potential version file names to check
+ */
+const VERSION_FILES = ["jsr.json", "package.json"];
+
+/**
  * Detect version from a Node.js project
  * Looking for package.json or jsr.json files
  *
@@ -16,12 +21,13 @@ import path from "path";
  */
 export const detectVersion = async (projectPath) => {
   // Check for jsr.json, package.json
-  for (const file of ["jsr.json", "package.json"]) {
-    const config = path.join(projectPath, file);
-    if (await fs.pathExists(config)) {
-      const pkg = await fs.readJson(config);
-      if (pkg.version) {
-        return pkg.version;
+  for (const file of VERSION_FILES) {
+    const configPath = path.join(projectPath, file);
+
+    if (await fs.pathExists(configPath)) {
+      const config = await fs.readJson(configPath);
+      if (config.version) {
+        return config.version;
       }
     }
   }
@@ -39,11 +45,13 @@ export const detectVersion = async (projectPath) => {
  */
 export const detectName = async (projectPath) => {
   // Check for jsr.json, package.json
-  for (const file of ["jsr.json", "package.json"]) {
-    if (await fs.pathExists("package.json")) {
-      const pkg = await fs.readJson("package.json");
-      if (pkg.name) {
-        return pkg.name;
+  for (const file of VERSION_FILES) {
+    const configPath = path.join(projectPath, file);
+
+    if (await fs.pathExists(configPath)) {
+      const config = await fs.readJson(configPath);
+      if (config.name) {
+        return config.name;
       }
     }
   }

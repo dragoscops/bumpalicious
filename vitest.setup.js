@@ -3,10 +3,15 @@ import fs from "fs-extra";
 
 process.exit = vi.fn();
 
-// Mock the execa module
-vi.mock("execa", () => ({
-  execa: vi.fn().mockResolvedValue({ stdout: "" }),
-}));
+// Mock toml module
+vi.mock("@iarna/toml", () => {
+  const def = {
+    parse: vi.fn()
+  }
+
+  
+  return { ...def, default: def };
+});
 
 vi.mock("fs-extra", async () => {
   const actual = await vi.importActual("fs-extra");
@@ -22,5 +27,11 @@ vi.mock("fs-extra", async () => {
 
     existingFile: "",
   };
+
   return { ...def, default: def };
 });
+
+// Mock the execa module
+vi.mock("execa", () => ({
+  execa: vi.fn().mockResolvedValue({ stdout: "" }),
+}));

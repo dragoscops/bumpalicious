@@ -3,193 +3,104 @@
  * @module detect/python
  */
 
-import fs from 'fs-extra';
-import path from 'path';
-import { execa } from 'execa';
-
-/**
- * Extract version from pyproject.toml content
- * 
- * @param {string} content - pyproject.toml file content
- * @returns {string|null} - Extracted version or null if not found
- */
-const extractVersionFromPyprojectToml = (content) => {
-  // Try to extract from [tool.poetry] section
-  const poetryMatch = content.match(/\[tool\.poetry\][^\[]*version\s*=\s*["']([^"']+)["']/);
-  if (poetryMatch && poetryMatch[1]) {
-    return poetryMatch[1];
-  }
-  
-  // Try to extract from [project] section (PEP 621)
-  const projectMatch = content.match(/\[project\][^\[]*version\s*=\s*["']([^"']+)["']/);
-  if (projectMatch && projectMatch[1]) {
-    return projectMatch[1];
-  }
-  
-  // Try to extract from [tool.flit.metadata] section
-  const flitMatch = content.match(/\[tool\.flit\.metadata\][^\[]*version\s*=\s*["']([^"']+)["']/);
-  if (flitMatch && flitMatch[1]) {
-    return flitMatch[1];
-  }
-  
-  return null;
-};
-
-/**
- * Extract name from pyproject.toml content
- * 
- * @param {string} content - pyproject.toml file content
- * @returns {string|null} - Extracted name or null if not found
- */
-const extractNameFromPyprojectToml = (content) => {
-  // Try to extract from [tool.poetry] section
-  const poetryMatch = content.match(/\[tool\.poetry\][^\[]*name\s*=\s*["']([^"']+)["']/);
-  if (poetryMatch && poetryMatch[1]) {
-    return poetryMatch[1];
-  }
-  
-  // Try to extract from [project] section (PEP 621)
-  const projectMatch = content.match(/\[project\][^\[]*name\s*=\s*["']([^"']+)["']/);
-  if (projectMatch && projectMatch[1]) {
-    return projectMatch[1];
-  }
-  
-  // Try to extract from [tool.flit.metadata] section
-  const flitMatch = content.match(/\[tool\.flit\.metadata\][^\[]*module\s*=\s*["']([^"']+)["']/);
-  if (flitMatch && flitMatch[1]) {
-    return flitMatch[1];
-  }
-  
-  return null;
-};
-
-/**
- * Extract version from setup.py content
- * 
- * @param {string} content - setup.py file content
- * @returns {string|null} - Extracted version or null if not found
- */
-const extractVersionFromSetupPy = (content) => {
-  const versionMatch = content.match(/version\s*=\s*["']([^"']+)["']/);
-  return versionMatch && versionMatch[1] ? versionMatch[1] : null;
-};
-
-/**
- * Extract name from setup.py content
- * 
- * @param {string} content - setup.py file content
- * @returns {string|null} - Extracted name or null if not found
- */
-const extractNameFromSetupPy = (content) => {
-  const nameMatch = content.match(/name\s*=\s*["']([^"']+)["']/);
-  return nameMatch && nameMatch[1] ? nameMatch[1] : null;
-};
-
-/**
- * Extract version from setup.cfg content
- * 
- * @param {string} content - setup.cfg file content
- * @returns {string|null} - Extracted version or null if not found
- */
-const extractVersionFromSetupCfg = (content) => {
-  const versionMatch = content.match(/version\s*=\s*([^\s;]+)/);
-  return versionMatch && versionMatch[1] ? versionMatch[1] : null;
-};
-
-/**
- * Extract name from setup.cfg content
- * 
- * @param {string} content - setup.cfg file content
- * @returns {string|null} - Extracted name or null if not found
- */
-const extractNameFromSetupCfg = (content) => {
-  const nameMatch = content.match(/name\s*=\s*([^\s;]+)/);
-  return nameMatch && nameMatch[1] ? nameMatch[1] : null;
-};
+import fs from "fs-extra";
+import path from "path";
+import { execa } from "execa";
+import toml from "@iarna/toml";
 
 /**
  * Detect version from a Python project
  * Looking for pyproject.toml, setup.py, setup.cfg
- * 
+ *
+ * @param {string} projectPath - Project to read details from
  * @returns {Promise<string>} - Detected version
  * @throws {Error} - If version could not be detected
  */
-export const detectPythonVersion = async () => {
-  // Check for pyproject.toml
-  if (await fs.pathExists('pyproject.toml')) {
-    const content = await fs.readFile('pyproject.toml', 'utf8');
-    const version = extractVersionFromPyprojectToml(content);
-    if (version) {
-      return version;
+export const detectVersion = async (projectPath) => {
+  // Check for pyproject.toml first (using TOML parser)
+  const pyprojectPath = path.join(projectPath, "pyproject.toml");
+  if (await fs.pathExists(pyprojectPath)) {
+    try {
+      const content = await fs.readFile(pyprojectPath, "utf8");
+      const pyprojectData = toml.parse(content);
+      
+      // Check different locations for version in pyproject.toml
+      if (pyprojectData.tool?.poetry?.version) {
+        return pyprojectData.tool.poetry.version;
+      }
+      
+      if (pyprojectData.project?.version) {
+        return pyprojectData.project.version;
+      }
+    } catch (error) {
+      console.error("Error parsing pyproject.toml:", error);
     }
   }
-  
-  // Check for setup.py
-  if (await fs.pathExists('setup.py')) {
-    const content = await fs.readFile('setup.py', 'utf8');
-    const version = extractVersionFromSetupPy(content);
-    if (version) {
-      return version;
+
+  // Check for setup.py and setup.cfg using regex
+  for (const file of ["setup.py", "setup.cfg"]) {
+    const filePath = path.join(projectPath, file);
+    if (await fs.pathExists(filePath)) {
+      const content = await fs.readFile(filePath, "utf8");
+      const versionMatch = content.match(/version\s*=\s*["']([^"']+)["']/);
+      if (versionMatch) {
+        return versionMatch[1];
+      }
     }
   }
-  
-  // Check for setup.cfg
-  if (await fs.pathExists('setup.cfg')) {
-    const content = await fs.readFile('setup.cfg', 'utf8');
-    const version = extractVersionFromSetupCfg(content);
-    if (version) {
-      return version;
-    }
-  }
-  
-  // Try to use Python to get the version
+
+  // Try to detect version using Python's importlib.metadata
   try {
-    // If a package is installable, we can try to get its version programmatically
-    const { stdout } = await execa('python', ['-c', 'import importlib.metadata; print(importlib.metadata.version("."))']);
+    const { stdout } = await execa("python", ["-c", "import importlib.metadata; print(importlib.metadata.version('.'))"], { cwd: projectPath });
     if (stdout.trim()) {
       return stdout.trim();
     }
-  } catch (error) {
-    // Ignore errors - package might not be installed
+  } catch {
+    // Ignore errors
   }
-  
-  throw new Error('Could not detect version in Python project');
+
+  throw new Error("Could not detect version in Python project");
 };
 
 /**
  * Detect name from a Python project
  * Looking for pyproject.toml, setup.py, setup.cfg
- * 
+ *
+ * @param {string} projectPath - Project to read details from
  * @returns {Promise<string>} - Detected name
  */
-export const detectPythonName = async () => {
-  // Check for pyproject.toml
-  if (await fs.pathExists('pyproject.toml')) {
-    const content = await fs.readFile('pyproject.toml', 'utf8');
-    const name = extractNameFromPyprojectToml(content);
-    if (name) {
-      return name;
+export const detectName = async (projectPath) => {
+  // Check for pyproject.toml first (using TOML parser)
+  const pyprojectPath = path.join(projectPath, "pyproject.toml");
+  if (await fs.pathExists(pyprojectPath)) {
+    try {
+      const content = await fs.readFile(pyprojectPath, "utf8");
+      const pyprojectData = toml.parse(content);
+      
+      // Check different locations for name in pyproject.toml
+      if (pyprojectData.tool?.poetry?.name) {
+        return pyprojectData.tool.poetry.name;
+      }
+      
+      if (pyprojectData.project?.name) {
+        return pyprojectData.project.name;
+      }
+    } catch (error) {
+      console.error("Error parsing pyproject.toml:", error);
     }
   }
-  
-  // Check for setup.py
-  if (await fs.pathExists('setup.py')) {
-    const content = await fs.readFile('setup.py', 'utf8');
-    const name = extractNameFromSetupPy(content);
-    if (name) {
-      return name;
+
+  // Check for setup.py and setup.cfg using regex
+  for (const file of ["setup.py", "setup.cfg"]) {
+    const filePath = path.join(projectPath, file);
+    if (await fs.pathExists(filePath)) {
+      const content = await fs.readFile(filePath, "utf8");
+      const nameMatch = content.match(/name\s*=\s*["']([^"']+)["']/);
+      if (nameMatch) {
+        return nameMatch[1];
+      }
     }
   }
-  
-  // Check for setup.cfg
-  if (await fs.pathExists('setup.cfg')) {
-    const content = await fs.readFile('setup.cfg', 'utf8');
-    const name = extractNameFromSetupCfg(content);
-    if (name) {
-      return name;
-    }
-  }
-  
-  // Default to current directory name
-  return path.basename(process.cwd());
+
+  return path.basename(path.normalize(projectPath));
 };

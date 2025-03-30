@@ -3,98 +3,72 @@
  * @module detect/rust
  */
 
-import fs from 'fs-extra';
-import path from 'path';
-import { execa } from 'execa';
-
-/**
- * Extract version from Cargo.toml content
- * 
- * @param {string} content - Cargo.toml file content
- * @returns {string|null} - Extracted version or null if not found
- */
-const extractVersionFromCargoToml = (content) => {
-  // Version is typically in the package section
-  const versionMatch = content.match(/^\[package\][^\[]*version\s*=\s*["']([^"']+)["']/ms);
-  return versionMatch && versionMatch[1] ? versionMatch[1] : null;
-};
-
-/**
- * Extract name from Cargo.toml content
- * 
- * @param {string} content - Cargo.toml file content
- * @returns {string|null} - Extracted name or null if not found
- */
-const extractNameFromCargoToml = (content) => {
-  // Name is typically in the package section
-  const nameMatch = content.match(/^\[package\][^\[]*name\s*=\s*["']([^"']+)["']/ms);
-  return nameMatch && nameMatch[1] ? nameMatch[1] : null;
-};
+import fs from "fs-extra";
+import path from "path";
+import { execa } from "execa";
+import toml from "@iarna/toml";
 
 /**
  * Detect version from a Rust project
  * Looking for Cargo.toml file
- * 
+ *
+ * @param {string} projectPath - Project to read details from
  * @returns {Promise<string>} - Detected version
  * @throws {Error} - If version could not be detected
  */
-export const detectRustVersion = async () => {
-  // Check for Cargo.toml
-  if (await fs.pathExists('Cargo.toml')) {
-    const content = await fs.readFile('Cargo.toml', 'utf8');
-    const version = extractVersionFromCargoToml(content);
-    if (version) {
-      return version;
-    }
-  }
+export const detectVersion = async (projectPath) => {
+  const cargoPath = path.join(projectPath, "Cargo.toml");
   
-  // Try to get version from cargo if available
-  try {
-    const { stdout } = await execa('cargo', ['pkgid']);
-    if (stdout) {
-      // The output is like 'package-id = "package-name version-number"'
-      const versionMatch = stdout.match(/#([^:]+):([^@]+)@(.+)$/);
-      if (versionMatch && versionMatch[3]) {
-        return versionMatch[3];
+  // Check if Cargo.toml file exists
+  if (await fs.pathExists(cargoPath)) {
+    try {
+      const content = await fs.readFile(cargoPath, "utf8");
+      const cargoData = toml.parse(content);
+      
+      if (cargoData.package && cargoData.package.version) {
+        return cargoData.package.version;
       }
+    } catch (error) {
+      console.error("Error parsing Cargo.toml:", error);
     }
-  } catch (error) {
-    // Ignore errors - cargo might not be available
   }
-  
-  throw new Error('Could not detect version in Rust project');
+
+  try {
+    const { stdout } = await execa("cargo", ["pkgid"], { cwd: projectPath });
+    const versionMatch = stdout.match(/@([^#]+)/);
+    if (versionMatch) {
+      return versionMatch[1];
+    }
+  } catch {
+    // Ignore errors
+  }
+
+  throw new Error("Could not detect version in Rust project");
 };
 
 /**
  * Detect name from a Rust project
  * Looking for Cargo.toml file
- * 
+ *
+ * @param {string} projectPath - Project to read details from
  * @returns {Promise<string>} - Detected name
  */
-export const detectRustName = async () => {
-  // Check for Cargo.toml
-  if (await fs.pathExists('Cargo.toml')) {
-    const content = await fs.readFile('Cargo.toml', 'utf8');
-    const name = extractNameFromCargoToml(content);
-    if (name) {
-      return name;
-    }
-  }
-  
-  // Try to get name from cargo if available
-  try {
-    const { stdout } = await execa('cargo', ['pkgid']);
-    if (stdout) {
-      // The output is like 'package-id = "package-name version-number"'
-      const nameMatch = stdout.match(/#([^:]+):([^@]+)@/);
-      if (nameMatch && nameMatch[2]) {
-        return nameMatch[2];
+export const detectName = async (projectPath) => {
+  const cargoPath = path.join(projectPath, "Cargo.toml");
+
+  // Check if Cargo.toml file exists
+  if (await fs.pathExists(cargoPath)) {
+    try {
+      const content = await fs.readFile(cargoPath, "utf8");
+      const cargoData = toml.parse(content);
+      
+      if (cargoData.package && cargoData.package.name) {
+        return cargoData.package.name;
       }
+    } catch (error) {
+      console.error("Error parsing Cargo.toml:", error);
     }
-  } catch (error) {
-    // Ignore errors - cargo might not be available
   }
-  
-  // Default to current directory name
-  return path.basename(process.cwd());
+
+  return path.basename(path.normalize(projectPath));
 };
