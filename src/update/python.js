@@ -5,203 +5,191 @@
 
 import fs from 'fs-extra';
 import path from 'path';
-
-/**
- * Update version in pyproject.toml
- * 
- * @param {string} content - Current file content
- * @param {string} version - New version to set
- * @returns {string} - Updated file content
- */
-const updateVersionInPyprojectToml = (content, version) => {
-  // Try to update in [tool.poetry] section
-  let updated = content.replace(
-    /(\[tool\.poetry\][^\[]*version\s*=\s*)["']([^"']*)["']/,
-    `$1"${version}"`
-  );
-  
-  // Try to update in [project] section (PEP 621)
-  updated = updated.replace(
-    /(\[project\][^\[]*version\s*=\s*)["']([^"']*)["']/,
-    `$1"${version}"`
-  );
-  
-  // Try to update in [tool.flit.metadata] section
-  updated = updated.replace(
-    /(\[tool\.flit\.metadata\][^\[]*version\s*=\s*)["']([^"']*)["']/,
-    `$1"${version}"`
-  );
-  
-  return updated;
-};
-
-/**
- * Update version in setup.py
- * 
- * @param {string} content - Current file content
- * @param {string} version - New version to set
- * @returns {string} - Updated file content
- */
-const updateVersionInSetupPy = (content, version) => {
-  return content.replace(
-    /(version\s*=\s*)["']([^"']*)["']/,
-    `$1"${version}"`
-  );
-};
-
-/**
- * Update version in setup.cfg
- * 
- * @param {string} content - Current file content
- * @param {string} version - New version to set
- * @returns {string} - Updated file content
- */
-const updateVersionInSetupCfg = (content, version) => {
-  return content.replace(
-    /(version\s*=\s*)([^\s;]*)/,
-    `$1${version}`
-  );
-};
-
-/**
- * Update version in __init__.py
- * 
- * @param {string} content - Current file content
- * @param {string} version - New version to set
- * @returns {string} - Updated file content
- */
-const updateVersionInInitPy = (content, version) => {
-  return content.replace(
-    /(__|)version(__|)\s*=\s*["']([^"']*)["']/,
-    `$1version$2 = "${version}"`
-  );
-};
+import toml from '@iarna/toml';
+import * as logging from '../utils/logging.js';
 
 /**
  * Update version in a Python project
  * Looking for pyproject.toml, setup.py, setup.cfg, and __init__.py files
- * 
- * @param {string} version - New version to set
- * @returns {Promise<void>}
+ *
+ * @param {Object} options - Update options
+ * @param {string} options.projectPath - Path to the project
+ * @param {string} options.newVersion - New version to set
+ * @returns {Promise<boolean>} - True if the update was successful
  * @throws {Error} - If version update fails
  */
-export const updatePythonVersion = async (version) => {
-  let updated = false;
-
-  // Update pyproject.toml if it exists
-  if (await fs.pathExists('pyproject.toml')) {
-    try {
-      const content = await fs.readFile('pyproject.toml', 'utf8');
-      const updatedContent = updateVersionInPyprojectToml(content, version);
-      
-      // Only write if we actually changed something
-      if (content !== updatedContent) {
-        await fs.writeFile('pyproject.toml', updatedContent);
-        console.log(`Updated version in pyproject.toml to ${version}`);
-        updated = true;
-      }
-    } catch (error) {
-      console.error('Error updating pyproject.toml:', error);
-      throw error;
-    }
-  }
-  
-  // Update setup.py if it exists
-  if (await fs.pathExists('setup.py')) {
-    try {
-      const content = await fs.readFile('setup.py', 'utf8');
-      const updatedContent = updateVersionInSetupPy(content, version);
-      
-      // Only write if we actually changed something
-      if (content !== updatedContent) {
-        await fs.writeFile('setup.py', updatedContent);
-        console.log(`Updated version in setup.py to ${version}`);
-        updated = true;
-      }
-    } catch (error) {
-      console.error('Error updating setup.py:', error);
-      throw error;
-    }
-  }
-  
-  // Update setup.cfg if it exists
-  if (await fs.pathExists('setup.cfg')) {
-    try {
-      const content = await fs.readFile('setup.cfg', 'utf8');
-      const updatedContent = updateVersionInSetupCfg(content, version);
-      
-      // Only write if we actually changed something
-      if (content !== updatedContent) {
-        await fs.writeFile('setup.cfg', updatedContent);
-        console.log(`Updated version in setup.cfg to ${version}`);
-        updated = true;
-      }
-    } catch (error) {
-      console.error('Error updating setup.cfg:', error);
-      throw error;
-    }
-  }
-  
-  // Try to find and update __init__.py files
+export const updateVersion = async ({projectPath, newVersion}) => {
   try {
-    // Common places for __init__.py with version
-    const initPaths = [
-      '__init__.py',                      // Current directory
-      'src/__init__.py',                  // src directory
-    ];
-    
-    // Try to find a package name from the setup files if available
-    let packageName = null;
-    
-    if (await fs.pathExists('setup.py')) {
-      const content = await fs.readFile('setup.py', 'utf8');
-      const nameMatch = content.match(/name\s*=\s*["']([^"']*)["']/);
-      if (nameMatch && nameMatch[1]) {
-        packageName = nameMatch[1];
-      }
-    }
-    
-    if (packageName) {
-      // Add paths with the package name
-      initPaths.push(`${packageName}/__init__.py`);
-      initPaths.push(`src/${packageName}/__init__.py`);
-    }
-    
-    // Look for directories directly in the current directory
-    const dirs = await fs.readdir('.', { withFileTypes: true });
-    for (const dir of dirs) {
-      if (dir.isDirectory() && !['node_modules', 'venv', 'env', '.env', '.git', 'build', 'dist'].includes(dir.name)) {
-        const initPath = `${dir.name}/__init__.py`;
-        if (await fs.pathExists(initPath)) {
-          initPaths.push(initPath);
-        }
-      }
-    }
-    
-    // Try each path
-    for (const initPath of initPaths) {
-      if (await fs.pathExists(initPath)) {
-        const content = await fs.readFile(initPath, 'utf8');
-        
-        // Only update if the file contains version information
-        if (content.includes('version') || content.includes('__version__')) {
-          const updatedContent = updateVersionInInitPy(content, version);
-          
+    let updated = false;
+
+    // Update pyproject.toml if it exists using TOML parser
+    const pyprojectPath = path.join(projectPath, 'pyproject.toml');
+    if (await fs.pathExists(pyprojectPath)) {
+      try {
+        const content = await fs.readFile(pyprojectPath, 'utf8');
+
+        try {
+          // Parse TOML
+          const pyprojectData = toml.parse(content);
+          let modified = false;
+
+          // Try to update in common locations
+          if (pyprojectData.tool?.poetry) {
+            pyprojectData.tool.poetry.version = newVersion;
+            modified = true;
+          }
+
+          if (pyprojectData.project) {
+            pyprojectData.project.version = newVersion;
+            modified = true;
+          }
+
+          if (pyprojectData.tool?.flit?.metadata) {
+            pyprojectData.tool.flit.metadata.version = newVersion;
+            modified = true;
+          }
+
+          if (modified) {
+            // Convert back to TOML
+            const updatedContent = toml.stringify(pyprojectData);
+            await fs.writeFile(pyprojectPath, updatedContent);
+            logging.success(`Updated version in pyproject.toml to ${newVersion}`);
+            updated = true;
+          }
+        } catch (parseError) {
+          // If TOML parsing fails, try regex-based approach as fallback
+          logging.error('Error parsing pyproject.toml:', parseError);
+
+          // Regex-based update as fallback
+          let updatedContent = content;
+
+          // Try to update in [tool.poetry] section
+          updatedContent = updatedContent.replace(
+            /(\[tool\.poetry\][^\[]*version\s*=\s*)["']([^"']*)["']/,
+            `$1"${newVersion}"`,
+          );
+
+          // Try to update in [project] section (PEP 621)
+          updatedContent = updatedContent.replace(
+            /(\[project\][^\[]*version\s*=\s*)["']([^"']*)["']/,
+            `$1"${newVersion}"`,
+          );
+
+          // Try to update in [tool.flit.metadata] section
+          updatedContent = updatedContent.replace(
+            /(\[tool\.flit\.metadata\][^\[]*version\s*=\s*)["']([^"']*)["']/,
+            `$1"${newVersion}"`,
+          );
+
           // Only write if we actually changed something
           if (content !== updatedContent) {
-            await fs.writeFile(initPath, updatedContent);
-            console.log(`Updated version in ${initPath} to ${version}`);
+            await fs.writeFile(pyprojectPath, updatedContent);
+            logging.success(`Updated version in pyproject.toml to ${newVersion} (using regex)`);
             updated = true;
           }
         }
+      } catch (error) {
+        logging.error('Error updating pyproject.toml:', error);
       }
     }
+
+    // Update setup.py if it exists
+    const setupPyPath = path.join(projectPath, 'setup.py');
+    if (await fs.pathExists(setupPyPath)) {
+      try {
+        const content = await fs.readFile(setupPyPath, 'utf8');
+        const updatedContent = content.replace(/(version\s*=\s*)["']([^"']*)["']/, `$1"${newVersion}"`);
+
+        // Only write if we actually changed something
+        if (content !== updatedContent) {
+          await fs.writeFile(setupPyPath, updatedContent);
+          logging.success(`Updated version in setup.py to ${newVersion}`);
+          updated = true;
+        }
+      } catch (error) {
+        logging.error('Error updating setup.py:', error);
+      }
+    }
+
+    // Update setup.cfg if it exists
+    const setupCfgPath = path.join(projectPath, 'setup.cfg');
+    if (await fs.pathExists(setupCfgPath)) {
+      try {
+        const content = await fs.readFile(setupCfgPath, 'utf8');
+        const updatedContent = content.replace(/(version\s*=\s*)([^\s;]*)/, `$1${newVersion}`);
+
+        // Only write if we actually changed something
+        if (content !== updatedContent) {
+          await fs.writeFile(setupCfgPath, updatedContent);
+          logging.success(`Updated version in setup.cfg to ${newVersion}`);
+          updated = true;
+        }
+      } catch (error) {
+        logging.error('Error updating setup.cfg:', error);
+      }
+    }
+
+    // Try to find and update __init__.py files
+    try {
+      // Common places for __init__.py with version
+      const initPaths = [path.join(projectPath, '__init__.py'), path.join(projectPath, 'src/__init__.py')];
+
+      // Try to find a package name from the setup files if available
+      let packageName = null;
+
+      if (await fs.pathExists(setupPyPath)) {
+        const content = await fs.readFile(setupPyPath, 'utf8');
+        const nameMatch = content.match(/name\s*=\s*["']([^"']*)["']/);
+        if (nameMatch && nameMatch[1]) {
+          packageName = nameMatch[1];
+        }
+      }
+
+      if (packageName) {
+        // Add paths with the package name
+        initPaths.push(path.join(projectPath, `${packageName}/__init__.py`));
+        initPaths.push(path.join(projectPath, `src/${packageName}/__init__.py`));
+      }
+
+      // Try each path
+      for (const initPath of initPaths) {
+        if (await fs.pathExists(initPath)) {
+          const content = await fs.readFile(initPath, 'utf8');
+
+          // Only update if the file contains version information
+          if (content.includes('version') || content.includes('__version__')) {
+            const updatedContent = content.replace(
+              /(__|)version(__|)\s*=\s*["']([^"']*)["']/,
+              `$1version$2 = "${newVersion}"`,
+            );
+
+            // Only write if we actually changed something
+            if (content !== updatedContent) {
+              await fs.writeFile(initPath, updatedContent);
+              logging.success(
+                `Updated version in ${path.basename(path.dirname(initPath))}/__init__.py to ${newVersion}`,
+              );
+              updated = true;
+            }
+          }
+        }
+      }
+    } catch (error) {
+      logging.error('Error updating __init__.py:', error);
+      // Don't fail for __init__.py errors since it's a best-effort update
+    }
+
+    // If no files were updated, create a version file
+    if (!updated) {
+      const versionPath = path.join(projectPath, 'version');
+      await fs.writeFile(versionPath, newVersion, 'utf8');
+      logging.success(`Created version file with version ${newVersion}`);
+      updated = true;
+    }
+
+    return updated;
   } catch (error) {
-    console.error('Error updating __init__.py:', error);
-    // Don't fail for __init__.py errors since it's a best-effort update
-  }
-  
-  if (!updated) {
-    throw new Error('No version files found to update in Python project');
+    logging.error(`Failed to update Python project version: ${error.message}`);
+    throw error;
   }
 };

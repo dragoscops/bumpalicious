@@ -3,9 +3,9 @@
  * @module core/workspaces
  */
 
-import fs from "fs-extra";
-import path from "path";
-import { execa } from "execa";
+import fs from 'fs-extra';
+import path from 'path';
+import {execa} from 'execa';
 // import { detectDenoVersion } from "../detect/deno.js";
 // import { detectGoVersion } from "../detect/go.js";
 // import { detectNodeVersion } from "../detect/node.js";
@@ -19,7 +19,7 @@ import { execa } from "execa";
 // import { updatePythonVersion } from "../update/python.js";
 // import { updateRustVersion } from "../update/rust.js";
 // import { updateTextVersion } from "../update/text.js";
-import * as logging from "../utils/logging.js";
+import * as logging from '../utils/logging.js';
 
 /**
  * Converts a workspace string to a Workspace object
@@ -28,12 +28,12 @@ import * as logging from "../utils/logging.js";
  * @returns {Workspace}
  */
 export function fromString(workspace) {
-  const splited = workspace.split(":");
+  const splited = workspace.split(':');
   return {
-    ...(splited.length > 0 ? { path: splited[0] } : {}),
-    ...(splited.length > 1 ? { type: splited[1] } : {}),
-    ...(splited.length > 2 ? { name: splited[2] } : {}),
-    ...(splited.length > 3 ? { version: splited[3] } : {}),
+    ...(splited.length > 0 ? {path: splited[0]} : {}),
+    ...(splited.length > 1 ? {type: splited[1]} : {}),
+    ...(splited.length > 2 ? {name: splited[2]} : {}),
+    ...(splited.length > 3 ? {version: splited[3]} : {}),
   };
 }
 

@@ -3,13 +3,13 @@
  * @module detect/text
  */
 
-import fs from "fs-extra";
-import path from "path";
+import fs from 'fs-extra';
+import path from 'path';
 
 /**
  * List of potential version file names to check
  */
-const VERSION_FILES = ["version", "VERSION", "version.txt", "VERSION.txt"];
+const VERSION_FILES = ['version', 'VERSION', 'version.txt', 'VERSION.txt'];
 
 /**
  * Detect version from a text-based project
@@ -22,9 +22,9 @@ const VERSION_FILES = ["version", "VERSION", "version.txt", "VERSION.txt"];
 export const detectVersion = async (projectPath) => {
   for (const versionFile of VERSION_FILES) {
     const filePath = path.join(projectPath, versionFile);
-    
+
     if (await fs.pathExists(filePath)) {
-      const content = await fs.readFile(filePath, "utf8");
+      const content = await fs.readFile(filePath, 'utf8');
       const version = content.trim();
       if (version) {
         return version;
@@ -32,7 +32,7 @@ export const detectVersion = async (projectPath) => {
     }
   }
 
-  throw new Error("Could not detect version in text project");
+  throw new Error('Could not detect version in text project');
 };
 
 /**

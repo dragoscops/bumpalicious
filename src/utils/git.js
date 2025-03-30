@@ -3,13 +3,13 @@
  * @module utils/git
  */
 
-import { execa } from "execa";
-import npmGit from "@npmcli/git";
-import * as logging from "./logging.js";
+import {execa} from 'execa';
+import npmGit from '@npmcli/git';
+import * as logging from './logging.js';
 
 export const platforms = {
-  GITHUB: "github",
-  GITEA: "gitea",
+  GITHUB: 'github',
+  GITEA: 'gitea',
 };
 
 /**
@@ -32,7 +32,7 @@ export function validatePlatform(platform) {
 async function repotDomain() {
   try {
     // Retrieve the remote URL of the origin
-    const { stdout } = await execa("git", ["remote", "get-url", "origin"]);
+    const {stdout} = await execa('git', ['remote', 'get-url', 'origin']);
     const remoteUrl = stdout.trim();
 
     let domain = null;
@@ -53,7 +53,7 @@ async function repotDomain() {
 
     return domain;
   } catch (err) {
-    console.error("Error detecting git repository domain:", err);
+    console.error('Error detecting git repository domain:', err);
     return null;
   }
 }
@@ -71,37 +71,20 @@ async function repotDomain() {
  * @returns {Promise<void>} Resolves when configuration is complete.
  */
 export async function setupUser({
-  platform = "github",
-  workspace = process.env.GITHUB_WORKSPACE ||
-    process.env.GITEA_WORKSPACE ||
-    process.cwd(),
+  platform = 'github',
+  workspace = process.env.GITHUB_WORKSPACE || process.env.GITEA_WORKSPACE || process.cwd(),
 }) {
   try {
     switch (platform) {
       case platforms.GITHUB:
         // Set git user name and email for GitHub Actions
-        await execa("git", [
-          "config",
-          "--global",
-          "user.name",
-          "GitHub Actions",
-        ]);
-        await execa("git", [
-          "config",
-          "--global",
-          "user.email",
-          "actions@github.com",
-        ]);
+        await execa('git', ['config', '--global', 'user.name', 'GitHub Actions']);
+        await execa('git', ['config', '--global', 'user.email', 'actions@github.com']);
         break;
       case platforms.GITEA:
         // Set git user name and email for Gitea CI
-        await execa("git", ["config", "--global", "user.name", "Gitea CI"]);
-        await execa("git", [
-          "config",
-          "--global",
-          "user.email",
-          "ci@gitea.com",
-        ]);
+        await execa('git', ['config', '--global', 'user.name', 'Gitea CI']);
+        await execa('git', ['config', '--global', 'user.email', 'ci@gitea.com']);
         break;
       default:
         throw new Error(`Unsupported platform: ${platform}`);
@@ -109,18 +92,12 @@ export async function setupUser({
 
     // Add workspace to safe directories if provided
     if (workspace) {
-      await execa("git", [
-        "config",
-        "--global",
-        "--add",
-        "safe.directory",
-        workspace,
-      ]);
+      await execa('git', ['config', '--global', '--add', 'safe.directory', workspace]);
     }
 
     logging.success(`Git user configured successfully`);
   } catch (error) {
-    logging.error("Failed to configure git user", error);
+    logging.error('Failed to configure git user', error);
     throw error;
   }
 }
@@ -133,15 +110,11 @@ export async function setupUser({
 export async function lastCreatedTag() {
   try {
     // Get the most recent tag
-    const { stdout: lastTag } = await execa("git", [
-      "describe",
-      "--tags",
-      "--abbrev=0",
-    ]);
+    const {stdout: lastTag} = await execa('git', ['describe', '--tags', '--abbrev=0']);
     return lastTag.trim() || null;
   } catch (error) {
     // If no tags exist, git command will fail with non-zero exit code
-    logging.warning("No tags found in the repository");
+    logging.warning('No tags found in the repository');
     return null;
   }
 }
@@ -153,11 +126,11 @@ export async function lastCreatedTag() {
  */
 export const lastCommitMessage = async () => {
   try {
-    const { stdout } = await execa("git", ["log", "-1", "--pretty=%B"]);
+    const {stdout} = await execa('git', ['log', '-1', '--pretty=%B']);
     return stdout.trim();
   } catch (error) {
-    logging.error("Failed to get latest commit message", error);
-    return "";
+    logging.error('Failed to get latest commit message', error);
+    return '';
   }
 };
 

@@ -3,13 +3,13 @@
  * @module detect/node
  */
 
-import fs from "fs-extra";
-import path from "path";
+import fs from 'fs-extra';
+import path from 'path';
 
 /**
  * List of potential version file names to check
  */
-const VERSION_FILES = ["jsr.json", "package.json"];
+const VERSION_FILES = ['jsr.json', 'package.json'];
 
 /**
  * Detect version from a Node.js project
@@ -32,7 +32,7 @@ export const detectVersion = async (projectPath) => {
     }
   }
 
-  throw new Error("Could not detect version in Node.js project");
+  throw new Error('Could not detect version in Node.js project');
 };
 
 /**

@@ -3,9 +3,8 @@
  * @module detect/go
  */
 
-import fs from "fs-extra";
-import path from "path";
-import { execa } from "execa";
+import fs from 'fs-extra';
+import path from 'path';
 
 /**
  * Extract module name from go.mod content
@@ -38,17 +37,18 @@ const extractVersionFromGoMod = (content) => {
  * @throws {Error} - If version could not be detected
  */
 export const detectVersion = async (projectPath) => {
-  const configPath = path.join(projectPath, "go.mod");
+  const configPath = path.join(projectPath, 'go.mod');
+
   // Check if go.mod file exists
   if (await fs.pathExists(configPath)) {
-    const content = await fs.readFile(configPath, "utf8");
+    const content = await fs.readFile(configPath, 'utf8');
     const version = extractVersionFromGoMod(content);
     if (version) {
       return version;
     }
   }
 
-  throw new Error("Could not detect version in Go project");
+  throw new Error('Could not detect version in Go project');
 };
 
 /**
@@ -59,13 +59,16 @@ export const detectVersion = async (projectPath) => {
  * @returns {Promise<string>} - Detected name
  */
 export const detectName = async (projectPath) => {
-  const configPath = path.join(projectPath, "go.mod");
+  const configPath = path.join(projectPath, 'go.mod');
+  console.log('configPath', configPath, await fs.pathExists(configPath));
+
   // Check if go.mod file exists
   if (await fs.pathExists(configPath)) {
-    const content = await fs.readFile(configPath, "utf8");
+    const content = await fs.readFile(configPath, 'utf8');
+    console.log('content', content);
     const moduleName = extractModuleNameFromGoMod(content);
     if (moduleName) {
-      return moduleName.split("/").pop();
+      return moduleName.split('/').pop();
     }
   }
 

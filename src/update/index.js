@@ -1,41 +1,56 @@
 /**
- * Version updating index module
- * @module update/index
+ * Project version updaters
+ * @module update
  */
 
-import { updateNodeVersion } from './node.js';
-import { updateDenoVersion } from './deno.js';
-import { updatePythonVersion } from './python.js';
-import { updateGoVersion } from './go.js';
-import { updateRustVersion } from './rust.js';
-import { updateTextVersion } from './text.js';
+import {updateVersion as denoUpdater} from './deno.js';
+import {updateVersion as goUpdater} from './go.js';
+import {updateVersion as nodeUpdater} from './node.js';
+import {updateVersion as pythonUpdater} from './python.js';
+import {updateVersion as rustUpdater} from './rust.js';
+import {updateVersion as textUpdater} from './text.js';
+import {updateVersion as zigUpdater} from './zig.js';
 
 /**
- * Map of project types to version update functions
+ * Update a project's version
+ *
+ * @param {Object} options - Update options
+ * @param {string} options.type - Project type ('node', 'python', 'go', etc.)
+ * @param {string} options.projectPath - Path to the project
+ * @param {string} options.newVersion - New version to set
+ * @returns {Promise<boolean>} - True if the update was successful
+ * @throws {Error} - If the project type is not supported
  */
-const VERSION_UPDATERS = {
-  node: updateNodeVersion,
-  deno: updateDenoVersion,
-  python: updatePythonVersion,
-  go: updateGoVersion,
-  rust: updateRustVersion,
-  text: updateTextVersion,
+export const updateVersion = async ({type, projectPath, newVersion}) => {
+  switch (type.toLowerCase()) {
+    case 'deno':
+      return denoUpdater({projectPath, newVersion});
+    case 'go':
+      return goUpdater({projectPath, newVersion});
+    case 'node':
+      return nodeUpdater({projectPath, newVersion});
+    case 'python':
+      return pythonUpdater({projectPath, newVersion});
+    case 'rust':
+      return rustUpdater({projectPath, newVersion});
+    case 'text':
+      return textUpdater({projectPath, newVersion});
+    case 'zig':
+      return zigUpdater({projectPath, newVersion});
+    default:
+      throw new Error(`Unsupported project type: ${type}`);
+  }
 };
 
-/**
- * Update version for a specific project type
- * 
- * @param {string} type - Project type (node, deno, python, go, rust, text)
- * @param {string} version - New version to set
- * @returns {Promise<void>}
- * @throws {Error} - If project type is unsupported or version update fails
- */
-export const updateVersion = async (type, version) => {
-  const updater = VERSION_UPDATERS[type.toLowerCase()];
-  
-  if (!updater) {
-    throw new Error(`Unsupported project type for update: ${type}`);
-  }
-  
-  return updater(version);
+export {denoUpdater, goUpdater, nodeUpdater, pythonUpdater, rustUpdater, textUpdater, zigUpdater};
+
+export default {
+  updateVersion,
+  deno: denoUpdater,
+  go: goUpdater,
+  node: nodeUpdater,
+  python: pythonUpdater,
+  rust: rustUpdater,
+  text: textUpdater,
+  zig: zigUpdater,
 };

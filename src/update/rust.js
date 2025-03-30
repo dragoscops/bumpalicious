@@ -4,58 +4,76 @@
  */
 
 import fs from 'fs-extra';
+import path from 'path';
+import toml from '@iarna/toml';
 import * as logging from '../utils/logging.js';
 
 /**
- * Update version in Cargo.toml file
- * 
- * @param {string} filePath - Path to Cargo.toml file
- * @param {string} newVersion - New version to set
- * @returns {Promise<boolean>} - Success status
- */
-export const updateCargoToml = async (filePath, newVersion) => {
-  try {
-    let content = await fs.readFile(filePath, 'utf8');
-    
-    // Update version in Cargo.toml
-    // Pattern matches: version = "x.y.z" or version="x.y.z"
-    const versionRegex = /(version\s*=\s*")([^"]+)(")/;
-    
-    if (!versionRegex.test(content)) {
-      logging.error(`Failed to find version pattern in ${filePath}`);
-      return false;
-    }
-    
-    content = content.replace(versionRegex, `$1${newVersion}$3`);
-    await fs.writeFile(filePath, content, 'utf8');
-    
-    logging.info(`Updated version to ${newVersion} in ${filePath}`);
-    return true;
-  } catch (error) {
-    logging.error(`Failed to update version in ${filePath}`, error);
-    return false;
-  }
-};
-
-/**
- * Update Rust project version
- * 
+ * Update version in a Rust project
+ * Looking for Cargo.toml files
+ *
  * @param {Object} options - Update options
- * @param {string} options.projectPath - Path to the project 
+ * @param {string} options.projectPath - Path to the project
  * @param {string} options.newVersion - New version to set
- * @param {string} options.manifestPath - Path to Cargo.toml
- * @returns {Promise<boolean>} - Success status
+ * @returns {Promise<boolean>} - True if the update was successful
+ * @throws {Error} - If version update fails
  */
-export const updateVersion = async ({ projectPath, newVersion, manifestPath }) => {
-  const tomlPath = manifestPath || `${projectPath}/Cargo.toml`;
-  
-  if (!await fs.pathExists(tomlPath)) {
-    logging.error(`Cargo.toml not found at ${tomlPath}`);
-    return false;
-  }
-  
-  // Update the Cargo.toml version
-  return await updateCargoToml(tomlPath, newVersion);
-};
+export const updateVersion = async ({projectPath, newVersion}) => {
+  try {
+    let updated = false;
 
-export default updateVersion;
+    // Check for Cargo.toml
+    const cargoPath = path.join(projectPath, 'Cargo.toml');
+    if (await fs.pathExists(cargoPath)) {
+      try {
+        // Try using TOML parser first
+        const content = await fs.readFile(cargoPath, 'utf8');
+
+        try {
+          // Parse TOML
+          const cargoData = toml.parse(content);
+
+          // Update version in package section
+          if (cargoData.package) {
+            cargoData.package.version = newVersion;
+
+            // Convert back to TOML
+            const updatedContent = toml.stringify(cargoData);
+            await fs.writeFile(cargoPath, updatedContent, 'utf8');
+            logging.success(`Updated version in Cargo.toml to ${newVersion}`);
+            updated = true;
+          } else {
+            logging.error(`Failed to find package section in Cargo.toml`);
+          }
+        } catch (parseError) {
+          // If TOML parsing fails, try regex-based approach as fallback
+          logging.error('Error parsing Cargo.toml:', parseError);
+
+          // Regex-based update as fallback
+          const versionRegex = /(version\s*=\s*")([^"]+)(")/;
+          if (versionRegex.test(content)) {
+            const updatedContent = content.replace(versionRegex, `$1${newVersion}$3`);
+            await fs.writeFile(cargoPath, updatedContent, 'utf8');
+            logging.success(`Updated version in Cargo.toml to ${newVersion} (using regex)`);
+            updated = true;
+          }
+        }
+      } catch (error) {
+        logging.error('Error updating Cargo.toml:', error);
+      }
+    }
+
+    // If no files were updated, create a version file
+    if (!updated) {
+      const versionPath = path.join(projectPath, 'version');
+      await fs.writeFile(versionPath, newVersion, 'utf8');
+      logging.success(`Created version file with version ${newVersion}`);
+      updated = true;
+    }
+
+    return updated;
+  } catch (error) {
+    logging.error(`Failed to update Rust project version: ${error.message}`);
+    throw error;
+  }
+};

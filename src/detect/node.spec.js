@@ -1,54 +1,51 @@
-import fs from "fs-extra";
-import {
-  describe,
-  it,
-  expect,
-  beforeEach as beforeAll,
-  vi,
-  afterAll,
-} from "vitest";
+import fs from 'fs-extra';
+import {describe, it, expect, beforeEach as beforeAll, vi, afterAll} from 'vitest';
 
-import * as node from "./node.js";
+import * as node from './node.js';
+import {folder, mockConfigFiles, name, version} from '../vitest/index.js';
 
-const name = "node";
-const version = "1.0.0";
-
-const json = `{
-  "name": "${name}",
-  "version": "${version}"
-}`;
-
-describe("detect/node.js module", () => {
+describe('detect/node.js module', () => {
+  it('true', () => {
+    expect(true).toBe(true);
+  });
   beforeAll(() => {
     vi.clearAllMocks();
-
-    fs.readJson.mockImplementation((path) => {
-      return JSON.parse(json);
-    });
+    mockConfigFiles();
   });
 
-  describe("detectVersion()", () => {
-    for (const file of ["jsr.json", "package.json"]) {
+  afterAll(() => {
+    vi.restoreAllMocks();
+  });
+
+  describe('detectVersion()', () => {
+    for (const file of ['jsr.json', 'package.json']) {
       it(`detects version on a ${file} file`, async () => {
         fs.existingFile = file;
-        await expect(node.detectVersion("test")).resolves.toEqual(version);
+
+        await expect(node.detectVersion(folder)).resolves.toEqual(version);
       });
     }
 
     it(`throws error when no config file is found`, async () => {
-      fs.existingFile = "unknown";
-      await expect(node.detectVersion("test")).rejects.toThrow(
-        "Could not detect version in Node.js project",
-      );
+      fs.existingFile = 'unknown';
+
+      await expect(node.detectVersion(folder)).rejects.toThrow('Could not detect version in Node.js project');
     });
   });
 
-  describe("detectName()", () => {
-    for (const file of ["jsr.json", "package.json", "unknown"]) {
-      it(`detects version on a ${file} file`, async () => {
+  describe('detectName()', () => {
+    for (const file of ['jsr.json', 'package.json']) {
+      it(`detects project name on a ${file} file`, async () => {
         fs.existingFile = file;
-        await expect(node.detectName(name)).resolves.toEqual(name);
+
+        await expect(node.detectName(folder)).resolves.toEqual(name);
       });
     }
+
+    it(`returns directory name when config file is missing`, async () => {
+      fs.existingFile = 'unknown';
+
+      await expect(node.detectName(folder)).resolves.toEqual(folder);
+    });
   });
 });

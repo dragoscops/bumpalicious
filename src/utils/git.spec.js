@@ -1,15 +1,15 @@
-import { execa } from "execa";
-import { describe, it, expect, beforeEach, vi, afterAll } from "vitest";
+import {execa} from 'execa';
+import {describe, it, expect, beforeEach, vi, afterAll} from 'vitest';
 
-import * as git from "./git.js";
-import { mockConsole, unMockConsole } from "../vitest/index.js";
+import * as git from './git.js';
+import {mockConsole, unMockConsole} from '../vitest/index.js';
 
-describe("git.js module", () => {
+describe('git.js module', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe("setupUser", () => {
+  describe('setupUser', () => {
     beforeAll(() => {
       mockConsole();
     });
@@ -18,81 +18,51 @@ describe("git.js module", () => {
       unMockConsole();
     });
 
-    it("configures git user for GitHub", async () => {
-      await git.setupUser({ platform: "github" });
+    it('configures git user for GitHub', async () => {
+      await git.setupUser({platform: 'github'});
 
-      expect(execa).toHaveBeenCalledWith("git", [
-        "config",
-        "--global",
-        "user.name",
-        "GitHub Actions",
-      ]);
-      expect(execa).toHaveBeenNthCalledWith(2, "git", [
-        "config",
-        "--global",
-        "user.email",
-        "actions@github.com",
-      ]);
-      expect(console.log).toHaveBeenCalledWith(
-        expect.stringMatching(/.*Git user configured successfully/),
-      );
+      expect(execa).toHaveBeenCalledWith('git', ['config', '--global', 'user.name', 'GitHub Actions']);
+      expect(execa).toHaveBeenNthCalledWith(2, 'git', ['config', '--global', 'user.email', 'actions@github.com']);
+      expect(console.log).toHaveBeenCalledWith(expect.stringMatching(/.*Git user configured successfully/));
     });
 
-    it("configures git user for Gitea", async () => {
-      await git.setupUser({ platform: "gitea" });
+    it('configures git user for Gitea', async () => {
+      await git.setupUser({platform: 'gitea'});
 
-      expect(execa).toHaveBeenCalledWith("git", [
-        "config",
-        "--global",
-        "user.name",
-        "Gitea CI",
-      ]);
-      expect(execa).toHaveBeenCalledWith("git", [
-        "config",
-        "--global",
-        "user.email",
-        "ci@gitea.com",
-      ]);
-      expect(console.log).toHaveBeenCalledWith(
-        expect.stringMatching(/.*Git user configured successfully/),
-      );
+      expect(execa).toHaveBeenCalledWith('git', ['config', '--global', 'user.name', 'Gitea CI']);
+      expect(execa).toHaveBeenCalledWith('git', ['config', '--global', 'user.email', 'ci@gitea.com']);
+      expect(console.log).toHaveBeenCalledWith(expect.stringMatching(/.*Git user configured successfully/));
     });
 
-    it("adds workspace to safe directories if provided", async () => {
+    it('adds workspace to safe directories if provided', async () => {
       await git.setupUser({
-        platform: "github",
-        workspace: "/path/to/workspace",
+        platform: 'github',
+        workspace: '/path/to/workspace',
       });
 
-      expect(execa).toHaveBeenCalledWith("git", [
-        "config",
-        "--global",
-        "--add",
-        "safe.directory",
-        "/path/to/workspace",
+      expect(execa).toHaveBeenCalledWith('git', [
+        'config',
+        '--global',
+        '--add',
+        'safe.directory',
+        '/path/to/workspace',
       ]);
     });
 
-    it("throws error for unsupported platform", async () => {
-      await expect(git.setupUser({ platform: "unsupported" })).rejects.toThrow(
-        "Unsupported platform: unsupported",
-      );
+    it('throws error for unsupported platform', async () => {
+      await expect(git.setupUser({platform: 'unsupported'})).rejects.toThrow('Unsupported platform: unsupported');
     });
 
-    it("logs error and rethrows on failure", async () => {
-      execa.mockRejectedValueOnce(new Error("Mocked error"));
+    it('logs error and rethrows on failure', async () => {
+      execa.mockRejectedValueOnce(new Error('Mocked error'));
 
-      await expect(git.setupUser({ platform: "github" })).rejects.toThrow(
-        "Mocked error",
-      );
+      await expect(git.setupUser({platform: 'github'})).rejects.toThrow('Mocked error');
 
-      expect(console.error).toHaveBeenCalledWith(
-        expect.stringMatching(/.*Failed to configure git user/),
-      );
+      expect(console.error).toHaveBeenCalledWith(expect.stringMatching(/.*Failed to configure git user/));
     });
   });
 
-  describe("lastCreatedTag", () => {
+  describe('lastCreatedTag', () => {
     beforeAll(() => {
       mockConsole();
     });
@@ -101,34 +71,26 @@ describe("git.js module", () => {
       unMockConsole();
     });
 
-    it("returns the last tag when tags are present", async () => {
-      execa.mockResolvedValueOnce({ stdout: "v1.0.0\n" });
+    it('returns the last tag when tags are present', async () => {
+      execa.mockResolvedValueOnce({stdout: 'v1.0.0\n'});
 
       const lastTag = await git.lastCreatedTag();
 
-      expect(execa).toHaveBeenCalledWith("git", [
-        "describe",
-        "--tags",
-        "--abbrev=0",
-      ]);
-      expect(lastTag).toBe("v1.0.0");
+      expect(execa).toHaveBeenCalledWith('git', ['describe', '--tags', '--abbrev=0']);
+      expect(lastTag).toBe('v1.0.0');
     });
 
-    it("returns null and logs warning when no tags are found", async () => {
-      execa.mockRejectedValueOnce(
-        new Error("fatal: No names found, cannot describe anything."),
-      );
+    it('returns null and logs warning when no tags are found', async () => {
+      execa.mockRejectedValueOnce(new Error('fatal: No names found, cannot describe anything.'));
 
       const lastTag = await git.lastCreatedTag();
 
-      expect(console.log).toHaveBeenCalledWith(
-        expect.stringMatching(/.*No tags found in the repository/),
-      );
+      expect(console.log).toHaveBeenCalledWith(expect.stringMatching(/.*No tags found in the repository/));
       expect(lastTag).toBeNull();
     });
   });
 
-  describe("lastCommitMessage", () => {
+  describe('lastCommitMessage', () => {
     beforeAll(() => {
       mockConsole();
     });
@@ -137,24 +99,22 @@ describe("git.js module", () => {
       unMockConsole();
     });
 
-    it("returns the latest commit message", async () => {
-      execa.mockResolvedValueOnce({ stdout: "feat: add new feature\n" });
+    it('returns the latest commit message', async () => {
+      execa.mockResolvedValueOnce({stdout: 'feat: add new feature\n'});
 
       const message = await git.lastCommitMessage();
 
-      expect(execa).toHaveBeenCalledWith("git", ["log", "-1", "--pretty=%B"]);
-      expect(message).toBe("feat: add new feature");
+      expect(execa).toHaveBeenCalledWith('git', ['log', '-1', '--pretty=%B']);
+      expect(message).toBe('feat: add new feature');
     });
 
-    it("returns empty string and logs error on failure", async () => {
-      execa.mockRejectedValueOnce(new Error("Mocked error"));
+    it('returns empty string and logs error on failure', async () => {
+      execa.mockRejectedValueOnce(new Error('Mocked error'));
 
       const message = await git.lastCommitMessage();
 
-      expect(console.error).toHaveBeenCalledWith(
-        expect.stringContaining("Failed to get latest commit message"),
-      );
-      expect(message).toBe("");
+      expect(console.error).toHaveBeenCalledWith(expect.stringContaining('Failed to get latest commit message'));
+      expect(message).toBe('');
     });
   });
 

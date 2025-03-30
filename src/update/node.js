@@ -9,7 +9,7 @@ import path from 'path';
 /**
  * Update version in a Node.js project
  * Looking for package.json or jsr.json files
- * 
+ *
  * @param {string} version - New version to set
  * @returns {Promise<void>}
  * @throws {Error} - If version update fails
@@ -22,7 +22,7 @@ export const updateNodeVersion = async (version) => {
     try {
       const pkg = await fs.readJson('package.json');
       pkg.version = version;
-      await fs.writeJson('package.json', pkg, { spaces: 2 });
+      await fs.writeJson('package.json', pkg, {spaces: 2});
       console.log(`Updated version in package.json to ${version}`);
       updated = true;
     } catch (error) {
@@ -30,13 +30,13 @@ export const updateNodeVersion = async (version) => {
       throw error;
     }
   }
-  
+
   // Update jsr.json if it exists
   if (await fs.pathExists('jsr.json')) {
     try {
       const jsr = await fs.readJson('jsr.json');
       jsr.version = version;
-      await fs.writeJson('jsr.json', jsr, { spaces: 2 });
+      await fs.writeJson('jsr.json', jsr, {spaces: 2});
       console.log(`Updated version in jsr.json to ${version}`);
       updated = true;
     } catch (error) {
@@ -44,7 +44,7 @@ export const updateNodeVersion = async (version) => {
       throw error;
     }
   }
-  
+
   if (!updated) {
     throw new Error('No version files found to update in Node.js project');
   }

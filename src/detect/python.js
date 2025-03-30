@@ -3,10 +3,10 @@
  * @module detect/python
  */
 
-import fs from "fs-extra";
-import path from "path";
-import { execa } from "execa";
-import toml from "@iarna/toml";
+import fs from 'fs-extra';
+import path from 'path';
+import {execa} from 'execa';
+import toml from '@iarna/toml';
 
 /**
  * Detect version from a Python project
@@ -18,30 +18,30 @@ import toml from "@iarna/toml";
  */
 export const detectVersion = async (projectPath) => {
   // Check for pyproject.toml first (using TOML parser)
-  const pyprojectPath = path.join(projectPath, "pyproject.toml");
+  const pyprojectPath = path.join(projectPath, 'pyproject.toml');
   if (await fs.pathExists(pyprojectPath)) {
     try {
-      const content = await fs.readFile(pyprojectPath, "utf8");
+      const content = await fs.readFile(pyprojectPath, 'utf8');
       const pyprojectData = toml.parse(content);
-      
+
       // Check different locations for version in pyproject.toml
       if (pyprojectData.tool?.poetry?.version) {
         return pyprojectData.tool.poetry.version;
       }
-      
+
       if (pyprojectData.project?.version) {
         return pyprojectData.project.version;
       }
     } catch (error) {
-      console.error("Error parsing pyproject.toml:", error);
+      console.error('Error parsing pyproject.toml:', error);
     }
   }
 
   // Check for setup.py and setup.cfg using regex
-  for (const file of ["setup.py", "setup.cfg"]) {
+  for (const file of ['setup.py', 'setup.cfg']) {
     const filePath = path.join(projectPath, file);
     if (await fs.pathExists(filePath)) {
-      const content = await fs.readFile(filePath, "utf8");
+      const content = await fs.readFile(filePath, 'utf8');
       const versionMatch = content.match(/version\s*=\s*["']([^"']+)["']/);
       if (versionMatch) {
         return versionMatch[1];
@@ -51,7 +51,11 @@ export const detectVersion = async (projectPath) => {
 
   // Try to detect version using Python's importlib.metadata
   try {
-    const { stdout } = await execa("python", ["-c", "import importlib.metadata; print(importlib.metadata.version('.'))"], { cwd: projectPath });
+    const {stdout} = await execa(
+      'python',
+      ['-c', "import importlib.metadata; print(importlib.metadata.version('.'))"],
+      {cwd: projectPath},
+    );
     if (stdout.trim()) {
       return stdout.trim();
     }
@@ -59,7 +63,7 @@ export const detectVersion = async (projectPath) => {
     // Ignore errors
   }
 
-  throw new Error("Could not detect version in Python project");
+  throw new Error('Could not detect version in Python project');
 };
 
 /**
@@ -71,30 +75,30 @@ export const detectVersion = async (projectPath) => {
  */
 export const detectName = async (projectPath) => {
   // Check for pyproject.toml first (using TOML parser)
-  const pyprojectPath = path.join(projectPath, "pyproject.toml");
+  const pyprojectPath = path.join(projectPath, 'pyproject.toml');
   if (await fs.pathExists(pyprojectPath)) {
     try {
-      const content = await fs.readFile(pyprojectPath, "utf8");
+      const content = await fs.readFile(pyprojectPath, 'utf8');
       const pyprojectData = toml.parse(content);
-      
+
       // Check different locations for name in pyproject.toml
       if (pyprojectData.tool?.poetry?.name) {
         return pyprojectData.tool.poetry.name;
       }
-      
+
       if (pyprojectData.project?.name) {
         return pyprojectData.project.name;
       }
     } catch (error) {
-      console.error("Error parsing pyproject.toml:", error);
+      console.error('Error parsing pyproject.toml:', error);
     }
   }
 
   // Check for setup.py and setup.cfg using regex
-  for (const file of ["setup.py", "setup.cfg"]) {
+  for (const file of ['setup.py', 'setup.cfg']) {
     const filePath = path.join(projectPath, file);
     if (await fs.pathExists(filePath)) {
-      const content = await fs.readFile(filePath, "utf8");
+      const content = await fs.readFile(filePath, 'utf8');
       const nameMatch = content.match(/name\s*=\s*["']([^"']+)["']/);
       if (nameMatch) {
         return nameMatch[1];

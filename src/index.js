@@ -6,10 +6,10 @@
  * @module index
  */
 
-import * as core from "@actions/core";
-import * as github from "@actions/github";
-import * as workspace from "./core/workspaces.js";
-import * as git from "./utils/git.js";
+import * as core from '@actions/core';
+import * as github from '@actions/github';
+import * as workspace from './core/workspaces.js';
+import * as git from './utils/git.js';
 
 /**
  * @typedef {Object} Workspace
@@ -40,16 +40,14 @@ const run = async () => {
     // Get input parameters as a single options object
     /** @type {ActionOptions} */
     const options = {
-      workspaces: (core.getInput("workspaces") || ".:text")
-        .split(";")
-        .map(workspace.fromString),
-      token: core.getInput("token"),
+      workspaces: (core.getInput('workspaces') || '.:text').split(';').map(workspace.fromString),
+      token: core.getInput('token'),
       // createPR: core.getInput('create-pr') === 'true',
       // createTags: core.getInput('create-tags') === 'true',
       // mergeBranch: core.getInput('merge-branch') || 'main',
       // updateChangelog: core.getInput('update-changelog') === 'true',
       // automaticMerge: core.getInput('automatic-merge') === 'true',
-      platform: (core.getInput("git-platform") || "github").toLowerCase(),
+      platform: (core.getInput('git-platform') || 'github').toLowerCase(),
     };
 
     // validate platform value

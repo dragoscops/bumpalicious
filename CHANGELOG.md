@@ -3,59 +3,71 @@
 ### 🔧 Chore
 
 - b0ab974: action path is still wrong
+
 ## [1.1.22] - 2025-03-28
 
 ### 🔧 Chore
 
 - 059de3d: using github.workspace for paths is wrong
+
 ## [1.1.21] - 2025-03-26
 
 ### 🐛 Bug Fixes
 
 - 9c8df96: increase version without pr
+
 ## [1.1.20] - 2025-03-26
 
 ### 🐛 Bug Fixes
 
 - 2f71931: refresh minor when creating version 1743018233
+
 ## [1.1.19] - 2025-03-25
 
 ### 🐛 Bug Fixes
 
 - 16cb34f: refresh minor when creating version 1742937323
+
 ## [1.1.18] - 2025-03-25
 
 ### 🐛 Bug Fixes
 
 - 7011ece: refresh minor when creating version 1742936314
+
 ## [1.1.17] - 2025-03-25
 
 ### 🐛 Bug Fixes
 
 - 99e9cfd: refresh minor when creating version 1742935708
+
 ### 🔧 Chore
 
 - f2c3a96: version pull request 1.1.16 version pull request 1.1.16
+
 ## [1.1.16] - 2025-03-25
 
 ### 🐛 Bug Fixes
 
 - 8597262: refresh minor when creating version 1742934958
+
 ## [1.1.15] - 2025-03-25
 
 ### 🐛 Bug Fixes
 
 - eaf11b2: refresh minor when creating version 1742934385
+
 ## [1.1.14] - 2025-03-25
 
 ### 🐛 Bug Fixes
 
 - 825961b: refresh minor when creating version 1742934174
+
 ## [1.1.13] - 2025-03-25
 
 ### 🐛 Bug Fixes
 
 - f2c40ec: refresh minor when creating version 1742933737
+
 ## [1.1.12] - 2025-03-25
 
 ### 🔧 Chore
@@ -64,23 +76,27 @@
 - f19c5c4: introduced the refresh minor version option - incomplete 1742932218
 - 74d338c: introduced the refresh minor version option - incomplete 1742931225
 - a7701bf: introduced the refresh minor version option - incomplete 1742851541
+
 ## [1.1.11] - 2025-03-24
 
 ### 🐛 Bug Fixes
 
 - b7177bd: fixing no_pr flow 1742848745
 - be787e6: fixed changelog testing
+
 ## [1.1.10] - 2025-03-24
 
 ### 🐛 Bug Fixes
 
 - (1b20f4d) chore: fixing version arg on tag creation
+
 ## [1.1.9] - 2025-03-24
 
 ### 🚀 Features
 
 - 727554d: new feature added
 - 7055557: Added a feature
+
 ### 🐛 Bug Fixes
 
 - cc4787e: added the tag creation step
@@ -131,9 +147,11 @@
 - (b96ad31) chore: fixing last tag 1728851636
 - (dedecda) chore: fixing last tag 1728851523
 - (06e74ad) chore: fixing last tag
+
 ### ♻️ Refactor
 
 - (b764e63) chore: complete refactor for detecting changed workspaces
+
 ### ✅ Tests
 
 - (03e518a) chore: more tests
@@ -175,6 +193,7 @@
 - (f3e4c38) chore: test again
 - (b533897) chore: test again
 - (b290e5b) chore: test again
+
 ### 🏗️ Build
 
 - (4281d80) chore: build tag 1728886626
@@ -188,6 +207,7 @@
 - (0139cd0) chore: build version list 1728885304
 - (5e28b7a) chore: split version increase from version gathering and added tag build
 - (fe553ac) chore: split version increase from version gathering and added tag build
+
 ### 🔧 Chore
 
 - 8ffc1ed: seting up user before tag creation
@@ -385,6 +405,7 @@
 - d630367: trigger at push
 - fd41c81: where do we go to
 - 7ab74ef: started working on release-it
+
 ### Other Changes
 
 - (2c5c39f) Update README.md
@@ -434,12 +455,14 @@
 - (c4470f5) version pull request v1.4.0 (#17)
 - (a588fea) version pull request v1.3.0 (#16)
 - (7386ed4) version pull request v1.2.0 (#13)
+
 ## [1.1.8] - 2025-03-24
 
 ### 🚀 Features
 
 - 727554d: new feature added
 - 7055557: Added a feature
+
 ### 🐛 Bug Fixes
 
 - cc4787e: added the tag creation step
@@ -490,9 +513,11 @@
 - (b96ad31) chore: fixing last tag 1728851636
 - (dedecda) chore: fixing last tag 1728851523
 - (06e74ad) chore: fixing last tag
+
 ### ♻️ Refactor
 
 - (b764e63) chore: complete refactor for detecting changed workspaces
+
 ### ✅ Tests
 
 - (03e518a) chore: more tests
@@ -534,6 +559,7 @@
 - (f3e4c38) chore: test again
 - (b533897) chore: test again
 - (b290e5b) chore: test again
+
 ### 🏗️ Build
 
 - (4281d80) chore: build tag 1728886626
@@ -547,6 +573,7 @@
 - (0139cd0) chore: build version list 1728885304
 - (5e28b7a) chore: split version increase from version gathering and added tag build
 - (fe553ac) chore: split version increase from version gathering and added tag build
+
 ### 🔧 Chore
 
 - c0c6747: tag creation check
@@ -742,6 +769,7 @@
 - d630367: trigger at push
 - fd41c81: where do we go to
 - 7ab74ef: started working on release-it
+
 ### Other Changes
 
 - (2c5c39f) Update README.md
@@ -791,12 +819,14 @@
 - (c4470f5) version pull request v1.4.0 (#17)
 - (a588fea) version pull request v1.3.0 (#16)
 - (7386ed4) version pull request v1.2.0 (#13)
+
 ## [1.1.7] - 2025-03-24
 
 ### 🚀 Features
 
 - 727554d: new feature added
 - 7055557: Added a feature
+
 ### 🐛 Bug Fixes
 
 - cc4787e: added the tag creation step
@@ -847,9 +877,11 @@
 - (b96ad31) chore: fixing last tag 1728851636
 - (dedecda) chore: fixing last tag 1728851523
 - (06e74ad) chore: fixing last tag
+
 ### ♻️ Refactor
 
 - (b764e63) chore: complete refactor for detecting changed workspaces
+
 ### ✅ Tests
 
 - (03e518a) chore: more tests
@@ -891,6 +923,7 @@
 - (f3e4c38) chore: test again
 - (b533897) chore: test again
 - (b290e5b) chore: test again
+
 ### 🏗️ Build
 
 - (4281d80) chore: build tag 1728886626
@@ -904,6 +937,7 @@
 - (0139cd0) chore: build version list 1728885304
 - (5e28b7a) chore: split version increase from version gathering and added tag build
 - (fe553ac) chore: split version increase from version gathering and added tag build
+
 ### 🔧 Chore
 
 - bdd985c: version pull request 1.1.6 (#107)
@@ -1097,6 +1131,7 @@
 - d630367: trigger at push
 - fd41c81: where do we go to
 - 7ab74ef: started working on release-it
+
 ### Other Changes
 
 - (2c5c39f) Update README.md
@@ -1146,12 +1181,14 @@
 - (c4470f5) version pull request v1.4.0 (#17)
 - (a588fea) version pull request v1.3.0 (#16)
 - (7386ed4) version pull request v1.2.0 (#13)
+
 ## [1.1.6] - 2025-03-24
 
 ### 🚀 Features
 
 - 727554d: new feature added
 - 7055557: Added a feature
+
 ### 🐛 Bug Fixes
 
 - 1318b37: added the tag creation step
@@ -1201,9 +1238,11 @@
 - (b96ad31) chore: fixing last tag 1728851636
 - (dedecda) chore: fixing last tag 1728851523
 - (06e74ad) chore: fixing last tag
+
 ### ♻️ Refactor
 
 - (b764e63) chore: complete refactor for detecting changed workspaces
+
 ### ✅ Tests
 
 - (03e518a) chore: more tests
@@ -1245,6 +1284,7 @@
 - (f3e4c38) chore: test again
 - (b533897) chore: test again
 - (b290e5b) chore: test again
+
 ### 🏗️ Build
 
 - (4281d80) chore: build tag 1728886626
@@ -1258,6 +1298,7 @@
 - (0139cd0) chore: build version list 1728885304
 - (5e28b7a) chore: split version increase from version gathering and added tag build
 - (fe553ac) chore: split version increase from version gathering and added tag build
+
 ### 🔧 Chore
 
 - 774bf41: version pull request 1.1.5 (#106)
@@ -1450,6 +1491,7 @@
 - d630367: trigger at push
 - fd41c81: where do we go to
 - 7ab74ef: started working on release-it
+
 ### Other Changes
 
 - (2c5c39f) Update README.md
@@ -1499,12 +1541,14 @@
 - (c4470f5) version pull request v1.4.0 (#17)
 - (a588fea) version pull request v1.3.0 (#16)
 - (7386ed4) version pull request v1.2.0 (#13)
+
 ## [1.1.5] - 2025-03-23
 
 ### 🚀 Features
 
 - 727554d: new feature added
 - 7055557: Added a feature
+
 ### 🐛 Bug Fixes
 
 - fb467a2: added the tag creation step
@@ -1552,9 +1596,11 @@
 - (b96ad31) chore: fixing last tag 1728851636
 - (dedecda) chore: fixing last tag 1728851523
 - (06e74ad) chore: fixing last tag
+
 ### ♻️ Refactor
 
 - (b764e63) chore: complete refactor for detecting changed workspaces
+
 ### ✅ Tests
 
 - (03e518a) chore: more tests
@@ -1596,6 +1642,7 @@
 - (f3e4c38) chore: test again
 - (b533897) chore: test again
 - (b290e5b) chore: test again
+
 ### 🏗️ Build
 
 - (4281d80) chore: build tag 1728886626
@@ -1609,6 +1656,7 @@
 - (0139cd0) chore: build version list 1728885304
 - (5e28b7a) chore: split version increase from version gathering and added tag build
 - (fe553ac) chore: split version increase from version gathering and added tag build
+
 ### 🔧 Chore
 
 - 5c6f28a: version pull request 1.1.4 (#105)
@@ -1800,6 +1848,7 @@
 - d630367: trigger at push
 - fd41c81: where do we go to
 - 7ab74ef: started working on release-it
+
 ### Other Changes
 
 - (2c5c39f) Update README.md
@@ -1849,12 +1898,14 @@
 - (c4470f5) version pull request v1.4.0 (#17)
 - (a588fea) version pull request v1.3.0 (#16)
 - (7386ed4) version pull request v1.2.0 (#13)
+
 ## [1.1.4] - 2025-03-23
 
 ### 🚀 Features
 
 - 727554d: new feature added
 - 7055557: Added a feature
+
 ### 🐛 Bug Fixes
 
 - e7d0290: added the tag creation step
@@ -1901,9 +1952,11 @@
 - (b96ad31) chore: fixing last tag 1728851636
 - (dedecda) chore: fixing last tag 1728851523
 - (06e74ad) chore: fixing last tag
+
 ### ♻️ Refactor
 
 - (b764e63) chore: complete refactor for detecting changed workspaces
+
 ### ✅ Tests
 
 - (03e518a) chore: more tests
@@ -1945,6 +1998,7 @@
 - (f3e4c38) chore: test again
 - (b533897) chore: test again
 - (b290e5b) chore: test again
+
 ### 🏗️ Build
 
 - (4281d80) chore: build tag 1728886626
@@ -1958,6 +2012,7 @@
 - (0139cd0) chore: build version list 1728885304
 - (5e28b7a) chore: split version increase from version gathering and added tag build
 - (fe553ac) chore: split version increase from version gathering and added tag build
+
 ### 🔧 Chore
 
 - f8aaf86: version pull request 1.1.3 (#104)
@@ -2148,6 +2203,7 @@
 - d630367: trigger at push
 - fd41c81: where do we go to
 - 7ab74ef: started working on release-it
+
 ### Other Changes
 
 - (2c5c39f) Update README.md
@@ -2197,12 +2253,14 @@
 - (c4470f5) version pull request v1.4.0 (#17)
 - (a588fea) version pull request v1.3.0 (#16)
 - (7386ed4) version pull request v1.2.0 (#13)
+
 ## [1.1.3] - 2025-03-23
 
 ### 🚀 Features
 
 - 727554d: new feature added
 - 7055557: Added a feature
+
 ### 🐛 Bug Fixes
 
 - 36c5328: added the tag creation step
@@ -2248,9 +2306,11 @@
 - (b96ad31) chore: fixing last tag 1728851636
 - (dedecda) chore: fixing last tag 1728851523
 - (06e74ad) chore: fixing last tag
+
 ### ♻️ Refactor
 
 - (b764e63) chore: complete refactor for detecting changed workspaces
+
 ### ✅ Tests
 
 - (03e518a) chore: more tests
@@ -2292,6 +2352,7 @@
 - (f3e4c38) chore: test again
 - (b533897) chore: test again
 - (b290e5b) chore: test again
+
 ### 🏗️ Build
 
 - (4281d80) chore: build tag 1728886626
@@ -2305,6 +2366,7 @@
 - (0139cd0) chore: build version list 1728885304
 - (5e28b7a) chore: split version increase from version gathering and added tag build
 - (fe553ac) chore: split version increase from version gathering and added tag build
+
 ### 🔧 Chore
 
 - f4595ef: version pull request 1.1.2 (#103)
@@ -2494,6 +2556,7 @@
 - d630367: trigger at push
 - fd41c81: where do we go to
 - 7ab74ef: started working on release-it
+
 ### Other Changes
 
 - (2c5c39f) Update README.md
@@ -2543,12 +2606,14 @@
 - (c4470f5) version pull request v1.4.0 (#17)
 - (a588fea) version pull request v1.3.0 (#16)
 - (7386ed4) version pull request v1.2.0 (#13)
+
 ## [1.1.2] - 2025-03-23
 
 ### 🚀 Features
 
 - 727554d: new feature added
 - 7055557: Added a feature
+
 ### 🐛 Bug Fixes
 
 - 4df4498: added the tag creation step
@@ -2592,9 +2657,11 @@
 - (b96ad31) chore: fixing last tag 1728851636
 - (dedecda) chore: fixing last tag 1728851523
 - (06e74ad) chore: fixing last tag
+
 ### ♻️ Refactor
 
 - (b764e63) chore: complete refactor for detecting changed workspaces
+
 ### ✅ Tests
 
 - (03e518a) chore: more tests
@@ -2636,6 +2703,7 @@
 - (f3e4c38) chore: test again
 - (b533897) chore: test again
 - (b290e5b) chore: test again
+
 ### 🏗️ Build
 
 - (4281d80) chore: build tag 1728886626
@@ -2649,6 +2717,7 @@
 - (0139cd0) chore: build version list 1728885304
 - (5e28b7a) chore: split version increase from version gathering and added tag build
 - (fe553ac) chore: split version increase from version gathering and added tag build
+
 ### 🔧 Chore
 
 - 05f6e10: version pull request 1.1.1 (#99)
@@ -2837,6 +2906,7 @@
 - d630367: trigger at push
 - fd41c81: where do we go to
 - 7ab74ef: started working on release-it
+
 ### Other Changes
 
 - (2c5c39f) Update README.md
@@ -2886,6 +2956,7 @@
 - (c4470f5) version pull request v1.4.0 (#17)
 - (a588fea) version pull request v1.3.0 (#16)
 - (7386ed4) version pull request v1.2.0 (#13)
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
