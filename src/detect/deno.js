@@ -5,11 +5,7 @@
 
 import fs from 'fs-extra';
 import path from 'path';
-
-/**
- * List of potential version file names to check
- */
-const VERSION_FILES = ['deno.json', 'jsr.json', 'package.json'];
+import {DENO_VERSION_FILES} from '../core/constants.js';
 
 /**
  * Detect version from a Deno project
@@ -43,7 +39,7 @@ export const detectVersion = async (projectPath) => {
   }
 
   // Check for deno.json, jsr.json, package.json
-  for (const file of VERSION_FILES) {
+  for (const file of DENO_VERSION_FILES.slice(1)) {
     configPath = path.join(projectPath, file);
 
     if (await fs.pathExists(configPath)) {
@@ -88,7 +84,7 @@ export const detectName = async (projectPath) => {
   }
 
   // Check for deno.json, jsr.json, package.json
-  for (const file of VERSION_FILES) {
+  for (const file of DENO_VERSION_FILES.slice(1)) {
     configPath = path.join(projectPath, file);
 
     if (await fs.pathExists(configPath)) {

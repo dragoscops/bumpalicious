@@ -1,181 +1,233 @@
 import fs from 'fs-extra';
-import {describe, it, expect, beforeEach as beforeAll, vi} from 'vitest';
+import toml from '@iarna/toml';
+import {describe, it, expect, beforeAll, vi, afterAll} from 'vitest';
 import * as python from './python.js';
 import * as logging from '../utils/logging.js';
-import toml from '@iarna/toml';
+import {
+  projectPath,
+  newVersion,
+  oldVersion,
+  projectName,
+  setupFileMocks,
+  mockPyprojectData,
+  mockPyprojectPoetryData,
+  pyprojectContent,
+  pyprojectPoetryContent,
+  PYTHON_VERSION_FILES,
+} from '../vitest/setup.detect-update.tests.js';
 
-// Mock logging
+// Mock dependencies
+vi.mock('fs-extra');
+vi.mock('@iarna/toml');
 vi.mock('../utils/logging.js', () => ({
   success: vi.fn(),
   error: vi.fn(),
 }));
 
 describe('update/python.js module', () => {
-  it('true', () => {
-    expect(true).toBe(true);
+  beforeAll(() => {
+    vi.clearAllMocks();
   });
-  //   const projectPath = "/test/project";
-  //   const newVersion = "1.2.3";
-  //   const oldVersion = "1.0.0";
 
-  //   // Mock TOML data structure
-  //   const mockPyprojectData = {
-  //     tool: {
-  //       poetry: {
-  //         name: "test-project",
-  //         version: oldVersion
-  //       }
-  //     }
-  //   };
+  afterAll(() => {
+    vi.restoreAllMocks();
+  });
 
-  //   const mockPyprojectContent = `[tool.poetry]
-  // name = "test-project"
-  // version = "${oldVersion}"`;
+  describe('updateVersion()', () => {
+    it('updates version in pyproject.toml with project section', async () => {
+      // Mock the TOML parse and stringify
+      const updatedData = JSON.parse(JSON.stringify(mockPyprojectData));
+      updatedData.project.version = newVersion;
 
-  //   const setupPyContent = `from setuptools import setup
+      toml.parse.mockReturnValue(updatedData);
+      toml.stringify.mockReturnValue(`[project]\nname = "${projectName}"\nversion = "${newVersion}"\n`);
 
-  // setup(
-  //     name="test-project",
-  //     version="${oldVersion}",
-  //     # ...
-  // )`;
+      // Reset all mock implementations first
+      vi.clearAllMocks();
 
-  //   const setupCfgContent = `[metadata]
-  // name = test-project
-  // version = ${oldVersion}`;
+      // Setup only the relevant paths
+      fs.pathExists.mockImplementation((path) => {
+        return Promise.resolve(path.endsWith('pyproject.toml'));
+      });
+      fs.readFile.mockResolvedValue(pyprojectContent);
 
-  //   const initPyContent = `"""Test module."""
+      const result = await python.updateVersion({projectPath, newVersion});
 
-  // __version__ = "${oldVersion}"
-  // `;
+      expect(result).toBe(true);
+      expect(fs.readFile).toHaveBeenCalledWith(`${projectPath}/pyproject.toml`, 'utf8');
+      expect(toml.parse).toHaveBeenCalled();
 
-  //   beforeAll(() => {
-  //     vi.clearAllMocks();
+      // Only check if the first call to writeFile includes the expected file path and new version
+      expect(fs.writeFile.mock.calls[0][0]).toBe(`${projectPath}/pyproject.toml`);
+      expect(fs.writeFile.mock.calls[0][1]).toContain(newVersion);
 
-  //     // Setup fs mocks
-  //     fs.writeFile.mockResolvedValue(undefined);
-  //     fs.readFile.mockImplementation((path) => {
-  //       if (path.includes("pyproject.toml")) {
-  //         return Promise.resolve(mockPyprojectContent);
-  //       }
-  //       if (path.includes("setup.py")) {
-  //         return Promise.resolve(setupPyContent);
-  //       }
-  //       if (path.includes("setup.cfg")) {
-  //         return Promise.resolve(setupCfgContent);
-  //       }
-  //       if (path.includes("__init__.py")) {
-  //         return Promise.resolve(initPyContent);
-  //       }
-  //       return Promise.reject(new Error("File not found"));
-  //     });
+      expect(logging.success).toHaveBeenCalled();
+    });
 
-  //     // Mock TOML parser
-  //     toml.parse.mockReturnValue({ ...mockPyprojectData });
-  //     toml.stringify.mockImplementation((data) => JSON.stringify(data, null, 2));
-  //   });
+    it('updates version in pyproject.toml with poetry section', async () => {
+      // Mock the TOML parse and stringify
+      const updatedData = JSON.parse(JSON.stringify(mockPyprojectPoetryData));
+      updatedData.tool.poetry.version = newVersion;
 
-  //   describe("updateVersion()", () => {
-  //     it("updates version in pyproject.toml using TOML parser", async () => {
-  //       fs.pathExists.mockImplementation((path) => {
-  //         return Promise.resolve(path.endsWith("pyproject.toml"));
-  //       });
+      toml.parse.mockReturnValue(updatedData);
+      toml.stringify.mockReturnValue(`[tool.poetry]\nname = "${projectName}"\nversion = "${newVersion}"\n`);
 
-  //       const result = await python.updateVersion({ projectPath, newVersion });
+      // Reset all mock implementations first
+      vi.clearAllMocks();
 
-  //       expect(result).toBe(true);
-  //       expect(toml.parse).toHaveBeenCalledWith(mockPyprojectContent);
-  //       expect(toml.stringify).toHaveBeenCalledWith(
-  //         expect.objectContaining({
-  //           tool: {
-  //             poetry: {
-  //               name: "test-project",
-  //               version: newVersion
-  //             }
-  //           }
-  //         })
-  //       );
-  //       expect(fs.writeFile).toHaveBeenCalled();
-  //       expect(logging.success).toHaveBeenCalledWith(expect.stringContaining(newVersion));
-  //     });
+      // Setup only the relevant paths
+      fs.pathExists.mockImplementation((path) => {
+        return Promise.resolve(path.endsWith('pyproject.toml'));
+      });
+      fs.readFile.mockResolvedValue(pyprojectPoetryContent);
 
-  //     it("falls back to regex if TOML parsing fails", async () => {
-  //       fs.pathExists.mockImplementation((path) => {
-  //         return Promise.resolve(path.endsWith("pyproject.toml"));
-  //       });
+      const result = await python.updateVersion({projectPath, newVersion});
 
-  //       // Make TOML parser throw an error
-  //       toml.parse.mockImplementationOnce(() => {
-  //         throw new Error("TOML parsing error");
-  //       });
+      expect(result).toBe(true);
+      expect(fs.readFile).toHaveBeenCalledWith(`${projectPath}/pyproject.toml`, 'utf8');
+      expect(toml.parse).toHaveBeenCalled();
 
-  //       const result = await python.updateVersion({ projectPath, newVersion });
+      // Only check if the first call to writeFile includes the expected file path and new version
+      expect(fs.writeFile.mock.calls[0][0]).toBe(`${projectPath}/pyproject.toml`);
+      expect(fs.writeFile.mock.calls[0][1]).toContain(newVersion);
 
-  //       expect(result).toBe(true);
-  //       expect(logging.error).toHaveBeenCalled();
-  //       expect(fs.writeFile).toHaveBeenCalled();
-  //     });
+      expect(logging.success).toHaveBeenCalled();
+    });
 
-  //     it("updates version in setup.py", async () => {
-  //       fs.pathExists.mockImplementation((path) => {
-  //         return Promise.resolve(path.endsWith("setup.py"));
-  //       });
+    it('falls back to regex when TOML parsing fails', async () => {
+      // Make TOML parse fail
+      toml.parse.mockImplementation(() => {
+        throw new Error('TOML parse error');
+      });
 
-  //       const result = await python.updateVersion({ projectPath, newVersion });
+      // Reset all mock implementations first
+      vi.clearAllMocks();
 
-  //       expect(result).toBe(true);
-  //       expect(fs.readFile).toHaveBeenCalledWith(`${projectPath}/setup.py`, "utf8");
-  //       expect(fs.writeFile).toHaveBeenCalledWith(
-  //         `${projectPath}/setup.py`,
-  //         expect.stringContaining(`version="${newVersion}"`)
-  //       );
-  //       expect(logging.success).toHaveBeenCalledWith(expect.stringContaining(newVersion));
-  //     });
+      fs.pathExists.mockImplementation((path) => {
+        return Promise.resolve(path.endsWith('pyproject.toml'));
+      });
+      fs.readFile.mockResolvedValue(pyprojectContent);
+      fs.writeFile.mockResolvedValue(undefined);
 
-  //     it("updates version in setup.cfg", async () => {
-  //       fs.pathExists.mockImplementation((path) => {
-  //         return Promise.resolve(path.endsWith("setup.cfg"));
-  //       });
+      const result = await python.updateVersion({projectPath, newVersion});
 
-  //       const result = await python.updateVersion({ projectPath, newVersion });
+      expect(result).toBe(true);
+      expect(fs.readFile).toHaveBeenCalledWith(`${projectPath}/pyproject.toml`, 'utf8');
+      expect(fs.writeFile).toHaveBeenCalled();
+      expect(logging.success).toHaveBeenCalledWith(expect.stringContaining('using regex'));
+      expect(logging.error).toHaveBeenCalled();
+    });
 
-  //       expect(result).toBe(true);
-  //       expect(fs.readFile).toHaveBeenCalledWith(`${projectPath}/setup.cfg`, "utf8");
-  //       expect(fs.writeFile).toHaveBeenCalledWith(
-  //         `${projectPath}/setup.cfg`,
-  //         expect.stringContaining(`version = ${newVersion}`)
-  //       );
-  //       expect(logging.success).toHaveBeenCalledWith(expect.stringContaining(newVersion));
-  //     });
+    it('updates version in setup.py', async () => {
+      const setupPyContent = `setup(\n  name="${projectName}",\n  version="${oldVersion}"\n)`;
 
-  //     it("updates version in __init__.py", async () => {
-  //       fs.pathExists.mockImplementation((path) => {
-  //         return Promise.resolve(path.endsWith("__init__.py"));
-  //       });
+      // Reset all mock implementations first
+      vi.clearAllMocks();
 
-  //       const result = await python.updateVersion({ projectPath, newVersion });
+      fs.pathExists.mockImplementation((path) => {
+        if (path.includes('pyproject.toml')) return Promise.resolve(false);
+        if (path.includes('setup.py')) return Promise.resolve(true);
+        return Promise.resolve(false);
+      });
+      fs.readFile.mockResolvedValue(setupPyContent);
 
-  //       expect(result).toBe(true);
-  //       expect(fs.readFile).toHaveBeenCalledWith(`${projectPath}/__init__.py`, "utf8");
-  //       expect(fs.writeFile).toHaveBeenCalledWith(
-  //         `${projectPath}/__init__.py`,
-  //         expect.stringContaining(`__version__ = "${newVersion}"`)
-  //       );
-  //       expect(logging.success).toHaveBeenCalledWith(expect.stringContaining(newVersion));
-  //     });
+      const result = await python.updateVersion({projectPath, newVersion});
 
-  //     it("creates version file when no config files exist", async () => {
-  //       fs.pathExists.mockResolvedValue(false);
+      expect(result).toBe(true);
+      expect(fs.readFile).toHaveBeenCalledWith(`${projectPath}/setup.py`, 'utf8');
 
-  //       const result = await python.updateVersion({ projectPath, newVersion });
+      // Verify the first write call is to setup.py and includes the new version
+      expect(fs.writeFile.mock.calls[0][0]).toBe(`${projectPath}/setup.py`);
+      expect(fs.writeFile.mock.calls[0][1]).toContain(`version="${newVersion}"`);
 
-  //       expect(result).toBe(true);
-  //       expect(fs.writeFile).toHaveBeenCalledWith(
-  //         `${projectPath}/version`,
-  //         newVersion,
-  //         "utf8"
-  //       );
-  //       expect(logging.success).toHaveBeenCalledWith(expect.stringContaining(newVersion));
-  //     });
-  //   });
+      expect(logging.success).toHaveBeenCalled();
+    });
+
+    it('updates version in setup.cfg', async () => {
+      const setupCfgContent = `[metadata]\nname = ${projectName}\nversion = ${oldVersion}`;
+
+      // Reset all mock implementations first
+      vi.clearAllMocks();
+
+      fs.pathExists.mockImplementation((path) => {
+        if (path.includes('pyproject.toml')) return Promise.resolve(false);
+        if (path.includes('setup.py')) return Promise.resolve(false);
+        if (path.includes('setup.cfg')) return Promise.resolve(true);
+        return Promise.resolve(false);
+      });
+      fs.readFile.mockResolvedValue(setupCfgContent);
+
+      const result = await python.updateVersion({projectPath, newVersion});
+
+      expect(result).toBe(true);
+      expect(fs.readFile).toHaveBeenCalledWith(`${projectPath}/setup.cfg`, 'utf8');
+
+      // Verify the first write call is to setup.cfg and includes the new version
+      expect(fs.writeFile.mock.calls[0][0]).toBe(`${projectPath}/setup.cfg`);
+      expect(fs.writeFile.mock.calls[0][1]).toContain(`version = ${newVersion}`);
+
+      expect(logging.success).toHaveBeenCalled();
+    });
+
+    it('updates version in __init__.py', async () => {
+      const initPyContent = `__version__ = "${oldVersion}"\n`;
+
+      // Reset all mock implementations first
+      vi.clearAllMocks();
+
+      // Only allow __init__.py to exist
+      fs.pathExists.mockImplementation((path) => {
+        if (path.includes('__init__.py')) return Promise.resolve(true);
+        return Promise.resolve(false);
+      });
+      fs.readFile.mockResolvedValue(initPyContent);
+
+      const result = await python.updateVersion({projectPath, newVersion});
+
+      expect(result).toBe(true);
+
+      // Check that at least one of the writeFile calls is for a __init__.py file
+      // and contains the new version
+      let foundInitPyUpdate = false;
+      for (const call of fs.writeFile.mock.calls) {
+        if (call[0].includes('__init__.py') && call[1].includes(`__version__ = "${newVersion}"`)) {
+          foundInitPyUpdate = true;
+          break;
+        }
+      }
+      expect(foundInitPyUpdate).toBe(true);
+
+      expect(logging.success).toHaveBeenCalled();
+    });
+
+    it('creates version file when no config files exist', async () => {
+      // Reset all mock implementations first
+      vi.clearAllMocks();
+
+      fs.pathExists.mockResolvedValue(false);
+
+      const result = await python.updateVersion({projectPath, newVersion});
+
+      expect(result).toBe(true);
+      expect(fs.writeFile).toHaveBeenCalledWith(`${projectPath}/version`, newVersion, 'utf8');
+      expect(logging.success).toHaveBeenCalledWith(expect.stringContaining('Created version file'));
+    });
+
+    it('handles errors gracefully', async () => {
+      // Reset all mock implementations first
+      vi.clearAllMocks();
+
+      // Setup for error handling test - let Python module create a fallback version file
+      fs.pathExists.mockImplementation((path) => {
+        if (path.includes('setup.py')) return Promise.resolve(true);
+        return Promise.resolve(false);
+      });
+      fs.readFile.mockRejectedValue(new Error('Test error'));
+
+      // The Python module doesn't actually reject in this case, it logs error and tries alternatives
+      const result = await python.updateVersion({projectPath, newVersion});
+      expect(result).toBe(true);
+      expect(logging.error).toHaveBeenCalled();
+    });
+  });
 });

@@ -6,6 +6,44 @@
 import fs from 'fs-extra';
 import path from 'path';
 import * as logging from '../utils/logging.js';
+import {GO_VERSION_FILES} from '../core/constants.js';
+
+/**
+ * Update version in a Go source file
+ *
+ * @param {string} filePath - Path to the file
+ * @param {string} content - File content
+ * @param {string} newVersion - New version to set
+ * @returns {Promise<boolean>} - True if the file was updated
+ */
+const updateGoSourceFile = async (filePath, content, newVersion) => {
+  let updated = false;
+  let updatedContent = content;
+
+  // Various patterns for defining version constants in Go
+  const patterns = [
+    [/(const|var)\s+Version\s*=\s*["']([^"']*)["']/g, `$1 Version = "${newVersion}"`],
+    [/(const|var)\s+version\s*=\s*["']([^"']*)["']/g, `$1 version = "${newVersion}"`],
+    [
+      /func\s+Version\(\)\s*string\s*{\s*return\s*["']([^"']*)["']\s*}/g,
+      `func Version() string { return "${newVersion}" }`,
+    ],
+  ];
+
+  for (const [pattern, replacement] of patterns) {
+    if (pattern.test(updatedContent)) {
+      updatedContent = updatedContent.replace(pattern, replacement);
+      updated = true;
+    }
+  }
+
+  if (updated) {
+    await fs.writeFile(filePath, updatedContent, 'utf8');
+    return true;
+  }
+
+  return false;
+};
 
 /**
  * Update version in a Go project
@@ -22,7 +60,7 @@ export const updateVersion = async ({projectPath, newVersion}) => {
     let updated = false;
 
     // Check if go.mod exists and update version if it contains version line
-    const goModPath = path.join(projectPath, 'go.mod');
+    const goModPath = path.join(projectPath, GO_VERSION_FILES[0]); // go.mod
     if (await fs.pathExists(goModPath)) {
       try {
         const content = await fs.readFile(goModPath, 'utf8');
@@ -42,43 +80,18 @@ export const updateVersion = async ({projectPath, newVersion}) => {
       }
     }
 
-    // Common version file patterns in Go projects
-    const potentialFiles = [
-      path.join(projectPath, 'version.go'),
-      path.join(projectPath, 'pkg/version/version.go'),
-      path.join(projectPath, 'internal/version/version.go'),
-      path.join(projectPath, 'cmd/version.go'),
-    ];
-
-    for (const file of potentialFiles) {
-      if (await fs.pathExists(file)) {
+    // Check and update version.go files in various locations
+    for (const file of GO_VERSION_FILES.slice(1, -1)) {
+      // Skip go.mod and plain version file
+      const filePath = path.join(projectPath, file);
+      if (await fs.pathExists(filePath)) {
         try {
-          const content = await fs.readFile(file, 'utf8');
+          const content = await fs.readFile(filePath, 'utf8');
 
           // Look for version constants
           if (content.includes('Version') || content.includes('version')) {
-            let updatedContent = content;
-
-            // Various patterns for defining version constants in Go
-            updatedContent = updatedContent.replace(
-              /(const|var)\s+Version\s*=\s*["']([^"']*)["']/g,
-              `$1 Version = "${newVersion}"`,
-            );
-
-            updatedContent = updatedContent.replace(
-              /(const|var)\s+version\s*=\s*["']([^"']*)["']/g,
-              `$1 version = "${newVersion}"`,
-            );
-
-            // Version function that returns a string constant
-            updatedContent = updatedContent.replace(
-              /func\s+Version\(\)\s*string\s*{\s*return\s*["']([^"']*)["']\s*}/g,
-              `func Version() string { return "${newVersion}" }`,
-            );
-
-            if (updatedContent !== content) {
-              await fs.writeFile(file, updatedContent, 'utf8');
-              logging.success(`Updated version in ${path.basename(file)} to ${newVersion}`);
+            const fileUpdated = await updateGoSourceFile(filePath, content, newVersion);
+            if (fileUpdated) {
               updated = true;
             }
           }
@@ -88,15 +101,17 @@ export const updateVersion = async ({projectPath, newVersion}) => {
       }
     }
 
-    // If no files were updated, create a version.txt file
+    // If no files were updated, create or update a version file
     if (!updated) {
       try {
-        const versionPath = path.join(projectPath, 'version');
+        const versionPath = path.join(projectPath, GO_VERSION_FILES[GO_VERSION_FILES.length - 1]); // 'version'
         await fs.writeFile(versionPath, newVersion, 'utf8');
-        logging.success(`Created version file with version ${newVersion}`);
+        logging.success(
+          `${(await fs.pathExists(versionPath)) ? 'Updated' : 'Created'} version file with version ${newVersion}`,
+        );
         updated = true;
       } catch (error) {
-        logging.error('Error creating version file:', error);
+        logging.error('Error creating/updating version file:', error);
         throw error; // We really need this to succeed if nothing else worked
       }
     }

@@ -1,89 +1,96 @@
 import fs from 'fs-extra';
-import {describe, it, expect, beforeEach as beforeAll, vi, afterAll, beforeEach} from 'vitest';
-import * as rust from './rust.js';
 import toml from '@iarna/toml';
 import {execa} from 'execa';
-
+import {describe, it, expect, beforeAll, vi, afterAll} from 'vitest';
+import * as rust from './rust.js';
 import {
-  folder,
-  mockConsole,
-  unMockConsole,
-  mockConfigFiles,
-  mockCargoData,
-  name,
-  version,
+  projectPath,
+  oldVersion,
+  projectName,
   cargoContent,
-} from '../vitest/index.js';
+  mockCargoData,
+} from '../vitest/setup.detect-update.tests.js';
+
+// Define RUST_VERSION_FILES constant
+const RUST_VERSION_FILES = ['Cargo.toml'];
+
+// Mock the dependencies
+vi.mock('fs-extra');
+vi.mock('@iarna/toml');
+vi.mock('execa');
 
 describe('detect/rust.js module', () => {
   beforeAll(() => {
     vi.clearAllMocks();
-    mockConsole(['error']);
-    mockConfigFiles();
-    toml.parse.mockImplementation(() => mockCargoData);
+
+    // Mock cargo command output
+    execa.mockResolvedValue({
+      stdout: `https://github.com/username/${projectName}#${projectName}@${oldVersion}`,
+    });
   });
 
   afterAll(() => {
-    unMockConsole(['error']);
     vi.restoreAllMocks();
   });
 
-  beforeEach(() => {
-    fs.existingFile = 'Cargo.toml';
-    // fs.existingFile = 'unknown';
-  });
-
   describe('detectVersion()', () => {
-    it('detects version from Cargo.toml using TOML parser', async () => {
-      await expect(rust.detectVersion('test')).resolves.toEqual(version);
-      expect(toml.parse).toHaveBeenCalledWith(cargoContent);
+    it('detects version from Cargo.toml', async () => {
+      fs.pathExists.mockResolvedValue(true);
+      fs.readFile.mockResolvedValue(cargoContent);
+      toml.parse.mockReturnValue(mockCargoData);
+
+      await expect(rust.detectVersion(projectPath)).resolves.toEqual(oldVersion);
+      expect(fs.readFile).toHaveBeenCalledWith(`${projectPath}/Cargo.toml`, 'utf8');
+      expect(toml.parse).toHaveBeenCalled();
     });
 
-    it('detects version from Cargo.toml using cargo command', async () => {
+    it('detects version using cargo pkgid when Cargo.toml parsing fails', async () => {
+      fs.pathExists.mockResolvedValue(true);
+      fs.readFile.mockResolvedValue(cargoContent);
       toml.parse.mockImplementation(() => {
-        throw new Error('TOML parsing error');
+        throw new Error('TOML parse error');
       });
 
-      const execaMock = execa.mockRestore().mockResolvedValue({
-        stdout: `${name}@${version}`,
-      });
-
-      await expect(rust.detectVersion(folder)).resolves.toEqual(version);
-
-      execaMock.mockRestore();
+      await expect(rust.detectVersion(projectPath)).resolves.toEqual(oldVersion);
+      expect(execa).toHaveBeenCalledWith('cargo', ['pkgid'], {cwd: projectPath});
     });
 
-    it('throws error when Cargo.toml is missing', async () => {
-      fs.existingFile = 'unknown';
+    it('detects version using cargo pkgid when Cargo.toml is missing version', async () => {
+      fs.pathExists.mockResolvedValue(true);
+      fs.readFile.mockResolvedValue(cargoContent);
+      toml.parse.mockReturnValue({package: {}}); // No version property
 
-      await expect(rust.detectVersion(folder)).rejects.toThrow('Could not detect version in Rust project');
+      await expect(rust.detectVersion(projectPath)).resolves.toEqual(oldVersion);
+      expect(execa).toHaveBeenCalledWith('cargo', ['pkgid'], {cwd: projectPath});
     });
 
-    it('handles TOML parsing errors gracefully', async () => {
-      toml.parse.mockImplementation(() => {
-        throw new Error('TOML parsing error');
-      });
+    it('throws error when no version could be found', async () => {
+      fs.pathExists.mockResolvedValue(false);
+      execa.mockRejectedValue(new Error('Cargo error'));
 
-      const execaMock = execa.mockRestore().mockResolvedValue({
-        stdout: '',
-      });
-
-      await expect(rust.detectVersion(folder)).rejects.toThrow('Could not detect version in Rust project');
-
-      execaMock.mockRestore();
+      await expect(rust.detectVersion(projectPath)).rejects.toThrow('Could not detect version in Rust project');
     });
   });
 
   describe('detectName()', () => {
-    it('detects name from Cargo.toml using TOML parser', async () => {
-      await expect(rust.detectName(folder)).resolves.toEqual(name);
-      expect(toml.parse).toHaveBeenCalledWith(cargoContent);
+    it('detects name from Cargo.toml', async () => {
+      fs.pathExists.mockResolvedValue(true);
+      fs.readFile.mockResolvedValue(cargoContent);
+      toml.parse.mockReturnValue(mockCargoData);
+
+      await expect(rust.detectName(projectPath)).resolves.toEqual(projectName);
+      expect(fs.readFile).toHaveBeenCalledWith(`${projectPath}/Cargo.toml`, 'utf8');
+      expect(toml.parse).toHaveBeenCalled();
     });
 
-    it('returns directory name when Cargo.toml is missing', async () => {
-      fs.existingFile = 'unknown';
+    it('returns directory name when Cargo.toml parsing fails', async () => {
+      fs.pathExists.mockResolvedValue(true);
+      fs.readFile.mockResolvedValue(cargoContent);
+      toml.parse.mockImplementation(() => {
+        throw new Error('TOML parse error');
+      });
 
-      await expect(rust.detectName(folder)).resolves.toEqual(folder);
+      await expect(rust.detectName(projectPath)).resolves.toEqual(projectPath.split('/').pop());
     });
   });
 });

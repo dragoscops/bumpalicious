@@ -1,127 +1,109 @@
 import fs from 'fs-extra';
-import {describe, it, expect, beforeEach as beforeAll, vi} from 'vitest';
+import toml from '@iarna/toml';
+import {describe, it, expect, beforeAll, vi, afterAll} from 'vitest';
 import * as rust from './rust.js';
 import * as logging from '../utils/logging.js';
-import toml from '@iarna/toml';
+import {
+  projectPath,
+  newVersion,
+  oldVersion,
+  projectName,
+  cargoContent,
+  mockCargoData,
+  mockConsole,
+  unMockConsole,
+} from '../vitest/setup.detect-update.tests.js';
 
-// Mock logging
-vi.mock('../utils/logging.js', () => ({
-  success: vi.fn(),
-  error: vi.fn(),
-}));
+// Define RUST_VERSION_FILES constant
+const RUST_VERSION_FILES = ['Cargo.toml'];
 
 describe('update/rust.js module', () => {
-  it('true', () => {
-    expect(true).toBe(true);
+  beforeAll(() => {
+    vi.clearAllMocks();
+    mockConsole(['error', 'success']);
   });
-  //   const projectPath = "/test/project";
-  //   const newVersion = "1.2.3";
-  //   const oldVersion = "1.0.0";
 
-  //   // Mock Cargo.toml data
-  //   const mockCargoData = {
-  //     package: {
-  //       name: "example-crate",
-  //       version: oldVersion,
-  //       edition: "2021"
-  //     },
-  //     dependencies: {
-  //       serde: "1.0"
-  //     }
-  //   };
+  afterAll(() => {
+    vi.restoreAllMocks();
+    unMockConsole(['error', 'success']);
+  });
 
-  //   const cargoTomlContent = `[package]
-  // name = "example-crate"
-  // version = "${oldVersion}"
-  // edition = "2021"
+  describe('updateVersion()', () => {
+    it('updates version in Cargo.toml', async () => {
+      // Setup the mocks
+      const updatedData = JSON.parse(JSON.stringify(mockCargoData));
+      updatedData.package.version = newVersion;
 
-  // [dependencies]
-  // serde = "1.0"`;
+      toml.parse.mockReturnValue(JSON.parse(JSON.stringify(mockCargoData)));
+      toml.stringify.mockReturnValue(`[package]\nname = "${projectName}"\nversion = "${newVersion}"\n`);
 
-  //   beforeAll(() => {
-  //     vi.clearAllMocks();
+      // Reset all mock implementations
+      vi.clearAllMocks();
 
-  //     // Setup fs mocks
-  //     fs.writeFile.mockResolvedValue(undefined);
-  //     fs.readFile.mockImplementation((path) => {
-  //       if (path.includes("Cargo.toml")) {
-  //         return Promise.resolve(cargoTomlContent);
-  //       }
-  //       return Promise.reject(new Error("File not found"));
-  //     });
+      // Setup file mocks
+      fs.pathExists.mockResolvedValue(true);
+      fs.readFile.mockResolvedValue(cargoContent);
 
-  //     // Mock TOML parser
-  //     toml.parse.mockReturnValue({ ...mockCargoData });
-  //     toml.stringify.mockImplementation((data) => JSON.stringify(data, null, 2));
-  //   });
+      const result = await rust.updateVersion({projectPath, newVersion});
 
-  //   describe("updateVersion()", () => {
-  //     it("updates version in Cargo.toml using TOML parser", async () => {
-  //       fs.pathExists.mockImplementation((path) => {
-  //         return Promise.resolve(path.endsWith("Cargo.toml"));
-  //       });
+      expect(result).toBe(true);
+      expect(fs.readFile).toHaveBeenCalledWith(`${projectPath}/Cargo.toml`, 'utf8');
+      expect(toml.parse).toHaveBeenCalledWith(cargoContent);
 
-  //       const result = await rust.updateVersion({ projectPath, newVersion });
+      // Verify the file was updated with the new version
+      expect(fs.writeFile.mock.calls[0][0]).toBe(`${projectPath}/Cargo.toml`);
+      expect(fs.writeFile.mock.calls[0][1]).toContain(newVersion);
 
-  //       expect(result).toBe(true);
-  //       expect(toml.parse).toHaveBeenCalledWith(cargoTomlContent);
-  //       expect(toml.stringify).toHaveBeenCalledWith(
-  //         expect.objectContaining({
-  //           package: expect.objectContaining({
-  //             version: newVersion
-  //           })
-  //         })
-  //       );
-  //       expect(fs.writeFile).toHaveBeenCalled();
-  //       expect(logging.success).toHaveBeenCalledWith(expect.stringContaining(newVersion));
-  //     });
+      expect(logging.success).toHaveBeenCalledWith(expect.stringContaining(newVersion));
+    });
 
-  //     it("falls back to regex if TOML parsing fails", async () => {
-  //       fs.pathExists.mockImplementation((path) => {
-  //         return Promise.resolve(path.endsWith("Cargo.toml"));
-  //       });
+    it('falls back to regex when TOML parsing fails', async () => {
+      // Make TOML parse fail
+      toml.parse.mockImplementation(() => {
+        throw new Error('TOML parse error');
+      });
 
-  //       // Make TOML parser throw an error
-  //       toml.parse.mockImplementationOnce(() => {
-  //         throw new Error("TOML parsing error");
-  //       });
+      // Reset all mock implementations
+      vi.clearAllMocks();
 
-  //       const result = await rust.updateVersion({ projectPath, newVersion });
+      fs.pathExists.mockResolvedValue(true);
+      fs.readFile.mockResolvedValue(cargoContent);
+      fs.writeFile.mockResolvedValue(undefined);
 
-  //       expect(result).toBe(true);
-  //       expect(logging.error).toHaveBeenCalled();
-  //       expect(fs.writeFile).toHaveBeenCalledWith(
-  //         `${projectPath}/Cargo.toml`,
-  //         expect.stringContaining(`version = "${newVersion}"`),
-  //         "utf8"
-  //       );
-  //     });
+      const result = await rust.updateVersion({projectPath, newVersion});
 
-  //     it("creates version file when no Cargo.toml exists", async () => {
-  //       fs.pathExists.mockResolvedValue(false);
+      expect(result).toBe(true);
+      expect(fs.readFile).toHaveBeenCalledWith(`${projectPath}/Cargo.toml`, 'utf8');
+      expect(fs.writeFile).toHaveBeenCalled();
+      expect(logging.success).toHaveBeenCalledWith(expect.stringContaining('using regex'));
+      expect(logging.error).toHaveBeenCalled();
+    });
 
-  //       const result = await rust.updateVersion({ projectPath, newVersion });
+    it('creates version file when Cargo.toml does not exist', async () => {
+      // Reset all mock implementations
+      vi.clearAllMocks();
 
-  //       expect(result).toBe(true);
-  //       expect(fs.writeFile).toHaveBeenCalledWith(
-  //         `${projectPath}/version`,
-  //         newVersion,
-  //         "utf8"
-  //       );
-  //       expect(logging.success).toHaveBeenCalledWith(expect.stringContaining(newVersion));
-  //     });
+      fs.pathExists.mockResolvedValue(false);
 
-  //     it("handles errors gracefully", async () => {
-  //       fs.pathExists.mockImplementation((path) => {
-  //         return Promise.resolve(path.endsWith("Cargo.toml"));
-  //       });
+      const result = await rust.updateVersion({projectPath, newVersion});
 
-  //       fs.readFile.mockRejectedValue(new Error("Test error"));
+      expect(result).toBe(true);
+      expect(fs.writeFile).toHaveBeenCalledWith(`${projectPath}/version`, newVersion, 'utf8');
+      expect(logging.success).toHaveBeenCalledWith(expect.stringContaining('Created version file'));
+    });
 
-  //       await expect(rust.updateVersion({ projectPath, newVersion }))
-  //         .resolves.toBe(true); // Should create version file as fallback
+    it('handles errors gracefully', async () => {
+      // Reset all mock implementations
+      vi.clearAllMocks();
 
-  //       expect(logging.error).toHaveBeenCalled();
-  //     });
-  //   });
+      fs.pathExists.mockResolvedValue(true);
+      fs.readFile.mockRejectedValue(new Error('Test error'));
+
+      // The Rust module handles errors and creates a version file as fallback
+      const result = await rust.updateVersion({projectPath, newVersion});
+
+      expect(result).toBe(true);
+      expect(logging.error).toHaveBeenCalled();
+    });
+  });
 });

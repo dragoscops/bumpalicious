@@ -19,8 +19,8 @@ vi.mock('fs-extra', async () => {
     pathExists: vi.fn().mockImplementation((path) => Promise.resolve(path.endsWith(def.existingFile))),
     readJson: vi.fn(),
     readFile: vi.fn(),
-    writeJson: vi.fn(),
-    writeFile: vi.fn(),
+    writeJson: vi.fn().mockResolvedValue(undefined),
+    writeFile: vi.fn().mockResolvedValue(undefined),
 
     existingFile: '',
   };

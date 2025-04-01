@@ -1,8 +1,17 @@
 import {execa} from 'execa';
-import {describe, it, expect, beforeEach, vi, afterAll} from 'vitest';
+import {describe, it, expect, beforeEach, vi, afterAll, beforeAll} from 'vitest';
 
 import * as git from './git.js';
-import {mockConsole, unMockConsole} from '../vitest/index.js';
+import * as logging from './logging.js';
+import {mockConsole, unMockConsole} from '../vitest/setup.detect-update.tests.js';
+
+// Mock the logging module
+vi.mock('./logging.js', () => ({
+  success: vi.fn(),
+  error: vi.fn(),
+  warning: vi.fn(),
+  info: vi.fn(),
+}));
 
 describe('git.js module', () => {
   beforeEach(() => {

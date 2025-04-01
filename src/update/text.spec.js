@@ -1,94 +1,103 @@
 import fs from 'fs-extra';
-import {describe, it, expect, beforeEach as beforeAll, vi} from 'vitest';
+import path from 'path';
+import {describe, it, expect, beforeAll, vi, afterAll} from 'vitest';
 import * as text from './text.js';
 import * as logging from '../utils/logging.js';
+import {projectPath, newVersion, oldVersion, TEXT_VERSION_FILES} from '../vitest/setup.detect-update.tests.js';
 
-// Mock logging
+// Mock the dependencies
+vi.mock('fs-extra');
+vi.mock('path', () => {
+  return {
+    default: {
+      join: vi.fn((dir, file) => `${dir}/${file}`),
+      basename: vi.fn((p) => p.split('/').pop()),
+      normalize: vi.fn((p) => p),
+    },
+    join: vi.fn((dir, file) => `${dir}/${file}`),
+    basename: vi.fn((p) => p.split('/').pop()),
+    normalize: vi.fn((p) => p),
+  };
+});
 vi.mock('../utils/logging.js', () => ({
   success: vi.fn(),
   error: vi.fn(),
 }));
 
 describe('update/text.js module', () => {
-  it('true', () => {
-    expect(true).toBe(true);
+  beforeAll(() => {
+    vi.clearAllMocks();
   });
-  //   const projectPath = "/test/project";
-  //   const newVersion = "1.2.3";
-  //   const oldVersion = "1.0.0";
 
-  //   beforeAll(() => {
-  //     vi.clearAllMocks();
+  afterAll(() => {
+    vi.restoreAllMocks();
+  });
 
-  //     // Setup fs mocks
-  //     fs.writeFile.mockResolvedValue(undefined);
-  //     fs.readFile.mockResolvedValue(oldVersion);
-  //   });
+  describe('updateVersion()', () => {
+    it('updates existing version file', async () => {
+      // Reset all mock implementations
+      vi.clearAllMocks();
 
-  //   describe("updateVersion()", () => {
-  //     it("updates existing version file", async () => {
-  //       fs.pathExists.mockImplementation((path) => {
-  //         return Promise.resolve(path.endsWith("version"));
-  //       });
+      // Setup for this specific test
+      fs.pathExists.mockImplementation((path) => {
+        return Promise.resolve(path.endsWith('version'));
+      });
 
-  //       const result = await text.updateVersion({ projectPath, newVersion });
+      const result = await text.updateVersion({projectPath, newVersion});
 
-  //       expect(result).toBe(true);
-  //       expect(fs.writeFile).toHaveBeenCalledWith(
-  //         `${projectPath}/version`,
-  //         newVersion,
-  //         "utf8"
-  //       );
-  //       expect(logging.success).toHaveBeenCalledWith(expect.stringContaining(newVersion));
-  //     });
+      expect(result).toBe(true);
+      expect(fs.writeFile).toHaveBeenCalledWith(`${projectPath}/version`, newVersion, 'utf8');
+      expect(logging.success).toHaveBeenCalledWith(expect.stringContaining(newVersion));
+    });
 
-  //     it("updates existing VERSION.txt file", async () => {
-  //       fs.pathExists.mockImplementation((path) => {
-  //         return Promise.resolve(path.endsWith("VERSION.txt"));
-  //       });
+    it('updates VERSION.txt file when found', async () => {
+      // Reset all mock implementations
+      vi.clearAllMocks();
 
-  //       const result = await text.updateVersion({ projectPath, newVersion });
+      // Setup for this specific test
+      fs.pathExists.mockImplementation((path) => {
+        return Promise.resolve(
+          !path.endsWith('version') &&
+            !path.endsWith('VERSION') &&
+            !path.endsWith('version.txt') &&
+            path.endsWith('VERSION.txt'),
+        );
+      });
 
-  //       expect(result).toBe(true);
-  //       expect(fs.writeFile).toHaveBeenCalledWith(
-  //         `${projectPath}/VERSION.txt`,
-  //         newVersion,
-  //         "utf8"
-  //       );
-  //       expect(logging.success).toHaveBeenCalledWith(expect.stringContaining(newVersion));
-  //     });
+      const result = await text.updateVersion({projectPath, newVersion});
 
-  //     it("creates version file when no existing file is found", async () => {
-  //       fs.pathExists.mockResolvedValue(false);
+      expect(result).toBe(true);
+      expect(fs.writeFile).toHaveBeenCalledWith(`${projectPath}/VERSION.txt`, newVersion, 'utf8');
+      expect(logging.success).toHaveBeenCalledWith(expect.stringContaining(newVersion));
+    });
 
-  //       const result = await text.updateVersion({ projectPath, newVersion });
+    it('creates version file when none exists', async () => {
+      // Reset all mock implementations
+      vi.clearAllMocks();
 
-  //       expect(result).toBe(true);
-  //       expect(fs.writeFile).toHaveBeenCalledWith(
-  //         `${projectPath}/version`,
-  //         newVersion,
-  //         "utf8"
-  //       );
-  //       expect(logging.success).toHaveBeenCalledWith(expect.stringContaining(newVersion));
-  //     });
+      // Setup for this specific test - no version files exist
+      fs.pathExists.mockResolvedValue(false);
 
-  //     it("handles errors gracefully", async () => {
-  //       fs.pathExists.mockImplementation((path) => {
-  //         return Promise.resolve(path.endsWith("version"));
-  //       });
+      const result = await text.updateVersion({projectPath, newVersion});
 
-  //       fs.writeFile.mockRejectedValueOnce(new Error("Test error"));
+      expect(result).toBe(true);
+      expect(fs.writeFile).toHaveBeenCalledWith(`${projectPath}/version`, newVersion, 'utf8');
+      expect(logging.success).toHaveBeenCalledWith(expect.stringContaining('Created version file'));
+    });
 
-  //       await expect(text.updateVersion({ projectPath, newVersion }))
-  //         .resolves.toBe(true); // Should try other files
+    it('handles errors gracefully', async () => {
+      // Reset all mock implementations
+      vi.clearAllMocks();
 
-  //       expect(logging.error).toHaveBeenCalled();
-  //       // Should create version file as fallback
-  //       expect(fs.writeFile).toHaveBeenCalledWith(
-  //         `${projectPath}/version`,
-  //         newVersion,
-  //         "utf8"
-  //       );
-  //     });
-  //   });
+      // Setup for this specific test
+      fs.pathExists.mockImplementation((path) => {
+        return Promise.resolve(path.endsWith('version'));
+      });
+      fs.writeFile.mockRejectedValue(new Error('Test error'));
+
+      // Should throw an error when writing to an existing version file fails
+      await expect(text.updateVersion({projectPath, newVersion})).rejects.toThrow();
+      expect(logging.error).toHaveBeenCalled();
+    });
+  });
 });
