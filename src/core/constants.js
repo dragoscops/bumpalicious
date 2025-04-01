@@ -8,9 +8,18 @@ export const DENO_VERSION_FILES = ['deno.jsonc', 'deno.json', 'jsr.json', 'packa
  */
 export const GO_VERSION_FILES = [
   'go.mod',
-  'version.go',
   'pkg/version/version.go',
   'internal/version/version.go',
   'cmd/version.go',
-  'version',
+  'version.go',
 ];
+
+/**
+ * List of potential Node.js version files to check
+ */
+export const NODE_VERSION_FILES = DENO_VERSION_FILES.slice(2);
+
+/**
+ * List of potential Python version files to check
+ */
+export const PYTHON_VERSION_FILES = ['pyproject.toml', 'setup.py', 'setup.cfg', '__init__.py'];

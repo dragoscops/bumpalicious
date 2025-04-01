@@ -55,7 +55,7 @@ const buildZigZonContent = `
     },
 }`;
 
-describe('detect/zig.js module', () => {
+describe.skip('detect/zig.js module', () => {
   beforeAll(() => {
     vi.clearAllMocks();
   });

@@ -2,60 +2,23 @@ import fs from 'fs-extra';
 import {expect} from 'vitest';
 
 export const folder = 'test-project';
-export const projectName = 'project'; // Renamed from name to projectName
+export const projectNameValue = 'project'; // Renamed from name to projectName
 export const oldVersion = '1.7.3';
 export const projectPath = '/test/project';
 export const newVersion = '2.0.0';
 
-// // Node.js project constants
-// export const NODE_VERSION_FILES = ['jsr.json', 'package.json'];
-
-// // Python project constants
-// export const PYTHON_VERSION_FILES = ['pyproject.toml', 'setup.py', 'setup.cfg', '__init__.py'];
-
-/**
- * Mock JSON content for deno.jsonc, deno.json, jsr.json, package.json files.
- */
-
-export const denoOrJsrOrNodeJsonConfig = `{
-  "name": "${projectName}",
-  "version": "${oldVersion}"
-}`;
-
-const denoJsoncConfig = `{
-  // comment
-  "name": "${projectName}",
-  "version": "${oldVersion}"
-}`;
-
-/**
- * 
- */
-
-const goModContent = `module github.com/${projectName}
-go 1.16
-version = "${oldVersion}"`;
-
-const versionGoContent = `package version
-
-const Version = "${oldVersion}"
-
-func GetVersion() string {
-  return Version
-}`;
-
 export const pyprojectContent = `[project]
-name = "${projectName}"
+name = "${projectNameValue}"
 version = "${oldVersion}"`;
 
 export const pyprojectPoetryContent = `[tool.poetry]
-name = "${projectName}"
+name = "${projectNameValue}"
 version = "${oldVersion}"`;
 
 // Export these mock objects for use in tests
 export const mockPyprojectData = {
   project: {
-    name: projectName,
+    name: projectNameValue,
     version: oldVersion,
   },
 };
@@ -63,28 +26,28 @@ export const mockPyprojectData = {
 export const mockPyprojectPoetryData = {
   tool: {
     poetry: {
-      name: projectName,
+      name: projectNameValue,
       version: oldVersion,
     },
   },
 };
 
 const setupPyContent = `setup(
-  name="${projectName}",
+  name="${projectNameValue}",
   version="${oldVersion}"
 )`;
 
 const setupCfgContent = `[metadata]
-name = ${projectName}
+name = ${projectNameValue}
 version = ${oldVersion}`;
 
 export const cargoContent = `[package]
-name = "${projectName}"
+name = "${projectNameValue}"
 version = "${oldVersion}"`;
 
 export const mockCargoData = {
   package: {
-    name: projectName,
+    name: projectNameValue,
     version: oldVersion,
   },
 };
@@ -98,7 +61,7 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
     
-    const NAME = "${projectName}";
+    const NAME = "${projectNameValue}";
     const VERSION = "${oldVersion}";
     
     const exe = b.addExecutable(.{
@@ -114,7 +77,7 @@ pub fn build(b: *std.Build) void {
 
 const buildZigZonContent = `
 .{
-    .name = "${projectName}",
+    .name = "${projectNameValue}",
     .version = "${oldVersion}",
     .dependencies = .{
         .clap = .{
@@ -126,27 +89,42 @@ const buildZigZonContent = `
 
 export const ZIG_VERSION_FILES = ['build.zig', 'build.zig.zon'];
 
-export const DENO_VERSION_FILES = ['deno.jsonc', 'deno.json', 'jsr.json', 'package.json'];
-
 // Default project config objects for testing
 export const projectConfigs = {
   deno: {
-    name: projectName,
+    name: projectNameValue,
     version: oldVersion,
   },
 };
 
 const configMocks = {
   'Cargo.toml': cargoContent,
-  'deno.jsonc': denoJsoncConfig,
-  'deno.json': denoOrJsrOrNodeJsonConfig,
-  'jsr.json': denoOrJsrOrNodeJsonConfig,
-  'package.json': denoOrJsrOrNodeJsonConfig,
-  'go.mod': goModContent,
-  'version.go': versionGoContent,
-  'pkg/version/version.go': versionGoContent,
-  'internal/version/version.go': versionGoContent,
-  'cmd/version.go': versionGoContent,
+  'deno.jsonc':
+    '//comment \n' +
+    JSON.stringify({
+      name: projectNameValue,
+      version: oldVersion,
+    }),
+  'deno.json': JSON.stringify({
+    name: projectNameValue,
+    version: oldVersion,
+  }),
+  'jsr.json': JSON.stringify({
+    name: projectNameValue,
+    version: oldVersion,
+  }),
+  'package.json': JSON.stringify({
+    name: projectNameValue,
+    version: oldVersion,
+  }),
+  'go.mod': [`module github.com/${projectNameValue}`, `go 1.16`, `version = "${oldVersion}"`].join('\n'),
+  'version.go': [
+    'package version',
+    `const Version = "${oldVersion}"`,
+    'func GetVersion() string {',
+    '  return Version',
+    '}',
+  ].join('\n'),
   'pyproject.toml': pyprojectContent,
   'setup.py': setupPyContent,
   'setup.cfg': setupCfgContent,
@@ -199,22 +177,65 @@ export const unMockConsole = (keys = []) => {
   });
 };
 
+export const setupDetectVersionTest = ({detectVersion, configFile}) => {
+  describe(`when ${configFile} config file exists`, () => {
+    it(`will call fs.read* with correct arguments and return a version`, async () => {
+      fs.existingFile = configFile;
 
-export const setupDetectVersionTest = ({detectVersion}) => {})
+      const version = await detectVersion(projectPath);
 
-export const setupUpdateVersionTestNoConfig = ({updateVersion}) => {
+      if (configFile.endsWith('json')) {
+        expect(fs.readJson).toHaveBeenCalledWith(`${projectPath}/${configFile}`);
+      } else {
+        expect(fs.readFile).toHaveBeenCalledWith(`${projectPath}/${configFile}`, 'utf8');
+      }
+      expect(version).toEqual(oldVersion);
+    });
+  });
+};
+
+export const setupDetectVersionTestNoConfig = ({detectVersion}) => {
   describe('when no config file exists', () => {
     it('ends with error message', async () => {
       fs.existingFile = 'unknown';
 
       try {
         mockConsole(['error']);
-        await updateVersion({projectPath, newVersion});
+        await detectVersion(projectPath);
         expect(console.error).toHaveBeenCalled();
         expect(console.error).toHaveBeenCalledWith(expect.stringContaining('No version file found'));
       } finally {
         unMockConsole(['error']);
       }
+    });
+  });
+};
+
+export const setupDetectNameTest = ({detectName, configFile, projectName = projectNameValue}) => {
+  describe(`when ${configFile} config file exists`, () => {
+    it(`will call fs.read* with correct arguments and return a project name`, async () => {
+      fs.existingFile = configFile;
+
+      const name = await detectName(projectPath);
+
+      if (configFile.endsWith('json')) {
+        expect(fs.readJson).toHaveBeenCalledWith(`${projectPath}/${configFile}`);
+      } else {
+        expect(fs.readFile).toHaveBeenCalledWith(`${projectPath}/${configFile}`, 'utf8');
+      }
+      expect(name).toEqual(projectName);
+    });
+  });
+};
+
+export const setupDetectNameTestNoConfig = ({detectName}) => {
+  describe('when no config file exists', () => {
+    it(`will return the folder as project name`, async () => {
+      fs.existingFile = 'unknown';
+
+      const name = await detectName(projectPath);
+
+      expect(name).toEqual(projectNameValue);
     });
   });
 };
@@ -241,8 +262,25 @@ export const setupUpdateVersionTest = ({configFile, updateVersion}) => {
       if (configFile.endsWith('jsonc')) {
         expect(fs.writeFile).toHaveBeenCalledWith(
           `${projectPath}/${configFile}`,
-          expect.stringContaining(`"version": "${newVersion}"`)
+          expect.stringContaining(`"version": "${newVersion}"`),
         );
+      }
+    });
+  });
+};
+
+export const setupUpdateVersionTestNoConfig = ({updateVersion}) => {
+  describe('when no config file exists', () => {
+    it('ends with error message', async () => {
+      fs.existingFile = 'unknown';
+
+      try {
+        mockConsole(['error']);
+        await updateVersion({projectPath, newVersion});
+        expect(console.error).toHaveBeenCalled();
+        expect(console.error).toHaveBeenCalledWith(expect.stringContaining('No version file found'));
+      } finally {
+        unMockConsole(['error']);
       }
     });
   });

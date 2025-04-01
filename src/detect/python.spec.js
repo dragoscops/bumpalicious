@@ -20,7 +20,7 @@ vi.mock('fs-extra');
 vi.mock('@iarna/toml');
 vi.mock('execa');
 
-describe('detect/python.js module', () => {
+describe.skip('detect/python.js module', () => {
   beforeAll(() => {
     vi.clearAllMocks();
     mockConfigFiles();

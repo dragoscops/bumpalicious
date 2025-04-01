@@ -1,57 +1,60 @@
 /**
- * Node.js project version and name detection
- * @module detect/node
+ * Deno project version and name detection
+ * @module detect/deno
  */
 
 import fs from 'fs-extra';
 import path from 'path';
+import {NODE_VERSION_FILES} from '../core/constants.js';
+import * as logging from '../utils/logging.js';
 
 /**
- * List of potential version file names to check
- */
-const VERSION_FILES = ['jsr.json', 'package.json'];
-
-/**
- * Detect version from a Node.js project
- * Looking for package.json or jsr.json files
+ * Detect version from a Deno project
+ * Looking for deno.json, deno.jsonc, jsr.json, or package.json files
  *
  * @param {string} projectPath - Project to read details from
  * @returns {Promise<string>} - Detected version
- * @throws {Error} - If version could not be detected
  */
 export const detectVersion = async (projectPath) => {
   // Check for jsr.json, package.json
-  for (const file of VERSION_FILES) {
+  for (const file of NODE_VERSION_FILES) {
     const configPath = path.join(projectPath, file);
 
     if (await fs.pathExists(configPath)) {
-      const config = await fs.readJson(configPath);
-      if (config.version) {
-        return config.version;
+      try {
+        const denoConfig = await fs.readJson(configPath);
+        if (denoConfig.version) {
+          return denoConfig.version;
+        }
+      } catch (error) {
+        logging.error(`Error parsing ${file} file:`, error);
       }
     }
   }
 
-  throw new Error('Could not detect version in Node.js project');
+  logging.error(`No version file found in the Deno project at ${projectPath}`);
 };
 
 /**
- * Detect name from a Node.js project
- * Looking for package.json or jsr.json files
+ * Detect name from a Deno project
+ * Looking for deno.json, deno.jsonc, jsr.json, or package.json files
  *
  * @param {string} projectPath - Project to read details from
  * @returns {Promise<string>} - Detected name
- * @throws {Error} - If name could not be detected
  */
 export const detectName = async (projectPath) => {
   // Check for jsr.json, package.json
-  for (const file of VERSION_FILES) {
+  for (const file of NODE_VERSION_FILES) {
     const configPath = path.join(projectPath, file);
 
     if (await fs.pathExists(configPath)) {
-      const config = await fs.readJson(configPath);
-      if (config.name) {
-        return config.name;
+      try {
+        const config = await fs.readJson(configPath);
+        if (config.name) {
+          return config.name;
+        }
+      } catch (error) {
+        logging.error(`Error parsing ${file} file:`, error);
       }
     }
   }

@@ -6,6 +6,7 @@
 import fs from 'fs-extra';
 import path from 'path';
 import {DENO_VERSION_FILES} from '../core/constants.js';
+import * as logging from '../utils/logging.js';
 
 /**
  * Detect version from a Deno project
@@ -13,7 +14,6 @@ import {DENO_VERSION_FILES} from '../core/constants.js';
  *
  * @param {string} projectPath - Project to read details from
  * @returns {Promise<string>} - Detected version
- * @throws {Error} - If version could not be detected
  */
 export const detectVersion = async (projectPath) => {
   let configPath = path.join(projectPath, 'deno.jsonc');
@@ -34,7 +34,7 @@ export const detectVersion = async (projectPath) => {
         return denoConfig.version;
       }
     } catch (error) {
-      console.error('Error parsing deno.jsonc:', error);
+      logging.error('Error parsing deno.jsonc:', error);
     }
   }
 
@@ -43,14 +43,18 @@ export const detectVersion = async (projectPath) => {
     configPath = path.join(projectPath, file);
 
     if (await fs.pathExists(configPath)) {
-      const denoConfig = await fs.readJson(configPath);
-      if (denoConfig.version) {
-        return denoConfig.version;
+      try {
+        const denoConfig = await fs.readJson(configPath);
+        if (denoConfig.version) {
+          return denoConfig.version;
+        }
+      } catch (error) {
+        logging.error(`Error parsing ${file} file:`, error);
       }
     }
   }
 
-  throw new Error('Could not detect version in Deno project');
+  logging.error(`No version file found in the Deno project at ${projectPath}`);
 };
 
 /**
@@ -79,7 +83,7 @@ export const detectName = async (projectPath) => {
         return denoConfig.name;
       }
     } catch (error) {
-      console.error('Error parsing deno.jsonc:', error);
+      logging.error('Error parsing deno.jsonc:', error);
     }
   }
 
@@ -88,9 +92,13 @@ export const detectName = async (projectPath) => {
     configPath = path.join(projectPath, file);
 
     if (await fs.pathExists(configPath)) {
-      const config = await fs.readJson(configPath);
-      if (config.name) {
-        return config.name;
+      try {
+        const config = await fs.readJson(configPath);
+        if (config.name) {
+          return config.name;
+        }
+      } catch (error) {
+        logging.error(`Error parsing ${file} file:`, error);
       }
     }
   }

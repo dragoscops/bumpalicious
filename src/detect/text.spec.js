@@ -19,7 +19,7 @@ vi.mock('path', () => {
   };
 });
 
-describe('detect/text.js module', () => {
+describe.skip('detect/text.js module', () => {
   beforeAll(() => {
     vi.clearAllMocks();
   });

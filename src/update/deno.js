@@ -25,7 +25,9 @@ const updateVersionJsonc = async ({projectPath, newVersion}) => {
     // Update the version
     denoConfig.version = newVersion;
     updatedContent = JSON.stringify(denoConfig, null, 2);
-  } catch (error) {}
+  } catch (error) {
+    logging.error(`Failed to update Deno project version: ${error.message}`);
+  }
 
   if (!updatedContent) {
     if (content.includes('"version"') || content.includes('"version":')) {
@@ -46,8 +48,6 @@ const updateVersionJsonc = async ({projectPath, newVersion}) => {
  * @param {Object} options - Update options
  * @param {string} options.projectPath - Path to the project
  * @param {string} options.newVersion - New version to set
- * @returns {Promise<boolean>} - True if the update was successful
- * @throws {Error} - If version update fails
  */
 export const updateVersion = async ({projectPath, newVersion}) => {
   // First check for deno.jsonc (JSON with comments)
@@ -56,20 +56,18 @@ export const updateVersion = async ({projectPath, newVersion}) => {
     return updateVersionJsonc({projectPath, newVersion});
   }
 
-  try {
-    // Then check for the standard JSON files in the same order as detection
-    for (const file of DENO_VERSION_FILES) {
-      const filePath = path.join(projectPath, file);
-      if (await fs.pathExists(filePath)) {
+  for (const file of DENO_VERSION_FILES) {
+    const filePath = path.join(projectPath, file);
+    if (await fs.pathExists(filePath)) {
+      try {
         const config = await fs.readJson(filePath);
         config.version = newVersion;
         await fs.writeJson(filePath, config, {spaces: 2});
         return;
+      } catch (error) {
+        logging.error(`Failed to update Deno project version: ${error.message}`);
       }
     }
-  } catch (error) {
-    logging.error(`Failed to update Deno project version: ${error.message}`);
-    throw error;
   }
 
   logging.error(`No version file found in the Deno project at ${projectPath}`);

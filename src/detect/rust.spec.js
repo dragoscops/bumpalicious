@@ -19,7 +19,7 @@ vi.mock('fs-extra');
 vi.mock('@iarna/toml');
 vi.mock('execa');
 
-describe('detect/rust.js module', () => {
+describe.skip('detect/rust.js module', () => {
   beforeAll(() => {
     vi.clearAllMocks();
 

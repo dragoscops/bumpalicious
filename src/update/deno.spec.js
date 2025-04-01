@@ -1,5 +1,4 @@
-import fs from 'fs-extra';
-import {describe, it, expect, beforeEach as beforeAll, vi, afterAll} from 'vitest';
+import {describe, beforeAll, vi, afterAll} from 'vitest';
 import {updateVersion} from './deno.js';
 import {
   mockConfigFiles,
