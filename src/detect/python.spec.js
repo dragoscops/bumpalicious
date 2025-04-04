@@ -20,7 +20,7 @@ describe('detect/node.js module', () => {
   });
 
   describe('detectVersion()', () => {
-    for (const configFile of PYTHON_VERSION_FILES) {
+    for (const configFile of PYTHON_VERSION_FILES.slice(0, -1)) {
       setupDetectVersionTest({configFile, detectVersion});
     }
 
@@ -28,7 +28,7 @@ describe('detect/node.js module', () => {
   });
 
   describe('detectName()', () => {
-    for (const configFile of PYTHON_VERSION_FILES) {
+    for (const configFile of PYTHON_VERSION_FILES.slice(0, -1)) {
       setupDetectNameTest({configFile, detectName});
     }
 

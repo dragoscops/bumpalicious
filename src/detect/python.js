@@ -7,6 +7,7 @@ import toml from '@iarna/toml';
 import {execa} from 'execa';
 import fs from 'fs-extra';
 import path from 'path';
+import * as logging from '../utils/logging.js';
 
 /**
  * Detect version from a Python project
@@ -14,26 +15,22 @@ import path from 'path';
  *
  * @param {string} projectPath - Project to read details from
  * @returns {Promise<string>} - Detected version
- * @throws {Error} - If version could not be detected
  */
 export const detectVersion = async (projectPath) => {
-  // Check for pyproject.toml first (using TOML parser)
   const pyprojectPath = path.join(projectPath, 'pyproject.toml');
   if (await fs.pathExists(pyprojectPath)) {
     try {
       const content = await fs.readFile(pyprojectPath, 'utf8');
       const pyprojectData = toml.parse(content);
 
-      // Check different locations for version in pyproject.toml
       if (pyprojectData?.tool?.poetry?.version) {
         return pyprojectData.tool.poetry.version;
       }
-
       if (pyprojectData?.project?.version) {
         return pyprojectData.project.version;
       }
     } catch (error) {
-      console.error('Error parsing pyproject.toml:', error);
+      logging.error(`Error parsing ${file} file:`, error);
     }
   }
 
@@ -41,10 +38,13 @@ export const detectVersion = async (projectPath) => {
   for (const file of ['setup.py', 'setup.cfg']) {
     const filePath = path.join(projectPath, file);
     if (await fs.pathExists(filePath)) {
+      try {
       const content = await fs.readFile(filePath, 'utf8');
       const versionMatch = content.match(/version\s*=\s*["']?([^"'\s]+)["']?/);
       if (versionMatch) {
         return versionMatch[1];
+      }} catch (error) {
+        logging.error(`Error parsing ${file} file:`, error);
       }
     }
   }
@@ -62,8 +62,8 @@ export const detectVersion = async (projectPath) => {
   } catch {
     // Ignore errors
   }
-
-  throw new Error('Could not detect version in Python project');
+  
+  logging.error(`No version file found in the NodeJS project at ${projectPath}`);
 };
 
 /**

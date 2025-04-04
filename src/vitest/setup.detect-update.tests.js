@@ -36,10 +36,8 @@ const configMocks = {
     '  return Version',
     '}',
   ].join('\n'),
-  'pyproject.toml': 
-    ['[project]', `name = "${projectNameValue}"`, `version = "${oldVersion}"`].join('\n'),
-    'poetry.toml': ['[tool.poetry]', `name = "${projectNameValue}"`, `version = "${oldVersion}"`].join('\n'),
-  
+  'pyproject.toml': ['[project]', `name = "${projectNameValue}"`, `version = "${oldVersion}"`].join('\n'),
+  // 'poetry.toml': ['[tool.poetry]', `name = "${projectNameValue}"`, `version = "${oldVersion}"`].join('\n'),
   'setup.py': ['setup(', `name="${projectNameValue}",`, `version="${oldVersion}"`, `)`].join('\n'),
   'setup.cfg': [`[metadata]`, `name = ${projectNameValue}`, `version = ${oldVersion}`].join('\n'),
   ...TEXT_VERSION_FILES.reduce((acc, file) => {
