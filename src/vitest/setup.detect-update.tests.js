@@ -40,6 +40,11 @@ const configMocks = {
   // 'poetry.toml': ['[tool.poetry]', `name = "${projectNameValue}"`, `version = "${oldVersion}"`].join('\n'),
   'setup.py': ['setup(', `name="${projectNameValue}",`, `version="${oldVersion}"`, `)`].join('\n'),
   'setup.cfg': [`[metadata]`, `name = ${projectNameValue}`, `version = ${oldVersion}`].join('\n'),
+  '__init__.py': [
+    '"""Package initialization."""',
+    `__version__ = "${oldVersion}"`,
+    `__name__ = "${projectNameValue}"`,
+  ].join('\n'),
   ...TEXT_VERSION_FILES.reduce((acc, file) => {
     acc[file] = oldVersion;
     return acc;

@@ -50,6 +50,19 @@ export const detectVersion = async (projectPath) => {
     }
   }
 
+  const filePath = path.join(projectPath, '__init__.py');
+  if (await fs.pathExists(filePath)) {
+    try {
+      const content = await fs.readFile(filePath, 'utf8');
+      const versionMatch = content.match(/__version__\s*=\s*["']?([^"'\s]+)["']?/);
+      if (versionMatch) {
+        return versionMatch[1];
+      }
+    } catch (error) {
+      logging.error(`Error parsing ${file} file:`, error);
+    }
+  }
+
   // Try to detect version using Python's importlib.metadata
   try {
     const {stdout} = await execa(
@@ -92,18 +105,31 @@ export const detectName = async (projectPath) => {
     }
   }
 
-  // Check for setup.py and setup.cfg using regex
   for (const file of ['setup.py', 'setup.cfg']) {
     const filePath = path.join(projectPath, file);
     if (await fs.pathExists(filePath)) {
       try {
-      const content = await fs.readFile(filePath, 'utf8');
-      const nameMatch = content.match(/name\s*=\s*["']?([^"'\s]+)["']?/);
-      if (nameMatch) {
-        return nameMatch[1];
-      }} catch (error) {
+        const content = await fs.readFile(filePath, 'utf8');
+        const nameMatch = content.match(/name\s*=\s*["']?([^"'\s]+)["']?/);
+        if (nameMatch) {
+          return nameMatch[1];
+        }
+      } catch (error) {
         logging.error(`Error parsing ${file} file:`, error);
       }
+    }
+  }
+
+  const filePath = path.join(projectPath, '__init__.py');
+  if (await fs.pathExists(filePath)) {
+    try {
+      const content = await fs.readFile(filePath, 'utf8');
+      const nameMatch = content.match(/__name__\s*=\s*["']?([^"'\s]+)["']?/);
+      if (nameMatch) {
+        return nameMatch[1];
+      }
+    } catch (error) {
+      logging.error(`Error parsing ${file} file:`, error);
     }
   }
 
