@@ -8,83 +8,6 @@ export const oldVersion = '1.7.3';
 export const projectPath = '/test/project';
 export const newVersion = '2.0.0';
 
-export const pyprojectContent = `[project]
-name = "${projectNameValue}"
-version = "${oldVersion}"`;
-
-export const pyprojectPoetryContent = `[tool.poetry]
-name = "${projectNameValue}"
-version = "${oldVersion}"`;
-
-// Export these mock objects for use in tests
-export const mockPyprojectData = {
-  project: {
-    name: projectNameValue,
-    version: oldVersion,
-  },
-};
-
-export const mockPyprojectPoetryData = {
-  tool: {
-    poetry: {
-      name: projectNameValue,
-      version: oldVersion,
-    },
-  },
-};
-
-const setupPyContent = `setup(
-  name="${projectNameValue}",
-  version="${oldVersion}"
-)`;
-
-const setupCfgContent = `[metadata]
-name = ${projectNameValue}
-version = ${oldVersion}`;
-
-const buildZigContent = `
-const std = @import("std");
-
-pub fn build(b: *std.Build) void {
-    const target = b.standardTargetOptions(.{});
-    const optimize = b.standardOptimizeOption(.{});
-    
-    const NAME = "${projectNameValue}";
-    const VERSION = "${oldVersion}";
-    
-    const exe = b.addExecutable(.{
-        .name = NAME,
-        .root_source_file = .{ .path = "src/main.zig" },
-        .target = target,
-        .optimize = optimize,
-    });
-
-    // Set metadata
-    exe.version = VERSION;
-}`;
-
-const buildZigZonContent = `
-.{
-    .name = "${projectNameValue}",
-    .version = "${oldVersion}",
-    .dependencies = .{
-        .clap = .{
-            .url = "https://github.com/Hejsil/zig-clap/archive/master.tar.gz",
-            .hash = "12208070a9f61c512023f4b5615b50c56a2c19f0f7f4c4a7078cb8e135683540cce8",
-        },
-    },
-}`;
-
-export const ZIG_VERSION_FILES = ['build.zig', 'build.zig.zon'];
-
-// Default project config objects for testing
-export const projectConfigs = {
-  deno: {
-    name: projectNameValue,
-    version: oldVersion,
-  },
-};
-
 const configMocks = {
   'Cargo.toml': ['[package]', `name = "${projectNameValue}"`, `version = "${oldVersion}"`].join('\n'),
   'deno.jsonc':
@@ -113,17 +36,51 @@ const configMocks = {
     '  return Version',
     '}',
   ].join('\n'),
-  'pyproject.toml': pyprojectContent,
-  'setup.py': setupPyContent,
-  'setup.cfg': setupCfgContent,
+  'pyproject.toml': [
+    ['[project]', `name = "${projectNameValue}"`, `version = "${oldVersion}"`].join('\n'),
+    ['[tool.poetry]', `name = "${projectNameValue}"`, `version = "${oldVersion}"`].join('\n'),
+  ],
+  'setup.py': ['setup(', `name="${projectNameValue}",`, `version="${oldVersion}"`, `)`].join('\n'),
+  'setup.cfg': [`[metadata]`, `name = ${projectNameValue}`, `version = ${oldVersion}`].join('\n'),
   ...TEXT_VERSION_FILES.reduce((acc, file) => {
     acc[file] = oldVersion;
     return acc;
   }, {}),
-  'build.zig': buildZigContent,
-  'build.zig.zon': buildZigZonContent,
+  'build.zig': [
+    'const std = @import("std");',
+    '',
+    'pub fn build(b: *std.Build) void {',
+    '  const target = b.standardTargetOptions(.{});',
+    '  const optimize = b.standardOptimizeOption(.{});',
+    '',
+    ` const NAME = "${projectNameValue}";`,
+    ` const VERSION = "${oldVersion}";`,
+    '',
+    ,
+    '  const exe = b.addExecutable(.{',
+    '    .name = NAME,',
+    '    .root_source_file = .{ .path = "src/main.zig" },',
+    '    .target = target,',
+    '    .optimize = optimize,',
+    '  });',
+    '',
+    '  // Set metadata',
+    '  exe.version = VERSION;',
+    '}',
+  ].join('\n'),
+  'build.zig.zon': [
+    '.{',
+    `  .name = "${projectNameValue}",`,
+    `  .version = "${oldVersion}",`,
+    '  .dependencies = .{',
+    '    .clap = .{',
+    '      .url = "https://github.com/Hejsil/zig-clap/archive/master.tar.gz",',
+    '      .hash = "12208070a9f61c512023f4b5615b50c56a2c19f0f7f4c4a7078cb8e135683540cce8",',
+    '    },',
+    '  },',
+    '}',
+  ].join('\n'),
 };
-
 // console.log(configMocks)
 
 export const mockConfigFiles = () => {
@@ -212,7 +169,7 @@ export const setupDetectNameTest = ({detectName, configFile, projectName = proje
         expect(fs.readJson).toHaveBeenCalledWith(`${projectPath}/${configFile}`);
       } else {
         // TODO: kinda hacky, but text projects do not read project names for now :)
-        if (!/version(\.txt)?$/ig.test(configFile.toLowerCase())) {
+        if (!/version(\.txt)?$/gi.test(configFile.toLowerCase())) {
           expect(fs.readFile).toHaveBeenCalledWith(`${projectPath}/${configFile}`, 'utf8');
         }
       }
@@ -241,35 +198,36 @@ export const setupUpdateVersionTest = ({configFile, updateVersion}) => {
       mockConsole(['error']);
 
       try {
-      await updateVersion({projectPath, newVersion});
+        await updateVersion({projectPath, newVersion});
 
-      if (configFile.endsWith('json')) {
-        expect(fs.readJson).toHaveBeenCalledWith(`${projectPath}/${configFile}`);
-        expect(fs.writeJson).toHaveBeenCalledWith(
-          `${projectPath}/${configFile}`,
-          expect.objectContaining({version: newVersion}),
-          {spaces: 2},
-        );
-        return;
-      }
-
-      expect(fs.readFile).toHaveBeenCalledWith(`${projectPath}/${configFile}`, 'utf8');
-
-      switch (true) {
-        case configFile.endsWith('toml'):
-          expect(fs.writeFile).toHaveBeenCalledWith(
+        if (configFile.endsWith('json')) {
+          expect(fs.readJson).toHaveBeenCalledWith(`${projectPath}/${configFile}`);
+          expect(fs.writeJson).toHaveBeenCalledWith(
             `${projectPath}/${configFile}`,
-            expect.stringContaining(`version = "${newVersion}"`),
-            'utf8',
+            expect.objectContaining({version: newVersion}),
+            {spaces: 2},
           );
-          break;
-        case configFile.endsWith('jsonc'):
-          expect(fs.writeFile).toHaveBeenCalledWith(
-            `${projectPath}/${configFile}`,
-            expect.stringContaining(`"version": "${newVersion}"`),
-          );
-          break;
-      }} finally {
+          return;
+        }
+
+        expect(fs.readFile).toHaveBeenCalledWith(`${projectPath}/${configFile}`, 'utf8');
+
+        switch (true) {
+          case /\.(toml|zig|zon)$/gi.testconfigFile:
+            expect(fs.writeFile).toHaveBeenCalledWith(
+              `${projectPath}/${configFile}`,
+              expect.stringContaining(`version = "${newVersion}"`),
+              'utf8',
+            );
+            break;
+          case configFile.endsWith('jsonc'):
+            expect(fs.writeFile).toHaveBeenCalledWith(
+              `${projectPath}/${configFile}`,
+              expect.stringContaining(`"version": "${newVersion}"`),
+            );
+            break;
+        }
+      } finally {
         unMockConsole(['error']);
       }
     });

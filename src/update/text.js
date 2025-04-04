@@ -29,6 +29,6 @@ export const updateVersion = async ({projectPath, newVersion}) => {
       }
     }
   }
-  
+
   logging.error(`No version file found in the project at ${projectPath}`);
 };

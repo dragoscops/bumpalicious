@@ -33,3 +33,8 @@ export const RUST_VERSION_FILES = ['Cargo.toml'];
  * List of potential Rust version files to check
  */
 export const TEXT_VERSION_FILES = ['version', 'version.txt', 'VERSION', 'VERSION.txt'];
+
+/**
+ * List of potential Zig version files to check
+ */
+export const ZIG_VERSION_FILES = ['build.zig', 'build.zig.zon'];

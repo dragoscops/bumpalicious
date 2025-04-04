@@ -6,11 +6,7 @@
 import fs from 'fs-extra';
 import path from 'path';
 import {execa} from 'execa';
-
-/**
- * List of potential configuration files to check
- */
-const CONFIG_FILES = ['build.zig', 'build.zig.zon'];
+import * as logging from '../utils/logging.js';
 
 /**
  * Extract version from Zig build.zig content
@@ -59,8 +55,6 @@ const extractNameFromZigContent = (content) => {
       return match[1];
     }
   }
-
-  return null;
 };
 
 /**
@@ -80,8 +74,7 @@ const parseZigZonFile = (content) => {
       version: versionMatch ? versionMatch[1] : null,
     };
   } catch (error) {
-    console.error('Error parsing build.zig.zon:', error);
-    return null;
+    logging.error(`Error parsing build.zig.zon:`, error);
   }
 };
 
@@ -91,30 +84,21 @@ const parseZigZonFile = (content) => {
  *
  * @param {string} projectPath - Project to read details from
  * @returns {Promise<string>} - Detected version
- * @throws {Error} - If version could not be detected
  */
 export const detectVersion = async (projectPath) => {
-  // First check build.zig.zon which is more likely to contain version info
   const zonPath = path.join(projectPath, 'build.zig.zon');
   if (await fs.pathExists(zonPath)) {
     const content = await fs.readFile(zonPath, 'utf8');
     const zonData = parseZigZonFile(content);
-    if (zonData && zonData.version) {
-      return zonData.version;
-    }
+    return zonData.version;
   }
 
-  // Then check build.zig
   const buildPath = path.join(projectPath, 'build.zig');
   if (await fs.pathExists(buildPath)) {
     const content = await fs.readFile(buildPath, 'utf8');
-    const version = extractVersionFromZigContent(content);
-    if (version) {
-      return version;
-    }
+    return extractVersionFromZigContent(content);
   }
 
-  // Try to detect version using zig-version utility if it exists
   try {
     const {stdout} = await execa('zig', ['version'], {cwd: projectPath});
     if (stdout.trim()) {
@@ -124,7 +108,7 @@ export const detectVersion = async (projectPath) => {
     // Ignore errors if zig command fails
   }
 
-  throw new Error('Could not detect version in Zig project');
+  logging.error(`No version file found in the Zig project at ${projectPath}`);
 };
 
 /**
@@ -135,17 +119,15 @@ export const detectVersion = async (projectPath) => {
  * @returns {Promise<string>} - Detected name
  */
 export const detectName = async (projectPath) => {
-  // First check build.zig.zon which is more likely to contain name info
   const zonPath = path.join(projectPath, 'build.zig.zon');
   if (await fs.pathExists(zonPath)) {
     const content = await fs.readFile(zonPath, 'utf8');
     const zonData = parseZigZonFile(content);
-    if (zonData && zonData.name) {
+    if (zonData?.name) {
       return zonData.name;
     }
   }
 
-  // Then check build.zig
   const buildPath = path.join(projectPath, 'build.zig');
   if (await fs.pathExists(buildPath)) {
     const content = await fs.readFile(buildPath, 'utf8');
@@ -155,6 +137,5 @@ export const detectName = async (projectPath) => {
     }
   }
 
-  // Fall back to directory name
   return path.basename(path.normalize(projectPath));
 };

@@ -23,10 +23,9 @@ export const detectVersion = async (projectPath) => {
     if (await fs.pathExists(filePath)) {
       const content = await fs.readFile(filePath, 'utf8');
       return content.trim();
-      
     }
   }
-  
+
   logging.error(`No version file found in the project at ${projectPath}`);
 };
 
