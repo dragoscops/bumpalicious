@@ -36,10 +36,10 @@ const configMocks = {
     '  return Version',
     '}',
   ].join('\n'),
-  'pyproject.toml': [
+  'pyproject.toml': 
     ['[project]', `name = "${projectNameValue}"`, `version = "${oldVersion}"`].join('\n'),
-    ['[tool.poetry]', `name = "${projectNameValue}"`, `version = "${oldVersion}"`].join('\n'),
-  ],
+    'poetry.toml': ['[tool.poetry]', `name = "${projectNameValue}"`, `version = "${oldVersion}"`].join('\n'),
+  
   'setup.py': ['setup(', `name="${projectNameValue}",`, `version="${oldVersion}"`, `)`].join('\n'),
   'setup.cfg': [`[metadata]`, `name = ${projectNameValue}`, `version = ${oldVersion}`].join('\n'),
   ...TEXT_VERSION_FILES.reduce((acc, file) => {
@@ -129,13 +129,9 @@ export const unMockConsole = (keys = []) => {
  *
  * @param {Object} options - Update options
  * @param {string} options.detectVersion - Path to the project
- * @param {string|string[]} options.configFiles - New version to set
+ * @param {string|string[]} options.configFile - New version to set
  */
-export const setupDetectVersionTest = ({detectVersion, configFiles}) => {
-  if (!Array.isArray(configFiles)) {
-    configFiles = [configFiles];
-  }
-  for (const configFile of configFiles) {
+export const setupDetectVersionTest = ({detectVersion, configFile}) => {
   describe(`when ${configFile} config file exists`, () => {
     it(`will call fs.read* with correct arguments and return a version`, async () => {
       fs.existingFile = configFile;
@@ -150,7 +146,6 @@ export const setupDetectVersionTest = ({detectVersion, configFiles}) => {
       expect(version).toEqual(oldVersion);
     });
   });
-}
 };
 
 export const setupDetectVersionTestNoConfig = ({detectVersion}) => {
