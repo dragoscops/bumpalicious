@@ -1,27 +1,18 @@
-import fs from 'fs-extra';
-import path from 'path';
-import {describe, it, expect, beforeAll, vi, afterAll} from 'vitest';
-import * as text from './text.js';
-import {projectPath, oldVersion, projectName, TEXT_VERSION_FILES} from '../vitest/setup.detect-update.tests.js';
+import {describe, beforeAll, vi, afterAll} from 'vitest';
+import {detectVersion, detectName} from './text.js';
+import {
+  mockConfigFiles,
+  setupDetectVersionTest,
+  setupDetectVersionTestNoConfig,
+  setupDetectNameTest,
+  setupDetectNameTestNoConfig,
+} from '../vitest/setup.detect-update.tests.js';
+import {TEXT_VERSION_FILES} from '../core/constants.js';
 
-// Mock the dependencies
-vi.mock('fs-extra');
-vi.mock('path', () => {
-  return {
-    default: {
-      join: vi.fn((dir, file) => `${dir}/${file}`),
-      basename: vi.fn((p) => p.split('/').pop()),
-      normalize: vi.fn((p) => p),
-    },
-    join: vi.fn((dir, file) => `${dir}/${file}`),
-    basename: vi.fn((p) => p.split('/').pop()),
-    normalize: vi.fn((p) => p),
-  };
-});
-
-describe.skip('detect/text.js module', () => {
+describe('detect/node.js module', () => {
   beforeAll(() => {
     vi.clearAllMocks();
+    mockConfigFiles();
   });
 
   afterAll(() => {
@@ -29,37 +20,18 @@ describe.skip('detect/text.js module', () => {
   });
 
   describe('detectVersion()', () => {
-    it('detects version from version file', async () => {
-      fs.pathExists.mockImplementation((path) => {
-        return Promise.resolve(path.endsWith('version'));
-      });
-      fs.readFile.mockResolvedValue(oldVersion);
+    for (const configFile of TEXT_VERSION_FILES) {
+      setupDetectVersionTest({configFile, detectVersion});
+    }
 
-      await expect(text.detectVersion(projectPath)).resolves.toEqual(oldVersion);
-      expect(fs.readFile).toHaveBeenCalledWith(`${projectPath}/version`, 'utf8');
-    });
-
-    it('detects version from VERSION file', async () => {
-      fs.pathExists.mockImplementation((path) => {
-        return Promise.resolve(!path.endsWith('version') && path.endsWith('VERSION'));
-      });
-      fs.readFile.mockResolvedValue(oldVersion);
-
-      await expect(text.detectVersion(projectPath)).resolves.toEqual(oldVersion);
-      expect(fs.readFile).toHaveBeenCalledWith(`${projectPath}/VERSION`, 'utf8');
-    });
-
-    it('throws error when no version could be found', async () => {
-      fs.pathExists.mockResolvedValue(false);
-
-      await expect(text.detectVersion(projectPath)).rejects.toThrow('Could not detect version in text project');
-    });
+    setupDetectVersionTestNoConfig({detectVersion});
   });
 
   describe('detectName()', () => {
-    it('returns directory name as project name', async () => {
-      // The detectName function simply returns the directory name
-      await expect(text.detectName(projectPath)).resolves.toEqual(projectPath.split('/').pop());
-    });
+    for (const configFile of TEXT_VERSION_FILES) {
+      setupDetectNameTest({configFile, detectName});
+    }
+
+    setupDetectNameTestNoConfig({detectName});
   });
 });

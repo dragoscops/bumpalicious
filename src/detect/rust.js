@@ -42,7 +42,7 @@ export const detectVersion = async (projectPath) => {
   } catch {
     // Ignore errors
   }
-  
+
   logging.error(`No version file found in the Rust project at ${projectPath}`);
 };
 

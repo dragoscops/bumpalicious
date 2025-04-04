@@ -32,7 +32,7 @@ export const detectVersion = async (projectPath) => {
     }
   }
 
-  logging.error(`No version file found in the Deno project at ${projectPath}`);
+  logging.error(`No version file found in the NodeJS project at ${projectPath}`);
 };
 
 /**

@@ -1,5 +1,6 @@
 import fs from 'fs-extra';
 import {expect} from 'vitest';
+import {TEXT_VERSION_FILES} from '../core/constants.js';
 
 export const folder = 'test-project';
 export const projectNameValue = 'project'; // Renamed from name to projectName
@@ -40,8 +41,6 @@ const setupPyContent = `setup(
 const setupCfgContent = `[metadata]
 name = ${projectNameValue}
 version = ${oldVersion}`;
-
-export const TEXT_VERSION_FILES = ['version', 'version.txt', 'VERSION', 'VERSION.txt'];
 
 const buildZigContent = `
 const std = @import("std");
@@ -124,6 +123,8 @@ const configMocks = {
   'build.zig': buildZigContent,
   'build.zig.zon': buildZigZonContent,
 };
+
+// console.log(configMocks)
 
 export const mockConfigFiles = () => {
   fs.readJson.mockImplementation((path) => {
@@ -210,7 +211,10 @@ export const setupDetectNameTest = ({detectName, configFile, projectName = proje
       if (configFile.endsWith('json')) {
         expect(fs.readJson).toHaveBeenCalledWith(`${projectPath}/${configFile}`);
       } else {
-        expect(fs.readFile).toHaveBeenCalledWith(`${projectPath}/${configFile}`, 'utf8');
+        // TODO: kinda hacky, but text projects do not read project names for now :)
+        if (!/version(\.txt)?$/ig.test(configFile.toLowerCase())) {
+          expect(fs.readFile).toHaveBeenCalledWith(`${projectPath}/${configFile}`, 'utf8');
+        }
       }
       expect(name).toEqual(projectName);
     });
@@ -234,7 +238,9 @@ export const setupUpdateVersionTest = ({configFile, updateVersion}) => {
     // Skip deno.jsonc which is tested separately
     it(`will call fs.read* and fs.write* with correct arguments`, async () => {
       fs.existingFile = configFile;
+      mockConsole(['error']);
 
+      try {
       await updateVersion({projectPath, newVersion});
 
       if (configFile.endsWith('json')) {
@@ -249,12 +255,12 @@ export const setupUpdateVersionTest = ({configFile, updateVersion}) => {
 
       expect(fs.readFile).toHaveBeenCalledWith(`${projectPath}/${configFile}`, 'utf8');
 
-      switch(true) {
+      switch (true) {
         case configFile.endsWith('toml'):
           expect(fs.writeFile).toHaveBeenCalledWith(
             `${projectPath}/${configFile}`,
             expect.stringContaining(`version = "${newVersion}"`),
-            'utf8'
+            'utf8',
           );
           break;
         case configFile.endsWith('jsonc'):
@@ -263,8 +269,9 @@ export const setupUpdateVersionTest = ({configFile, updateVersion}) => {
             expect.stringContaining(`"version": "${newVersion}"`),
           );
           break;
+      }} finally {
+        unMockConsole(['error']);
       }
-
     });
   });
 };

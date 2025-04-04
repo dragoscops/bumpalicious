@@ -5,11 +5,8 @@
 
 import fs from 'fs-extra';
 import path from 'path';
-
-/**
- * List of potential version file names to check
- */
-const VERSION_FILES = ['version', 'VERSION', 'version.txt', 'VERSION.txt'];
+import {TEXT_VERSION_FILES} from '../core/constants.js';
+import * as logging from '../utils/logging.js';
 
 /**
  * Detect version from a text-based project
@@ -20,19 +17,17 @@ const VERSION_FILES = ['version', 'VERSION', 'version.txt', 'VERSION.txt'];
  * @throws {Error} - If version could not be detected
  */
 export const detectVersion = async (projectPath) => {
-  for (const versionFile of VERSION_FILES) {
+  for (const versionFile of TEXT_VERSION_FILES) {
     const filePath = path.join(projectPath, versionFile);
 
     if (await fs.pathExists(filePath)) {
       const content = await fs.readFile(filePath, 'utf8');
-      const version = content.trim();
-      if (version) {
-        return version;
-      }
+      return content.trim();
+      
     }
   }
-
-  throw new Error('Could not detect version in text project');
+  
+  logging.error(`No version file found in the project at ${projectPath}`);
 };
 
 /**

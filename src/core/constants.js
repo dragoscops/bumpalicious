@@ -28,3 +28,8 @@ export const PYTHON_VERSION_FILES = ['pyproject.toml', 'setup.py', 'setup.cfg', 
  * List of potential Rust version files to check
  */
 export const RUST_VERSION_FILES = ['Cargo.toml'];
+
+/**
+ * List of potential Rust version files to check
+ */
+export const TEXT_VERSION_FILES = ['version', 'version.txt', 'VERSION', 'VERSION.txt'];
