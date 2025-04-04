@@ -4,19 +4,21 @@
  */
 
 import semver from 'semver';
+import * as logging from '../utils/logging.js';
+
+/**
+ * @typedef {"major" | "premajor" | "minor" | "preminor" | "patch" | "prepatch" | "prerelease" | "release"} ReleaseType;
+ */
 
 /**
  * Determine version increase type from commit message
  *
  * @param {string} commitMessage - Git commit message
- * @returns {'major' | 'minor' | 'patch' | null} - Type of version increase or null for none
+ * @returns {ReleaseType | null} - Type of version increase or null for none
  */
 export const determineVersionIncreaseType = (commitMessage) => {
-  // Default to no increase
-  let increaseType = null;
-
   if (!commitMessage) {
-    return increaseType;
+    return logging.error('No commit message provided');
   }
 
   // Check for BREAKING CHANGE or feat! for major version bump
@@ -27,77 +29,67 @@ export const determineVersionIncreaseType = (commitMessage) => {
     commitMessage.includes('BREAKING-CHANGE') ||
     commitMessage.includes('BREAKING CHANGES')
   ) {
-    increaseType = 'major';
+    if (commitMessage.includes('pre-release')) {
+      return 'premajor';
+    }
+    return 'major';
   }
-  // Check for feat: for minor version bump
-  else if (commitMessage.startsWith('feat:') || /^feat\([^)]+\):/.test(commitMessage)) {
-    increaseType = 'minor';
+  
+  if (commitMessage.startsWith('feat:') || /^feat\([^)]+\):/.test(commitMessage)) {
+    if (commitMessage.includes('pre-release')) {
+      return 'preminor';
+    }
+    return 'minor';
   }
-  // Check for fix: for patch version bump
-  else if (commitMessage.startsWith('fix:') || /^fix\([^)]+\):/.test(commitMessage)) {
-    increaseType = 'patch';
+  
+  if (commitMessage.startsWith('fix:') || /^fix\([^)]+\):/.test(commitMessage)) {
+    if (commitMessage.includes('pre-release')) {
+      return 'prepatch';
+    }
+    return 'patch';
   }
 
-  return increaseType;
+  return null;
 };
 
 /**
- * Normalize version string to valid semver
- *
- * @param {string} version - Version string to normalize
- * @returns {string} - Normalized semver version
+ * Determine pre-release identifier from commit message
+ * 
+ * @param {string} commitMessage - Git commit message
+ * @returns {string|null} - Pre-release identifier or null if not found
  */
-export const normalizeVersion = (version) => {
-  // Remove leading 'v' or 'V' if present
-  let normalizedVersion = version.trim().replace(/^[vV]/, '');
-
-  // Try to parse as semver
-  const parsed = semver.parse(normalizedVersion);
-
-  if (parsed) {
-    // Already a valid semver version
-    return parsed.version;
+export const determineVersionPreReleaseIdentifier = (commitMessage) => {
+  if (!commitMessage) {
+    return logging.error('No commit message provided');
   }
 
-  // Try to handle simple version formats
-  if (/^\d+$/.test(normalizedVersion)) {
-    // Just a single number like "1"
-    return `${normalizedVersion}.0.0`;
-  } else if (/^\d+\.\d+$/.test(normalizedVersion)) {
-    // Two numbers like "1.0"
-    return `${normalizedVersion}.0`;
-  } else if (/^\d+\.\d+\.\d+$/.test(normalizedVersion)) {
-    // Already in the right format, but might not be valid semver
-    return normalizedVersion;
+  const preReleaseIdentifier = commitMessage.match(/pre-release\s*:\s*([a-zA-Z0-9-_]+)/);
+  if (preReleaseIdentifier) {
+    return preReleaseIdentifier[1];
   }
+  
+  return null;
+}
 
-  // For more complex cases (pre-release, etc.), try to use semver coercion
-  const coerced = semver.coerce(normalizedVersion);
-  return coerced ? coerced.version : '0.1.0'; // Fallback to 0.1.0 if we can't parse
-};
+/**
+ * @typedef {Object} IncreaseVersionOptions
+ * @property {ReleaseType} type - Type of version increase
+ * @property {string} suffix - Suffix for pre-release version
+ */
 
 /**
  * Increase version according to semver rules
  *
  * @param {string} currentVersion - Current version
- * @param {string} type - Type of increase ('major', 'minor', 'patch')
+ * @param {IncreaseVersionOptions} options - Options for version increase
  * @returns {string} - New version
  */
-export const increaseVersion = (currentVersion, type) => {
-  if (!type) {
+export const increaseVersion = (currentVersion, options) => {
+  const version = semver.parse(currentVersion);
+  if (!version) {
+    logging.error(`Invalid version: ${currentVersion}`);
     return currentVersion;
   }
-
-  let normalized = normalizeVersion(currentVersion);
-
-  switch (type) {
-    case 'major':
-      return semver.inc(normalized, 'major');
-    case 'minor':
-      return semver.inc(normalized, 'minor');
-    case 'patch':
-      return semver.inc(normalized, 'patch');
-    default:
-      return normalized;
-  }
+  
+  return semver.inc(currentVersion, options.type, options.suffix);
 };
