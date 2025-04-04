@@ -39,11 +39,12 @@ export const detectVersion = async (projectPath) => {
     const filePath = path.join(projectPath, file);
     if (await fs.pathExists(filePath)) {
       try {
-      const content = await fs.readFile(filePath, 'utf8');
-      const versionMatch = content.match(/version\s*=\s*["']?([^"'\s]+)["']?/);
-      if (versionMatch) {
-        return versionMatch[1];
-      }} catch (error) {
+        const content = await fs.readFile(filePath, 'utf8');
+        const versionMatch = content.match(/version\s*=\s*["']?([^"'\s]+)["']?/);
+        if (versionMatch) {
+          return versionMatch[1];
+        }
+      } catch (error) {
         logging.error(`Error parsing ${file} file:`, error);
       }
     }
@@ -62,7 +63,7 @@ export const detectVersion = async (projectPath) => {
   } catch {
     // Ignore errors
   }
-  
+
   logging.error(`No version file found in the NodeJS project at ${projectPath}`);
 };
 
@@ -74,23 +75,20 @@ export const detectVersion = async (projectPath) => {
  * @returns {Promise<string>} - Detected name
  */
 export const detectName = async (projectPath) => {
-  // Check for pyproject.toml first (using TOML parser)
   const pyprojectPath = path.join(projectPath, 'pyproject.toml');
   if (await fs.pathExists(pyprojectPath)) {
     try {
       const content = await fs.readFile(pyprojectPath, 'utf8');
       const pyprojectData = toml.parse(content);
 
-      // Check different locations for name in pyproject.toml
       if (pyprojectData?.tool?.poetry?.name) {
         return pyprojectData.tool.poetry.name;
       }
-
       if (pyprojectData?.project?.name) {
         return pyprojectData.project.name;
       }
     } catch (error) {
-      console.error('Error parsing pyproject.toml:', error);
+      logging.error(`Error parsing ${file} file:`, error);
     }
   }
 
@@ -98,10 +96,13 @@ export const detectName = async (projectPath) => {
   for (const file of ['setup.py', 'setup.cfg']) {
     const filePath = path.join(projectPath, file);
     if (await fs.pathExists(filePath)) {
+      try {
       const content = await fs.readFile(filePath, 'utf8');
       const nameMatch = content.match(/name\s*=\s*["']?([^"'\s]+)["']?/);
       if (nameMatch) {
         return nameMatch[1];
+      }} catch (error) {
+        logging.error(`Error parsing ${file} file:`, error);
       }
     }
   }
