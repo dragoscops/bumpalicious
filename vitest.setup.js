@@ -3,14 +3,14 @@ import fs from 'fs-extra';
 
 process.exit = vi.fn();
 
-// Mock toml module
-vi.mock('@iarna/toml', () => {
-  const def = {
-    parse: vi.fn(),
-  };
+// // Mock toml module
+// vi.mock('@iarna/toml', () => {
+//   const def = {
+//     parse: vi.fn(),
+//   };
 
-  return {...def, default: def};
-});
+//   return {...def, default: def};
+// });
 
 vi.mock('fs-extra', async () => {
   const actual = await vi.importActual('fs-extra');

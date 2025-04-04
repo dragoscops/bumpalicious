@@ -41,17 +41,6 @@ const setupCfgContent = `[metadata]
 name = ${projectNameValue}
 version = ${oldVersion}`;
 
-export const cargoContent = `[package]
-name = "${projectNameValue}"
-version = "${oldVersion}"`;
-
-export const mockCargoData = {
-  package: {
-    name: projectNameValue,
-    version: oldVersion,
-  },
-};
-
 export const TEXT_VERSION_FILES = ['version', 'version.txt', 'VERSION', 'VERSION.txt'];
 
 const buildZigContent = `
@@ -98,7 +87,7 @@ export const projectConfigs = {
 };
 
 const configMocks = {
-  'Cargo.toml': cargoContent,
+  'Cargo.toml': ['[package]', `name = "${projectNameValue}"`, `version = "${oldVersion}"`].join('\n'),
   'deno.jsonc':
     '//comment \n' +
     JSON.stringify({
@@ -259,12 +248,23 @@ export const setupUpdateVersionTest = ({configFile, updateVersion}) => {
       }
 
       expect(fs.readFile).toHaveBeenCalledWith(`${projectPath}/${configFile}`, 'utf8');
-      if (configFile.endsWith('jsonc')) {
-        expect(fs.writeFile).toHaveBeenCalledWith(
-          `${projectPath}/${configFile}`,
-          expect.stringContaining(`"version": "${newVersion}"`),
-        );
+
+      switch(true) {
+        case configFile.endsWith('toml'):
+          expect(fs.writeFile).toHaveBeenCalledWith(
+            `${projectPath}/${configFile}`,
+            expect.stringContaining(`version = "${newVersion}"`),
+            'utf8'
+          );
+          break;
+        case configFile.endsWith('jsonc'):
+          expect(fs.writeFile).toHaveBeenCalledWith(
+            `${projectPath}/${configFile}`,
+            expect.stringContaining(`"version": "${newVersion}"`),
+          );
+          break;
       }
+
     });
   });
 };

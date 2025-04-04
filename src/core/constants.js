@@ -23,3 +23,8 @@ export const NODE_VERSION_FILES = DENO_VERSION_FILES.slice(2);
  * List of potential Python version files to check
  */
 export const PYTHON_VERSION_FILES = ['pyproject.toml', 'setup.py', 'setup.cfg', '__init__.py'];
+
+/**
+ * List of potential Rust version files to check
+ */
+export const RUST_VERSION_FILES = ['Cargo.toml'];
