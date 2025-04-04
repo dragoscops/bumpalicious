@@ -15,8 +15,6 @@ import * as logging from '../utils/logging.js';
  * @param {Object} options - Update options
  * @param {string} options.projectPath - Path to the project
  * @param {string} options.newVersion - New version to set
- * @returns {Promise<boolean>} - True if the update was successful
- * @throws {Error} - If version update fails
  */
 export const updateVersion = async ({projectPath, newVersion}) => {
   try {

@@ -124,7 +124,18 @@ export const unMockConsole = (keys = []) => {
   });
 };
 
-export const setupDetectVersionTest = ({detectVersion, configFile}) => {
+/**
+ * Set Up Tests for Detecting Version when Version Files Exist
+ *
+ * @param {Object} options - Update options
+ * @param {string} options.detectVersion - Path to the project
+ * @param {string|string[]} options.configFiles - New version to set
+ */
+export const setupDetectVersionTest = ({detectVersion, configFiles}) => {
+  if (!Array.isArray(configFiles)) {
+    configFiles = [configFiles];
+  }
+  for (const configFile of configFiles) {
   describe(`when ${configFile} config file exists`, () => {
     it(`will call fs.read* with correct arguments and return a version`, async () => {
       fs.existingFile = configFile;
@@ -139,6 +150,7 @@ export const setupDetectVersionTest = ({detectVersion, configFile}) => {
       expect(version).toEqual(oldVersion);
     });
   });
+}
 };
 
 export const setupDetectVersionTestNoConfig = ({detectVersion}) => {
