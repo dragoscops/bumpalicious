@@ -6,20 +6,8 @@
 import fs from 'fs-extra';
 import path from 'path';
 import {execa} from 'execa';
-import denoDetect from '../workspace/python.js';
-import goDetect from '../detect/go.js';
-import nodeDetect from '../detect/node.js';
-import pythonDetect from '../detect/python.js';
-import rustDetect from '../detect/rust.js';
-import textDetect from '../detect/text.js';
-import zigDetect from '../detect/zig.js';
+import * as workspace from '../workspace/index.js'
 // import { determineVersionIncreaseType, increaseVersion } from "./version.js";
-// import { updateDenoVersion } from "../update/deno.js";
-// import { updateGoVersion } from "../update/go.js";
-// import { updateNodeVersion } from "../update/node.js";
-// import { updatePythonVersion } from "../update/python.js";
-// import { updateRustVersion } from "../update/rust.js";
-// import { updateTextVersion } from "../update/text.js";
 import * as logging from '../utils/logging.js';
 
 /**
@@ -54,27 +42,9 @@ export const detectWorkspaceVersion = async (workspacePath, workspaceType) => {
     let name = '';
     let version = '';
 
-    // Detect version based on type
-    switch (workspaceType.toLowerCase()) {
-      case 'node':
-        ({name, version} = await detectNodeVersion());
-        break;
-      case 'deno':
-        ({name, version} = await detectDenoVersion());
-        break;
-      case 'go':
-        ({name, version} = await detectGoVersion());
-        break;
-      case 'python':
-        ({name, version} = await detectPythonVersion());
-        break;
-      case 'rust':
-        ({name, version} = await detectRustVersion());
-        break;
-      case 'text':
-        ({name, version} = await detectTextVersion());
-        break;
-      default:
+    if (workspace[workspaceType]) {
+      ({name, version} = await workspace[workspaceType].detect());
+    } else {
         // Default to text version if type is unknown
         ({name, version} = await detectTextVersion());
         logging.warning(`Unknown workspace type: ${workspaceType}, defaulting to text`);
