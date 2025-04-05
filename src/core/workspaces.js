@@ -6,12 +6,13 @@
 import fs from 'fs-extra';
 import path from 'path';
 import {execa} from 'execa';
-// import { detectDenoVersion } from "../detect/deno.js";
-// import { detectGoVersion } from "../detect/go.js";
-// import { detectNodeVersion } from "../detect/node.js";
-// import { detectPythonVersion } from "../detect/python.js";
-// import { detectRustVersion } from "../detect/rust.js";
-// import { detectTextVersion } from "../detect/text.js";
+import denoDetect from '../workspace/python.js';
+import goDetect from '../detect/go.js';
+import nodeDetect from '../detect/node.js';
+import pythonDetect from '../detect/python.js';
+import rustDetect from '../detect/rust.js';
+import textDetect from '../detect/text.js';
+import zigDetect from '../detect/zig.js';
 // import { determineVersionIncreaseType, increaseVersion } from "./version.js";
 // import { updateDenoVersion } from "../update/deno.js";
 // import { updateGoVersion } from "../update/go.js";
@@ -37,74 +38,70 @@ export function fromString(workspace) {
   };
 }
 
-// /**
-//  * Detect version for a specific workspace
-//  *
-//  * @param {string} workspacePath - Path to workspace
-//  * @param {string} workspaceType - Type of workspace (node, python, etc.)
-//  * @returns {Promise<{path: string, type: string, name: string, version: string}>}
-//  */
-// const detectWorkspaceVersion = async (workspacePath, workspaceType) => {
-//   // Change directory to workspace path
-//   const originalDir = process.cwd();
-//   process.chdir(workspacePath);
+/**
+ * Detect version for a specific workspace
+ *
+ * @param {string} workspacePath - Path to workspace
+ * @param {string} workspaceType - Type of workspace (node, python, etc.)
+ * @returns {Promise<{path: string, type: string, name: string, version: string}>}
+ */
+export const detectWorkspaceVersion = async (workspacePath, workspaceType) => {
+  // Change directory to workspace path
+  const originalDir = process.cwd();
+  process.chdir(workspacePath);
 
-//   try {
-//     let name = "";
-//     let version = "";
+  try {
+    let name = '';
+    let version = '';
 
-//     // Detect version based on type
-//     switch (workspaceType.toLowerCase()) {
-//       case "node":
-//         ({ name, version } = await detectNodeVersion());
-//         break;
-//       case "deno":
-//         ({ name, version } = await detectDenoVersion());
-//         break;
-//       case "go":
-//         ({ name, version } = await detectGoVersion());
-//         break;
-//       case "python":
-//         ({ name, version } = await detectPythonVersion());
-//         break;
-//       case "rust":
-//         ({ name, version } = await detectRustVersion());
-//         break;
-//       case "text":
-//         ({ name, version } = await detectTextVersion());
-//         break;
-//       default:
-//         // Default to text version if type is unknown
-//         ({ name, version } = await detectTextVersion());
-//         logging.warning(
-//           `Unknown workspace type: ${workspaceType}, defaulting to text`,
-//         );
-//     }
+    // Detect version based on type
+    switch (workspaceType.toLowerCase()) {
+      case 'node':
+        ({name, version} = await detectNodeVersion());
+        break;
+      case 'deno':
+        ({name, version} = await detectDenoVersion());
+        break;
+      case 'go':
+        ({name, version} = await detectGoVersion());
+        break;
+      case 'python':
+        ({name, version} = await detectPythonVersion());
+        break;
+      case 'rust':
+        ({name, version} = await detectRustVersion());
+        break;
+      case 'text':
+        ({name, version} = await detectTextVersion());
+        break;
+      default:
+        // Default to text version if type is unknown
+        ({name, version} = await detectTextVersion());
+        logging.warning(`Unknown workspace type: ${workspaceType}, defaulting to text`);
+    }
 
-//     // Use directory name as fallback for project name
-//     if (!name) {
-//       name = path.basename(workspacePath);
-//     }
+    // Use directory name as fallback for project name
+    if (!name) {
+      name = path.basename(workspacePath);
+    }
 
-//     // Use '0.1.0' as fallback for version
-//     if (!version) {
-//       version = "0.1.0";
-//       logging.warning(
-//         `Could not detect version for workspace ${name}, using default 0.1.0`,
-//       );
-//     }
+    // Use '0.1.0' as fallback for version
+    if (!version) {
+      version = '0.1.0';
+      logging.warning(`Could not detect version for workspace ${name}, using default 0.1.0`);
+    }
 
-//     return {
-//       path: workspacePath,
-//       type: workspaceType.toLowerCase(),
-//       name,
-//       version,
-//     };
-//   } finally {
-//     // Restore original directory
-//     process.chdir(originalDir);
-//   }
-// };
+    return {
+      path: workspacePath,
+      type: workspaceType.toLowerCase(),
+      name,
+      version,
+    };
+  } finally {
+    // Restore original directory
+    process.chdir(originalDir);
+  }
+};
 
 // /**
 //  * Check if a workspace has changed since the last tag

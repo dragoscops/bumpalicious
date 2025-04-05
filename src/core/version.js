@@ -34,14 +34,14 @@ export const determineVersionIncreaseType = (commitMessage) => {
     }
     return 'major';
   }
-  
+
   if (commitMessage.startsWith('feat:') || /^feat\([^)]+\):/.test(commitMessage)) {
     if (commitMessage.includes('pre-release')) {
       return 'preminor';
     }
     return 'minor';
   }
-  
+
   if (commitMessage.startsWith('fix:') || /^fix\([^)]+\):/.test(commitMessage)) {
     if (commitMessage.includes('pre-release')) {
       return 'prepatch';
@@ -54,7 +54,7 @@ export const determineVersionIncreaseType = (commitMessage) => {
 
 /**
  * Determine pre-release identifier from commit message
- * 
+ *
  * @param {string} commitMessage - Git commit message
  * @returns {string|null} - Pre-release identifier or null if not found
  */
@@ -67,9 +67,9 @@ export const determineVersionPreReleaseIdentifier = (commitMessage) => {
   if (preReleaseIdentifier) {
     return preReleaseIdentifier[1];
   }
-  
+
   return null;
-}
+};
 
 /**
  * @typedef {Object} IncreaseVersionOptions
@@ -90,6 +90,6 @@ export const increaseVersion = (currentVersion, options) => {
     logging.error(`Invalid version: ${currentVersion}`);
     return currentVersion;
   }
-  
+
   return semver.inc(currentVersion, options.type, options.suffix);
 };

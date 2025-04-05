@@ -134,68 +134,37 @@ export const unMockConsole = (keys = []) => {
  * @param {string} options.detectVersion - Path to the project
  * @param {string|string[]} options.configFile - New version to set
  */
-export const setupDetectVersionTest = ({detectVersion, configFile}) => {
+export const setupDetectTest = ({detect, configFile, projectName = projectNameValue}) => {
   describe(`when ${configFile} config file exists`, () => {
     it(`will call fs.read* with correct arguments and return a version`, async () => {
       fs.existingFile = configFile;
 
-      const version = await detectVersion(projectPath);
+      const config = await detect(projectPath);
 
       if (configFile.endsWith('json')) {
         expect(fs.readJson).toHaveBeenCalledWith(`${projectPath}/${configFile}`);
       } else {
         expect(fs.readFile).toHaveBeenCalledWith(`${projectPath}/${configFile}`, 'utf8');
       }
-      expect(version).toEqual(oldVersion);
+      expect(config.name).toEqual(projectName);
+      expect(config.version).toEqual(oldVersion);
     });
   });
 };
 
-export const setupDetectVersionTestNoConfig = ({detectVersion}) => {
+export const setupDetectTestNoConfig = ({detect}) => {
   describe('when no config file exists', () => {
     it('ends with error message', async () => {
       fs.existingFile = 'unknown';
 
       try {
         mockConsole(['error']);
-        await detectVersion(projectPath);
+        await detect(projectPath);
         expect(console.error).toHaveBeenCalled();
         expect(console.error).toHaveBeenCalledWith(expect.stringContaining('No version file found'));
       } finally {
         unMockConsole(['error']);
       }
-    });
-  });
-};
-
-export const setupDetectNameTest = ({detectName, configFile, projectName = projectNameValue}) => {
-  describe(`when ${configFile} config file exists`, () => {
-    it(`will call fs.read* with correct arguments and return a project name`, async () => {
-      fs.existingFile = configFile;
-
-      const name = await detectName(projectPath);
-
-      if (configFile.endsWith('json')) {
-        expect(fs.readJson).toHaveBeenCalledWith(`${projectPath}/${configFile}`);
-      } else {
-        // TODO: kinda hacky, but text projects do not read project names for now :)
-        if (!/version(\.txt)?$/gi.test(configFile.toLowerCase())) {
-          expect(fs.readFile).toHaveBeenCalledWith(`${projectPath}/${configFile}`, 'utf8');
-        }
-      }
-      expect(name).toEqual(projectName);
-    });
-  });
-};
-
-export const setupDetectNameTestNoConfig = ({detectName}) => {
-  describe('when no config file exists', () => {
-    it(`will return the folder as project name`, async () => {
-      fs.existingFile = 'unknown';
-
-      const name = await detectName(projectPath);
-
-      expect(name).toEqual(projectNameValue);
     });
   });
 };

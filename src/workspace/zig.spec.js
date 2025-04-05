@@ -1,13 +1,15 @@
 import {describe, beforeAll, vi, afterAll} from 'vitest';
-import {updateVersion} from './deno.js';
+import {detect, updateVersion} from './zig.js';
 import {
   mockConfigFiles,
-  setupUpdateVersionTestNoConfig,
+  setupDetectTest,
+  setupDetectTestNoConfig,
   setupUpdateVersionTest,
+  setupUpdateVersionTestNoConfig,
 } from '../vitest/setup.detect-update.tests.js';
-import {DENO_VERSION_FILES} from '../core/constants.js';
+import {ZIG_VERSION_FILES} from '../core/constants.js';
 
-describe('update/deno.js module', () => {
+describe('detect/zig.js module', () => {
   beforeAll(() => {
     vi.clearAllMocks();
     mockConfigFiles();
@@ -17,8 +19,16 @@ describe('update/deno.js module', () => {
     vi.restoreAllMocks();
   });
 
+  describe('detect()', () => {
+    for (const configFile of ZIG_VERSION_FILES) {
+      setupDetectTest({configFile, detect});
+    }
+
+    setupDetectTestNoConfig({detect});
+  });
+
   describe('updateVersion()', () => {
-    for (const configFile of DENO_VERSION_FILES) {
+    for (const configFile of ZIG_VERSION_FILES) {
       setupUpdateVersionTest({configFile, updateVersion});
     }
 

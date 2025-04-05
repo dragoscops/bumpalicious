@@ -1,13 +1,15 @@
 import {describe, beforeAll, vi, afterAll} from 'vitest';
-import {updateVersion} from './text.js';
+import {detect, updateVersion} from './text.js';
 import {
   mockConfigFiles,
-  setupUpdateVersionTestNoConfig,
+  setupDetectTest,
+  setupDetectTestNoConfig,
   setupUpdateVersionTest,
+  setupUpdateVersionTestNoConfig,
 } from '../vitest/setup.detect-update.tests.js';
 import {TEXT_VERSION_FILES} from '../core/constants.js';
 
-describe('update/node.js module', () => {
+describe('detect/text.js module', () => {
   beforeAll(() => {
     vi.clearAllMocks();
     mockConfigFiles();
@@ -15,6 +17,14 @@ describe('update/node.js module', () => {
 
   afterAll(() => {
     vi.restoreAllMocks();
+  });
+
+  describe('detect()', () => {
+    for (const configFile of TEXT_VERSION_FILES) {
+      setupDetectTest({configFile, detect});
+    }
+
+    setupDetectTestNoConfig({detect});
   });
 
   describe('updateVersion()', () => {

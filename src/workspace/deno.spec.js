@@ -1,11 +1,11 @@
 import {describe, beforeAll, vi, afterAll} from 'vitest';
-import {detectVersion, detectName} from './deno.js';
+import {detect, updateVersion} from './deno.js';
 import {
   mockConfigFiles,
-  setupDetectVersionTest,
-  setupDetectVersionTestNoConfig,
-  setupDetectNameTest,
-  setupDetectNameTestNoConfig,
+  setupDetectTest,
+  setupDetectTestNoConfig,
+  setupUpdateVersionTest,
+  setupUpdateVersionTestNoConfig,
 } from '../vitest/setup.detect-update.tests.js';
 import {DENO_VERSION_FILES} from '../core/constants.js';
 
@@ -19,19 +19,19 @@ describe('detect/deno.js module', () => {
     vi.restoreAllMocks();
   });
 
-  describe('detectVersion()', () => {
+  describe('detect()', () => {
     for (const configFile of DENO_VERSION_FILES) {
-      setupDetectVersionTest({configFile, detectVersion});
+      setupDetectTest({configFile, detect});
     }
 
-    setupDetectVersionTestNoConfig({detectVersion});
+    setupDetectTestNoConfig({detect});
   });
 
-  describe('detectName()', () => {
+  describe('updateVersion()', () => {
     for (const configFile of DENO_VERSION_FILES) {
-      setupDetectNameTest({configFile, detectName});
+      setupUpdateVersionTest({configFile, updateVersion});
     }
 
-    setupDetectNameTestNoConfig({detectName});
+    setupUpdateVersionTestNoConfig({updateVersion});
   });
 });

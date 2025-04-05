@@ -5,7 +5,7 @@
 
 import {describe, expect, it, vi, beforeEach, afterEach} from 'vitest';
 import {determineVersionIncreaseType, determineVersionPreReleaseIdentifier, increaseVersion} from './version.js';
-import { mockConsole, unMockConsole } from '../vitest/setup.detect-update.tests.js';
+import {mockConsole, unMockConsole} from '../vitest/setup.detect-update.tests.js';
 
 describe('core/version.js module', () => {
   beforeEach(() => {
@@ -20,10 +20,10 @@ describe('core/version.js module', () => {
     it('calls logging.error when commit message is empty or undefined', () => {
       determineVersionIncreaseType('');
       expect(console.error).toHaveBeenCalledWith(expect.stringContaining('No commit message provided'));
-      
+
       determineVersionIncreaseType(undefined);
       expect(console.error).toHaveBeenCalledWith(expect.stringContaining('No commit message provided'));
-      
+
       determineVersionIncreaseType(null);
       expect(console.error).toHaveBeenCalledWith(expect.stringContaining('No commit message provided'));
     });
@@ -67,10 +67,10 @@ describe('core/version.js module', () => {
     it('calls logging.error when commit message is empty or undefined', () => {
       determineVersionPreReleaseIdentifier('');
       expect(console.error).toHaveBeenCalledWith(expect.stringContaining('No commit message provided'));
-      
+
       determineVersionPreReleaseIdentifier(undefined);
       expect(console.error).toHaveBeenCalledWith(expect.stringContaining('No commit message provided'));
-      
+
       determineVersionPreReleaseIdentifier(null);
       expect(console.error).toHaveBeenCalledWith(expect.stringContaining('No commit message provided'));
     });
@@ -97,26 +97,26 @@ describe('core/version.js module', () => {
 
   describe('increaseVersion()', () => {
     it('increases version according to type', () => {
-      expect(increaseVersion('1.2.3', { type: 'major' })).toBe('2.0.0');
-      expect(increaseVersion('1.2.3', { type: 'minor' })).toBe('1.3.0');
-      expect(increaseVersion('1.2.3', { type: 'patch' })).toBe('1.2.4');
+      expect(increaseVersion('1.2.3', {type: 'major'})).toBe('2.0.0');
+      expect(increaseVersion('1.2.3', {type: 'minor'})).toBe('1.3.0');
+      expect(increaseVersion('1.2.3', {type: 'patch'})).toBe('1.2.4');
     });
 
     it('handles pre-release versions', () => {
-      expect(increaseVersion('1.2.3', { type: 'premajor', suffix: 'alpha' })).toBe('2.0.0-alpha.0');
-      expect(increaseVersion('1.2.3', { type: 'preminor', suffix: 'beta' })).toBe('1.3.0-beta.0');
-      expect(increaseVersion('1.2.3', { type: 'prepatch', suffix: 'rc' })).toBe('1.2.4-rc.0');
-      expect(increaseVersion('1.2.3-alpha.0', { type: 'prerelease', suffix: 'alpha' })).toBe('1.2.3-alpha.1');
+      expect(increaseVersion('1.2.3', {type: 'premajor', suffix: 'alpha'})).toBe('2.0.0-alpha.0');
+      expect(increaseVersion('1.2.3', {type: 'preminor', suffix: 'beta'})).toBe('1.3.0-beta.0');
+      expect(increaseVersion('1.2.3', {type: 'prepatch', suffix: 'rc'})).toBe('1.2.4-rc.0');
+      expect(increaseVersion('1.2.3-alpha.0', {type: 'prerelease', suffix: 'alpha'})).toBe('1.2.3-alpha.1');
     });
 
     it('handles release from pre-release versions', () => {
-      expect(increaseVersion('1.2.3-alpha.0', { type: 'release' })).toBe('1.2.3');
-      expect(increaseVersion('2.0.0-beta.5', { type: 'release' })).toBe('2.0.0');
+      expect(increaseVersion('1.2.3-alpha.0', {type: 'release'})).toBe('1.2.3');
+      expect(increaseVersion('2.0.0-beta.5', {type: 'release'})).toBe('2.0.0');
     });
 
     it('returns original version for invalid inputs', () => {
-      expect(increaseVersion('invalid', { type: 'major' })).toBe('invalid');
-      expect(increaseVersion('1.2', { type: 'unknown' })).toBe('1.2');
+      expect(increaseVersion('invalid', {type: 'major'})).toBe('invalid');
+      expect(increaseVersion('1.2', {type: 'unknown'})).toBe('1.2');
     });
   });
 });
