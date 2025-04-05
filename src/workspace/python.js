@@ -50,7 +50,7 @@ export const detect = async (projectPath) => {
         return {
           name: defaultName,
           version: versionMatch ? versionMatch[1] : undefined,
-        }
+        };
       } catch (error) {
         logging.error(`Error parsing ${file} file:`, error);
       }
@@ -76,9 +76,9 @@ export const detect = async (projectPath) => {
 
 /**
  * Detect name and version from a Python toml project file
- * 
- * @param {string} configPath 
- * @param {string} defaultName 
+ *
+ * @param {string} configPath
+ * @param {string} defaultName
  * @returns {PythonConfig}
  */
 const detectJsonc = async (pyprojectPath, defaultName) => {

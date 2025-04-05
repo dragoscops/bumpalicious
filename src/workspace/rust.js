@@ -28,7 +28,7 @@ export const detect = async (projectPath) => {
       return {
         name: cargoData?.package?.name || path.basename(path.normalize(projectPath)),
         version: cargoData?.package?.version,
-      };     
+      };
     } catch (error) {
       logging.error(`Error parsing ${file} file:`, error);
     }

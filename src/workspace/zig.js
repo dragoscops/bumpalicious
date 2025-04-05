@@ -7,7 +7,7 @@ import fs from 'fs-extra';
 import path from 'path';
 import {execa} from 'execa';
 import * as logging from '../utils/logging.js';
-import {ZIG_VERSION_FILES} from '../core/constants.js'; 
+import {ZIG_VERSION_FILES} from '../core/constants.js';
 
 /**
  * @typedef {Object} ZigConfig
@@ -32,7 +32,7 @@ export const detect = async (projectPath) => {
     return {
       name: zonData?.name || defaultName,
       version: zonData?.version || null,
-    }
+    };
   }
 
   const buildPath = path.join(projectPath, 'build.zig');
@@ -40,7 +40,7 @@ export const detect = async (projectPath) => {
     const content = await fs.readFile(buildPath, 'utf8');
     return {
       name: extractNameFromZigContent(content) || defaultName,
-      version: extractVersionFromZigContent(content)
+      version: extractVersionFromZigContent(content),
     };
   }
 

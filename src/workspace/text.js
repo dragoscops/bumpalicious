@@ -30,7 +30,7 @@ export const detect = async (projectPath) => {
       return {
         name: path.basename(path.normalize(projectPath)),
         version: content.trim(),
-      }
+      };
     }
   }
 
