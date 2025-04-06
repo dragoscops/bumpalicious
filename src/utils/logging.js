@@ -56,7 +56,7 @@ export const formatWorkspace = (workspace) => {
  */
 export const debug = (message, ...args) => {
   if (isGitHubActions) {
-    core.debug(message,);
+    core.debug(message);
     return console.log(...args);
   }
   console.log(`${colorize('DEBUG:', 'blue')} ${message}`, ...args);
@@ -123,7 +123,6 @@ export const warning = (message, ...args) => {
   }
   console.log(`${colorize('WARNING:', 'blue')} ${message}`, ...args);
 };
-
 
 /**
  * Log a section header
