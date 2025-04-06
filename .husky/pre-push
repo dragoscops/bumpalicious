@@ -1,3 +1,2 @@
-npm run test
-
+GITHUB_ACTIONS=false npm run test
 GITHUB_ACTIONS=true npm run test

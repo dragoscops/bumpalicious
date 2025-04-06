@@ -70,7 +70,7 @@ const run = async () => {
       logging.error('No commit message found');
     }
 
-    const changedWorkspaces = workspace.enrichChangedWorkspaces(options.workspaces, lastTag);
+    const changedWorkspaces = await workspace.enrichChangedWorkspaces(options.workspaces, lastTag);
     logging.info('Workspaces:', changedWorkspaces);
     if (changedWorkspaces.length === 0) {
       logging.warning('No changed workspaces found');
