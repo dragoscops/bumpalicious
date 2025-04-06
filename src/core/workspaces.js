@@ -51,10 +51,10 @@ export const enrichWorkspace = async (workspacePath, workspaceType) => {
     let version = '';
 
     if (workspace[workspaceType]) {
-      ({name, version} = await workspace[workspaceType].detect());
+      ({name, version} = await workspace[workspaceType].detect(workspacePath));
     } else {
       // Default to text version if type is unknown
-      ({name, version} = await detectTextVersion());
+      ({name, version} = await detectTextVersion(workspacePath));
       logging.warning(`Unknown workspace type: ${workspaceType}, defaulting to text`);
     }
 
