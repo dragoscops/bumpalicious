@@ -6,9 +6,16 @@
 import fs from 'fs-extra';
 import path from 'path';
 import {execa} from 'execa';
-import * as workspace from '../workspace/index.js'
-// import { determineVersionIncreaseType, increaseVersion } from "./version.js";
+import * as workspace from '../workspace/index.js';
 import * as logging from '../utils/logging.js';
+
+/**
+ * @typedef {Object} Workspace
+ * @property {string} path - Path to the workspace
+ * @property {string} name - Name of the workspace
+ * @property {string} type - Type of the workspace (node, python, etc.)
+ * @property {string} version - Version of the workspace
+ */
 
 /**
  * Converts a workspace string to a Workspace object
@@ -31,9 +38,9 @@ export function fromString(workspace) {
  *
  * @param {string} workspacePath - Path to workspace
  * @param {string} workspaceType - Type of workspace (node, python, etc.)
- * @returns {Promise<{path: string, type: string, name: string, version: string}>}
+ * @returns {Promise<Workspace>}
  */
-export const detectWorkspaceVersion = async (workspacePath, workspaceType) => {
+export const enrichWorkspace = async (workspacePath, workspaceType) => {
   // Change directory to workspace path
   const originalDir = process.cwd();
   process.chdir(workspacePath);
@@ -45,9 +52,9 @@ export const detectWorkspaceVersion = async (workspacePath, workspaceType) => {
     if (workspace[workspaceType]) {
       ({name, version} = await workspace[workspaceType].detect());
     } else {
-        // Default to text version if type is unknown
-        ({name, version} = await detectTextVersion());
-        logging.warning(`Unknown workspace type: ${workspaceType}, defaulting to text`);
+      // Default to text version if type is unknown
+      ({name, version} = await detectTextVersion());
+      logging.warning(`Unknown workspace type: ${workspaceType}, defaulting to text`);
     }
 
     // Use directory name as fallback for project name
@@ -72,6 +79,25 @@ export const detectWorkspaceVersion = async (workspacePath, workspaceType) => {
     process.chdir(originalDir);
   }
 };
+
+/**
+ * Parse workspace specifications
+ * 
+ * @param {Workspace[]} workspaces 
+ * @returns {Promise<Workspace[]>}
+ */
+export const enrichWorkspaces = async (workspaces) => {
+  const enrichedWorkspaces = [];
+
+  for (const workspace of workspaces) {
+    const enrichedWorkspace = await enrichWorkspace(workspace.path, workspace.type);
+    enrichedWorkspaces.push(enrichedWorkspace);
+  }
+
+  return enrichedWorkspaces;
+}
+
+
 
 // /**
 //  * Check if a workspace has changed since the last tag
@@ -126,55 +152,6 @@ export const detectWorkspaceVersion = async (workspacePath, workspaceType) => {
 //       type: (workspaceType || "text").trim().toLowerCase(),
 //     };
 //   });
-// };
-
-// /**
-//  * Gather information about changed workspaces
-//  *
-//  * @param {Object} options - Options for workspace discovery
-//  * @param {string} options.workspacesSpec - Workspace specifications
-//  * @param {string} options.lastTag - Last git tag
-//  * @returns {Promise<Array<{path: string, type: string, name: string, version: string}>>} - Info about changed workspaces
-//  */
-// export const gatherChangedWorkspacesInfo = async ({
-//   workspacesSpec,
-//   lastTag,
-// }) => {
-//   const workspaces = parseWorkspacesSpec(workspacesSpec);
-//   const changedWorkspaces = [];
-
-//   for (const workspace of workspaces) {
-//     // Skip if workspace doesn't exist
-//     if (!(await fs.pathExists(workspace.path))) {
-//       logging.warning(`Workspace path does not exist: ${workspace.path}`);
-//       continue;
-//     }
-
-//     // Check if workspace has changed since last tag
-//     if (await hasWorkspaceChanges(workspace.path, lastTag)) {
-//       try {
-//         // Get workspace info (name and version)
-//         const workspaceInfo = await detectWorkspaceVersion(
-//           workspace.path,
-//           workspace.type,
-//         );
-//         changedWorkspaces.push(workspaceInfo);
-
-//         logging.success(
-//           `Detected changes in ${logging.formatWorkspace(workspaceInfo)}`,
-//         );
-//       } catch (error) {
-//         logging.error(
-//           `Error gathering info for workspace ${workspace.path}:`,
-//           error,
-//         );
-//       }
-//     } else {
-//       logging.info(`No changes detected in workspace: ${workspace.path}`);
-//     }
-//   }
-
-//   return changedWorkspaces;
 // };
 
 // /**

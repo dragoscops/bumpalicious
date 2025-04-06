@@ -5,28 +5,17 @@ import * as git from './git.js';
 import * as logging from './logging.js';
 import {mockConsole, unMockConsole} from '../vitest/setup.detect-update.tests.js';
 
-// Mock the logging module
-vi.mock('./logging.js', () => ({
-  success: vi.fn(),
-  error: vi.fn(),
-  warning: vi.fn(),
-  info: vi.fn(),
-}));
-
 describe('git.js module', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockConsole();
   });
 
-  describe('setupUser', () => {
-    beforeAll(() => {
-      mockConsole();
-    });
+  afterAll(() => {
+    unMockConsole();
+  });
 
-    afterAll(() => {
-      unMockConsole();
-    });
-
+  describe('setupUser()', () => {
     it('configures git user for GitHub', async () => {
       await git.setupUser({platform: 'github'});
 
@@ -71,15 +60,7 @@ describe('git.js module', () => {
     });
   });
 
-  describe('lastCreatedTag', () => {
-    beforeAll(() => {
-      mockConsole();
-    });
-
-    afterAll(() => {
-      unMockConsole();
-    });
-
+  describe('lastCreatedTag()', () => {
     it('returns the last tag when tags are present', async () => {
       execa.mockResolvedValueOnce({stdout: 'v1.0.0\n'});
 
@@ -99,15 +80,7 @@ describe('git.js module', () => {
     });
   });
 
-  describe('lastCommitMessage', () => {
-    beforeAll(() => {
-      mockConsole();
-    });
-
-    afterAll(() => {
-      unMockConsole();
-    });
-
+  describe('lastCommitMessage()', () => {
     it('returns the latest commit message', async () => {
       execa.mockResolvedValueOnce({stdout: 'feat: add new feature\n'});
 
@@ -124,6 +97,77 @@ describe('git.js module', () => {
 
       expect(console.error).toHaveBeenCalledWith(expect.stringContaining('Failed to get latest commit message'));
       expect(message).toBe('');
+    });
+  });
+
+  describe('getChangedFiles()', () => {
+    it('returns files that changed since the specified tag', async () => {
+      const repoPath = '/path/to/repo';
+      const lastTag = 'v1.0.0';
+      const changedFiles = ['file1.js', 'file2.js', 'dir/file3.js'];
+
+      execa.mockResolvedValueOnce({
+        stdout: changedFiles.join('\n'),
+      });
+
+      const result = await git.getChangedFiles(repoPath, lastTag);
+
+      expect(execa).toHaveBeenCalledWith('git', ['diff', lastTag, '--name-only', '--', repoPath], {cwd: repoPath});
+      expect(result).toEqual(changedFiles);
+    });
+
+    it('returns all tracked files when no tag is provided', async () => {
+      const repoPath = '/path/to/repo';
+      const trackedFiles = ['file1.js', 'file2.js', 'dir/file3.js'];
+
+      execa.mockResolvedValueOnce({
+        stdout: trackedFiles.join('\n'),
+      });
+
+      const result = await git.getChangedFiles(repoPath, null);
+
+      expect(execa).toHaveBeenCalledWith('git', ['ls-files'], {cwd: repoPath});
+      expect(result).toEqual(trackedFiles);
+    });
+
+    it('filters out empty lines in the git command output', async () => {
+      const repoPath = '/path/to/repo';
+      const lastTag = 'v1.0.0';
+
+      execa.mockResolvedValueOnce({
+        stdout: 'file1.js\n\nfile2.js\n',
+      });
+
+      const result = await git.getChangedFiles(repoPath, lastTag);
+
+      expect(result).toEqual(['file1.js', 'file2.js']);
+    });
+
+    it('logs error and exits when git command fails', async () => {
+      const repoPath = '/path/to/repo';
+      const lastTag = 'v1.0.0';
+      const error = new Error('Git command failed');
+
+      execa.mockRejectedValueOnce(error);
+
+      const result = await git.getChangedFiles(repoPath, lastTag);
+
+      expect(console.error).toHaveBeenCalledWith(
+        expect.stringContaining(`Error retrieving changed files in repository ${repoPath}:`),
+      );
+    });
+
+    it('handles empty output from git command', async () => {
+      const repoPath = '/path/to/repo';
+      const lastTag = 'v1.0.0';
+
+      execa.mockResolvedValueOnce({
+        stdout: '',
+      });
+
+      const result = await git.getChangedFiles(repoPath, lastTag);
+
+      expect(result).toEqual([]);
     });
   });
 

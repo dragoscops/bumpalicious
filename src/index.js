@@ -63,11 +63,8 @@ const run = async () => {
     console.log(`Last tag: ${lastTag}`);
     console.log(`Latest commit message: ${commitMessage}`);
 
-    // Get information about which workspaces have changed
-    const changedWorkspaces = await gatherChangedWorkspacesInfo({
-      workspacesSpec: options.workspaces,
-      lastTag,
-    });
+    const workspaces = enrichWorkspaces(options.workspaces);
+    console.log('Workspaces:', workspaces);
 
     //   // Store changed workspaces information as output
     //   const changedWorkspacesInfo = changedWorkspaces.map(ws =>
