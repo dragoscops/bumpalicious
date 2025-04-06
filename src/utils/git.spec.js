@@ -178,7 +178,7 @@ describe('git.js module', () => {
       setupLoggingCallsTest('error', [
         expect.stringContaining('ERROR'),
         expect.stringContaining(`Error retrieving changed files in repository ${repoPath}:`),
-        expect.any(Error)
+        expect.any(Error),
       ]);
     });
 
