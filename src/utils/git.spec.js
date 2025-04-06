@@ -48,7 +48,7 @@ describe('git.js module', () => {
     });
 
     it('log error when unsupported platform is given', async () => {
-      await git.setupUser({platform: 'unsupported'})
+      await git.setupUser({platform: 'unsupported'});
 
       expect(console.error).toHaveBeenCalledWith(expect.stringContaining('Unsupported platform: unsupported'));
     });
@@ -58,9 +58,9 @@ describe('git.js module', () => {
       process.env.GITHUB_WORKSPACE = '/path/to/workspace';
 
       try {
-      await git.setupUser({platform: 'github'})
+        await git.setupUser({platform: 'github'});
 
-      expect(console.error).toHaveBeenCalledWith(expect.stringMatching(/.*Failed to configure git user/));
+        expect(console.error).toHaveBeenCalledWith(expect.stringMatching(/.*Failed to configure git user/));
       } finally {
         delete process.env.GITHUB_WORKSPACE;
       }
