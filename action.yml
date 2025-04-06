@@ -3,14 +3,18 @@ description: "GitHub Action for automated version management based on convention
 author: "dragoscops"
 
 inputs:
-  workspaces:
-    description: 'Comma-separated workspace definitions with format "path:type", e.g., ".:text,packages/node:node"'
+  platform:
+    description: "Git platform"
     required: false
-    default: ".:text"
+    default: github
   token:
     description: "GitHub token for actions like creating pull requests"
     required: false
     default: ${{ github.token }}
+  workspaces:
+    description: 'Comma-separated workspace definitions with format "path:type", e.g., ".:text,packages/node:node"'
+    required: false
+    default: ".:text"
   # create-pr:
   #   description: "Whether to create a pull request with version changes"
   #   required: false

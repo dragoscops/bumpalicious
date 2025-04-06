@@ -52,7 +52,7 @@ const run = async () => {
     };
 
     logging.info('Affecting workspaces:', options.workspaces);
-    
+
     // validate platform value
     git.validatePlatform(options.platform);
 
