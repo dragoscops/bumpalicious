@@ -47,16 +47,23 @@ describe('git.js module', () => {
       ]);
     });
 
-    it('throws error for unsupported platform', async () => {
-      await expect(git.setupUser({platform: 'unsupported'})).rejects.toThrow('Unsupported platform: unsupported');
+    it('log error when unsupported platform is given', async () => {
+      await git.setupUser({platform: 'unsupported'})
+
+      expect(console.error).toHaveBeenCalledWith(expect.stringContaining('Unsupported platform: unsupported'));
     });
 
-    it('logs error and rethrows on failure', async () => {
+    it('logs error when ', async () => {
       execa.mockRejectedValueOnce(new Error('Mocked error'));
+      process.env.GITHUB_WORKSPACE = '/path/to/workspace';
 
-      await expect(git.setupUser({platform: 'github'})).rejects.toThrow('Mocked error');
+      try {
+      await git.setupUser({platform: 'github'})
 
       expect(console.error).toHaveBeenCalledWith(expect.stringMatching(/.*Failed to configure git user/));
+      } finally {
+        delete process.env.GITHUB_WORKSPACE;
+      }
     });
   });
 

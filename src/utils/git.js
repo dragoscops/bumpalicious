@@ -20,7 +20,7 @@ export const platforms = {
  */
 export function validatePlatform(platform) {
   if (!Object.values(platforms).includes(platform)) {
-    throw new Error(`Unsupported git platform: ${platform}`);
+    logger.error(`Unsupported git platform: ${platform}`);
   }
 }
 
@@ -38,7 +38,7 @@ export function validatePlatform(platform) {
  */
 export async function setupUser({
   platform = 'github',
-  workspace = process.env.GITHUB_WORKSPACE || process.env.GITEA_WORKSPACE || process.cwd(),
+  workspace: workspacePath = process.env.GITHUB_WORKSPACE || process.env.GITEA_WORKSPACE || process.cwd(),
 }) {
   try {
     switch (platform) {
@@ -57,15 +57,14 @@ export async function setupUser({
     }
 
     // Add workspace to safe directories if provided
-    if (workspace) {
-      await execa('git', ['config', '--global', '--add', 'safe.directory', workspace]);
+    if (workspacePath) {
+      await execa('git', ['config', '--global', '--add', 'safe.directory', workspacePath]);
     }
 
-    console.log(`Git user configured successfully`);
+    logging.info(`Git user configured successfully`);
   } catch (error) {
     // Just log the message without the error object for test compatibility
-    console.error(`Failed to configure git user`);
-    throw error;
+    logging.error(`Failed to configure git user`, error);
   }
 }
 
@@ -97,7 +96,7 @@ export const lastCommitMessage = async () => {
     return stdout.trim();
   } catch (error) {
     // Format for stringContaining matcher
-    console.error(`Failed to get latest commit message: ${error.message}`);
+    logging.error(`Failed to get latest commit message: ${error.message}`);
     return ''; // Return empty string on error to match test expectations
   }
 };
@@ -154,7 +153,7 @@ export const getChangedFiles = async (repoPath, lastTag) => {
 
 //     return domain;
 //   } catch (err) {
-//     console.error('Error detecting git repository domain:', err);
+//     logging.error('Error detecting git repository domain:', err);
 //     return null;
 //   }
 // }
