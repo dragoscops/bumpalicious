@@ -68,12 +68,12 @@ const run = async () => {
       logging.error('No commit message found');
     }
 
-    const changedWorkspaces = workspace.enrichChangedWorkspaces(options.workspaces, lastTag);
-    logging.info('Workspaces:', changedWorkspaces);
-    if (changedWorkspaces.length === 0) {
-      logging.warning('No changed workspaces found');
-      return;
-    }
+    // const changedWorkspaces = workspace.enrichChangedWorkspaces(options.workspaces, lastTag);
+    // logging.info('Workspaces:', changedWorkspaces);
+    // if (changedWorkspaces.length === 0) {
+    //   logging.warning('No changed workspaces found');
+    //   return;
+    // }
 
     //   // Store changed workspaces information as output
     //   const changedWorkspacesInfo = changedWorkspaces.map(ws =>
