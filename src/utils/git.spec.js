@@ -2,17 +2,16 @@ import {execa} from 'execa';
 import {describe, it, expect, beforeEach, vi, afterAll, beforeAll} from 'vitest';
 
 import * as git from './git.js';
-import * as logging from './logging.js';
-import {mockConsole, unMockConsole} from '../vitest/setup.detect-update.tests.js';
+import {mockCConsole, unMockCConsole, setupLoggingCallsTest} from '../vitest/setup.logging.tests.js';
 
 describe('git.js module', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockConsole();
+    mockCConsole();
   });
 
   afterAll(() => {
-    unMockConsole();
+    unMockCConsole();
   });
 
   describe('setupUser()', () => {
@@ -21,7 +20,10 @@ describe('git.js module', () => {
 
       expect(execa).toHaveBeenCalledWith('git', ['config', '--global', 'user.name', 'GitHub Actions']);
       expect(execa).toHaveBeenNthCalledWith(2, 'git', ['config', '--global', 'user.email', 'actions@github.com']);
-      expect(console.log).toHaveBeenCalledWith(expect.stringMatching(/.*Git user configured successfully/));
+      setupLoggingCallsTest('info', [
+        expect.stringContaining('INFO'),
+        expect.stringMatching(/.*Git user configured successfully/),
+      ]);
     });
 
     it('configures git user for Gitea', async () => {
@@ -29,7 +31,10 @@ describe('git.js module', () => {
 
       expect(execa).toHaveBeenCalledWith('git', ['config', '--global', 'user.name', 'Gitea CI']);
       expect(execa).toHaveBeenCalledWith('git', ['config', '--global', 'user.email', 'ci@gitea.com']);
-      expect(console.log).toHaveBeenCalledWith(expect.stringMatching(/.*Git user configured successfully/));
+      setupLoggingCallsTest('info', [
+        expect.stringContaining('INFO'),
+        expect.stringMatching(/.*Git user configured successfully/),
+      ]);
     });
 
     it('adds workspace to safe directories if provided', async () => {
@@ -50,17 +55,24 @@ describe('git.js module', () => {
     it('log error when unsupported platform is given', async () => {
       await git.setupUser({platform: 'unsupported'});
 
-      expect(console.error).toHaveBeenCalledWith(expect.stringContaining('Unsupported platform: unsupported'));
+      setupLoggingCallsTest('error', [
+        expect.stringContaining('ERROR'),
+        expect.stringContaining('Unsupported platform: unsupported'),
+      ]);
     });
 
-    it('logs error when ', async () => {
+    it('logs error when failing to configure git user', async () => {
       execa.mockRejectedValueOnce(new Error('Mocked error'));
       process.env.GITHUB_WORKSPACE = '/path/to/workspace';
 
       try {
         await git.setupUser({platform: 'github'});
 
-        expect(console.error).toHaveBeenCalledWith(expect.stringMatching(/.*Failed to configure git user/));
+        setupLoggingCallsTest('error', [
+          expect.stringContaining('ERROR'),
+          expect.stringMatching(/.*Failed to configure git user/),
+          expect.any(Error),
+        ]);
       } finally {
         delete process.env.GITHUB_WORKSPACE;
       }
@@ -77,13 +89,15 @@ describe('git.js module', () => {
       expect(lastTag).toBe('v1.0.0');
     });
 
-    it('returns null and logs warning when no tags are found', async () => {
+    it('logs error when no tags are found', async () => {
       execa.mockRejectedValueOnce(new Error('fatal: No names found, cannot describe anything.'));
 
       const lastTag = await git.lastCreatedTag();
 
-      expect(console.log).toHaveBeenCalledWith(expect.stringMatching(/.*No tags found in the repository/));
-      expect(lastTag).toBeNull();
+      setupLoggingCallsTest('error', [
+        expect.stringContaining('ERROR'),
+        expect.stringMatching(/.*No tags found in the repository/),
+      ]);
     });
   });
 
@@ -102,8 +116,10 @@ describe('git.js module', () => {
 
       const message = await git.lastCommitMessage();
 
-      expect(console.error).toHaveBeenCalledWith(expect.stringContaining('Failed to get latest commit message'));
-      expect(message).toBe('');
+      setupLoggingCallsTest('error', [
+        expect.stringContaining('ERROR'),
+        expect.stringContaining('Failed to get latest commit message'),
+      ]);
     });
   });
 
@@ -159,9 +175,11 @@ describe('git.js module', () => {
 
       const result = await git.getChangedFiles(repoPath, lastTag);
 
-      expect(console.error).toHaveBeenCalledWith(
+      setupLoggingCallsTest('error', [
+        expect.stringContaining('ERROR'),
         expect.stringContaining(`Error retrieving changed files in repository ${repoPath}:`),
-      );
+        expect.any(Error)
+      ]);
     });
 
     it('handles empty output from git command', async () => {

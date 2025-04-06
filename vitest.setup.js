@@ -1,16 +1,25 @@
+import core from '@actions/core';
 import {execa} from 'execa';
 import fs from 'fs-extra';
 
 process.exit = vi.fn();
 
-// // Mock toml module
-// vi.mock('@iarna/toml', () => {
-//   const def = {
-//     parse: vi.fn(),
-//   };
+vi.mock('@actions/core', () => {
+  const actual = vi.importActual('@actions/core');
 
-//   return {...def, default: def};
-// });
+  const def = {
+    ...actual,
+    debug: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    warning: vi.fn(),
+    notice: vi.fn(),
+    startGroup: vi.fn(),
+    endGroup: vi.fn(),
+  };
+
+  return {...def, default: def};
+});
 
 vi.mock('fs-extra', async () => {
   const actual = await vi.importActual('fs-extra');

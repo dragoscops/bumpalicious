@@ -5,27 +5,36 @@
 
 import {describe, expect, it, vi, beforeEach, afterEach} from 'vitest';
 import {determineVersionIncreaseType, determineVersionPreReleaseIdentifier, increaseVersion} from './version.js';
-import {mockConsole, unMockConsole} from '../vitest/setup.detect-update.tests.js';
+import {mockCConsole, setupLoggingCallsTest, unMockCConsole} from '../vitest/setup.logging.tests.js';
 
 describe('core/version.js module', () => {
   beforeEach(() => {
-    mockConsole(['error']);
+    mockCConsole(['error']);
   });
 
   afterEach(() => {
-    unMockConsole(['error']);
+    unMockCConsole(['error']);
   });
 
   describe('determineVersionIncreaseType()', () => {
     it('calls logging.error when commit message is empty or undefined', () => {
       determineVersionIncreaseType('');
-      expect(console.error).toHaveBeenCalledWith(expect.stringContaining('No commit message provided'));
+      setupLoggingCallsTest('error', [
+        expect.stringContaining('ERROR:'),
+        expect.stringContaining('No commit message provided'),
+      ]);
 
       determineVersionIncreaseType(undefined);
-      expect(console.error).toHaveBeenCalledWith(expect.stringContaining('No commit message provided'));
+      setupLoggingCallsTest('error', [
+        expect.stringContaining('ERROR:'),
+        expect.stringContaining('No commit message provided'),
+      ]);
 
       determineVersionIncreaseType(null);
-      expect(console.error).toHaveBeenCalledWith(expect.stringContaining('No commit message provided'));
+      setupLoggingCallsTest('error', [
+        expect.stringContaining('ERROR:'),
+        expect.stringContaining('No commit message provided'),
+      ]);
     });
 
     it('returns "major" for breaking changes', () => {
@@ -66,13 +75,22 @@ describe('core/version.js module', () => {
   describe('determineVersionPreReleaseIdentifier()', () => {
     it('calls logging.error when commit message is empty or undefined', () => {
       determineVersionPreReleaseIdentifier('');
-      expect(console.error).toHaveBeenCalledWith(expect.stringContaining('No commit message provided'));
+      setupLoggingCallsTest('error', [
+        expect.stringContaining('ERROR:'),
+        expect.stringContaining('No commit message provided'),
+      ]);
 
       determineVersionPreReleaseIdentifier(undefined);
-      expect(console.error).toHaveBeenCalledWith(expect.stringContaining('No commit message provided'));
+      setupLoggingCallsTest('error', [
+        expect.stringContaining('ERROR:'),
+        expect.stringContaining('No commit message provided'),
+      ]);
 
       determineVersionPreReleaseIdentifier(null);
-      expect(console.error).toHaveBeenCalledWith(expect.stringContaining('No commit message provided'));
+      setupLoggingCallsTest('error', [
+        expect.stringContaining('ERROR:'),
+        expect.stringContaining('No commit message provided'),
+      ]);
     });
 
     it('extracts pre-release identifier from commit messages', () => {

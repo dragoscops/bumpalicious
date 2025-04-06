@@ -1,4 +1,4 @@
-import * as core from '@actions/core';
+import core from '@actions/core';
 
 /**
  * Logging utilities for consistent output formatting
@@ -18,8 +18,22 @@ const colors = {
   bold: '\x1b[1m',
 };
 
-// Determine if running in GitHub Actions environment
-const isGitHubActions = process.env.GITHUB_ACTIONS === 'true';
+export const clabels = {
+  debug: 'DEBUG:',
+  error: 'ERROR:',
+  info: 'INFO:',
+  notice: 'NOTICE:',
+  warning: 'WARNING:',
+};
+
+export const cconsole = {
+  debug: console.log,
+  error: console.error,
+  info: console.info,
+  notice: console.info,
+  warning: console.warn,
+  startGroup: console.log,
+};
 
 /**
  * Format text with ANSI color codes (only in non-GitHub Actions environment)
@@ -29,7 +43,7 @@ const isGitHubActions = process.env.GITHUB_ACTIONS === 'true';
  * @returns {string} - Colorized text
  */
 const colorize = (text, color) => {
-  if (isGitHubActions) {
+  if (process.env.GITHUB_ACTIONS === 'true') {
     return text;
   }
   return `${colors[color] || ''}${text}${colors.reset}`;
@@ -54,12 +68,12 @@ export const formatWorkspace = (workspace) => {
  * @param {string} message - Message to log
  * @param {any[]} args - Additional arguments to log
  */
-export const debug = (message, ...args) => {
-  if (isGitHubActions) {
-    core.debug(message);
-    return console.log(...args);
+export const debug = (...args) => {
+  if (process.env.GITHUB_ACTIONS === 'true') {
+    core.debug(args[0]);
+    return cconsole.debug(...args.slice(1));
   }
-  console.log(`${colorize('DEBUG:', 'blue')} ${message}`, ...args);
+  cconsole.debug(colorize(clabels.debug, 'white'), ...args);
 };
 
 /**
@@ -67,19 +81,19 @@ export const debug = (message, ...args) => {
  *
  * @param {string} message - Message to log
  */
-export const error = (message, ...args) => {
-  const [error, ...rest] = args;
-  if (isGitHubActions) {
+export const error = (...args) => {
+  const [message, error, ...rest] = args;
+  if (process.env.GITHUB_ACTIONS === 'true') {
     core.error(`${message}${error ? ': ' + error.message : ''}`);
-    console.log(...(error instanceof Error ? rest : args));
+    cconsole.error(...(error instanceof Error ? rest : args.slice(1)));
   } else {
-    console.error(`${colorize('ERROR:', 'red')} ${message}`, ...(error instanceof Error ? rest : args));
+    cconsole.error(colorize(clabels.error, 'red'), ...args);
   }
   if (error) {
     if (error.stack) {
-      console.error(colorize(error.stack, 'red'));
+      cconsole.error(colorize(error.stack, 'red'));
     } else {
-      console.error(colorize(String(error), 'red'));
+      cconsole.error(colorize(String(error), 'red'));
     }
   }
   process.exit(1);
@@ -90,12 +104,12 @@ export const error = (message, ...args) => {
  *
  * @param {string} message - Message to log
  */
-export const info = (message, ...args) => {
-  if (isGitHubActions) {
-    core.info(message);
-    return console.log(...args);
+export const info = (...args) => {
+  if (process.env.GITHUB_ACTIONS === 'true') {
+    core.info(args[0]);
+    return cconsole.info(...args.slice(1));
   }
-  console.log(`${colorize('INFO:', 'blue')} ${message}`, ...args);
+  cconsole.info(colorize(clabels.info, 'green'), ...args);
 };
 
 /**
@@ -103,12 +117,12 @@ export const info = (message, ...args) => {
  *
  * @param {string} message - Message to log
  */
-export const notice = (message, ...args) => {
-  if (isGitHubActions) {
-    core.notice(message);
-    return console.log(...args);
+export const notice = (...args) => {
+  if (process.env.GITHUB_ACTIONS === 'true') {
+    core.notice(args[0]);
+    return cconsole.notice(...args.slice(1));
   }
-  console.log(`${colorize('NOTICE:', 'blue')} ${message}`, ...args);
+  cconsole.notice(colorize(clabels.notice, 'blue'), ...args);
 };
 
 /**
@@ -116,12 +130,12 @@ export const notice = (message, ...args) => {
  *
  * @param {string} message - Message to log
  */
-export const warning = (message, ...args) => {
-  if (isGitHubActions) {
-    core.warning(message);
-    return console.log(...args);
+export const warning = (...args) => {
+  if (process.env.GITHUB_ACTIONS === 'true') {
+    core.warning(args[0]);
+    return cconsole.warning(...args.slice(1));
   }
-  console.log(`${colorize('WARNING:', 'blue')} ${message}`, ...args);
+  cconsole.warning(colorize(clabels.warning, 'yellow'), ...args);
 };
 
 /**
@@ -130,7 +144,7 @@ export const warning = (message, ...args) => {
  * @param {string} title - Section title
  */
 export const startGroup = (title) => {
-  if (isGitHubActions) {
+  if (process.env.GITHUB_ACTIONS === 'true') {
     return core.startGroup(title);
   }
 
@@ -144,7 +158,7 @@ export const startGroup = (title) => {
  * End a section (only relevant for GitHub Actions)
  */
 export const endGroup = () => {
-  if (isGitHubActions) {
+  if (process.env.GITHUB_ACTIONS === 'true') {
     return core.endGroup();
   }
 };

@@ -53,7 +53,7 @@ export async function setupUser({
         await execa('git', ['config', '--global', 'user.email', 'ci@gitea.com']);
         break;
       default:
-        throw new Error(`Unsupported platform: ${platform}`);
+        logging.error(`Unsupported platform: ${platform}`);
     }
 
     // Add workspace to safe directories if provided
@@ -75,13 +75,10 @@ export async function setupUser({
  */
 export async function lastCreatedTag() {
   try {
-    // Get the most recent tag
     const {stdout} = await execa('git', ['describe', '--tags', '--abbrev=0']);
     return stdout.trim();
   } catch (error) {
-    // If no tags exist, git command will fail with non-zero exit code
-    console.log('No tags found in the repository');
-    return null;
+    logging.error('No tags found in the repository');
   }
 }
 
@@ -95,9 +92,7 @@ export const lastCommitMessage = async () => {
     const {stdout} = await execa('git', ['log', '-1', '--pretty=%B']);
     return stdout.trim();
   } catch (error) {
-    // Format for stringContaining matcher
     logging.error(`Failed to get latest commit message: ${error.message}`);
-    return ''; // Return empty string on error to match test expectations
   }
 };
 
