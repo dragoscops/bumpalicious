@@ -51,12 +51,12 @@ export const formatWorkspace = (workspace) => {
  *
  * @param {string} message - Message to log
  */
-export const info = (message) => {
+export const info = (message, ...args) => {
   console.log(`${colorize('INFO:', 'blue')} ${message}`);
 
   if (isGitHubActions) {
     // Use GitHub Actions logging commands for better integration
-    console.log(`::debug::${message}`);
+    console.log(`::debug::${message}`, ...args);
   }
 };
 
@@ -65,12 +65,12 @@ export const info = (message) => {
  *
  * @param {string} message - Message to log
  */
-export const success = (message) => {
+export const success = (message, ...args) => {
   console.log(`${colorize('SUCCESS:', 'green')} ${message}`);
 
   if (isGitHubActions) {
     // Use GitHub Actions logging commands for better integration
-    console.log(`::notice::${message}`);
+    console.log(`::notice::${message}`, ...args);
   }
 };
 
@@ -79,12 +79,12 @@ export const success = (message) => {
  *
  * @param {string} message - Message to log
  */
-export const warning = (message) => {
+export const warning = (message, ...args) => {
   console.log(`${colorize('WARNING:', 'yellow')} ${message}`);
 
   if (isGitHubActions) {
     // Use GitHub Actions logging commands for better integration
-    console.log(`::warning::${message}`);
+    console.log(`::warning::${message}`, ...args);
   }
 };
 
@@ -94,8 +94,9 @@ export const warning = (message) => {
  * @param {string} message - Message to log
  * @param {Error} [error] - Optional error object
  */
-export const error = (message, error = null) => {
-  console.error(`${colorize('ERROR:', 'red')} ${message}`);
+export const error = (message, ...args) => {
+  const [error, ...rest] = args;
+  console.error(`${colorize('ERROR:', 'red')} ${message}`, ...(error instanceof Error ? rest : args));
 
   if (error) {
     if (error.stack) {

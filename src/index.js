@@ -51,9 +51,10 @@ const run = async () => {
       platform: (core.getInput('git-platform') || 'github').toLowerCase(),
     };
 
+    logging.info('Affecting workspaces:', options.workspaces);
+    
     // validate platform value
     git.validatePlatform(options.platform);
-    logging.info('Affecting workspaces:', options.workspaces);
 
     // Setup git user
     await git.setupUser(options);
