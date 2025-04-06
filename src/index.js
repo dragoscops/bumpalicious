@@ -51,6 +51,8 @@ const run = async () => {
       platform: (core.getInput('git-platform') || 'github').toLowerCase(),
     };
 
+    console.log(options)
+
     logging.info('Affecting workspaces:', options.workspaces);
 
     // validate platform value
