@@ -262,7 +262,7 @@ export const enrichChangedWorkspaces = async (workspaces, lastTag) => {
 //           continue;
 //       }
 
-//       logging.success(
+//       logging.notice(
 //         `Updated ${workspace.name} version to ${workspace.updatedVersion}`,
 //       );
 //     } catch (error) {

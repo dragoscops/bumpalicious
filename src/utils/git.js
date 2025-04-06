@@ -198,7 +198,7 @@ export const getChangedFiles = async (repoPath, lastTag) => {
 //     }
 
 //     await execa('git', commitArgs);
-//     logging.success(`Created commit: ${message}`);
+//     logging.notice(`Created commit: ${message}`);
 //     return true;
 //   } catch (error) {
 //     logging.error('Failed to commit version changes', error);
@@ -225,7 +225,7 @@ export const getChangedFiles = async (repoPath, lastTag) => {
 //     }
 
 //     await execa('git', tagArgs);
-//     logging.success(`Created tag: ${tagName}`);
+//     logging.notice(`Created tag: ${tagName}`);
 //     return true;
 //   } catch (error) {
 //     logging.error(`Failed to create version tag ${tagName}`, error);
@@ -272,7 +272,7 @@ export const getChangedFiles = async (repoPath, lastTag) => {
 
 //     await execa('git', pushTagsArgs);
 
-//     logging.success(`Pushed changes and tags to ${remote}`);
+//     logging.notice(`Pushed changes and tags to ${remote}`);
 //     return true;
 //   } catch (error) {
 //     logging.error('Failed to push changes', error);

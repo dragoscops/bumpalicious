@@ -81,7 +81,7 @@ export const createRelease = async ({version, tagName, title, body, draft = fals
       prerelease,
     });
 
-    logging.success(`Created GitHub release: ${release.html_url}`);
+    logging.notice(`Created GitHub release: ${release.html_url}`);
     return release;
   } catch (error) {
     logging.error(`Failed to create GitHub release for ${version}`, error);

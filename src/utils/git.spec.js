@@ -222,7 +222,7 @@ describe('git.js module', () => {
   //       "-m",
   //       message,
   //     ]);
-  //     expect(logging.success).toHaveBeenCalledWith(
+  //     expect(logging.notice).toHaveBeenCalledWith(
   //       `Created commit: ${message}`,
   //     );
   //     expect(result).toBe(true);
@@ -290,7 +290,7 @@ describe('git.js module', () => {
   //       "-m",
   //       message,
   //     ]);
-  //     expect(logging.success).toHaveBeenCalledWith(`Created tag: ${tagName}`);
+  //     expect(logging.notice).toHaveBeenCalledWith(`Created tag: ${tagName}`);
   //     expect(result).toBe(true);
   //   });
 
@@ -340,7 +340,7 @@ describe('git.js module', () => {
   //       "origin",
   //       "--tags",
   //     ]);
-  //     expect(logging.success).toHaveBeenCalledWith(
+  //     expect(logging.notice).toHaveBeenCalledWith(
   //       "Pushed changes and tags to origin",
   //     );
   //     expect(result).toBe(true);

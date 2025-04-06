@@ -1,3 +1,5 @@
+import * as core from '@actions/core';
+
 /**
  * Logging utilities for consistent output formatting
  * @module utils/logging
@@ -18,7 +20,6 @@ const colors = {
 
 // Determine if running in GitHub Actions environment
 const isGitHubActions = process.env.GITHUB_ACTIONS === 'true';
-console.log('isGitHubActions:', isGitHubActions);
 
 /**
  * Format text with ANSI color codes (only in non-GitHub Actions environment)
@@ -51,53 +52,29 @@ export const formatWorkspace = (workspace) => {
  * Log an informational message
  *
  * @param {string} message - Message to log
+ * @param {any[]} args - Additional arguments to log
  */
-export const info = (message, ...args) => {
+export const debug = (message, ...args) => {
   if (isGitHubActions) {
-    console.log(`::debug::${message}`, ...args);
-    return;
+    core.debug(message,);
+    return console.log(...args);
   }
-  console.log(`${colorize('INFO:', 'blue')} ${message}`, ...args);
-};
-
-/**
- * Log a success message
- *
- * @param {string} message - Message to log
- */
-export const success = (message, ...args) => {
-  console.log(`${colorize('SUCCESS:', 'green')} ${message}`);
-
-  if (isGitHubActions) {
-    // Use GitHub Actions logging commands for better integration
-    console.log(`::notice::${message}`, ...args);
-  }
-};
-
-/**
- * Log a warning message
- *
- * @param {string} message - Message to log
- */
-export const warning = (message, ...args) => {
-  console.log(`${colorize('WARNING:', 'yellow')} ${message}`);
-
-  if (isGitHubActions) {
-    // Use GitHub Actions logging commands for better integration
-    console.log(`::warning::${message}`, ...args);
-  }
+  console.log(`${colorize('DEBUG:', 'blue')} ${message}`, ...args);
 };
 
 /**
  * Log an error message
  *
  * @param {string} message - Message to log
- * @param {Error} [error] - Optional error object
  */
 export const error = (message, ...args) => {
   const [error, ...rest] = args;
-  console.error(`${colorize('ERROR:', 'red')} ${message}`, ...(error instanceof Error ? rest : args));
-
+  if (isGitHubActions) {
+    core.error(`${message}${error ? ': ' + error.message : ''}`);
+    console.log(...(error instanceof Error ? rest : args));
+  } else {
+    console.error(`${colorize('ERROR:', 'red')} ${message}`, ...(error instanceof Error ? rest : args));
+  }
   if (error) {
     if (error.stack) {
       console.error(colorize(error.stack, 'red'));
@@ -105,37 +82,70 @@ export const error = (message, ...args) => {
       console.error(colorize(String(error), 'red'));
     }
   }
-
-  if (isGitHubActions) {
-    // Use GitHub Actions logging commands for better integration
-    console.error(`::error::${message}${error ? ': ' + error.message : ''}`);
-  }
-
   process.exit(1);
 };
+
+/**
+ * Log an informational message
+ *
+ * @param {string} message - Message to log
+ */
+export const info = (message, ...args) => {
+  if (isGitHubActions) {
+    core.info(message);
+    return console.log(...args);
+  }
+  console.log(`${colorize('INFO:', 'blue')} ${message}`, ...args);
+};
+
+/**
+ * Log an informational message
+ *
+ * @param {string} message - Message to log
+ */
+export const notice = (message, ...args) => {
+  if (isGitHubActions) {
+    core.notice(message);
+    return console.log(...args);
+  }
+  console.log(`${colorize('NOTICE:', 'blue')} ${message}`, ...args);
+};
+
+/**
+ * Log an informational message
+ *
+ * @param {string} message - Message to log
+ */
+export const warning = (message, ...args) => {
+  if (isGitHubActions) {
+    core.warning(message);
+    return console.log(...args);
+  }
+  console.log(`${colorize('WARNING:', 'blue')} ${message}`, ...args);
+};
+
 
 /**
  * Log a section header
  *
  * @param {string} title - Section title
  */
-export const section = (title) => {
+export const startGroup = (title) => {
+  if (isGitHubActions) {
+    return core.startGroup(title);
+  }
+
   const line = '='.repeat(title.length + 8);
   console.log('\n' + colorize(line, 'magenta'));
   console.log(colorize(`=== ${title} ===`, 'magenta'));
   console.log(colorize(line, 'magenta') + '\n');
-
-  if (isGitHubActions) {
-    // Use GitHub Actions group commands for better organization
-    console.log(`::group::${title}`);
-  }
 };
 
 /**
  * End a section (only relevant for GitHub Actions)
  */
-export const sectionEnd = () => {
+export const endGroup = () => {
   if (isGitHubActions) {
-    console.log('::endgroup::');
+    return core.endGroup();
   }
 };
