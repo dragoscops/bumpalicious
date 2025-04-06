@@ -18,6 +18,7 @@ const colors = {
 
 // Determine if running in GitHub Actions environment
 const isGitHubActions = process.env.GITHUB_ACTIONS === 'true';
+console.log('isGitHubActions:', isGitHubActions);
 
 /**
  * Format text with ANSI color codes (only in non-GitHub Actions environment)
@@ -52,12 +53,11 @@ export const formatWorkspace = (workspace) => {
  * @param {string} message - Message to log
  */
 export const info = (message, ...args) => {
-  console.log(`${colorize('INFO:', 'blue')} ${message}`);
-
   if (isGitHubActions) {
-    // Use GitHub Actions logging commands for better integration
     console.log(`::debug::${message}`, ...args);
+    return;
   }
+  console.log(`${colorize('INFO:', 'blue')} ${message}`, ...args);
 };
 
 /**
