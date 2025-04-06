@@ -100,7 +100,7 @@ export const enrichWorkspaces = async (workspaces) => {
 
 /**
  * Enrich workspaces that have changed since the last tag
- * 
+ *
  * @param {Workspace[]} workspaces - Array of workspaces to check
  * @param {string} lastTag - Last git tag
  * @returns {Promise<Workspace[]>}

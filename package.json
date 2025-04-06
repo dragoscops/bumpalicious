@@ -6,14 +6,21 @@
   "type": "module",
   "scripts": {
     "prettify": "npx prettier --write \"./**/*.{js,json}\"",
-    "prepare": "npm run build",
+    "-prepare": "npm run build",
     "test": "npx vitest run"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/dragoscops/version-update.git"
   },
-  "keywords": ["github", "actions", "version", "semver", "release", "conventional-commits"],
+  "keywords": [
+    "github",
+    "actions",
+    "version",
+    "semver",
+    "release",
+    "conventional-commits"
+  ],
   "author": "dragoscops",
   "license": "MIT",
   "bugs": {

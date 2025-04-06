@@ -61,7 +61,7 @@ const run = async () => {
     if (!lastTag) {
       logging.error('No tags found in the repository');
     }
-       
+
     const commitMessage = await git.lastCommitMessage();
     logging.info(`Latest commit message: ${commitMessage}`);
     if (!commitMessage) {
