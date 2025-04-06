@@ -10,6 +10,7 @@ import * as core from '@actions/core';
 import * as github from '@actions/github';
 import * as workspace from './core/workspaces.js';
 import * as git from './utils/git.js';
+import * as logging from './utils/logging.js';
 
 /**
  * @typedef {Object} Workspace
@@ -55,16 +56,24 @@ const run = async () => {
 
     // Setup git user
     await git.setupUser(options);
-
-    // Get the last created tag and latest commit message
     const lastTag = await git.lastCreatedTag();
+    logging.info(`Last tag: ${lastTag}`);
+    if (!lastTag) {
+      logging.error('No tags found in the repository');
+    }
+       
     const commitMessage = await git.lastCommitMessage();
+    logging.info(`Latest commit message: ${commitMessage}`);
+    if (!commitMessage) {
+      logging.error('No commit message found');
+    }
 
-    console.log(`Last tag: ${lastTag}`);
-    console.log(`Latest commit message: ${commitMessage}`);
-
-    const workspaces = enrichWorkspaces(options.workspaces);
-    console.log('Workspaces:', workspaces);
+    const changedWorkspaces = workspace.enrichChangedWorkspaces(options.workspaces, lastTag);
+    logging.info('Workspaces:', changedWorkspaces);
+    if (changedWorkspaces.length === 0) {
+      logging.warning('No changed workspaces found');
+      return;
+    }
 
     //   // Store changed workspaces information as output
     //   const changedWorkspacesInfo = changedWorkspaces.map(ws =>
