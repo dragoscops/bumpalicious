@@ -8,6 +8,7 @@ import path from 'path';
 import {execa} from 'execa';
 import * as workspace from '../workspace/index.js';
 import * as logging from '../utils/logging.js';
+import { getChangedFiles } from '../utils/git.js';
 
 /**
  * @typedef {Object} Workspace
@@ -82,8 +83,8 @@ export const enrichWorkspace = async (workspacePath, workspaceType) => {
 
 /**
  * Parse workspace specifications
- * 
- * @param {Workspace[]} workspaces 
+ *
+ * @param {Workspace[]} workspaces
  * @returns {Promise<Workspace[]>}
  */
 export const enrichWorkspaces = async (workspaces) => {
@@ -95,9 +96,21 @@ export const enrichWorkspaces = async (workspaces) => {
   }
 
   return enrichedWorkspaces;
+};
+
+export const enrichChangedWorkspaces = async (workspaces) => {
+  const enrichedWorkspaces = [];
+
+  for (const workspace of workspaces) {
+    const changedFiles = await getChangedFiles(workspace.path, workspace.lastTag);
+    if (changedFiles.length > 0) {
+    const enrichedWorkspace = await enrichWorkspace(workspace.path, workspace.type);
+    enrichedWorkspaces.push(enrichedWorkspace);
+    }
+  }
+
+  return enrichedWorkspaces;
 }
-
-
 
 // /**
 //  * Check if a workspace has changed since the last tag
