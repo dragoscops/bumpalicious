@@ -110,8 +110,13 @@ export const enrichChangedWorkspaces = async (workspaces, lastTag) => {
     const changedFiles = await git.getChangedFiles(workspace.path, lastTag);
     if (changedFiles.length > 0) {
       const enrichedWorkspace = await enrichWorkspace(workspace.path, workspace.type);
+      logging.info(`Workspace '${workspace.path}' has changed since last tag: ${lastTag}`);
       enrichedWorkspaces.push(enrichedWorkspace);
     }
+  }
+
+  if (enrichedWorkspaces.length === 0) {
+    logging.warning('No changed workspaces found', JSON.stringify(workspaces));
   }
 
   return enrichedWorkspaces;
@@ -129,7 +134,7 @@ export const increaseWorkspacesVersions = async ({workspaces, commitMessage}) =>
   const increaseType = version.determineVersionIncreaseType(commitMessage);
 
   if (!increaseType) {
-    logging.warning(`No version increase needed based on commit: ${commitMessage}`);
+    logging.warning(`No version increase needed based on commit message: ${commitMessage}`);
     return [];
   }
 

@@ -74,10 +74,8 @@ const run = async () => {
     const changedWorkspaces = await workspace.enrichChangedWorkspaces(options.workspaces, lastTag);
     // If no changed workspaces, exit early
     if (changedWorkspaces.length === 0) {
-      logging.warning('No changed workspaces found', JSON.stringify(options.workspaces));
       return;
     }
-    logging.info('Workspaces:', changedWorkspaces);
 
     // Increase versions based on commit message
     const updatedWorkspaces = await workspace.increaseWorkspacesVersions({
@@ -86,10 +84,8 @@ const run = async () => {
     });
     // If no version updates needed, exit early
     if (updatedWorkspaces.length === 0) {
-      logging.warning('No version updates needed based on commit message', commitMessage);
       return;
     }
-    logging.info('Updated workspaces:', updatedWorkspaces);
 
     // Update version files in workspaces
     // await workspaces.updateWorkspacesVersions(updatedWorkspaces);
