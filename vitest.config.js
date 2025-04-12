@@ -25,5 +25,6 @@ export default defineConfig({
       branches: 70, // Minimum coverage threshold for branches
       statements: 80, // Minimum coverage threshold for statements
     },
+    allowOnly: true,
   },
 });

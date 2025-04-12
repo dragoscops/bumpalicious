@@ -1,16 +1,12 @@
-import version from './version.js';
-
 /**
  * Workspace management functionality for handling multiple project workspaces
  * @module core/workspaces
  */
-
-import fs from 'fs-extra';
 import path from 'path';
-import {execa} from 'execa';
-import * as workspace from '../workspace/index.js';
+import * as workspaceDetect from '../workspace/index.js';
+import * as git from '../utils/git.js';
 import * as logging from '../utils/logging.js';
-import {getChangedFiles} from '../utils/git.js';
+import * as version from './version.js';
 
 /**
  * @typedef {Object} Workspace
@@ -43,7 +39,7 @@ export function fromString(workspace) {
  * @param {string} workspaceType - Type of workspace (node, python, etc.)
  * @returns {Promise<Workspace>}
  */
-export const enrichWorkspace = async (workspacePath, workspaceType) => {
+export async function enrichWorkspace(workspacePath, workspaceType) {
   // Change directory to workspace path
   const originalDir = process.cwd();
   process.chdir(workspacePath);
@@ -52,11 +48,11 @@ export const enrichWorkspace = async (workspacePath, workspaceType) => {
     let name = '';
     let version = '';
 
-    if (workspace[workspaceType]) {
-      ({name, version} = await workspace[workspaceType].detect(workspacePath));
+    if (workspaceDetect[workspaceType]) {
+      ({name, version} = await workspaceDetect[workspaceType].detect(workspacePath));
     } else {
       // Default to text version if type is unknown
-      ({name, version} = await detectTextVersion(workspacePath));
+      ({name, version} = await workspaceDetect.text.detect(workspacePath));
       logging.warning(`Unknown workspace type: ${workspaceType}, defaulting to text`);
     }
 
@@ -81,7 +77,7 @@ export const enrichWorkspace = async (workspacePath, workspaceType) => {
     // Restore original directory
     process.chdir(originalDir);
   }
-};
+}
 
 /**
  * Enrich workspaces
@@ -111,7 +107,7 @@ export const enrichChangedWorkspaces = async (workspaces, lastTag) => {
   const enrichedWorkspaces = [];
 
   for (const workspace of workspaces) {
-    const changedFiles = await getChangedFiles(workspace.path, lastTag);
+    const changedFiles = await git.getChangedFiles(workspace.path, lastTag);
     if (changedFiles.length > 0) {
       const enrichedWorkspace = await enrichWorkspace(workspace.path, workspace.type);
       enrichedWorkspaces.push(enrichedWorkspace);
@@ -129,28 +125,19 @@ export const enrichChangedWorkspaces = async (workspaces, lastTag) => {
  * @param {string} options.commitMessage - Git commit message
  * @returns {Promise<Workspace[]>} - Updated workspace info with new versions
  */
-export const increaseWorkspacesVersions = async ({
-  workspaces,
-  commitMessage,
-}) => {
+export const increaseWorkspacesVersions = async ({workspaces, commitMessage}) => {
   const increaseType = version.determineVersionIncreaseType(commitMessage);
 
   if (!increaseType) {
-    logging.warn(
-      `No version increase needed based on commit: ${commitMessage}`,
-    );
+    logging.warning(`No version increase needed based on commit: ${commitMessage}`);
     return workspaces;
   }
 
-  logging.info(
-    `Determined version increase type: ${increaseType} from commit: ${commitMessage}`,
-  );
+  logging.info(`Determined version increase type: ${increaseType} from commit: ${commitMessage}`);
 
   const preReleaseIdentifier = version.determineVersionPreReleaseIdentifier(commitMessage);
   if (preReleaseIdentifier) {
-    logging.info(
-      `Pre-release identifier found in commit message: ${preReleaseIdentifier}`,
-    );
+    logging.info(`Pre-release identifier found in commit message: ${preReleaseIdentifier}`);
   }
 
   return workspaces.map((workspace) => {
@@ -160,10 +147,8 @@ export const increaseWorkspacesVersions = async ({
     });
 
     if (updatedVersion !== workspace.version) {
-      logging.info(
-        `Increasing ${workspace.name} version ${workspace.version} -> ${updatedVersion} (${increaseType})`,
-      );
-      return { ...workspace, updatedVersion };
+      logging.info(`Increasing ${workspace.name} version ${workspace.version} -> ${updatedVersion} (${increaseType})`);
+      return {...workspace, updatedVersion};
     }
 
     return workspace;

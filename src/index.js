@@ -80,7 +80,7 @@ const run = async () => {
     // Increase versions based on commit message
     const updatedWorkspaces = await workspace.increaseWorkspacesVersions({
       workspaces: changedWorkspaces,
-      commitMessage
+      commitMessage,
     });
     logging.info('Updated workspaces:', updatedWorkspaces);
 

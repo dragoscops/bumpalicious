@@ -1,10 +1,10 @@
-import core from '@actions/core';
+import * as core from '@actions/core';
 import * as logging from '../utils/logging.js';
 
 export const mockCConsole = (keys = []) => {
   (keys.length ? keys : Object.keys(logging.cconsole)).forEach((key) => {
     if (typeof logging.cconsole[key] === 'function') {
-      logging.cconsole[key] = vi.fn();
+      vi.spyOn(logging.cconsole, key).mockImplementation((...args) => {});
     }
   });
 };
@@ -20,7 +20,7 @@ export const unMockCConsole = (keys = []) => {
 export const mockConsole = (keys = []) => {
   (keys.length ? keys : Object.keys(console)).forEach((key) => {
     if (typeof console[key] === 'function') {
-      console[key] = vi.fn();
+      vi.spyOn(console, key).mockImplementation((...args) => {});
     }
   });
 };
