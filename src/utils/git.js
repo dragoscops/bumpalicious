@@ -4,25 +4,7 @@
  */
 
 import {execa} from 'execa';
-import npmGit from '@npmcli/git';
 import * as logging from './logging.js';
-
-export const platforms = {
-  GITHUB: 'github',
-  GITEA: 'gitea',
-};
-
-/**
- * Validates if the provided platform is supported.
- *
- * @param {string} platform - The platform to validate.
- * @throws {Error} If the platform is not supported.
- */
-export function validatePlatform(platform) {
-  if (!Object.values(platforms).includes(platform)) {
-    logger.error(`Unsupported git platform: ${platform}`);
-  }
-}
 
 /**
  * @typedef {ActionOptions & {workspace?: string}} SetupGitUserOptions
@@ -41,20 +23,9 @@ export async function setupUser({
   workspace: workspacePath = process.env.GITHUB_WORKSPACE || process.env.GITEA_WORKSPACE || process.cwd(),
 }) {
   try {
-    switch (platform) {
-      case platforms.GITHUB:
-        // Set git user name and email for GitHub Actions
-        await execa('git', ['config', '--global', 'user.name', 'GitHub Actions']);
-        await execa('git', ['config', '--global', 'user.email', 'actions@github.com']);
-        break;
-      case platforms.GITEA:
-        // Set git user name and email for Gitea CI
-        await execa('git', ['config', '--global', 'user.name', 'Gitea CI']);
-        await execa('git', ['config', '--global', 'user.email', 'ci@gitea.com']);
-        break;
-      default:
-        logging.error(`Unsupported platform: ${platform}`);
-    }
+    // Set git user name and email for GitHub Actions
+    await execa('git', ['config', '--global', 'user.name', 'GitHub Actions']);
+    await execa('git', ['config', '--global', 'user.email', 'actions@github.com']);
 
     // Add workspace to safe directories if provided
     if (workspacePath) {

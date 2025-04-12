@@ -26,17 +26,6 @@ describe('git.js module', () => {
       ]);
     });
 
-    it('configures git user for Gitea', async () => {
-      await git.setupUser({platform: 'gitea'});
-
-      expect(execa).toHaveBeenCalledWith('git', ['config', '--global', 'user.name', 'Gitea CI']);
-      expect(execa).toHaveBeenCalledWith('git', ['config', '--global', 'user.email', 'ci@gitea.com']);
-      setupLoggingCallsTest('info', [
-        expect.stringContaining('INFO'),
-        expect.stringMatching(/.*Git user configured successfully/),
-      ]);
-    });
-
     it('adds workspace to safe directories if provided', async () => {
       await git.setupUser({
         platform: 'github',
@@ -49,15 +38,6 @@ describe('git.js module', () => {
         '--add',
         'safe.directory',
         '/path/to/workspace',
-      ]);
-    });
-
-    it('log error when unsupported platform is given', async () => {
-      await git.setupUser({platform: 'unsupported'});
-
-      setupLoggingCallsTest('error', [
-        expect.stringContaining('ERROR'),
-        expect.stringContaining('Unsupported platform: unsupported'),
       ]);
     });
 

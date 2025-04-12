@@ -11,3 +11,35 @@ Code needs to be written:
 
 DO NOT:
 - remove commented code, unless told so; sometimes, to better understand the code step I am analyzing, I am commenting the rest of the code around it
+
+
+Pseudocode description:
+- Inputs:
+  - workspaces: list of workspaces to manage versions for (default .:text)
+  - platform: what git platform action is running on (default: github)
+  - no_pr: create the version commit and tag without preparing a pull request (default: false)
+- Steps:
+  - [x] detect and store last tag
+  - [x] detect and store last commit message
+  - [x] gather information about the workspaces that actually changed
+  - [x] if not workspaces changed, exit early
+    - for those workspaces
+      - [x] increase version based on the commit message
+      - [x] if no version got changed, exit early
+      - [] apply all calculated versions
+      - compose a tree of workspaces to determine root workspace
+      - for all tree nodes, except for root, update changelogs
+      - for root node
+        - if the only node do as tree nodes
+        - if not the only node add links to the changed changelogs
+      - compose message that will be used as commit or/and PR message
+      - if no_pr
+        - commit with above message
+        - create tag
+      - otherwise
+        - create separate branch
+        - commit with above message
+        - create pull request
+  - if pull request merge detected
+    - create tag
+  - print version details and success message

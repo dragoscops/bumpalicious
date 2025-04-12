@@ -269,17 +269,17 @@ describe('workspace.js module', () => {
     afterEach(() => {
       unMockCConsole();
       unMockConsole();
-    })
+    });
 
     it('increases versions based on commit message', async () => {
       const input = [
-        { path: '/test/workspace1', type: 'node', name: 'project1', version: '1.0.0' },
-        { path: '/test/workspace2', type: 'python', name: 'project2', version: '2.3.1' }
+        {path: '/test/workspace1', type: 'node', name: 'project1', version: '1.0.0'},
+        {path: '/test/workspace2', type: 'python', name: 'project2', version: '2.3.1'},
       ];
 
       const result = await workspaces.increaseWorkspacesVersions({
         workspaces: input,
-        commitMessage: 'feat: add new feature'
+        commitMessage: 'feat: add new feature',
       });
 
       expect(result).toEqual([
@@ -287,47 +287,41 @@ describe('workspace.js module', () => {
           path: '/test/workspace1',
           type: 'node',
           name: 'project1',
-          version: '1.0.0',
-          updatedVersion: '1.1.0'
+          version: '1.1.0',
         },
         {
           path: '/test/workspace2',
           type: 'python',
           name: 'project2',
-          version: '2.3.1',
-          updatedVersion: '2.4.0'
-        }
+          version: '2.4.0',
+        },
       ]);
     });
 
     it('handles pre-release identifiers in commit message', async () => {
-      const input = [
-        { path: '/test/workspace1', type: 'node', name: 'project1', version: '1.0.0' }
-      ];
+      const input = [{path: '/test/workspace1', type: 'node', name: 'project1', version: '1.0.0'}];
 
       const result = await workspaces.increaseWorkspacesVersions({
         workspaces: input,
-        commitMessage: 'feat: add new feature; pre-release: beta'
+        commitMessage: 'feat: add new feature; pre-release: beta',
       });
 
       setupLoggingCallsTest('info', [
         expect.stringContaining('INFO'),
-        expect.stringContaining('Pre-release identifier found ')
+        expect.stringContaining('Pre-release identifier found '),
       ]);
-      expect(result[0].updatedVersion).toBe('1.1.0-beta.0');
+      expect(result[0].version).toBe('1.1.0-beta.0');
     });
 
     it('skips version increase when commit message does not indicate change', async () => {
-      const input = [
-        { path: '/test/workspace1', type: 'node', name: 'project1', version: '1.0.0' }
-      ];
+      const input = [{path: '/test/workspace1', type: 'node', name: 'project1', version: '1.0.0'}];
 
       const result = await workspaces.increaseWorkspacesVersions({
         workspaces: input,
-        commitMessage: 'docs: update readme'
+        commitMessage: 'docs: update readme',
       });
 
-      expect(result).toEqual(input);
+      expect(result).toEqual([]);
     });
   });
 });

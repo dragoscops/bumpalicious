@@ -130,7 +130,7 @@ export const increaseWorkspacesVersions = async ({workspaces, commitMessage}) =>
 
   if (!increaseType) {
     logging.warning(`No version increase needed based on commit: ${commitMessage}`);
-    return workspaces;
+    return [];
   }
 
   logging.info(`Determined version increase type: ${increaseType} from commit: ${commitMessage}`);
@@ -148,7 +148,7 @@ export const increaseWorkspacesVersions = async ({workspaces, commitMessage}) =>
 
     if (updatedVersion !== workspace.version) {
       logging.info(`Increasing ${workspace.name} version ${workspace.version} -> ${updatedVersion} (${increaseType})`);
-      return {...workspace, updatedVersion};
+      return {...workspace, version: updatedVersion};
     }
 
     return workspace;

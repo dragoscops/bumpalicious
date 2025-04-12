@@ -53,58 +53,46 @@ const run = async () => {
 
     logging.info('Affecting workspaces:', options.workspaces);
 
-    // validate platform value
-    git.validatePlatform(options.platform);
-
     // Setup git user
     await git.setupUser(options);
+
+    // Get last created tag or 1st commit message
     const lastTag = await git.lastCreatedTag();
     logging.info(`Last tag: ${lastTag}`);
     if (!lastTag) {
       logging.error('No tags found in the repository');
     }
 
+    // Get the last commit message
     const commitMessage = await git.lastCommitMessage();
     logging.info(`Latest commit message: ${commitMessage}`);
     if (!commitMessage) {
       logging.error('No commit message found');
     }
 
+    // Enrich workspaces with additional info
     const changedWorkspaces = await workspace.enrichChangedWorkspaces(options.workspaces, lastTag);
-    logging.info('Workspaces:', changedWorkspaces);
+    // If no changed workspaces, exit early
     if (changedWorkspaces.length === 0) {
-      logging.warning('No changed workspaces found');
+      logging.warning('No changed workspaces found', JSON.stringify(options.workspaces));
       return;
     }
+    logging.info('Workspaces:', changedWorkspaces);
 
     // Increase versions based on commit message
     const updatedWorkspaces = await workspace.increaseWorkspacesVersions({
       workspaces: changedWorkspaces,
       commitMessage,
     });
+    // If no version updates needed, exit early
+    if (updatedWorkspaces.length === 0) {
+      logging.warning('No version updates needed based on commit message', commitMessage);
+      return;
+    }
     logging.info('Updated workspaces:', updatedWorkspaces);
 
-    //   // Store updated workspaces information as output
-    //   const updatedWorkspacesInfo = updatedWorkspaces.map(ws =>
-    //     `${ws.path}:${ws.type}:${ws.name}:${ws.updatedVersion || ws.version}`
-    //   ).join(',');
-
-    //   if (updatedWorkspacesInfo) {
-    //     storeOutput('updated_workspaces_info', updatedWorkspacesInfo);
-    //   }
-
-    //   // Check if any version was actually updated
-    //   const hasVersionUpdates = updatedWorkspaces.some(ws =>
-    //     ws.updatedVersion && ws.updatedVersion !== ws.version
-    //   );
-
-    //   if (!hasVersionUpdates) {
-    //     console.log('No version updates needed based on commit messages.');
-    //     return;
-    //   }
-
-    //   // Update version files in workspaces
-    //   await updateWorkspacesVersions(updatedWorkspaces);
+    // Update version files in workspaces
+    // await workspaces.updateWorkspacesVersions(updatedWorkspaces);
 
     //   // Generate changelog if requested
     //   let changelogContent = '';
