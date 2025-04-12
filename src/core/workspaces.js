@@ -1,3 +1,5 @@
+import version from './version.js';
+
 /**
  * Workspace management functionality for handling multiple project workspaces
  * @module core/workspaces
@@ -119,99 +121,54 @@ export const enrichChangedWorkspaces = async (workspaces, lastTag) => {
   return enrichedWorkspaces;
 };
 
-// /**
-//  * Check if a workspace has changed since the last tag
-//  *
-//  * @param {string} workspacePath - Path to workspace
-//  * @param {string} lastTag - Last git tag
-//  * @returns {Promise<boolean>} - Whether the workspace has changes
-//  */
-// const hasWorkspaceChanges = async (workspacePath, lastTag) => {
-//   try {
-//     // If no tag, consider everything changed
-//     if (!lastTag) {
-//       return true;
-//     }
+/**
+ * Increase versions for workspaces based on commit message
+ *
+ * @param {Object} options - Options for version increases
+ * @param {Workspace[]} options.workspaces - Info about workspaces
+ * @param {string} options.commitMessage - Git commit message
+ * @returns {Promise<Workspace[]>} - Updated workspace info with new versions
+ */
+export const increaseWorkspacesVersions = async ({
+  workspaces,
+  commitMessage,
+}) => {
+  const increaseType = version.determineVersionIncreaseType(commitMessage);
 
-//     // Check for changes in the workspace directory since last tag
-//     const { stdout } = await execa("git", [
-//       "diff",
-//       lastTag,
-//       "--name-only",
-//       "--",
-//       workspacePath,
-//     ]);
+  if (!increaseType) {
+    logging.warn(
+      `No version increase needed based on commit: ${commitMessage}`,
+    );
+    return workspaces;
+  }
 
-//     return stdout.trim().length > 0;
-//   } catch (error) {
-//     logging.error(
-//       `Error checking for changes in workspace ${workspacePath}:`,
-//       error,
-//     );
-//     // Default to true if we can't determine changes
-//     return true;
-//   }
-// };
+  logging.info(
+    `Determined version increase type: ${increaseType} from commit: ${commitMessage}`,
+  );
 
-// /**
-//  * Parse workspace specifications
-//  * Format: "path:type,path:type"
-//  *
-//  * @param {string} workspacesSpec - Workspace specification string
-//  * @returns {Array<{path: string, type: string}>} - Array of workspace configurations
-//  */
-// const parseWorkspacesSpec = (workspacesSpec) => {
-//   if (!workspacesSpec) {
-//     return [{ path: ".", type: "text" }];
-//   }
+  const preReleaseIdentifier = version.determineVersionPreReleaseIdentifier(commitMessage);
+  if (preReleaseIdentifier) {
+    logging.info(
+      `Pre-release identifier found in commit message: ${preReleaseIdentifier}`,
+    );
+  }
 
-//   return workspacesSpec.split(",").map((spec) => {
-//     const [workspacePath, workspaceType] = spec.split(":");
-//     return {
-//       path: workspacePath.trim() || ".",
-//       type: (workspaceType || "text").trim().toLowerCase(),
-//     };
-//   });
-// };
+  return workspaces.map((workspace) => {
+    const updatedVersion = version.increaseVersion(workspace.version, {
+      type: increaseType,
+      identifier: preReleaseIdentifier,
+    });
 
-// /**
-//  * Increase versions for workspaces based on commit message
-//  *
-//  * @param {Object} options - Options for version increases
-//  * @param {Array<Object>} options.workspacesInfo - Info about workspaces
-//  * @param {string} options.commitMessage - Git commit message
-//  * @returns {Promise<Array<Object>>} - Updated workspace info with new versions
-//  */
-// export const increaseWorkspacesVersions = async ({
-//   workspacesInfo,
-//   commitMessage,
-// }) => {
-//   const increaseType = determineVersionIncreaseType(commitMessage);
+    if (updatedVersion !== workspace.version) {
+      logging.info(
+        `Increasing ${workspace.name} version ${workspace.version} -> ${updatedVersion} (${increaseType})`,
+      );
+      return { ...workspace, updatedVersion };
+    }
 
-//   if (!increaseType) {
-//     logging.info(
-//       `No version increase needed based on commit: ${commitMessage}`,
-//     );
-//     return workspacesInfo;
-//   }
-
-//   logging.info(
-//     `Determined version increase type: ${increaseType} from commit: ${commitMessage}`,
-//   );
-
-//   return workspacesInfo.map((workspace) => {
-//     const updatedVersion = increaseVersion(workspace.version, increaseType);
-
-//     if (updatedVersion !== workspace.version) {
-//       logging.info(
-//         `Increasing ${workspace.name} version ${workspace.version} -> ${updatedVersion} (${increaseType})`,
-//       );
-//       return { ...workspace, updatedVersion };
-//     }
-
-//     return workspace;
-//   });
-// };
+    return workspace;
+  });
+};
 
 // /**
 //  * Update version files in workspaces

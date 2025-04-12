@@ -16,7 +16,7 @@ describe('core/version.js module', () => {
     unMockCConsole(['error']);
   });
 
-  describe('determineVersionIncreaseType()', () => {
+  describe('determineVersionIncreaseType(string)', () => {
     it('calls logging.error when commit message is empty or undefined', () => {
       determineVersionIncreaseType('');
       setupLoggingCallsTest('error', [
@@ -72,7 +72,7 @@ describe('core/version.js module', () => {
     });
   });
 
-  describe('determineVersionPreReleaseIdentifier()', () => {
+  describe('determineVersionPreReleaseIdentifier(string)', () => {
     it('calls logging.error when commit message is empty or undefined', () => {
       determineVersionPreReleaseIdentifier('');
       setupLoggingCallsTest('error', [
@@ -113,7 +113,7 @@ describe('core/version.js module', () => {
     });
   });
 
-  describe('increaseVersion()', () => {
+  describe('increaseVersion(string, {ReleaseType, string})', () => {
     it('increases version according to type', () => {
       expect(increaseVersion('1.2.3', {type: 'major'})).toBe('2.0.0');
       expect(increaseVersion('1.2.3', {type: 'minor'})).toBe('1.3.0');
@@ -121,10 +121,10 @@ describe('core/version.js module', () => {
     });
 
     it('handles pre-release versions', () => {
-      expect(increaseVersion('1.2.3', {type: 'premajor', suffix: 'alpha'})).toBe('2.0.0-alpha.0');
-      expect(increaseVersion('1.2.3', {type: 'preminor', suffix: 'beta'})).toBe('1.3.0-beta.0');
-      expect(increaseVersion('1.2.3', {type: 'prepatch', suffix: 'rc'})).toBe('1.2.4-rc.0');
-      expect(increaseVersion('1.2.3-alpha.0', {type: 'prerelease', suffix: 'alpha'})).toBe('1.2.3-alpha.1');
+      expect(increaseVersion('1.2.3', {type: 'premajor', identifier: 'alpha'})).toBe('2.0.0-alpha.0');
+      expect(increaseVersion('1.2.3', {type: 'preminor', identifier: 'beta'})).toBe('1.3.0-beta.0');
+      expect(increaseVersion('1.2.3', {type: 'prepatch', identifier: 'rc'})).toBe('1.2.4-rc.0');
+      expect(increaseVersion('1.2.3-alpha.0', {type: 'prerelease', identifier: 'alpha'})).toBe('1.2.3-alpha.1');
     });
 
     it('handles release from pre-release versions', () => {

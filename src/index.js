@@ -77,23 +77,12 @@ const run = async () => {
       return;
     }
 
-    //   // Store changed workspaces information as output
-    //   const changedWorkspacesInfo = changedWorkspaces.map(ws =>
-    //     `${ws.path}:${ws.type}:${ws.name}:${ws.version}`
-    //   ).join(',');
-
-    //   if (changedWorkspacesInfo) {
-    //     storeOutput('changed_workspaces_info', changedWorkspacesInfo);
-    //   } else {
-    //     console.log('No changed workspaces detected.');
-    //     return;
-    //   }
-
-    //   // Increase versions based on commit message
-    //   const updatedWorkspaces = await increaseWorkspacesVersions({
-    //     workspacesInfo: changedWorkspaces,
-    //     commitMessage
-    //   });
+    // Increase versions based on commit message
+    const updatedWorkspaces = await workspace.increaseWorkspacesVersions({
+      workspaces: changedWorkspaces,
+      commitMessage
+    });
+    logging.info('Updated workspaces:', updatedWorkspaces);
 
     //   // Store updated workspaces information as output
     //   const updatedWorkspacesInfo = updatedWorkspaces.map(ws =>

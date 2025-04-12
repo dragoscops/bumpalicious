@@ -74,7 +74,7 @@ export const determineVersionPreReleaseIdentifier = (commitMessage) => {
 /**
  * @typedef {Object} IncreaseVersionOptions
  * @property {ReleaseType} type - Type of version increase
- * @property {string} suffix - Suffix for pre-release version
+ * @property {string} identifier - Suffix for pre-release version
  */
 
 /**
@@ -91,5 +91,5 @@ export const increaseVersion = (currentVersion, options) => {
     return currentVersion;
   }
 
-  return semver.inc(currentVersion, options.type, options.suffix);
+  return semver.inc(currentVersion, options.type, options.identifier);
 };
