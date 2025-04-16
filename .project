@@ -9,8 +9,9 @@ Code needs to be written:
 - respecting Uncle Bob's clean code principles
 - using functional programming
 
-DO NOT:
-- remove commented code, unless told so; sometimes, to better understand the code step I am analyzing, I am commenting the rest of the code around it
+Requirements:
+- do not remove commented code, unless told so; sometimes, to better understand the code step I am analyzing, I am commenting the rest of the code around it
+- implement new requirements using TDD approach; write the test first, then write the code to make the test pass
 
 
 Pseudocode description:

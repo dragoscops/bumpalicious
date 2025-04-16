@@ -87,6 +87,15 @@ const run = async () => {
       return;
     }
 
+    // Organizes workspaces into a tree like structure to also determine the root workspace
+    const workspacesTree = await workspace.buildWorkspaceTree(updatedWorkspaces);
+    if (workspacesTree.length > 0) {
+      logging.error('Workspaces folder should only have a root workspace');
+    }
+    if (workspacesTree.length === 0) {
+      logging.error('No workspaces found');
+    }
+
     // Update version files in workspaces
     // await workspaces.updateWorkspacesVersions(updatedWorkspaces);
 
