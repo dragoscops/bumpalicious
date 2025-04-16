@@ -97,7 +97,7 @@ const run = async () => {
     }
 
     // Update version files in workspaces
-    await workspaces.updateWorkspacesVersions(updatedWorkspaces);
+    await workspace.updateWorkspacesVersions(updatedWorkspaces);
 
     //   // Generate changelog if requested
     //   let changelogContent = '';
