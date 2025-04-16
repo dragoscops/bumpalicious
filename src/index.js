@@ -96,6 +96,7 @@ const run = async () => {
       logging.error('No workspaces found');
     }
 
+    console.log(updatedWorkspaces);
     // Update version files in workspaces
     await workspace.updateWorkspacesVersions(updatedWorkspaces);
 
