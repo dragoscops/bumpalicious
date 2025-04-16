@@ -269,65 +269,45 @@ export const increaseWorkspacesVersions = async ({workspaces, commitMessage}) =>
   });
 };
 
-// /**
-//  * Update version files in workspaces
-//  *
-//  * @param {Array<Object>} workspacesInfo - Info about workspaces with updated versions
-//  * @returns {Promise<Array<Object>>} - Updated workspace info
-//  */
-// export const updateWorkspacesVersions = async (workspacesInfo) => {
-//   const originalDir = process.cwd();
+/**
+ * Update version files in workspaces
+ *
+ * @param {Workspace[]} workspaces - Info about workspaces with new versions
+ * @returns {Promise<Workspace[]>} - Updated workspace info
+ */
+export const updateWorkspacesVersions = async (workspaces) => {
+  const originalDir = process.cwd();
+  const updatedWorkspaces = [];
 
-//   for (const workspace of workspacesInfo) {
-//     // Skip if no update needed
-//     if (
-//       !workspace.updatedVersion ||
-//       workspace.updatedVersion === workspace.version
-//     ) {
-//       continue;
-//     }
+  for (const workspace of workspaces) {
+    // Skip if no version specified
+    if (!workspace.version) {
+      logging.warning(`Skipping workspace ${workspace.name || workspace.path}: no version specified`);
+      continue;
+    }
 
-//     try {
-//       // Change to workspace directory
-//       process.chdir(workspace.path);
+    try {
+      // Change to workspace directory
+      process.chdir(workspace.path);
+      logging.info(`Updating ${workspace.name || workspace.path} version to ${workspace.version}`);
 
-//       // Update version based on type
-//       switch (workspace.type) {
-//         case "node":
-//           await updateNodeVersion(workspace.updatedVersion);
-//           break;
-//         case "deno":
-//           await updateDenoVersion(workspace.updatedVersion);
-//           break;
-//         case "go":
-//           await updateGoVersion(workspace.updatedVersion);
-//           break;
-//         case "python":
-//           await updatePythonVersion(workspace.updatedVersion);
-//           break;
-//         case "rust":
-//           await updateRustVersion(workspace.updatedVersion);
-//           break;
-//         case "text":
-//           await updateTextVersion(workspace.updatedVersion);
-//           break;
-//         default:
-//           logging.warning(
-//             `Unknown workspace type for update: ${workspace.type}`,
-//           );
-//           continue;
-//       }
+      if (workspaceDetect[workspace.type]) {
+        await workspaceDetect[workspace.type].updateVersion({
+          projectPath: workspace.path,
+          newVersion: workspace.version,
+        });
+      } else {
+        await workspaceDetect.text.updateVersion({projectPath: workspace.path, newVersion: workspace.version});
+      }
+      updatedWorkspaces.push(workspace);
+      logging.notice(`Updated ${workspace.name} version to ${workspace.version}`);
+    } catch (error) {
+      logging.error(`Error updating workspace ${workspace.name || workspace.path}:`, error);
+    } finally {
+      // Restore original directory
+      process.chdir(originalDir);
+    }
+  }
 
-//       logging.notice(
-//         `Updated ${workspace.name} version to ${workspace.updatedVersion}`,
-//       );
-//     } catch (error) {
-//       logging.error(`Error updating workspace ${workspace.name}:`, error);
-//     } finally {
-//       // Restore original directory
-//       process.chdir(originalDir);
-//     }
-//   }
-
-//   return workspacesInfo;
-// };
+  return updatedWorkspaces;
+};

@@ -1,7 +1,6 @@
 import {describe, it, expect, beforeEach, vi, afterAll, beforeAll, afterEach} from 'vitest';
 
 import * as workspaces from './workspaces.js';
-import * as workspaceDetectors from '../workspace/index.js';
 import * as git from '../utils/git.js';
 import {
   mockCConsole,
@@ -10,8 +9,8 @@ import {
   unMockCConsole,
   setupLoggingCallsTest,
 } from '../vitest/setup.logging.tests.js';
-import {setupDetectTest} from '../vitest/setup.detect-update.tests.js';
-import {mockWorkspaceDetect} from '../vitest/setup.workspace.tests.js';
+import {mockWorkspaceDetect, mockWorkspace, unMockWorkspace} from '../vitest/setup.workspace.tests.js';
+import {updateVersion} from '../workspace/deno.js';
 
 describe('workspace.js module', () => {
   beforeEach(() => {
@@ -222,7 +221,7 @@ describe('workspace.js module', () => {
     it('detects workspace details using the appropriate detector', async () => {
       const workspacePath = '/test/workspace';
       const workspaceType = 'node';
-      const detectMock = mockWorkspaceDetect('node', [
+      const detectMock = mockWorkspace('node', [
         {
           name: 'test-project',
           version: '1.0.0',
@@ -232,7 +231,7 @@ describe('workspace.js module', () => {
       try {
         const result = await workspaces.enrichWorkspace(workspacePath, workspaceType);
 
-        expect(detectMock).toHaveBeenCalledWith(workspacePath);
+        expect(detectMock.detect).toHaveBeenCalledWith(workspacePath);
         expect(result).toEqual({
           path: workspacePath,
           type: workspaceType,
@@ -240,7 +239,7 @@ describe('workspace.js module', () => {
           version: '1.0.0',
         });
       } finally {
-        detectMock.mockRestore();
+        unMockWorkspace(detectMock);
       }
     });
 
@@ -473,6 +472,88 @@ describe('workspace.js module', () => {
       });
 
       expect(result).toEqual([]);
+    });
+  });
+
+  describe('updateWorkspacesVersions(Workspace[])', () => {
+    beforeEach(() => {
+      mockConsole(['warning', 'info', 'notice', 'error']);
+      mockCConsole(['warning', 'info', 'notice', 'error']);
+      vi.spyOn(process, 'chdir').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      unMockCConsole(['warning', 'info', 'notice', 'error']);
+      unMockConsole(['warning', 'info', 'notice', 'error']);
+    });
+
+    it('updates versions for supported workspace types', async () => {
+      const workspacesArray = [
+        {path: '/test/workspace1', name: 'node-project', type: 'node', version: '1.1.0'},
+        {path: '/test/workspace2', name: 'python-project', type: 'python', version: '0.5.0'},
+      ];
+
+      const updateMocks = {
+        node: mockWorkspace('node'),
+        python: mockWorkspace('python'),
+      };
+
+      try {
+        const result = await workspaces.updateWorkspacesVersions(workspacesArray);
+
+        // Verify update was called for each workspace
+        expect(updateMocks.node.updateVersion).toHaveBeenCalledWith({
+          projectPath: '/test/workspace1',
+          newVersion: '1.1.0',
+        });
+        expect(updateMocks.python.updateVersion).toHaveBeenCalledWith({
+          projectPath: '/test/workspace2',
+          newVersion: '0.5.0',
+        });
+
+        // Verify process.chdir was called to switch to each workspace directory
+        expect(process.chdir).toHaveBeenCalledWith('/test/workspace1');
+        expect(process.chdir).toHaveBeenCalledWith('/test/workspace2');
+
+        // setupLoggingCallsTest('notice', [
+        //   expect.stringContaining('NOTICE '),
+        //   expect.stringContaining('Updated node-project version to 1.1.0'),
+        // ]);
+        setupLoggingCallsTest('notice', [
+          expect.stringContaining('NOTICE'),
+          expect.stringContaining('Updated python-project version to 0.5.0'),
+        ]);
+
+        // Verify the result contains the updated workspaces
+        expect(result).toEqual(workspacesArray);
+      } finally {
+        unMockWorkspace(updateMocks.node);
+        unMockWorkspace(updateMocks.python);
+      }
+    });
+
+    it('falls back to text updater for unsupported workspace types', async () => {
+      const workspacesArray = [{path: '/test/workspace', name: 'unknown-project', type: 'unknown', version: '1.0.0'}];
+
+      const updateMock = mockWorkspace('text', {});
+
+      try {
+        const result = await workspaces.updateWorkspacesVersions(workspacesArray);
+
+        // Verify text update was called
+        expect(updateMock.updateVersion).toHaveBeenCalledWith({projectPath: '/test/workspace', newVersion: '1.0.0'});
+
+        // Verify result contains the updated workspace
+        expect(result).toEqual(workspacesArray);
+
+        // Verify appropriate logging
+        setupLoggingCallsTest('notice', [
+          expect.stringContaining('NOTICE'),
+          expect.stringContaining('Updated unknown-project version to 1.0.0'),
+        ]);
+      } finally {
+        unMockWorkspace(updateMock);
+      }
     });
   });
 });
