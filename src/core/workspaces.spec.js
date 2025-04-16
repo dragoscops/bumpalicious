@@ -10,7 +10,6 @@ import {
   setupLoggingCallsTest,
 } from '../vitest/setup.logging.tests.js';
 import {mockWorkspaceDetect, mockWorkspace, unMockWorkspace} from '../vitest/setup.workspace.tests.js';
-import {updateVersion} from '../workspace/deno.js';
 
 describe('workspace.js module', () => {
   beforeEach(() => {
@@ -354,6 +353,16 @@ describe('workspace.js module', () => {
   });
 
   describe('enrichChangedWorkspaces', () => {
+    beforeEach(() => {
+      mockConsole();
+      mockCConsole();
+    });
+
+    afterEach(() => {
+      unMockCConsole();
+      unMockConsole();
+    });
+
     it('only enriches workspaces with changed files', async () => {
       const input = [
         {path: '/test/workspace1', type: 'node'},
