@@ -150,7 +150,8 @@ function findCommonPath(paths) {
  */
 export async function enrichWorkspace(workspacePath, workspaceType) {
   // Change directory to workspace path
-  const originalDir = process.cwd();
+  const originalDir = process.env.GITHUB_WORKSPACE ?? process.cwd();
+  process.chdir(originalDir);
   process.chdir(workspacePath);
 
   try {
@@ -276,7 +277,10 @@ export const increaseWorkspacesVersions = async ({workspaces, commitMessage}) =>
  * @returns {Promise<Workspace[]>} - Updated workspace info
  */
 export const updateWorkspacesVersions = async (workspaces) => {
-  const originalDir = process.cwd();
+  // Use GitHub workspace path if running in GitHub Actions, otherwise use current directory
+  const originalDir = process.env.GITHUB_WORKSPACE ?? process.cwd();
+  process.chdir(originalDir);
+
   const updatedWorkspaces = [];
 
   for (const workspace of workspaces) {

@@ -14,13 +14,11 @@ import * as logging from './logging.js';
  * Configure git user for CI environments.
  *
  * @param {SetupGitUserOptions} options - Action configuration options.
- *   The object should include properties from ActionOptions, with an optional workspace property
- *   that defaults to the GITHUB_WORKSPACE or GITEA_WORKSPACE environment variable, or process.cwd().
  * @returns {Promise<void>} Resolves when configuration is complete.
  */
 export async function setupUser({
   platform = 'github',
-  workspace: workspacePath = process.env.GITHUB_WORKSPACE || process.env.GITEA_WORKSPACE || process.cwd(),
+  workspace: workspacePath = process.env.GITHUB_WORKSPACE ?? process.cwd(),
 }) {
   try {
     // Set git user name and email for GitHub Actions
