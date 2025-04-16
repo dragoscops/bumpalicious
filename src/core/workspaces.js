@@ -41,7 +41,7 @@ export function fromString(workspace) {
 
 /**
  * Builds a workspace tree structure based on filesystem paths
- * 
+ *
  * @param {Workspace[]} workspaces - Array of workspaces
  * @returns {WorkspaceNode[]} - Array of root workspace nodes with children
  */
@@ -52,47 +52,46 @@ export function buildWorkspaceTree(workspaces) {
 
   // If there's only one workspace, it's the only root
   if (workspaces.length === 1) {
-    return [{
-      workspace: workspaces[0],
-      children: [],
-      parent: null,
-    }];
+    return [
+      {
+        workspace: workspaces[0],
+        children: [],
+        parent: null,
+      },
+    ];
   }
 
   // Create workspace nodes without parent/child relationships
-  const nodes = workspaces.map(workspace => ({
+  const nodes = workspaces.map((workspace) => ({
     workspace,
     children: [],
     parent: null,
   }));
 
   // Normalize all paths to be absolute and with consistent separators
-  const normalizedPaths = nodes.map(node => ({
+  const normalizedPaths = nodes.map((node) => ({
     node,
     normalizedPath: path.resolve(node.workspace.path).replace(/\\/g, '/'),
   }));
 
   // Find potential parent-child relationships
   for (let i = 0; i < normalizedPaths.length; i++) {
-    const { node: nodeA, normalizedPath: pathA } = normalizedPaths[i];
-    
+    const {node: nodeA, normalizedPath: pathA} = normalizedPaths[i];
+
     for (let j = 0; j < normalizedPaths.length; j++) {
       if (i === j) continue;
-      
-      const { node: nodeB, normalizedPath: pathB } = normalizedPaths[j];
-      
+
+      const {node: nodeB, normalizedPath: pathB} = normalizedPaths[j];
+
       // If pathA is contained within pathB, then B is a potential parent of A
       if (pathA.startsWith(`${pathB}/`)) {
         // Check if this is the closest parent (shortest path difference)
-        if (!nodeA.parent || 
-            pathB.length > nodeA.parent.workspace.path.length) {
+        if (!nodeA.parent || pathB.length > nodeA.parent.workspace.path.length) {
           // Remove from previous parent's children if any
           if (nodeA.parent) {
-            nodeA.parent.children = nodeA.parent.children.filter(
-              child => child !== nodeA
-            );
+            nodeA.parent.children = nodeA.parent.children.filter((child) => child !== nodeA);
           }
-          
+
           // Set new parent-child relationship
           nodeA.parent = nodeB;
           nodeB.children.push(nodeA);
@@ -102,8 +101,8 @@ export function buildWorkspaceTree(workspaces) {
   }
 
   // Find the root nodes (nodes without a parent)
-  const rootNodes = nodes.filter(node => node.parent === null);
-  
+  const rootNodes = nodes.filter((node) => node.parent === null);
+
   // Return array of root nodes - already sorted by the algorithm
   return rootNodes;
 }
@@ -117,14 +116,14 @@ export function buildWorkspaceTree(workspaces) {
 function findCommonPath(paths) {
   if (!paths || paths.length === 0) return '';
   if (paths.length === 1) return paths[0];
-  
+
   const sortedPaths = [...paths].sort();
   const firstPath = sortedPaths[0];
   const lastPath = sortedPaths[sortedPaths.length - 1];
-  
+
   let commonPrefix = '';
   const minLength = Math.min(firstPath.length, lastPath.length);
-  
+
   for (let i = 0; i < minLength; i++) {
     if (firstPath[i] === lastPath[i]) {
       commonPrefix += firstPath[i];
@@ -132,13 +131,13 @@ function findCommonPath(paths) {
       break;
     }
   }
-  
+
   // Get the path up to the last directory separator
   const lastSeparatorIndex = commonPrefix.lastIndexOf('/');
   if (lastSeparatorIndex !== -1) {
     return commonPrefix.substring(0, lastSeparatorIndex);
   }
-  
+
   return commonPrefix;
 }
 

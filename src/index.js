@@ -89,7 +89,7 @@ const run = async () => {
 
     // Organizes workspaces into a tree like structure to also determine the root workspace
     const workspacesTree = await workspace.buildWorkspaceTree(updatedWorkspaces);
-    if (workspacesTree.length > 0) {
+    if (workspacesTree.length > 1) {
       logging.error('Workspaces folder should only have a root workspace');
     }
     if (workspacesTree.length === 0) {
