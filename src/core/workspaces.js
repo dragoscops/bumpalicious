@@ -152,9 +152,9 @@ export async function enrichWorkspace(workspacePath, workspaceType) {
   // Change directory to workspace path
   const originalDir = process.env.GITHUB_WORKSPACE ?? process.cwd();
   process.chdir(originalDir);
-  process.chdir(workspacePath);
 
-  console.log(originalDir, path.resolve(workspacePath));
+  workspacePath = path.resolve(workspacePath);
+  process.chdir(workspacePath);
 
   try {
     let name = '';
@@ -281,8 +281,6 @@ export const increaseWorkspacesVersions = async ({workspaces, commitMessage}) =>
 export const updateWorkspacesVersions = async (workspaces) => {
   // Use GitHub workspace path if running in GitHub Actions, otherwise use current directory
   const originalDir = process.env.GITHUB_WORKSPACE ?? process.cwd();
-  process.chdir(originalDir);
-
   const updatedWorkspaces = [];
 
   for (const workspace of workspaces) {
@@ -294,7 +292,8 @@ export const updateWorkspacesVersions = async (workspaces) => {
 
     try {
       // Change to workspace directory
-      process.chdir(workspace.path);
+      process.chdir(originalDir);
+      process.chdir(path.resolve(workspace.path));
       logging.info(`Updating ${workspace.name || workspace.path} version to ${workspace.version}`);
 
       if (workspaceDetect[workspace.type]) {
