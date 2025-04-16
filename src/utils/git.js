@@ -38,7 +38,7 @@ export async function setupUser({
 }
 
 /**
- * Get the last Git tag in the repository
+ * Get the last Git tag in the reposito
  *
  * @returns {Promise<string|null>} - Last git tag or null if no tags
  */
@@ -88,190 +88,126 @@ export const getChangedFiles = async (repoPath, lastTag) => {
   }
 };
 
-// /**
-//  * Retrieves the domain of the git repository's origin remote.
-//  *
-//  * @returns {Promise<string|null>} The domain (e.g., "github.com") if found; otherwise, null.
-//  */
-// async function repotDomain() {
-//   try {
-//     // Retrieve the remote URL of the origin
-//     const {stdout} = await execa('git', ['remote', 'get-url', 'origin']);
-//     const remoteUrl = stdout.trim();
+/**
+ * @typedef {Object} TagActions
+ */
+export const tag = {
+  /**
+   * Create a new Git tag with the specified name and message.
+   *
+   * @param {string} tagName - Name of the new tag
+   * @param {string} message - Tag message
+   * @returns {Promise<void>} - Resolves when the tag is created
+   */
+  create: async (tagName, message) => {
+    try {
+      await execa('git', ['tag', '-a', tagName, '-m', message]);
+      logging.info(`Tag ${tagName} created successfully`);
+    } catch (error) {
+      logging.error(`Failed to create tag ${tagName}:`, error);
+    }
+  },
 
-//     let domain = null;
+  /**
+   * Create a new Git tag with the specified name and message and push it.
+   *
+   * @param {string} tagName - Name of the new tag
+   * @param {string} message - Tag message
+   * @returns {Promise<void>} - Resolves when the tag is created
+   */
+  createAndPush: async (tagName, message) => {
+    try {
+      const exists = await tag.exists(tagName);
+      if (exists) {
+        await tag.remove(tagName);
+        logging.info(`Tag ${tagName} already exists, removing it first`);
+      }
+      await tag.create(tagName, message);
+      await tag.push(tagName);
+    } catch (error) {
+      logging.error(`Failed to create and push tag ${tagName}:`, error);
+    }
+  },
 
-//     // Check for SSH format: git@domain:owner/repo.git
-//     const sshRegex = /^git@([^:]+):/;
-//     const sshMatch = remoteUrl.match(sshRegex);
-//     if (sshMatch) {
-//       domain = sshMatch[1];
-//     } else {
-//       // Check for HTTPS format: https://domain/owner/repo.git or http://domain/owner/repo.git
-//       const httpsRegex = /^https?:\/\/([^/]+)\//;
-//       const httpsMatch = remoteUrl.match(httpsRegex);
-//       if (httpsMatch) {
-//         domain = httpsMatch[1];
-//       }
-//     }
+  /**
+   * Test if a tag exists in the repository.
+   *
+   * @param {string} tagName
+   * @returns {Promise<boolean>}
+   */
+  exists: async (tagName) => {
+    try {
+      const {stdout} = await execa('git', ['tag', '-l', tagName]);
+      return stdout.trim() === tagName;
+    } catch (error) {
+      logging.error(`Failed to check if tag ${tagName} exists:`, error);
+      return false;
+    }
+  },
 
-//     return domain;
-//   } catch (err) {
-//     logging.error('Error detecting git repository domain:', err);
-//     return null;
-//   }
-// }
+  /**
+   * Push a Git tag to the remote repository.
+   *
+   * @param {string} tagName
+   * @returns {Promise<void>}
+   */
+  push: async (tagName) => {
+    try {
+      await execa('git', ['push', 'origin', tagName]);
+      logging.info(`Tag ${tagName} pushed successfully`);
+    } catch (error) {
+      logging.error(`Failed to push tag ${tagName}:`, error);
+    }
+  },
 
-// /**
-//  * Check if repository has uncommitted changes
-//  *
-//  * @returns {Promise<boolean>} - True if the repository has uncommitted changes
-//  */
-// export const hasUncommittedChanges = async () => {
-//   try {
-//     const {stdout} = await execa('git', ['status', '--porcelain']);
-//     return stdout.trim().length > 0;
-//   } catch (error) {
-//     logging.error('Failed to check for uncommitted changes', error);
-//     return true; // Err on the side of caution
-//   }
-// };
+  /**
+   * Delete an existing Tag from the repository.
+   *
+   * @param {string} tagName
+   * @returns {Promise<void>}
+   */
+  remove: async (tagName) => {
+    try {
+      await execa('git', ['tag', '-d', tagName]);
+      logging.info(`Tag ${tagName} deleted successfully`);
+    } catch (error) {
+      logging.error(`Failed to delete tag ${tagName}:`, error);
+    }
+  },
+};
 
-// /**
-//  * Commit version changes
-//  *
-//  * @param {Object} options - Commit options
-//  * @param {string} options.message - Commit message
-//  * @param {Array<string>} [options.files=[]] - Files to commit (defaults to all changes)
-//  * @param {boolean} [options.noVerify=false] - Skip git hooks when committing
-//  * @returns {Promise<boolean>} - True if commit was successful
-//  */
-// export const commitVersionChanges = async ({message, files = [], noVerify = false}) => {
-//   try {
-//     // Add files to staging
-//     if (files.length > 0) {
-//       await execa('git', ['add', ...files]);
-//     } else {
-//       await execa('git', ['add', '.']);
-//     }
+export const branch = {
+  /**
+   * @param {string} branchName
+   * @returns {Promise<void>}
+   */
+  create: async (branchName) => {
+    try {
+      await execa('git', ['checkout', '-b', branchName]);
+      logging.info(`Branch ${branchName} created successfully`);
+    } catch (error) {
+      logging.error(`Failed to create branch ${branchName}:`, error);
+    }
+  },
 
-//     // Create commit with optional no-verify flag for CI environments
-//     const commitArgs = ['commit', '-m', message];
-//     if (noVerify) {
-//       commitArgs.push('--no-verify');
-//     }
+  /**
+   * @param {string} version
+   * @returns {Promise<void>}
+   */
+  createVersion: async (version) => branch.create(`version_bump_v${version}`),
 
-//     await execa('git', commitArgs);
-//     logging.notice(`Created commit: ${message}`);
-//     return true;
-//   } catch (error) {
-//     logging.error('Failed to commit version changes', error);
-//     return false;
-//   }
-// };
-
-// /**
-//  * Create a version tag
-//  *
-//  * @param {Object} options - Tag options
-//  * @param {string} options.tagName - Name of the tag (e.g. v1.0.0)
-//  * @param {string} options.message - Tag message
-//  * @param {boolean} [options.force=false] - Force create tag (overwrite existing)
-//  * @returns {Promise<boolean>} - True if tag was successful
-//  */
-// export const createVersionTag = async ({tagName, message, force = false}) => {
-//   try {
-//     // Create annotated tag with optional force flag
-//     const tagArgs = ['tag', '-a', tagName, '-m', message];
-
-//     if (force) {
-//       tagArgs.push('-f');
-//     }
-
-//     await execa('git', tagArgs);
-//     logging.notice(`Created tag: ${tagName}`);
-//     return true;
-//   } catch (error) {
-//     logging.error(`Failed to create version tag ${tagName}`, error);
-//     return false;
-//   }
-// };
-
-// /**
-//  * Push changes and tags to remote repository
-//  *
-//  * @param {Object} options - Push options
-//  * @param {string} [options.branch=''] - Branch to push to (defaults to current)
-//  * @param {boolean} [options.forcePush=false] - Whether to force push
-//  * @param {string} [options.remote='origin'] - Remote name
-//  * @param {boolean} [options.noVerify=false] - Skip git hooks when pushing
-//  * @returns {Promise<boolean>} - True if push was successful
-//  */
-// export const pushChanges = async ({branch = '', forcePush = false, remote = 'origin', noVerify = false}) => {
-//   try {
-//     // Push commits
-//     const pushArgs = ['push'];
-
-//     if (forcePush) {
-//       pushArgs.push('--force');
-//     }
-
-//     if (noVerify) {
-//       pushArgs.push('--no-verify');
-//     }
-
-//     pushArgs.push(remote);
-
-//     if (branch) {
-//       pushArgs.push(branch);
-//     }
-
-//     await execa('git', pushArgs);
-
-//     // Push tags
-//     const pushTagsArgs = ['push', remote, '--tags'];
-//     if (noVerify) {
-//       pushTagsArgs.splice(1, 0, '--no-verify');
-//     }
-
-//     await execa('git', pushTagsArgs);
-
-//     logging.notice(`Pushed changes and tags to ${remote}`);
-//     return true;
-//   } catch (error) {
-//     logging.error('Failed to push changes', error);
-//     return false;
-//   }
-// };
-
-// /**
-//  * Get remote URL for the specified remote
-//  *
-//  * @param {string} [remoteName='origin'] - Name of the remote
-//  * @returns {Promise<string|null>} - Remote URL or null if not found
-//  */
-// export const getRemoteUrl = async (remoteName = 'origin') => {
-//   try {
-//     const {stdout} = await execa('git', ['remote', 'get-url', remoteName]);
-//     return stdout.trim();
-//   } catch (error) {
-//     logging.error(`Failed to get URL for remote ${remoteName}`, error);
-//     return null;
-//   }
-// };
-
-// /**
-//  * Get current branch name
-//  *
-//  * @returns {Promise<string|null>} - Current branch name or null if detached HEAD
-//  */
-// export const getCurrentBranch = async () => {
-//   try {
-//     const {stdout} = await execa('git', ['symbolic-ref', '--short', 'HEAD']);
-//     return stdout.trim();
-//   } catch (error) {
-//     // In detached HEAD state, symbolic-ref will fail
-//     logging.warning('Failed to get current branch name, might be in detached HEAD state');
-//     return null;
-//   }
-// };
+  /**
+   * Delete an existing branch from the repository.
+   *
+   * @param {string} branchName
+   * @returns {Promise<void>}
+   */
+  remove: async (branchName) => {
+    try {
+      await execa('git', ['branch', '-d', branchName]);
+      logging.info(`Branch ${branchName} deleted successfully`);
+    } catch (error) {
+      logging.error(`Failed to delete branch ${branchName}:`, error);
+    }
+  },
+};

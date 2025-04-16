@@ -3,10 +3,6 @@ description: "GitHub Action for automated version management based on convention
 author: "dragoscops"
 
 inputs:
-  platform:
-    description: "Git platform"
-    required: false
-    default: github
   token:
     description: "GitHub token for actions like creating pull requests"
     required: false
@@ -15,30 +11,14 @@ inputs:
     description: 'Comma-separated workspace definitions with format "path:type", e.g., ".:text,packages/node:node"'
     required: false
     default: ".:text"
-  # create-pr:
-  #   description: "Whether to create a pull request with version changes"
-  #   required: false
-  #   default: "false"
-  # create-tags:
-  #   description: "Whether to create tags for version changes"
-  #   required: false
-  #   default: "true"
-  # merge-branch:
-  #   description: "Target branch for pull requests"
-  #   required: false
-  #   default: "main"
-  # update-changelog:
-  #   description: "Whether to update the changelog with changes since last tag"
-  #   required: false
-  #   default: "true"
-  # automatic-merge:
-  #   description: "Whether to automatically merge the PR if all checks pass"
-  #   required: false
-  #   default: "false"
-  # git-platform:
-  #   description: "The Git platform to use (github or gitea)"
-  #   required: false
-  #   default: "github"
+  no-pr:
+    description: "Skip creating a pull request"
+    required: false
+    default: "false"
+  no_pr:
+    description: "Skip creating a pull request"
+    required: false
+    default: "false"
 
 # outputs:
 #   changed_workspaces_info:
