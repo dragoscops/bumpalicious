@@ -154,6 +154,8 @@ export async function enrichWorkspace(workspacePath, workspaceType) {
   process.chdir(originalDir);
   process.chdir(workspacePath);
 
+  console.log(originalDir, path.resolve(workspacePath));
+
   try {
     let name = '';
     let version = '';
