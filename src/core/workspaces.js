@@ -40,6 +40,193 @@ export function fromString(workspace) {
 }
 
 /**
+ *
+ * @returns {Promise<{updatedWorkspaces: Workspace[], workspacesTree: WorkspaceNode[]}>}
+ */
+export async function updateVersionsForChangedWorkspaces() {
+  // Enrich workspaces with additional info
+  const changedWorkspaces = await enrichChangedWorkspaces(options.workspaces, lastTag);
+  // If no changed workspaces, exit early
+  if (changedWorkspaces.length === 0) {
+    return;
+  }
+
+  // Increase versions based on commit message
+  const updatedWorkspaces = await increaseWorkspacesVersions({
+    workspaces: changedWorkspaces,
+    commitMessage,
+  });
+  // If no version updates needed, exit early
+  if (updatedWorkspaces.length === 0) {
+    return;
+  }
+
+  // Update version files in workspaces
+  await updateWorkspacesVersions(updatedWorkspaces);
+
+  return updatedWorkspaces;
+}
+
+/**
+ * Enrich workspaces that have changed since the last tag
+ *
+ * @param {Workspace[]} workspaces - Array of workspaces to check
+ * @param {string} lastTag - Last git tag
+ * @returns {Promise<Workspace[]>}
+ */
+export async function enrichChangedWorkspaces(workspaces, lastTag) {
+  const enrichedWorkspaces = [];
+
+  for (const workspace of workspaces) {
+    const changedFiles = await git.getChangedFiles(workspace.path, lastTag);
+    if (changedFiles.length > 0) {
+      const enrichedWorkspace = await enrichWorkspace(workspace.path, workspace.type);
+      logging.info(`Workspace '${workspace.path}' has changed since last tag: ${lastTag}`);
+      enrichedWorkspaces.push(enrichedWorkspace);
+    }
+  }
+
+  if (enrichedWorkspaces.length === 0) {
+    logging.warning('No changed workspaces found', JSON.stringify(workspaces));
+  }
+
+  return enrichedWorkspaces;
+}
+
+/**
+ * Detect version for a specific workspace
+ *
+ * @param {string} workspacePath - Path to workspace
+ * @param {string} workspaceType - Type of workspace (node, python, etc.)
+ * @returns {Promise<Workspace>}
+ */
+export async function enrichWorkspace(workspacePath, workspaceType) {
+  // Change directory to workspace path
+  const originalDir = process.env.GITHUB_WORKSPACE ?? process.cwd();
+  process.chdir(originalDir);
+
+  workspacePath = path.resolve(workspacePath);
+  process.chdir(workspacePath);
+
+  try {
+    let name = '';
+    let version = '';
+
+    if (workspaceDetect[workspaceType]) {
+      ({name, version} = await workspaceDetect[workspaceType].detect(workspacePath));
+    } else {
+      // Default to text version if type is unknown
+      ({name, version} = await workspaceDetect.text.detect(workspacePath));
+      logging.warning(`Unknown workspace type: ${workspaceType}, defaulting to text`);
+    }
+
+    // Use directory name as fallback for project name
+    if (!name) {
+      name = path.basename(workspacePath);
+    }
+
+    // Use '0.1.0' as fallback for version
+    if (!version) {
+      version = '0.1.0';
+      logging.warning(`Could not detect version for workspace ${name}, using default 0.1.0`);
+    }
+
+    return {
+      path: workspacePath,
+      type: workspaceType.toLowerCase(),
+      name,
+      version,
+    };
+  } finally {
+    // Restore original directory
+    process.chdir(originalDir);
+  }
+}
+
+/**
+ * Increase versions for workspaces based on commit message
+ *
+ * @param {Object} options - Options for version increases
+ * @param {Workspace[]} options.workspaces - Info about workspaces
+ * @param {string} options.commitMessage - Git commit message
+ * @returns {Promise<Workspace[]>} - Updated workspace info with new versions
+ */
+export async function increaseWorkspacesVersions({workspaces, commitMessage}) {
+  const increaseType = version.determineVersionIncreaseType(commitMessage);
+
+  if (!increaseType) {
+    logging.warning(`No version increase needed based on commit message: ${commitMessage}`);
+    return [];
+  }
+
+  logging.info(`Determined version increase type: ${increaseType} from commit: ${commitMessage}`);
+
+  const preReleaseIdentifier = version.determineVersionPreReleaseIdentifier(commitMessage);
+  if (preReleaseIdentifier) {
+    logging.info(`Pre-release identifier found in commit message: ${preReleaseIdentifier}`);
+  }
+
+  return workspaces.map((workspace) => {
+    const updatedVersion = version.increaseVersion(workspace.version, {
+      type: increaseType,
+      identifier: preReleaseIdentifier,
+    });
+
+    if (updatedVersion !== workspace.version) {
+      logging.info(`Increasing ${workspace.name} version ${workspace.version} -> ${updatedVersion} (${increaseType})`);
+      return {...workspace, version: updatedVersion};
+    }
+
+    return workspace;
+  });
+}
+
+/**
+ * Update version files in workspaces
+ *
+ * @param {Workspace[]} workspaces - Info about workspaces with new versions
+ * @returns {Promise<Workspace[]>} - Updated workspace info
+ */
+export async function updateWorkspacesVersions(workspaces) {
+  // Use GitHub workspace path if running in GitHub Actions, otherwise use current directory
+  const originalDir = process.env.GITHUB_WORKSPACE ?? process.cwd();
+  const updatedWorkspaces = [];
+
+  for (const workspace of workspaces) {
+    // Skip if no version specified
+    if (!workspace.version) {
+      logging.warning(`Skipping workspace ${workspace.name || workspace.path}: no version specified`);
+      continue;
+    }
+
+    try {
+      // Change to workspace directory
+      process.chdir(originalDir);
+      process.chdir(path.resolve(workspace.path));
+      logging.info(`Updating ${workspace.name || workspace.path} version to ${workspace.version}`);
+
+      if (workspaceDetect[workspace.type]) {
+        await workspaceDetect[workspace.type].updateVersion({
+          projectPath: workspace.path,
+          newVersion: workspace.version,
+        });
+      } else {
+        await workspaceDetect.text.updateVersion({projectPath: workspace.path, newVersion: workspace.version});
+      }
+      updatedWorkspaces.push(workspace);
+      logging.notice(`Updated ${workspace.name} version to ${workspace.version}`);
+    } catch (error) {
+      logging.error(`Error updating workspace ${workspace.name || workspace.path}:`, error);
+    } finally {
+      // Restore original directory
+      process.chdir(originalDir);
+    }
+  }
+
+  return updatedWorkspaces;
+}
+
+/**
  * Builds a workspace tree structure based on filesystem paths
  *
  * @param {Workspace[]} workspaces - Array of workspaces
@@ -107,8 +294,11 @@ export function buildWorkspaceTree(workspaces) {
   return rootNodes;
 }
 
+///////////////////////
+
 /**
  * Find the common base path shared by all paths
+ * @TODO: is this function needed?
  *
  * @param {string[]} paths - Array of normalized paths
  * @returns {string} - Common base path
@@ -142,62 +332,13 @@ function findCommonPath(paths) {
 }
 
 /**
- * Detect version for a specific workspace
- *
- * @param {string} workspacePath - Path to workspace
- * @param {string} workspaceType - Type of workspace (node, python, etc.)
- * @returns {Promise<Workspace>}
- */
-export async function enrichWorkspace(workspacePath, workspaceType) {
-  // Change directory to workspace path
-  const originalDir = process.env.GITHUB_WORKSPACE ?? process.cwd();
-  process.chdir(originalDir);
-
-  workspacePath = path.resolve(workspacePath);
-  process.chdir(workspacePath);
-
-  try {
-    let name = '';
-    let version = '';
-
-    if (workspaceDetect[workspaceType]) {
-      ({name, version} = await workspaceDetect[workspaceType].detect(workspacePath));
-    } else {
-      // Default to text version if type is unknown
-      ({name, version} = await workspaceDetect.text.detect(workspacePath));
-      logging.warning(`Unknown workspace type: ${workspaceType}, defaulting to text`);
-    }
-
-    // Use directory name as fallback for project name
-    if (!name) {
-      name = path.basename(workspacePath);
-    }
-
-    // Use '0.1.0' as fallback for version
-    if (!version) {
-      version = '0.1.0';
-      logging.warning(`Could not detect version for workspace ${name}, using default 0.1.0`);
-    }
-
-    return {
-      path: workspacePath,
-      type: workspaceType.toLowerCase(),
-      name,
-      version,
-    };
-  } finally {
-    // Restore original directory
-    process.chdir(originalDir);
-  }
-}
-
-/**
  * Enrich workspaces
+ * @TODO: is this function needed?
  *
  * @param {Workspace[]} workspaces - Array of workspace specifications
  * @returns {Promise<Workspace[]>}
  */
-export const enrichWorkspaces = async (workspaces) => {
+export async function enrichWorkspaces(workspaces) {
   const enrichedWorkspaces = [];
 
   for (const workspace of workspaces) {
@@ -206,113 +347,4 @@ export const enrichWorkspaces = async (workspaces) => {
   }
 
   return enrichedWorkspaces;
-};
-
-/**
- * Enrich workspaces that have changed since the last tag
- *
- * @param {Workspace[]} workspaces - Array of workspaces to check
- * @param {string} lastTag - Last git tag
- * @returns {Promise<Workspace[]>}
- */
-export const enrichChangedWorkspaces = async (workspaces, lastTag) => {
-  const enrichedWorkspaces = [];
-
-  for (const workspace of workspaces) {
-    const changedFiles = await git.getChangedFiles(workspace.path, lastTag);
-    if (changedFiles.length > 0) {
-      const enrichedWorkspace = await enrichWorkspace(workspace.path, workspace.type);
-      logging.info(`Workspace '${workspace.path}' has changed since last tag: ${lastTag}`);
-      enrichedWorkspaces.push(enrichedWorkspace);
-    }
-  }
-
-  if (enrichedWorkspaces.length === 0) {
-    logging.warning('No changed workspaces found', JSON.stringify(workspaces));
-  }
-
-  return enrichedWorkspaces;
-};
-
-/**
- * Increase versions for workspaces based on commit message
- *
- * @param {Object} options - Options for version increases
- * @param {Workspace[]} options.workspaces - Info about workspaces
- * @param {string} options.commitMessage - Git commit message
- * @returns {Promise<Workspace[]>} - Updated workspace info with new versions
- */
-export const increaseWorkspacesVersions = async ({workspaces, commitMessage}) => {
-  const increaseType = version.determineVersionIncreaseType(commitMessage);
-
-  if (!increaseType) {
-    logging.warning(`No version increase needed based on commit message: ${commitMessage}`);
-    return [];
-  }
-
-  logging.info(`Determined version increase type: ${increaseType} from commit: ${commitMessage}`);
-
-  const preReleaseIdentifier = version.determineVersionPreReleaseIdentifier(commitMessage);
-  if (preReleaseIdentifier) {
-    logging.info(`Pre-release identifier found in commit message: ${preReleaseIdentifier}`);
-  }
-
-  return workspaces.map((workspace) => {
-    const updatedVersion = version.increaseVersion(workspace.version, {
-      type: increaseType,
-      identifier: preReleaseIdentifier,
-    });
-
-    if (updatedVersion !== workspace.version) {
-      logging.info(`Increasing ${workspace.name} version ${workspace.version} -> ${updatedVersion} (${increaseType})`);
-      return {...workspace, version: updatedVersion};
-    }
-
-    return workspace;
-  });
-};
-
-/**
- * Update version files in workspaces
- *
- * @param {Workspace[]} workspaces - Info about workspaces with new versions
- * @returns {Promise<Workspace[]>} - Updated workspace info
- */
-export const updateWorkspacesVersions = async (workspaces) => {
-  // Use GitHub workspace path if running in GitHub Actions, otherwise use current directory
-  const originalDir = process.env.GITHUB_WORKSPACE ?? process.cwd();
-  const updatedWorkspaces = [];
-
-  for (const workspace of workspaces) {
-    // Skip if no version specified
-    if (!workspace.version) {
-      logging.warning(`Skipping workspace ${workspace.name || workspace.path}: no version specified`);
-      continue;
-    }
-
-    try {
-      // Change to workspace directory
-      process.chdir(originalDir);
-      process.chdir(path.resolve(workspace.path));
-      logging.info(`Updating ${workspace.name || workspace.path} version to ${workspace.version}`);
-
-      if (workspaceDetect[workspace.type]) {
-        await workspaceDetect[workspace.type].updateVersion({
-          projectPath: workspace.path,
-          newVersion: workspace.version,
-        });
-      } else {
-        await workspaceDetect.text.updateVersion({projectPath: workspace.path, newVersion: workspace.version});
-      }
-      updatedWorkspaces.push(workspace);
-      logging.notice(`Updated ${workspace.name} version to ${workspace.version}`);
-    } catch (error) {
-      logging.error(`Error updating workspace ${workspace.name || workspace.path}:`, error);
-    } finally {
-      // Restore original directory
-      process.chdir(originalDir);
-    }
-  }
-
-  return updatedWorkspaces;
-};
+}

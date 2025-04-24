@@ -43,7 +43,9 @@ const run = async () => {
     const options = {
       workspaces: (core.getInput('workspaces') || '.:text').split(';').map(workspace.fromString),
       token: core.getInput('token'),
-      noPR: core.getBooleanInput('no_pr') || core.getBooleanInput('no-pr'),
+      createPR: core.getBooleanInput('create-pr'),
+      prMessage: core.getInput('pr-message'),
+      mergeBranch: core.getInput('merge-branch'),
     };
 
     logging.info('Affecting workspaces:', options.workspaces);
@@ -65,39 +67,48 @@ const run = async () => {
       logging.error('No commit message found');
     }
 
-    // Enrich workspaces with additional info
-    const changedWorkspaces = await workspace.enrichChangedWorkspaces(options.workspaces, lastTag);
-    // If no changed workspaces, exit early
-    if (changedWorkspaces.length === 0) {
-      return;
-    }
-
-    // Increase versions based on commit message
-    const updatedWorkspaces = await workspace.increaseWorkspacesVersions({
-      workspaces: changedWorkspaces,
-      commitMessage,
-    });
-    // If no version updates needed, exit early
-    if (updatedWorkspaces.length === 0) {
-      return;
-    }
-
-    // Organizes workspaces into a tree like structure to also determine the root workspace
-    const workspacesTree = await workspace.buildWorkspaceTree(updatedWorkspaces);
-    if (workspacesTree.length > 1) {
-      logging.error('Workspaces folder should only have a root workspace');
-    }
-    if (workspacesTree.length === 0) {
-      logging.error('No workspaces found');
-    }
-
-    // Update version files in workspaces
-    await workspace.updateWorkspacesVersions(updatedWorkspaces);
-
-    if (!options.noPR) {
-      console.log('create branch, pr, etc');
+    // Check if the commit message contains the PR message
+    // If it does, we assume the PR is already created
+    // and we only need to update the versions
+    if (!commitMessage.includes(options.prMessage)) {
+      // TODO: Implement logic to handle PR message
+      // workspace.mergeVersionPR(options.token);
+      // TODO: Implement logic to update tags
+      // workspace.createVersionTags(options);
     } else {
-      console.log('git commit, push, create tag, push tag');
+      // If the PR message is not found, we assume the PR is not created
+      // and we need go through the entire version bumping process
+
+      // Check if the workspaces have changed since the last tag
+      const updatedWorkspaces = await workspace.updateVersionsForChangedWorkspaces();
+      if (!updatedWorkspaces.length) {
+        logging.warning('No workspaces have changed');
+        return;
+      }
+
+      // Organizes workspaces into a tree like structure to also determine the root workspace
+      const workspacesTree = buildWorkspaceTree(updatedWorkspaces);
+      if (workspacesTree.length > 1) {
+        logging.error('Workspaces folder should only have a root workspace');
+      }
+      if (workspacesTree.length === 0) {
+        logging.error('No workspaces found');
+      }
+
+      console.log(workspacesTree);
+
+      // TODO: Implement logic to bump versions
+      // if (options.createPR) {
+      //   // If createPR is true, create a pull request with the version changes
+      //   // TODO: Implement logic to create version pull request
+      //   // workspace.createVersionPR(workspacesTree, options);
+      // } else {
+      //   // Otherwise, create a commit with the version changes and tags
+      //   // TODO: Implement logic to commit version changes
+      //   // workspace.createVersionCommit(workspacesTree, options);
+      //   // TODO: Implement logic to update tags
+      //   // workspace.createVersionTags(options);
+      // }
     }
   } catch (error) {
     core.setFailed(`Action failed: ${error.message}`);

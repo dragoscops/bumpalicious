@@ -11,14 +11,18 @@ inputs:
     description: 'Comma-separated workspace definitions with format "path:type", e.g., ".:text,packages/node:node"'
     required: false
     default: ".:text"
-  no-pr:
-    description: "Skip creating a pull request"
+  create-pr:
+    description: "Perform version update by creating a pull request"
     required: false
     default: "false"
-  no_pr:
-    description: "Skip creating a pull request"
+  pr-message:
+    description: "This message will be used for the pull request"
     required: false
-    default: "false"
+    default: "chore: version update"
+  merge-branch:
+    description: "The branch to merge into (useful when you're maintaining multiple version branches)"
+    required: false
+    default: "main"
 
 # outputs:
 #   changed_workspaces_info:
