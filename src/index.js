@@ -76,7 +76,7 @@ const run = async () => {
       // and we need go through the entire version bumping process
 
       // Check if the workspaces have changed since the last tag
-      const updatedWorkspaces = await workspace.updateVersionsForChangedWorkspaces();
+      const updatedWorkspaces = await workspace.updateVersionsForChangedWorkspaces(commitMessage, lastTag, options);
       if (updatedWorkspaces.length === 0) {
         logging.warning('No workspaces have changed');
         return;

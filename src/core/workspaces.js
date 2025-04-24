@@ -42,9 +42,10 @@ export function fromString(workspace) {
 /**
  * @param {string} commitMessage - Git commit message
  * @param {string} lastTag - Last git tag
+ * @param {ActionOptions} options - Options for the action
  * @returns {Promise<Workspace[]>}
  */
-export async function updateVersionsForChangedWorkspaces(commitMessage, lastTag) {
+export async function updateVersionsForChangedWorkspaces(commitMessage, lastTag, options) {
   // Enrich workspaces with additional info
   const changedWorkspaces = await enrichChangedWorkspaces(options.workspaces, lastTag);
   // If no changed workspaces, exit early
