@@ -100,7 +100,7 @@ const run = async () => {
       } else {
         // Otherwise, create a commit with the version changes and tags
         workspace.createVersionCommit(updatedWorkspaces, options);
-        workspace.createVersionTags(updatedWorkspacesTrees[0].version, options);
+        workspace.createVersionTags(updatedWorkspacesTrees[0].workspace.version, options);
       }
     }
   } catch (error) {
