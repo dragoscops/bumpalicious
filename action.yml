@@ -3,6 +3,18 @@ description: "GitHub Action for automated version management based on convention
 author: "dragoscops"
 
 inputs:
+  branch:
+    description: "The branch to commit/merge into (useful when you're maintaining multiple version branches)"
+    required: false
+    default: "main"
+  pr:
+    description: "Perform version update by creating a pull request"
+    required: false
+    default: "false"
+  pr-message:
+    description: "This message will be used for the pull request"
+    required: false
+    default: "chore: version update"
   token:
     description: "GitHub token for actions like creating pull requests"
     required: false
@@ -11,18 +23,6 @@ inputs:
     description: 'Comma-separated workspace definitions with format "path:type", e.g., ".:text,packages/node:node"'
     required: false
     default: ".:text"
-  create-pr:
-    description: "Perform version update by creating a pull request"
-    required: false
-    default: "false"
-  pr-message:
-    description: "This message will be used for the pull request"
-    required: false
-    default: "chore: version update"
-  merge-branch:
-    description: "The branch to merge into (useful when you're maintaining multiple version branches)"
-    required: false
-    default: "main"
 
 # outputs:
 #   changed_workspaces_info:

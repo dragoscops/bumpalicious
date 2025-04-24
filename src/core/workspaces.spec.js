@@ -57,14 +57,14 @@ describe('workspace.js module', () => {
 
   describe('buildWorkspaceTree(strig[])', () => {
     it('returns empty array for empty input', () => {
-      expect(workspaces.buildWorkspaceTree([])).toEqual([]);
-      expect(workspaces.buildWorkspaceTree(null)).toEqual([]);
-      expect(workspaces.buildWorkspaceTree(undefined)).toEqual([]);
+      expect(workspaces.buildUpdatedWorkspacesTrees([])).toEqual([]);
+      expect(workspaces.buildUpdatedWorkspacesTrees(null)).toEqual([]);
+      expect(workspaces.buildUpdatedWorkspacesTrees(undefined)).toEqual([]);
     });
 
     it('creates a single node tree for a single workspace', () => {
       const workspace = {path: '/root/project', name: 'project', type: 'node', version: '1.0.0'};
-      const result = workspaces.buildWorkspaceTree([workspace]);
+      const result = workspaces.buildUpdatedWorkspacesTrees([workspace]);
 
       expect(result).toEqual([
         {
@@ -82,7 +82,7 @@ describe('workspace.js module', () => {
         {path: '/root/project/service2', name: 'service2', type: 'python', version: '0.2.0'},
       ];
 
-      const result = workspaces.buildWorkspaceTree(workspaceInputs);
+      const result = workspaces.buildUpdatedWorkspacesTrees(workspaceInputs);
 
       // Expect only one root node
       expect(result.length).toBe(1);
@@ -112,7 +112,7 @@ describe('workspace.js module', () => {
         {path: '/root/project/service1/submodule', name: 'submodule', type: 'node', version: '0.1.0'},
       ];
 
-      const result = workspaces.buildWorkspaceTree(workspaceInputs);
+      const result = workspaces.buildUpdatedWorkspacesTrees(workspaceInputs);
 
       // Should only have one root
       expect(result.length).toBe(1);
@@ -137,7 +137,7 @@ describe('workspace.js module', () => {
         {path: '/apps/app1', name: 'app1', type: 'python', version: '0.5.0'},
       ];
 
-      const result = workspaces.buildWorkspaceTree(workspaceInputs);
+      const result = workspaces.buildUpdatedWorkspacesTrees(workspaceInputs);
 
       // Should have two root nodes
       expect(result.length).toBe(2);
@@ -162,7 +162,7 @@ describe('workspace.js module', () => {
         {path: '/root/project/service1', name: 'service1', type: 'node', version: '0.5.0'},
       ];
 
-      const result = workspaces.buildWorkspaceTree(workspaceInputs);
+      const result = workspaces.buildUpdatedWorkspacesTrees(workspaceInputs);
 
       // Should only have one root: '/root'
       expect(result.length).toBe(1);
@@ -187,7 +187,7 @@ describe('workspace.js module', () => {
         {path: '/project2/main/service', name: 'service2', type: 'python', version: '0.1.0'},
       ];
 
-      const result = workspaces.buildWorkspaceTree(workspaceInputs);
+      const result = workspaces.buildUpdatedWorkspacesTrees(workspaceInputs);
 
       // Should have two root nodes
       expect(result.length).toBe(2);
@@ -436,7 +436,7 @@ describe('workspace.js module', () => {
         {path: '/test/workspace2', type: 'python', name: 'project2', version: '2.3.1'},
       ];
 
-      const result = await workspaces.increaseWorkspacesVersions({
+      const result = await workspaces.increaseVersionForWorkspaces({
         workspaces: input,
         commitMessage: 'feat: add new feature',
       });
@@ -460,7 +460,7 @@ describe('workspace.js module', () => {
     it('handles pre-release identifiers in commit message', async () => {
       const input = [{path: '/test/workspace1', type: 'node', name: 'project1', version: '1.0.0'}];
 
-      const result = await workspaces.increaseWorkspacesVersions({
+      const result = await workspaces.increaseVersionForWorkspaces({
         workspaces: input,
         commitMessage: 'feat: add new feature; pre-release: beta',
       });
@@ -475,7 +475,7 @@ describe('workspace.js module', () => {
     it('skips version increase when commit message does not indicate change', async () => {
       const input = [{path: '/test/workspace1', type: 'node', name: 'project1', version: '1.0.0'}];
 
-      const result = await workspaces.increaseWorkspacesVersions({
+      const result = await workspaces.increaseVersionForWorkspaces({
         workspaces: input,
         commitMessage: 'docs: update readme',
       });
@@ -508,7 +508,7 @@ describe('workspace.js module', () => {
       };
 
       try {
-        const result = await workspaces.updateWorkspacesVersions(workspacesArray);
+        const result = await workspaces.updateVersionsForWorkspaces(workspacesArray);
 
         // Verify update was called for each workspace
         expect(updateMocks.node.updateVersion).toHaveBeenCalledWith({
@@ -547,7 +547,7 @@ describe('workspace.js module', () => {
       const updateMock = mockWorkspace('text', {});
 
       try {
-        const result = await workspaces.updateWorkspacesVersions(workspacesArray);
+        const result = await workspaces.updateVersionsForWorkspaces(workspacesArray);
 
         // Verify text update was called
         expect(updateMock.updateVersion).toHaveBeenCalledWith({projectPath: '/test/workspace', newVersion: '1.0.0'});

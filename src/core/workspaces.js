@@ -40,10 +40,11 @@ export function fromString(workspace) {
 }
 
 /**
- *
- * @returns {Promise<{updatedWorkspaces: Workspace[], workspacesTree: WorkspaceNode[]}>}
+ * @param {string} commitMessage - Git commit message
+ * @param {string} lastTag - Last git tag
+ * @returns {Promise<Workspace[]>}
  */
-export async function updateVersionsForChangedWorkspaces() {
+export async function updateVersionsForChangedWorkspaces(commitMessage, lastTag) {
   // Enrich workspaces with additional info
   const changedWorkspaces = await enrichChangedWorkspaces(options.workspaces, lastTag);
   // If no changed workspaces, exit early
@@ -52,17 +53,17 @@ export async function updateVersionsForChangedWorkspaces() {
   }
 
   // Increase versions based on commit message
-  const updatedWorkspaces = await increaseWorkspacesVersions({
+  const updatedWorkspaces = await increaseVersionForWorkspaces({
     workspaces: changedWorkspaces,
     commitMessage,
   });
   // If no version updates needed, exit early
   if (updatedWorkspaces.length === 0) {
-    return;
+    return [];
   }
 
   // Update version files in workspaces
-  await updateWorkspacesVersions(updatedWorkspaces);
+  await updateVersionsForWorkspaces(updatedWorkspaces);
 
   return updatedWorkspaces;
 }
@@ -151,7 +152,7 @@ export async function enrichWorkspace(workspacePath, workspaceType) {
  * @param {string} options.commitMessage - Git commit message
  * @returns {Promise<Workspace[]>} - Updated workspace info with new versions
  */
-export async function increaseWorkspacesVersions({workspaces, commitMessage}) {
+export async function increaseVersionForWorkspaces({workspaces, commitMessage}) {
   const increaseType = version.determineVersionIncreaseType(commitMessage);
 
   if (!increaseType) {
@@ -187,7 +188,7 @@ export async function increaseWorkspacesVersions({workspaces, commitMessage}) {
  * @param {Workspace[]} workspaces - Info about workspaces with new versions
  * @returns {Promise<Workspace[]>} - Updated workspace info
  */
-export async function updateWorkspacesVersions(workspaces) {
+export async function updateVersionsForWorkspaces(workspaces) {
   // Use GitHub workspace path if running in GitHub Actions, otherwise use current directory
   const originalDir = process.env.GITHUB_WORKSPACE ?? process.cwd();
   const updatedWorkspaces = [];
@@ -232,7 +233,7 @@ export async function updateWorkspacesVersions(workspaces) {
  * @param {Workspace[]} workspaces - Array of workspaces
  * @returns {WorkspaceNode[]} - Array of root workspace nodes with children
  */
-export function buildWorkspaceTree(workspaces) {
+export function buildUpdatedWorkspacesTrees(workspaces) {
   if (!workspaces || workspaces.length === 0) {
     return [];
   }
@@ -292,6 +293,18 @@ export function buildWorkspaceTree(workspaces) {
 
   // Return array of root nodes - already sorted by the algorithm
   return rootNodes;
+}
+
+/**
+ * Create a commit with the version bump message
+ *
+ * @param {Workspace[]} workspaces
+ * @param {ActionOptions} options
+ */
+export async function createVersionCommit(workspaces, options) {
+  const commitMessage = `chore: version bump for workspaces: ${workspaces.map((node) => node.name).join(', ')}`;
+
+  git.pushChange(commitMessage, options.branch);
 }
 
 ///////////////////////

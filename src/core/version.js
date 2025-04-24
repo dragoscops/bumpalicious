@@ -12,11 +12,12 @@ import * as logging from '../utils/logging.js';
 
 /**
  * Determine version increase type from commit message
+ * @link https://www.conventionalcommits.org/en/v1.0.0/#summary
  *
  * @param {string} commitMessage - Git commit message
  * @returns {ReleaseType | null} - Type of version increase or null for none
  */
-export const determineVersionIncreaseType = (commitMessage) => {
+export function determineVersionIncreaseType(commitMessage) {
   if (!commitMessage) {
     return logging.error('No commit message provided');
   }
@@ -50,7 +51,7 @@ export const determineVersionIncreaseType = (commitMessage) => {
   }
 
   return null;
-};
+}
 
 /**
  * Determine pre-release identifier from commit message
@@ -58,7 +59,7 @@ export const determineVersionIncreaseType = (commitMessage) => {
  * @param {string} commitMessage - Git commit message
  * @returns {string|null} - Pre-release identifier or null if not found
  */
-export const determineVersionPreReleaseIdentifier = (commitMessage) => {
+export function determineVersionPreReleaseIdentifier(commitMessage) {
   if (!commitMessage) {
     return logging.error('No commit message provided');
   }
@@ -69,7 +70,7 @@ export const determineVersionPreReleaseIdentifier = (commitMessage) => {
   }
 
   return null;
-};
+}
 
 /**
  * @typedef {Object} IncreaseVersionOptions
@@ -84,7 +85,7 @@ export const determineVersionPreReleaseIdentifier = (commitMessage) => {
  * @param {IncreaseVersionOptions} options - Options for version increase
  * @returns {string} - New version
  */
-export const increaseVersion = (currentVersion, options) => {
+export function increaseVersion(currentVersion, options) {
   const version = semver.parse(currentVersion);
   if (!version) {
     logging.error(`Invalid version: ${currentVersion}`);
@@ -92,4 +93,4 @@ export const increaseVersion = (currentVersion, options) => {
   }
 
   return semver.inc(currentVersion, options.type, options.identifier);
-};
+}

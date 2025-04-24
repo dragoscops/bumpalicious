@@ -7,7 +7,6 @@
  */
 
 import * as core from '@actions/core';
-import * as github from '@actions/github';
 import * as workspace from './core/workspaces.js';
 import * as git from './utils/git.js';
 import * as logging from './utils/logging.js';
@@ -23,14 +22,11 @@ import * as logging from './utils/logging.js';
 /**
  * Action configuration options
  * @typedef {Object} ActionOptions
- * @property {Workspace[]} workspaces - Comma-separated workspace definitions with format "path:type"
+ * @property {string} branch - Target branch for pull requests
+ * @property {boolean} pr - Whether to create a pull request with version changes
+ * @property {string} prMessage - Message to use for the pull request
  * @property {string} token - GitHub/Gitea token for actions like creating pull requests
- * @property {boolean} createPR - Whether to create a pull request with version changes
- * @property {boolean} createTags - Whether to create tags for version changes
- * @property {string} mergeBranch - Target branch for pull requests
- * @property {boolean} updateChangelog - Whether to update the changelog with changes since last tag
- * @property {boolean} automaticMerge - Whether to automatically merge the PR if all checks pass
- * @property {string} platform - Git platform to use ('github' or 'gitea')
+ * @property {Workspace[]} workspaces - Comma-separated workspace definitions with format "path:type"
  */
 
 /**
@@ -43,9 +39,9 @@ const run = async () => {
     const options = {
       workspaces: (core.getInput('workspaces') || '.:text').split(';').map(workspace.fromString),
       token: core.getInput('token'),
-      createPR: core.getBooleanInput('create-pr'),
+      pr: core.getBooleanInput('pr'),
       prMessage: core.getInput('pr-message'),
-      mergeBranch: core.getInput('merge-branch'),
+      branch: core.getInput('branch'),
     };
 
     logging.info('Affecting workspaces:', options.workspaces);
@@ -81,34 +77,29 @@ const run = async () => {
 
       // Check if the workspaces have changed since the last tag
       const updatedWorkspaces = await workspace.updateVersionsForChangedWorkspaces();
-      if (!updatedWorkspaces.length) {
+      if (updatedWorkspaces.length === 0) {
         logging.warning('No workspaces have changed');
         return;
       }
 
       // Organizes workspaces into a tree like structure to also determine the root workspace
-      const workspacesTree = buildWorkspaceTree(updatedWorkspaces);
-      if (workspacesTree.length > 1) {
+      const updatedWorkspacesTrees = workspace.buildUpdatedWorkspacesTrees(updatedWorkspaces);
+      if (updatedWorkspacesTrees.length > 1) {
         logging.error('Workspaces folder should only have a root workspace');
       }
-      if (workspacesTree.length === 0) {
+      if (updatedWorkspacesTrees.length === 0) {
         logging.error('No workspaces found');
       }
 
-      console.log(workspacesTree);
-
-      // TODO: Implement logic to bump versions
-      // if (options.createPR) {
-      //   // If createPR is true, create a pull request with the version changes
-      //   // TODO: Implement logic to create version pull request
-      //   // workspace.createVersionPR(workspacesTree, options);
-      // } else {
-      //   // Otherwise, create a commit with the version changes and tags
-      //   // TODO: Implement logic to commit version changes
-      //   // workspace.createVersionCommit(workspacesTree, options);
-      //   // TODO: Implement logic to update tags
-      //   // workspace.createVersionTags(options);
-      // }
+      if (options.pr) {
+        // If createPR is true, create a pull request with the version changes
+        // TODO: Implement logic to create version pull request
+        // workspace.createVersionPR(workspacesTree, options);
+      } else {
+        // Otherwise, create a commit with the version changes and tags
+        workspace.createVersionCommit(updatedWorkspaces, options);
+        // workspace.createVersionTags(updatedWorkspacesTrees[0].version, options);
+      }
     }
   } catch (error) {
     core.setFailed(`Action failed: ${error.message}`);
