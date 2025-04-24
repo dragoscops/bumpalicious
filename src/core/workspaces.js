@@ -305,7 +305,21 @@ export function buildUpdatedWorkspacesTrees(workspaces) {
 export async function createVersionCommit(workspaces, options) {
   const commitMessage = `chore: version bump for workspaces: ${workspaces.map((node) => node.name).join(', ')}`;
 
-  git.pushChange(commitMessage, options.branch);
+  await git.pushChange(commitMessage, options.branch);
+}
+
+/**
+ *
+ * @param {string} version
+ * @param {ActionOptions} options
+ */
+export async function createVersionTags(version, options) {
+  const tagMessage = `chore: version bump for workspaces: ${options.workspaces.map((node) => node.name).join(', ')}`;
+
+  git.tag.createAndPush(`v${version}`, tagMessage);
+  // if (options.shortVersionTag && !version.includes('-')) {
+  //   git.tag.createAndPush(`v${version.split('.').slice(0, -1)}`, tagMessage);
+  // }
 }
 
 ///////////////////////

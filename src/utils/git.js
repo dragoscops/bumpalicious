@@ -90,13 +90,9 @@ export const getChangedFiles = async (repoPath, lastTag) => {
 
 export async function pushChange(commitMessage, branch = 'main') {
   try {
-    console.log('git', ['add', '.']);
-    console.log('git', ['commit', '-am', commitMessage]);
-    console.log('git', ['push', 'origin', branch]);
-
-    // await execa('git', ['add', '.']);
-    // await execa('git', ['commit', '-am', commitMessage]);
-    // await execa('git', ['push', 'origin', branch]);
+    await execa('git', ['add', '.']);
+    await execa('git', ['commit', '-am', commitMessage]);
+    await execa('git', ['push', 'origin', branch]);
     logging.info(`Changes committed with message: ${commitMessage}`);
   } catch (error) {
     logging.error(`Failed to commit changes:`, error);
