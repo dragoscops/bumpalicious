@@ -47,9 +47,8 @@ jobs:
         with:
           token: ${{ secrets.GH_TOKEN }}
           workspaces: .:node
-          # target-branch: ${{ github.ref }}
-          # no-pr: true
-          # refresh-minor: true
+          branch: ${{ github.ref }}
+          # pr: true
 
       - name: Output Results
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
