@@ -66,7 +66,7 @@ const run = async () => {
     // Check if the commit message contains the PR message
     // If it does, we assume the PR is already created
     // and we only need to update the versions
-    if (!commitMessage.includes(options.prMessage)) {
+    if (commitMessage.includes(options.prMessage)) {
       // TODO: Implement logic to handle PR message
       // workspace.mergeVersionPR(options.token);
       // TODO: Implement logic to update tags
