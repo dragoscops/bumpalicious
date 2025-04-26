@@ -267,6 +267,15 @@ export const branch = {
     }
   },
 
+  pull: async (branchName) => {
+    try {
+      await execa('git', ['pull', 'origin', branchName]);
+      logging.info(`Branch ${branchName} pulled successfully`);
+    } catch (error) {
+      logging.error(`Failed to pull branch ${branchName}:`, error);
+    }
+  },
+
   push: async (branchName) => {
     try {
       await execa('git', ['push', 'origin', branchName]);

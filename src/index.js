@@ -78,6 +78,7 @@ const run = async () => {
         if (options.prAutoMerge) {
           await github.pr.merge({pullNumber: pr.number}, options);
           await git.branch.checkout(pr.base.ref);
+          await git.branch.pull(pr.base.ref);
           await git.branch.remove(pr.head.ref);
         }
       } else {
