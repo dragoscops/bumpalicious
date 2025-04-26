@@ -14,11 +14,11 @@ inputs:
     description: "Perform version update by creating a pull request"
     required: false
     default: "false"
-  pr-auto-merge:
+  pr_auto_merge:
     description: "Automatically merge the pull request if it passes checks"
     required: false
     default: "false"
-  pr-message:
+  pr_message:
     description: "This message will be used for the pull request"
     required: false
     default: "chore: version update"
