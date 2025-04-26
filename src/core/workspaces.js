@@ -10,6 +10,18 @@ import * as logging from '../utils/logging.js';
 import * as version from './version.js';
 
 /**
+ * @typedef {import('../utils/github.js').ActionOptions} ActionOptions
+ */
+
+/**
+ * @typedef {import('../utils/workspace.js').WorkspaceNode} WorkspaceNode
+ */
+
+/**
+ * @typedef {import('../utils/workspace.js').Workspace} Workspace
+ */
+
+/**
  * @param {string} commitMessage - Git commit message
  * @param {string} lastTag - Last git tag
  * @param {ActionOptions} options - Options for the action
@@ -224,6 +236,11 @@ export async function createVersionTags(version, options) {
   // }
 }
 
+/**
+ *
+ * @param {WorkspaceNode[]} workspacesTree
+ * @param {import()} options
+ */
 export async function createVersionPR(workspacesTree, options) {
   const prBranch = await git.branch.createVersion(workspacesTree[0].workspace.version);
   await git.branch.push(prBranch);

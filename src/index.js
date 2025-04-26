@@ -73,7 +73,7 @@ const run = async () => {
 
       if (options.pr) {
         // If createPR is true, create a pull request with the version changes
-        workspaces.createVersionPR(workspacesTree, options);
+        workspaces.createVersionPR(updatedWorkspacesTrees, options);
         // if (options.prAutoMerge) {
         //   workspace.mergePR(prId, options);
         // }
