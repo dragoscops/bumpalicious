@@ -6,7 +6,8 @@
  * @module index
  */
 
-import * as workspace from './core/workspaces.js';
+import * as workspace from './core/workspace.js';
+import * as workspaces from './core/workspaces.js';
 import * as git from './utils/git.js';
 import * as github from './utils/github.js';
 import * as logging from './utils/logging.js';
@@ -56,7 +57,7 @@ const run = async () => {
       // and we need go through the entire version bumping process
 
       // Check if the workspaces have changed since the last tag
-      const updatedWorkspaces = await workspace.updateVersionsForChangedWorkspaces(commitMessage, lastTag, options);
+      const updatedWorkspaces = await workspaces.updateVersionsForChangedWorkspaces(commitMessage, lastTag, options);
       if (updatedWorkspaces.length === 0) {
         logging.warning('No workspaces have changed');
         return;
@@ -73,14 +74,14 @@ const run = async () => {
 
       if (options.pr) {
         // If createPR is true, create a pull request with the version changes
-        workspace.createVersionPR(workspacesTree, options);
+        workspaces.createVersionPR(workspacesTree, options);
         // if (options.prAutoMerge) {
         //   workspace.mergePR(prId, options);
         // }
       } else {
         // Otherwise, create a commit with the version changes and tags
-        workspace.createVersionCommit(updatedWorkspaces, options);
-        workspace.createVersionTags(updatedWorkspacesTrees[0].workspace.version, options);
+        workspaces.createVersionCommit(updatedWorkspaces, options);
+        workspaces.createVersionTags(updatedWorkspacesTrees[0].workspace.version, options);
       }
     }
   } catch (error) {
