@@ -261,29 +261,3 @@ export const branch = {
     }
   },
 };
-
-export const pr = {
-  /**
-   *
-   * @param {*} param0
-   */
-  create: async ({base, head, title, body}) => {
-    try {
-      const {stdout} = await execa('gh', [
-        'pr',
-        'create',
-        '--base',
-        base,
-        '--head',
-        head,
-        '--title',
-        title,
-        '--body',
-        body,
-      ]);
-      logging.info(`Pull request created successfully: ${stdout}`);
-    } catch (error) {
-      logging.error(`Failed to create pull request:`, error);
-    }
-  },
-};

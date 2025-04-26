@@ -9,35 +9,11 @@ import * as logging from '../utils/logging.js';
 import * as version from './version.js';
 
 /**
- * @typedef {Object} Workspace
- * @property {string} path - Path to the workspace
- * @property {string} name - Name of the workspace
- * @property {string} type - Type of the workspace (node, python, etc.)
- * @property {string} version - Version of the workspace
- */
-
-/**
  * @typedef {Object} WorkspaceNode
  * @property {Workspace} workspace - The workspace object
  * @property {WorkspaceNode[]} children - Child workspace nodes
  * @property {WorkspaceNode|null} parent - Parent workspace node (null for root)
  */
-
-/**
- * Converts a workspace string to a Workspace object
- *
- * @param {string} workspace
- * @returns {Workspace}
- */
-export function fromString(workspace) {
-  const splited = workspace.split(':');
-  return {
-    ...(splited.length > 0 ? {path: splited[0]} : {}),
-    ...(splited.length > 1 ? {type: splited[1]} : {}),
-    ...(splited.length > 2 ? {name: splited[2]} : {}),
-    ...(splited.length > 3 ? {version: splited[3]} : {}),
-  };
-}
 
 /**
  * @param {string} commitMessage - Git commit message

@@ -22,39 +22,6 @@ describe('workspace.js module', () => {
     vi.clearAllMocks();
   });
 
-  describe('fromString', () => {
-    it('will parse path and type', async () => {
-      const result = workspaces.fromString('.:text');
-
-      expect(result).toEqual({path: '.', type: 'text'});
-    });
-
-    it('will parse all 4 params', async () => {
-      const result = workspaces.fromString('.:text:project:1.0.0');
-
-      expect(result).toEqual({
-        name: 'project',
-        path: '.',
-        type: 'text',
-        version: '1.0.0',
-      });
-    });
-
-    it('will handle empty string', () => {
-      const result = workspaces.fromString('');
-
-      expect(result).toEqual({
-        path: '',
-      });
-    });
-
-    it('will handle only path', () => {
-      const result = workspaces.fromString('/path/to/workspace');
-
-      expect(result).toEqual({path: '/path/to/workspace'});
-    });
-  });
-
   describe('buildWorkspaceTree(strig[])', () => {
     it('returns empty array for empty input', () => {
       expect(workspaces.buildUpdatedWorkspacesTrees([])).toEqual([]);

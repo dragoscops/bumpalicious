@@ -6,14 +6,45 @@
 import * as core from '@actions/core';
 import {getOctokit} from '@actions/github';
 import * as logging from './logging.js';
+import * as workspace from './workspace.js';
+
+/**
+ * @typedef {import('./workspace.js').Workspace} Workspace
+ */
+
+/**
+ * Action configuration options
+ *
+ * @typedef {Object} ActionOptions
+ * @property {string} branch - Target branch for pull requests
+ * @property {boolean} pr - Whether to create a pull request with version changes
+ * @property {string} prMessage - Message to use for the pull request
+ * @property {string} prAutoMerge - Whether to automatically merge the pull request
+ * @property {string} token - GitHub/Gitea token for actions like creating pull requests
+ * @property {Workspace[]} workspaces - Comma-separated workspace definitions with format "path:type"
+ */
+
+export function getOptions() {
+  return {
+    token: core.getInput('github_token', {required: true}),
+    branch: core.getInput('branch') || 'main',
+    pr: core.getInput('pr') === 'true',
+    prMessage: core.getInput('pr_message'),
+    prAutoMerge: core.getInput('pr_auto_merge') === 'true',
+    workspaces: core.getInput('workspaces')
+      ? core.getInput('workspaces').split(',').map(workspace.stringToWorkspace)
+      : [],
+  };
+}
 
 /**
  * Get authenticated Octokit client
  *
+ * @param {Object} options - Options for Octokit client
  * @returns {Object|null} - Octokit client or null if no token
  */
-export const getGitHubClient = () => {
-  const token = process.env.GITHUB_TOKEN || core.getInput('github_token');
+export const getClient = (options) => {
+  const {token} = options;
 
   if (!token) {
     logging.error('No GitHub token provided. Set the GITHUB_TOKEN environment variable or github_token input.');
@@ -52,6 +83,112 @@ export const getRepository = () => {
 };
 
 /**
+ * Pull request management utilities
+ */
+export const pr = {
+  /**
+   * Create a new pull request
+   *
+   * @param {Object} options - Pull request options
+   * @param {string} options.base - Base branch (destination)
+   * @param {string} options.head - Head branch (source)
+   * @param {string} options.title - PR title
+   * @param {string} options.body - PR body content
+   * @returns {Promise<Object|null>} - Pull request data or null on failure
+   */
+  create: async ({base, head, title, body}) => {
+    const octokit = getClient();
+    const repo = getRepository();
+
+    if (!octokit || !repo) {
+      return null;
+    }
+
+    try {
+      const {data: pullRequest} = await octokit.rest.pulls.create({
+        ...repo,
+        base,
+        head,
+        title,
+        body,
+      });
+
+      logging.info(`Pull request created successfully: ${pullRequest.html_url}`);
+      return pullRequest;
+    } catch (error) {
+      logging.error('Failed to create pull request:', error);
+      return null;
+    }
+  },
+
+  /**
+   * Check if a pull request exists
+   *
+   * @param {Object} options - Options for checking pull request
+   * @param {string} options.base - Base branch
+   * @param {string} options.head - Head branch
+   * @returns {Promise<Object|null>} - PR data if exists, null otherwise
+   */
+  exists: async ({base, head}) => {
+    const octokit = getClient();
+    const repo = getRepository();
+
+    if (!octokit || !repo) {
+      return null;
+    }
+
+    try {
+      const {data: pullRequests} = await octokit.rest.pulls.list({
+        ...repo,
+        base,
+        head: `${repo.owner}:${head}`,
+        state: 'open',
+      });
+
+      return pullRequests.length > 0 ? pullRequests[0] : null;
+    } catch (error) {
+      logging.error('Failed to check for existing pull request:', error);
+      return null;
+    }
+  },
+
+  /**
+   * Merge a pull request
+   *
+   * @param {number} pullNumber - The pull request number
+   * @param {Object} options - Merge options
+   * @param {string} [options.commitTitle] - Title for the merge commit
+   * @param {string} [options.commitMessage] - Message for the merge commit
+   * @param {string} [options.mergeMethod='merge'] - Merge method (merge, squash, rebase)
+   * @returns {Promise<boolean>} - Whether the PR was merged successfully
+   */
+  merge: async (pullNumber, {commitTitle, commitMessage, mergeMethod = 'merge'} = {}) => {
+    const octokit = getClient();
+    const repo = getRepository();
+
+    if (!octokit || !repo) {
+      return false;
+    }
+
+    try {
+      await octokit.rest.pulls.merge({
+        ...repo,
+        pull_number: pullNumber,
+        commit_title: commitTitle,
+        commit_message: commitMessage,
+        merge_method: mergeMethod,
+      });
+
+      logging.info(`Pull request #${pullNumber} merged successfully`);
+      return true;
+    } catch (error) {
+      logging.error(`Failed to merge pull request #${pullNumber}:`, error);
+      return false;
+    }
+  },
+};
+
+/**
  * Create a GitHub release for a version
  *
  * @param {Object} options - Release options
@@ -64,7 +201,7 @@ export const getRepository = () => {
  * @returns {Promise<Object|null>} - Release data or null on failure
  */
 export const createRelease = async ({version, tagName, title, body, draft = false, prerelease = false}) => {
-  const octokit = getGitHubClient();
+  const octokit = getClient();
   const repo = getRepository();
 
   if (!octokit || !repo) {
@@ -95,7 +232,7 @@ export const createRelease = async ({version, tagName, title, body, draft = fals
  * @returns {Promise<Object|null>} - Latest release data or null
  */
 export const getLatestRelease = async () => {
-  const octokit = getGitHubClient();
+  const octokit = getClient();
   const repo = getRepository();
 
   if (!octokit || !repo) {
@@ -123,7 +260,7 @@ export const getLatestRelease = async () => {
  * @returns {Promise<string>} - Generated release notes
  */
 export const generateReleaseNotes = async (previousTag, newTag) => {
-  const octokit = getGitHubClient();
+  const octokit = getClient();
   const repo = getRepository();
 
   if (!octokit || !repo) {
