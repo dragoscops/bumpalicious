@@ -26,7 +26,7 @@ import * as workspace from './workspace.js';
 
 export function getOptions() {
   return {
-    token: core.getInput('github_token', {required: true}),
+    token: process.env.GITHUB_TOKEN ?? core.getInput('github_token', {required: true}),
     branch: core.getInput('branch') || 'main',
     pr: core.getInput('pr') === 'true',
     prMessage: core.getInput('pr_message'),

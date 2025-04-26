@@ -7,6 +7,9 @@ inputs:
     description: "The branch to commit/merge into (useful when you're maintaining multiple version branches)"
     required: false
     default: "main"
+  github_token:
+    description: "GitHub token for authentication"
+    required: false
   pr:
     description: "Perform version update by creating a pull request"
     required: false
