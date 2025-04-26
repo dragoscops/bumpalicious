@@ -46,6 +46,7 @@ const run = async () => {
     // If it does, we assume the PR is already created
     // and we only need to update the versions
     if (commitMessage.includes(options.prMessage)) {
+      logging.info(`Version PR was merged with message: ${commitMessage}`);
       // TODO: Implement logic to handle PR message
       // workspace.mergeVersionPR(options.token);
       // TODO: Implement logic to update tags
@@ -60,7 +61,6 @@ const run = async () => {
         logging.warning('No workspaces have changed');
         return;
       }
-      console.log('Updated workspaces:', updatedWorkspaces);
 
       // Organizes workspaces into a tree like structure to also determine the root workspace
       const updatedWorkspacesTrees = workspace.buildUpdatedWorkspacesTrees(updatedWorkspaces);
