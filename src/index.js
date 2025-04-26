@@ -21,8 +21,6 @@ const run = async () => {
     /** @type {import('./utils/github.js').ActionOptions} */
     const options = github.getOptions();
 
-    logging.info('Affecting workspaces:', options.workspaces);
-
     // Setup git user
     await git.config.set({
       'user.name': 'GitHub Actions',
@@ -62,6 +60,7 @@ const run = async () => {
         logging.warning('No workspaces have changed');
         return;
       }
+      console.log('Updated workspaces:', updatedWorkspaces);
 
       // Organizes workspaces into a tree like structure to also determine the root workspace
       const updatedWorkspacesTrees = workspace.buildUpdatedWorkspacesTrees(updatedWorkspaces);
