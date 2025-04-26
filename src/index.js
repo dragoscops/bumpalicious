@@ -25,6 +25,7 @@ import * as logging from './utils/logging.js';
  * @property {string} branch - Target branch for pull requests
  * @property {boolean} pr - Whether to create a pull request with version changes
  * @property {string} prMessage - Message to use for the pull request
+ * @property {string} prAutoMerge - Whether to automatically merge the pull request
  * @property {string} token - GitHub/Gitea token for actions like creating pull requests
  * @property {Workspace[]} workspaces - Comma-separated workspace definitions with format "path:type"
  */
@@ -41,6 +42,7 @@ const run = async () => {
       token: core.getInput('token'),
       pr: core.getBooleanInput('pr'),
       prMessage: core.getInput('pr-message'),
+      prAutoMerge: core.getBooleanInput('pr-auto-merge'),
       branch: core.getInput('branch'),
     };
 
@@ -97,6 +99,9 @@ const run = async () => {
         // If createPR is true, create a pull request with the version changes
         // TODO: Implement logic to create version pull request
         // workspace.createVersionPR(workspacesTree, options);
+        // if (options.prAutoMerge) {
+        //   workspace.mergePR(prId, options);
+        // }
       } else {
         // Otherwise, create a commit with the version changes and tags
         workspace.createVersionCommit(updatedWorkspaces, options);
