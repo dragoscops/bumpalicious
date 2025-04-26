@@ -250,7 +250,7 @@ export async function createVersionPR(workspacesTree, options) {
   const prBranch = await git.branch.createVersion(workspacesTree[0].workspace.version);
   await git.branch.push(prBranch);
 
-  const prTitle = `${options.prMessage}  ${workspacesTree[0].workspace.version}`;
+  const prTitle = `${options.prMessage} ${workspacesTree[0].workspace.version}`;
   // TODO: pr body should contain the changelog
   const prBody = prTitle;
 

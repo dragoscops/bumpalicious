@@ -89,29 +89,15 @@ export const getRepository = () => {
 };
 
 /**
- * @typedef {Object} PRCreateRequest
- * @property {string} base - Base branch (destination)
- * @property {string} head - Head branch (source)
- * @property {string} title - PR title
- * @property {string} body - PR body content
- *
- * @link https://docs.github.com/en/rest/pulls/pulls?apiVersion=2022-11-28#create-a-pull-request
+ * @typedef {import('@octokit/plugin-rest-endpoint-methods').RestEndpointMethodTypes['pulls']['create']['parameters']} PRCreateRequest
  */
 
 /**
- * @typedef {Object} PRCreateResponse
- * @property {number} number - Pull request number
- * @property {string} html_url - URL of the pull request
- *
- * @link https://docs.github.com/en/rest/pulls/pulls?apiVersion=2022-11-28#create-a-pull-request
+ * @typedef {import('@octokit/plugin-rest-endpoint-methods').RestEndpointMethodTypes['pulls']['create']['response']['data']} PRCreateResponse
  */
 
 /**
- * @typedef {Object} PRMergeRequest
- * @property {number} pullNumber - Pull request number
- * @property {'merge' | 'squash' | 'rebase'} mergeMethod - Merge method
- *
- * @link https://docs.github.com/en/rest/pulls/pulls?apiVersion=2022-11-28#merge-a-pull-request
+ * @typedef {import('@octokit/plugin-rest-endpoint-methods').RestEndpointMethodTypes['pulls']['merge']['response']} PRMergeRequest
  */
 
 /**
