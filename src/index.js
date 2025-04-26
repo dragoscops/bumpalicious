@@ -55,19 +55,19 @@ const run = async () => {
       'safe.directory': process.env.GITHUB_WORKSPACE || process.cwd(),
     });
 
-    // // Get last created tag or 1st commit message
-    // const lastTag = await git.lastCreatedTag();
-    // logging.info(`Last tag: ${lastTag}`);
-    // if (!lastTag) {
-    //   logging.error('No tags found in the repository');
-    // }
+    // Get last created tag or 1st commit message
+    const lastTag = await git.tag.lastCreated();
+    logging.info(`Last tag: ${lastTag}`);
+    if (!lastTag) {
+      logging.error('No tags found in the repository');
+    }
 
-    // // Get the last commit message
-    // const commitMessage = await git.lastCommitMessage();
-    // logging.info(`Latest commit message: ${commitMessage}`);
-    // if (!commitMessage) {
-    //   logging.error('No commit message found');
-    // }
+    // Get the last commit message
+    const commitMessage = await git.log.lastMessage();
+    logging.info(`Latest commit message: ${commitMessage}`);
+    if (!commitMessage) {
+      logging.error('No commit message found');
+    }
 
     // // Check if the commit message contains the PR message
     // // If it does, we assume the PR is already created

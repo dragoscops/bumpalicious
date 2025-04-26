@@ -6,37 +6,6 @@
 import {execa} from 'execa';
 import * as logging from './logging.js';
 
-/**
- * @typedef {ActionOptions & {workspace?: string}} SetupGitUserOptions
- */
-
-// /**
-//  * Configure git user for CI environments.
-//  *
-//  * @param {SetupGitUserOptions} options - Action configuration options.
-//  * @returns {Promise<void>} Resolves when configuration is complete.
-//  */
-// export async function setupUser({
-//   platform = 'github',
-//   workspace: workspacePath = process.env.GITHUB_WORKSPACE ?? process.cwd(),
-// }) {
-//   try {
-//     // Set git user name and email for GitHub Actions
-//     await execa('git', ['config', '--global', 'user.name', 'GitHub Actions']);
-//     await execa('git', ['config', '--global', 'user.email', 'actions@github.com']);
-
-//     // Add workspace to safe directories if provided
-//     if (workspacePath) {
-//       await execa('git', ['config', '--global', '--add', 'safe.directory', workspacePath]);
-//     }
-
-//     logging.info(`Git user configured successfully`);
-//   } catch (error) {
-//     // Just log the message without the error object for test compatibility
-//     logging.error(`Failed to configure git user`, error);
-//   }
-// }
-
 export const config = {
   /**
    * Get the current git configuration as a key-value object
@@ -105,34 +74,6 @@ export const config = {
 };
 
 /**
- * Get the last Git tag in the reposito
- *
- * @returns {Promise<string|null>} - Last git tag or null if no tags
- */
-export async function lastCreatedTag() {
-  try {
-    const {stdout} = await execa('git', ['describe', '--tags', '--abbrev=0']);
-    return stdout.trim();
-  } catch (error) {
-    logging.error('No tags found in the repository');
-  }
-}
-
-/**
- * Get the latest commit message
- *
- * @returns {Promise<string>} - Latest commit message or empty string on error
- */
-export const lastCommitMessage = async () => {
-  try {
-    const {stdout} = await execa('git', ['log', '-1', '--pretty=%B']);
-    return stdout.trim();
-  } catch (error) {
-    logging.error(`Failed to get latest commit message: ${error.message}`);
-  }
-};
-
-/**
  * Get the list of files that have changed in a repository since the last tag.
  *
  * @param {string} repoPath - Path to the repository
@@ -166,6 +107,17 @@ export async function pushChange(commitMessage, branch = 'main') {
   }
 }
 
+export const log = {
+  lastMessage: async () => {
+    try {
+      const {stdout} = await execa('git', ['log', '-1', '--pretty=%B']);
+      return stdout.trim();
+    } catch (error) {
+      logging.error(`Failed to get latest commit message: ${error.message}`);
+    }
+  },
+};
+
 /**
  * @typedef {Object} TagActions
  */
@@ -194,17 +146,13 @@ export const tag = {
    * @returns {Promise<void>} - Resolves when the tag is created
    */
   createAndPush: async (tagName, message) => {
-    try {
-      const exists = await tag.exists(tagName);
-      if (exists) {
-        await tag.remove(tagName);
-        logging.info(`Tag ${tagName} already exists, removing it first`);
-      }
-      await tag.create(tagName, message);
-      await tag.push(tagName);
-    } catch (error) {
-      logging.error(`Failed to create and push tag ${tagName}:`, error);
+    const exists = await tag.exists(tagName);
+    if (exists) {
+      await tag.remove(tagName);
+      logging.info(`Tag ${tagName} already exists, removing it first`);
     }
+    await tag.create(tagName, message);
+    await tag.push(tagName);
   },
 
   /**
@@ -220,6 +168,20 @@ export const tag = {
     } catch (error) {
       logging.error(`Failed to check if tag ${tagName} exists:`, error);
       return false;
+    }
+  },
+
+  /**
+   * Get the last created tag in the repository.
+   *
+   * @returns Promise<string|null>
+   */
+  lastCreated: async () => {
+    try {
+      const {stdout} = await execa('git', ['describe', '--tags', '--abbrev=0']);
+      return stdout.trim();
+    } catch (error) {
+      logging.error('No tags found in the repository');
     }
   },
 
