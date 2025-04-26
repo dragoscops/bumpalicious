@@ -218,6 +218,21 @@ export const tag = {
 
 export const branch = {
   /**
+   * Get the current branch name.
+   *
+   * @param {string} branchName - Branch name to check out
+   * @returns {Promise<string>}
+   */
+  checkout: async (branchName) => {
+    try {
+      await execa('git', ['checkout', branchName]);
+      logging.info(`Checked out to branch ${branchName}`);
+    } catch (error) {
+      logging.error(`Failed to checkout to branch ${branchName}:`, error);
+    }
+  },
+
+  /**
    * @param {string} branchName
    * @returns {Promise<string>}
    */
