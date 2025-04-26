@@ -115,7 +115,7 @@ export const pr = {
     }
 
     try {
-      const {data: pullRequest} = await octokit.pulls.create({
+      const {data: pullRequest} = await octokit.rest.pulls.create({
         ...repo,
         base,
         head,
