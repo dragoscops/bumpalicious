@@ -249,6 +249,8 @@ export async function createVersionPR(workspacesTree, options) {
   // TODO: pr body should contain the changelog
   const prBody = prTitle;
 
+  await git.pushChange(prTitle, prBranch);
+
   // Create PR with the specified title and body
   await github.pr.create(
     {
