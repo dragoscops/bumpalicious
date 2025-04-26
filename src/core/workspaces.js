@@ -14,6 +14,10 @@ import * as version from './version.js';
  */
 
 /**
+ * @typedef {import('../utils/github.js').PRCreateResponse} PRCreateResponse
+ */
+
+/**
  * @typedef {import('../utils/workspace.js').WorkspaceNode} WorkspaceNode
  */
 
@@ -239,7 +243,8 @@ export async function createVersionTags(version, options) {
 /**
  *
  * @param {WorkspaceNode[]} workspacesTree
- * @param {import()} options
+ * @param {ActionOptions} options
+ * @returns {Promise<void>}
  */
 export async function createVersionPR(workspacesTree, options) {
   const prBranch = await git.branch.createVersion(workspacesTree[0].workspace.version);
@@ -252,7 +257,7 @@ export async function createVersionPR(workspacesTree, options) {
   await git.pushChange(prTitle, prBranch);
 
   // Create PR with the specified title and body
-  await github.pr.create(
+  return github.pr.create(
     {
       title: prTitle,
       body: prBody,
