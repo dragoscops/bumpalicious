@@ -84,8 +84,7 @@ const run = async () => {
       }
     }
   } catch (error) {
-    core.setFailed(`Action failed: ${error.message}`);
-    console.error(error);
+    logging.error(`Action failed: ${error.message}`);
   }
 };
 
