@@ -6,11 +6,11 @@
  * @module index
  */
 
-import * as workspace from './core/workspace.js';
+import * as workspaces from './core/workspaces.js';
 import * as git from './utils/git.js';
 import * as github from './utils/github.js';
 import * as logging from './utils/logging.js';
-import * as workspaces from './utils/workspaces.js';
+import * as workspace from './utils/workspace.js';
 
 /**
  * Main function to run the GitHub Action
