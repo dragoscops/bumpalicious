@@ -322,6 +322,23 @@ export async function createVersionTags(version, options) {
   // }
 }
 
+export async function createVersionPR(workspacesTree, options) {
+  const prBranch = await git.branch.createVersion(workspacesTree[0].workspace.version);
+  await git.branch.push(prBranch);
+
+  const prTitle = `${options.prMessage}  ${workspaces.map((node) => node.name).join(', ')}`;
+  // TODO: pr body should contain the changelog
+  const prBody = prTitle;
+
+  // Create PR with the specified title and body
+  await git.pr.create({
+    title: prTitle,
+    body: prBody,
+    base: options.branch,
+    head: prBranch,
+  });
+}
+
 ///////////////////////
 
 /**

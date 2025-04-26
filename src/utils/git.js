@@ -10,32 +10,99 @@ import * as logging from './logging.js';
  * @typedef {ActionOptions & {workspace?: string}} SetupGitUserOptions
  */
 
-/**
- * Configure git user for CI environments.
- *
- * @param {SetupGitUserOptions} options - Action configuration options.
- * @returns {Promise<void>} Resolves when configuration is complete.
- */
-export async function setupUser({
-  platform = 'github',
-  workspace: workspacePath = process.env.GITHUB_WORKSPACE ?? process.cwd(),
-}) {
-  try {
-    // Set git user name and email for GitHub Actions
-    await execa('git', ['config', '--global', 'user.name', 'GitHub Actions']);
-    await execa('git', ['config', '--global', 'user.email', 'actions@github.com']);
+// /**
+//  * Configure git user for CI environments.
+//  *
+//  * @param {SetupGitUserOptions} options - Action configuration options.
+//  * @returns {Promise<void>} Resolves when configuration is complete.
+//  */
+// export async function setupUser({
+//   platform = 'github',
+//   workspace: workspacePath = process.env.GITHUB_WORKSPACE ?? process.cwd(),
+// }) {
+//   try {
+//     // Set git user name and email for GitHub Actions
+//     await execa('git', ['config', '--global', 'user.name', 'GitHub Actions']);
+//     await execa('git', ['config', '--global', 'user.email', 'actions@github.com']);
 
-    // Add workspace to safe directories if provided
-    if (workspacePath) {
-      await execa('git', ['config', '--global', '--add', 'safe.directory', workspacePath]);
+//     // Add workspace to safe directories if provided
+//     if (workspacePath) {
+//       await execa('git', ['config', '--global', '--add', 'safe.directory', workspacePath]);
+//     }
+
+//     logging.info(`Git user configured successfully`);
+//   } catch (error) {
+//     // Just log the message without the error object for test compatibility
+//     logging.error(`Failed to configure git user`, error);
+//   }
+// }
+
+export const config = {
+  /**
+   * Get the current git configuration as a key-value object
+   *
+   * @param {string|null} [key] - Optional key prefix to filter by
+   * @returns {Promise<Object>} - Current git configuration as a key-value object
+   */
+  get: async (key = null) => {
+    try {
+      const {stdout} = await execa('git', ['config', '--list']);
+
+      // Initialize empty object for storing config
+      const configObject = {};
+
+      // Split by lines and process each line
+      const lines = stdout.trim().split('\n');
+
+      for (const line of lines) {
+        // Skip empty lines
+        const trimmedLine = line.trim();
+        if (!trimmedLine) continue;
+
+        // Parse each line as key=value
+        const separatorIndex = trimmedLine.indexOf('=');
+        if (separatorIndex > 0) {
+          const configKey = trimmedLine.substring(0, separatorIndex).trim();
+          const value = trimmedLine.substring(separatorIndex + 1).trim();
+          configObject[configKey] = value;
+        }
+      }
+
+      // If a key prefix is provided, filter the results
+      if (key) {
+        const filteredConfig = {};
+        for (const configKey in configObject) {
+          if (configKey.startsWith(key)) {
+            filteredConfig[configKey] = configObject[configKey];
+          }
+        }
+        return filteredConfig;
+      }
+
+      return configObject;
+    } catch (error) {
+      logging.error(`Failed to get git config: ${error.message}`);
+      return {};
     }
+  },
 
-    logging.info(`Git user configured successfully`);
-  } catch (error) {
-    // Just log the message without the error object for test compatibility
-    logging.error(`Failed to configure git user`, error);
-  }
-}
+  /**
+   *
+   * @param {Object} options - Options for setting git configuration
+   * @param {boolean} global - Whether to set globally or locally
+   * @returns {Promise<void>} - Resolves when the configuration is set
+   */
+  set: async (options, global = true) => {
+    for (const [key, value] of Object.entries(options)) {
+      try {
+        await execa('git', ['config', global ? '--global' : '', key, value]);
+        logging.info(`Git config ${key} set to ${value}`);
+      } catch (error) {
+        logging.error(`Failed to set git config ${key}: ${error.message}`);
+      }
+    }
+  },
+};
 
 /**
  * Get the last Git tag in the reposito
@@ -190,12 +257,13 @@ export const tag = {
 export const branch = {
   /**
    * @param {string} branchName
-   * @returns {Promise<void>}
+   * @returns {Promise<string>}
    */
   create: async (branchName) => {
     try {
       await execa('git', ['checkout', '-b', branchName]);
       logging.info(`Branch ${branchName} created successfully`);
+      return branchName;
     } catch (error) {
       logging.error(`Failed to create branch ${branchName}:`, error);
     }
@@ -219,6 +287,41 @@ export const branch = {
       logging.info(`Branch ${branchName} deleted successfully`);
     } catch (error) {
       logging.error(`Failed to delete branch ${branchName}:`, error);
+    }
+  },
+
+  push: async (branchName) => {
+    try {
+      await execa('git', ['push', 'origin', branchName]);
+      logging.info(`Branch ${branchName} pushed successfully`);
+    } catch (error) {
+      logging.error(`Failed to push branch ${branchName}:`, error);
+    }
+  },
+};
+
+export const pr = {
+  /**
+   *
+   * @param {*} param0
+   */
+  create: async ({base, head, title, body}) => {
+    try {
+      const {stdout} = await execa('gh', [
+        'pr',
+        'create',
+        '--base',
+        base,
+        '--head',
+        head,
+        '--title',
+        title,
+        '--body',
+        body,
+      ]);
+      logging.info(`Pull request created successfully: ${stdout}`);
+    } catch (error) {
+      logging.error(`Failed to create pull request:`, error);
     }
   },
 };

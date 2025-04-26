@@ -14,50 +14,50 @@ describe('git.js module', () => {
     unMockCConsole();
   });
 
-  describe('setupUser()', () => {
-    it('configures git user for GitHub', async () => {
-      await git.setupUser({platform: 'github'});
+  // describe('setupUser()', () => {
+  //   it('configures git user for GitHub', async () => {
+  //     await git.setupUser({platform: 'github'});
 
-      expect(execa).toHaveBeenCalledWith('git', ['config', '--global', 'user.name', 'GitHub Actions']);
-      expect(execa).toHaveBeenNthCalledWith(2, 'git', ['config', '--global', 'user.email', 'actions@github.com']);
-      setupLoggingCallsTest('info', [
-        expect.stringContaining('INFO'),
-        expect.stringMatching(/.*Git user configured successfully/),
-      ]);
-    });
+  //     expect(execa).toHaveBeenCalledWith('git', ['config', '--global', 'user.name', 'GitHub Actions']);
+  //     expect(execa).toHaveBeenNthCalledWith(2, 'git', ['config', '--global', 'user.email', 'actions@github.com']);
+  //     setupLoggingCallsTest('info', [
+  //       expect.stringContaining('INFO'),
+  //       expect.stringMatching(/.*Git user configured successfully/),
+  //     ]);
+  //   });
 
-    it('adds workspace to safe directories if provided', async () => {
-      await git.setupUser({
-        platform: 'github',
-        workspace: '/path/to/workspace',
-      });
+  //   it('adds workspace to safe directories if provided', async () => {
+  //     await git.setupUser({
+  //       platform: 'github',
+  //       workspace: '/path/to/workspace',
+  //     });
 
-      expect(execa).toHaveBeenCalledWith('git', [
-        'config',
-        '--global',
-        '--add',
-        'safe.directory',
-        '/path/to/workspace',
-      ]);
-    });
+  //     expect(execa).toHaveBeenCalledWith('git', [
+  //       'config',
+  //       '--global',
+  //       '--add',
+  //       'safe.directory',
+  //       '/path/to/workspace',
+  //     ]);
+  //   });
 
-    it('logs error when failing to configure git user', async () => {
-      execa.mockRejectedValueOnce(new Error('Mocked error'));
-      process.env.GITHUB_WORKSPACE = '/path/to/workspace';
+  //   it('logs error when failing to configure git user', async () => {
+  //     execa.mockRejectedValueOnce(new Error('Mocked error'));
+  //     process.env.GITHUB_WORKSPACE = '/path/to/workspace';
 
-      try {
-        await git.setupUser({platform: 'github'});
+  //     try {
+  //       await git.setupUser({platform: 'github'});
 
-        setupLoggingCallsTest('error', [
-          expect.stringContaining('ERROR'),
-          expect.stringMatching(/.*Failed to configure git user/),
-          expect.any(Error),
-        ]);
-      } finally {
-        delete process.env.GITHUB_WORKSPACE;
-      }
-    });
-  });
+  //       setupLoggingCallsTest('error', [
+  //         expect.stringContaining('ERROR'),
+  //         expect.stringMatching(/.*Failed to configure git user/),
+  //         expect.any(Error),
+  //       ]);
+  //     } finally {
+  //       delete process.env.GITHUB_WORKSPACE;
+  //     }
+  //   });
+  // });
 
   describe('lastCreatedTag()', () => {
     it('returns the last tag when tags are present', async () => {
@@ -176,266 +176,130 @@ describe('git.js module', () => {
     });
   });
 
-  // describe("hasUncommittedChanges", () => {
-  //   it("returns true when there are uncommitted changes", async () => {
-  //     execa.mockResolvedValueOnce({ stdout: " M modified_file.js\n" });
+  describe('config object', () => {
+    describe('get()', () => {
+      it('parses git config and returns a key-value object when no key is provided', async () => {
+        // Mock git config output with some common properties
+        const mockConfigOutput = `
+          user.name=GitHub Actions
+          user.email=actions@github.com
+          core.editor=vim
+          alias.st=status
+          remote.origin.url=https://github.com/user/repo.git
+        `;
+        execa.mockResolvedValueOnce({stdout: mockConfigOutput});
 
-  //     const hasChanges = await hasUncommittedChanges();
+        const config = await git.config.get();
 
-  //     expect(execa).toHaveBeenCalledWith("git", ["status", "--porcelain"]);
-  //     expect(hasChanges).toBe(true);
-  //   });
+        expect(execa).toHaveBeenCalledWith('git', ['config', '--list']);
+        expect(config).toEqual({
+          'user.name': 'GitHub Actions',
+          'user.email': 'actions@github.com',
+          'core.editor': 'vim',
+          'alias.st': 'status',
+          'remote.origin.url': 'https://github.com/user/repo.git',
+        });
+      });
 
-  //   it("returns false when there are no uncommitted changes", async () => {
-  //     execa.mockResolvedValueOnce({ stdout: "\n" });
+      it('returns subset of keys that start with provided key prefix', async () => {
+        const mockConfigOutput = `
+          user.name=GitHub Actions
+          user.email=actions@github.com
+          core.editor=vim
+          alias.st=status
+          alias.co=checkout
+          alias.br=branch
+          remote.origin.url=https://github.com/user/repo.git
+        `;
+        execa.mockResolvedValueOnce({stdout: mockConfigOutput});
 
-  //     const hasChanges = await hasUncommittedChanges();
+        const config = await git.config.get('alias');
 
-  //     expect(execa).toHaveBeenCalledWith("git", ["status", "--porcelain"]);
-  //     expect(hasChanges).toBe(false);
-  //   });
+        expect(execa).toHaveBeenCalledWith('git', ['config', '--list']);
+        expect(config).toEqual({
+          'alias.st': 'status',
+          'alias.co': 'checkout',
+          'alias.br': 'branch',
+        });
+      });
 
-  //   it("returns true and logs error on failure", async () => {
-  //     execa.mockRejectedValueOnce(new Error("Mocked error"));
+      it('returns empty object when no keys match the provided prefix', async () => {
+        const mockConfigOutput = `
+          user.name=GitHub Actions
+          user.email=actions@github.com
+          core.editor=vim
+        `;
+        execa.mockResolvedValueOnce({stdout: mockConfigOutput});
 
-  //     const hasChanges = await hasUncommittedChanges();
+        const config = await git.config.get('nonexistent');
 
-  //     expect(logging.error).toHaveBeenCalledWith(
-  //       "Failed to check for uncommitted changes",
-  //       expect.any(Error),
-  //     );
-  //     expect(hasChanges).toBe(true);
-  //   });
-  // });
+        expect(config).toEqual({});
+      });
 
-  // describe("commitVersionChanges", () => {
-  //   it("commits version changes with all files when no files are specified", async () => {
-  //     const message = "chore: Release v1.0.0";
+      it('handles empty git config', async () => {
+        execa.mockResolvedValueOnce({stdout: ''});
 
-  //     const result = await commitVersionChanges({ message });
+        const config = await git.config.get();
 
-  //     expect(execa).toHaveBeenNthCalledWith(1, "git", ["add", "."]);
-  //     expect(execa).toHaveBeenNthCalledWith(2, "git", [
-  //       "commit",
-  //       "-m",
-  //       message,
-  //     ]);
-  //     expect(logging.notice).toHaveBeenCalledWith(
-  //       `Created commit: ${message}`,
-  //     );
-  //     expect(result).toBe(true);
-  //   });
+        expect(config).toEqual({});
+      });
 
-  //   it("commits version changes with specified files", async () => {
-  //     const message = "chore: Release v1.0.0";
-  //     const files = ["package.json", "CHANGELOG.md"];
+      it('handles git config with invalid format', async () => {
+        // Some lines might not have a valid key=value format
+        const mockConfigOutput = `
+          user.name=GitHub Actions
+          invalid line
+          core.editor=vim
+        `;
+        execa.mockResolvedValueOnce({stdout: mockConfigOutput});
 
-  //     const result = await commitVersionChanges({ message, files });
+        const config = await git.config.get();
 
-  //     expect(execa).toHaveBeenNthCalledWith(1, "git", [
-  //       "add",
-  //       "package.json",
-  //       "CHANGELOG.md",
-  //     ]);
-  //     expect(execa).toHaveBeenNthCalledWith(2, "git", [
-  //       "commit",
-  //       "-m",
-  //       message,
-  //     ]);
-  //     expect(result).toBe(true);
-  //   });
+        // Should skip the invalid line
+        expect(config).toEqual({
+          'user.name': 'GitHub Actions',
+          'core.editor': 'vim',
+        });
+      });
 
-  //   it("commits version changes with --no-verify when noVerify is true", async () => {
-  //     const message = "chore: Release v1.0.0";
+      it('logs error and returns empty object on failure', async () => {
+        execa.mockRejectedValueOnce(new Error('Git command failed'));
 
-  //     const result = await commitVersionChanges({ message, noVerify: true });
+        const config = await git.config.get();
 
-  //     expect(execa).toHaveBeenNthCalledWith(1, "git", ["add", "."]);
-  //     expect(execa).toHaveBeenNthCalledWith(2, "git", [
-  //       "commit",
-  //       "-m",
-  //       message,
-  //       "--no-verify",
-  //     ]);
-  //     expect(result).toBe(true);
-  //   });
+        setupLoggingCallsTest('error', [
+          expect.stringContaining('ERROR'),
+          expect.stringContaining('Failed to get git config'),
+        ]);
+        expect(config).toEqual({});
+      });
+    });
 
-  //   it("returns false and logs error on failure", async () => {
-  //     execa.mockRejectedValueOnce(new Error("Mocked error"));
-  //     const message = "chore: Release v1.0.0";
+    describe('set()', () => {
+      it('sets git config value and logs success message', async () => {
+        execa.mockResolvedValueOnce({});
 
-  //     const result = await commitVersionChanges({ message });
+        await git.config.set({'user.name': 'Test User'});
 
-  //     expect(logging.error).toHaveBeenCalledWith(
-  //       "Failed to commit version changes",
-  //       expect.any(Error),
-  //     );
-  //     expect(result).toBe(false);
-  //   });
-  // });
+        expect(execa).toHaveBeenCalledWith('git', ['config', '--global', 'user.name', 'Test User']);
+        setupLoggingCallsTest('info', [
+          expect.stringContaining('INFO'),
+          expect.stringContaining('Git config user.name set to Test User'),
+        ]);
+      });
 
-  // describe("createVersionTag", () => {
-  //   it("creates a tag successfully", async () => {
-  //     const tagName = "v1.0.0";
-  //     const message = "Release v1.0.0";
+      it('logs error message when setting config fails', async () => {
+        const error = new Error('Config error');
+        execa.mockRejectedValueOnce(error);
 
-  //     const result = await createVersionTag({ tagName, message });
+        await git.config.set({'invalid.key': 'value'});
 
-  //     expect(execa).toHaveBeenCalledWith("git", [
-  //       "tag",
-  //       "-a",
-  //       tagName,
-  //       "-m",
-  //       message,
-  //     ]);
-  //     expect(logging.notice).toHaveBeenCalledWith(`Created tag: ${tagName}`);
-  //     expect(result).toBe(true);
-  //   });
-
-  //   it("creates a tag with force when force is true", async () => {
-  //     const tagName = "v1.0.0";
-  //     const message = "Release v1.0.0";
-
-  //     const result = await createVersionTag({
-  //       tagName,
-  //       message,
-  //       force: true,
-  //     });
-
-  //     expect(execa).toHaveBeenCalledWith("git", [
-  //       "tag",
-  //       "-a",
-  //       tagName,
-  //       "-m",
-  //       message,
-  //       "-f",
-  //     ]);
-  //     expect(result).toBe(true);
-  //   });
-
-  //   it("returns false and logs error on failure", async () => {
-  //     execa.mockRejectedValueOnce(new Error("Mocked error"));
-  //     const tagName = "v1.0.0";
-  //     const message = "Release v1.0.0";
-
-  //     const result = await createVersionTag({ tagName, message });
-
-  //     expect(logging.error).toHaveBeenCalledWith(
-  //       `Failed to create version tag ${tagName}`,
-  //       expect.any(Error),
-  //     );
-  //     expect(result).toBe(false);
-  //   });
-  // });
-
-  // describe("pushChanges", () => {
-  //   it("pushes changes and tags to remote", async () => {
-  //     const result = await pushChanges({});
-
-  //     expect(execa).toHaveBeenNthCalledWith(1, "git", ["push", "origin"]);
-  //     expect(execa).toHaveBeenNthCalledWith(2, "git", [
-  //       "push",
-  //       "origin",
-  //       "--tags",
-  //     ]);
-  //     expect(logging.notice).toHaveBeenCalledWith(
-  //       "Pushed changes and tags to origin",
-  //     );
-  //     expect(result).toBe(true);
-  //   });
-
-  //   it("pushes changes to specified branch", async () => {
-  //     const branch = "develop";
-  //     await pushChanges({ branch });
-
-  //     expect(execa).toHaveBeenCalledWith("git", ["push", "origin", branch]);
-  //   });
-
-  //   it("pushes changes with force when forcePush is true", async () => {
-  //     await pushChanges({ forcePush: true });
-
-  //     expect(execa).toHaveBeenCalledWith("git", ["push", "--force", "origin"]);
-  //   });
-
-  //   it("pushes changes with --no-verify when noVerify is true", async () => {
-  //     await pushChanges({ noVerify: true });
-
-  //     expect(execa).toHaveBeenNthCalledWith(1, "git", [
-  //       "push",
-  //       "--no-verify",
-  //       "origin",
-  //     ]);
-  //     expect(execa).toHaveBeenNthCalledWith(2, "git", [
-  //       "push",
-  //       "--no-verify",
-  //       "origin",
-  //       "--tags",
-  //     ]);
-  //   });
-
-  //   it("returns false and logs error on failure", async () => {
-  //     execa.mockRejectedValueOnce(new Error("Mocked error"));
-
-  //     const result = await pushChanges({});
-
-  //     expect(logging.error).toHaveBeenCalledWith(
-  //       "Failed to push changes",
-  //       expect.any(Error),
-  //     );
-  //     expect(result).toBe(false);
-  //   });
-  // });
-
-  // describe("getRemoteUrl", () => {
-  //   it("returns the remote URL", async () => {
-  //     execa.mockResolvedValueOnce({ stdout: "git@github.com:user/repo.git\n" });
-
-  //     const remoteUrl = await getRemoteUrl("origin");
-
-  //     expect(execa).toHaveBeenCalledWith("git", [
-  //       "remote",
-  //       "get-url",
-  //       "origin",
-  //     ]);
-  //     expect(remoteUrl).toBe("git@github.com:user/repo.git");
-  //   });
-
-  //   it("returns null and logs error on failure", async () => {
-  //     execa.mockRejectedValueOnce(new Error("Mocked error"));
-
-  //     const remoteUrl = await getRemoteUrl("origin");
-
-  //     expect(logging.error).toHaveBeenCalledWith(
-  //       "Failed to get URL for remote origin",
-  //       expect.any(Error),
-  //     );
-  //     expect(remoteUrl).toBeNull();
-  //   });
-  // });
-
-  // describe("getCurrentBranch", () => {
-  //   it("returns the current branch name", async () => {
-  //     execa.mockResolvedValueOnce({ stdout: "main\n" });
-
-  //     const branchName = await getCurrentBranch();
-
-  //     expect(execa).toHaveBeenCalledWith("git", [
-  //       "symbolic-ref",
-  //       "--short",
-  //       "HEAD",
-  //     ]);
-  //     expect(branchName).toBe("main");
-  //   });
-
-  //   it("returns null and logs warning when in detached HEAD state", async () => {
-  //     execa.mockRejectedValueOnce(new Error("Mocked error"));
-
-  //     const branchName = await getCurrentBranch();
-
-  //     expect(logging.warning).toHaveBeenCalledWith(
-  //       "Failed to get current branch name, might be in detached HEAD state",
-  //     );
-  //     expect(branchName).toBeNull();
-  //   });
-  // });
+        expect(execa).toHaveBeenCalledWith('git', ['config', '--global', 'invalid.key', 'value']);
+        setupLoggingCallsTest('error', [
+          expect.stringContaining('ERROR'),
+          expect.stringContaining('Failed to set git config invalid.key'),
+        ]);
+      });
+    });
+  });
 });
