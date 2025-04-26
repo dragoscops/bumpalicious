@@ -191,7 +191,7 @@ export const pr = {
    * @returns {Promise<boolean>} - Whether the PR was merged successfully
    */
   merge: async ({pullNumber, mergeMethod = 'merge'} = {}, options) => {
-    const octokit = getClient();
+    const octokit = getClient(options);
     const repo = getRepository();
 
     if (!octokit || !repo) {
