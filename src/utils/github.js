@@ -60,9 +60,15 @@ export const getClient = (options) => {
 };
 
 /**
+ * @typedef {Object} Repository
+ * @property {string} owner - Repository owner
+ * @property {string} repo - Repository name
+ */
+
+/**
  * Parse GitHub repository from environment
  *
- * @returns {Object|null} - Repository object with owner and name properties or null
+ * @returns {Repository|null} - Repository object with owner and name properties or null
  */
 export const getRepository = () => {
   const repoEnv = process.env.GITHUB_REPOSITORY;
@@ -100,12 +106,15 @@ export const pr = {
     const octokit = getClient();
     const repo = getRepository();
 
-    if (!octokit || !repo) {
-      return null;
+    if (!octokit) {
+      logging.error('Failed to create pull request: Octokit client not found');
+    }
+    if (!repo) {
+      logging.error('Failed to create pull request: repository not found');
     }
 
     try {
-      const {data: pullRequest} = await octokit.rest.pulls.create({
+      const {data: pullRequest} = await octokit.pulls.create({
         ...repo,
         base,
         head,
@@ -117,7 +126,6 @@ export const pr = {
       return pullRequest;
     } catch (error) {
       logging.error('Failed to create pull request:', error);
-      return null;
     }
   },
 

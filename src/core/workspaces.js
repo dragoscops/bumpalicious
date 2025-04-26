@@ -5,6 +5,7 @@
 import path from 'path';
 import * as workspaceDetect from '../workspace/index.js';
 import * as git from '../utils/git.js';
+import * as github from '../utils/github.js';
 import * as logging from '../utils/logging.js';
 import * as version from './version.js';
 
@@ -232,7 +233,7 @@ export async function createVersionPR(workspacesTree, options) {
   const prBody = prTitle;
 
   // Create PR with the specified title and body
-  await git.pr.create({
+  await github.pr.create({
     title: prTitle,
     body: prBody,
     base: options.branch,
