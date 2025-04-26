@@ -250,12 +250,15 @@ export async function createVersionPR(workspacesTree, options) {
   const prBody = prTitle;
 
   // Create PR with the specified title and body
-  await github.pr.create({
-    title: prTitle,
-    body: prBody,
-    base: options.branch,
-    head: prBranch,
-  });
+  await github.pr.create(
+    {
+      title: prTitle,
+      body: prBody,
+      base: options.branch,
+      head: prBranch,
+    },
+    options,
+  );
 }
 
 ///////////////////////

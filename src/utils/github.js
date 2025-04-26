@@ -100,10 +100,11 @@ export const pr = {
    * @param {string} options.head - Head branch (source)
    * @param {string} options.title - PR title
    * @param {string} options.body - PR body content
+   * @param {ActionOptions} options - Action options
    * @returns {Promise<Object|null>} - Pull request data or null on failure
    */
-  create: async ({base, head, title, body}) => {
-    const octokit = getClient();
+  create: async ({base, head, title, body}, options) => {
+    const octokit = getClient(options);
     const repo = getRepository();
 
     if (!octokit) {
