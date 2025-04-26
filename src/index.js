@@ -73,9 +73,10 @@ const run = async () => {
 
       if (options.pr) {
         // If createPR is true, create a pull request with the version changes
-        workspaces.createVersionPR(updatedWorkspacesTrees, options);
+        /** @type {import('./utils/github.js').PullRequestResponse} */
+        const pr = await workspaces.createVersionPR(updatedWorkspacesTrees, options);
         // if (options.prAutoMerge) {
-        //   workspace.mergePR(prId, options);
+        //   github.pr.merge({pullNumber: pr.number}, options);
         // }
       } else {
         // Otherwise, create a commit with the version changes and tags

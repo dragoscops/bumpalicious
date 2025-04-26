@@ -49,6 +49,7 @@ jobs:
           workspaces: .:node
           branch: ${{ github.ref }}
           pr: true
+          pr_auto_merge: true
 
       - name: Output Results
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'

@@ -93,15 +93,29 @@ export const getRepository = () => {
  */
 export const pr = {
   /**
+   * @typedef {Object} PRCreateRequest
+   * @property {string} base - Base branch (destination)
+   * @property {string} head - Head branch (source)
+   * @property {string} title - PR title
+   * @property {string} body - PR body content
+   *
+   * @link https://docs.github.com/en/rest/pulls/pulls?apiVersion=2022-11-28#create-a-pull-request
+   */
+
+  /**
+   * @typedef {Object} PRCreateResponse
+   * @property {number} number - Pull request number
+   * @property {string} html_url - URL of the pull request
+   *
+   * @link https://docs.github.com/en/rest/pulls/pulls?apiVersion=2022-11-28#create-a-pull-request
+   */
+
+  /**
    * Create a new pull request
    *
-   * @param {Object} options - Pull request options
-   * @param {string} options.base - Base branch (destination)
-   * @param {string} options.head - Head branch (source)
-   * @param {string} options.title - PR title
-   * @param {string} options.body - PR body content
+   * @param {PRCreateRequest} createOptions - Pull request options
    * @param {ActionOptions} options - Action options
-   * @returns {Promise<Object|null>} - Pull request data or null on failure
+   * @returns {Promise<PRCreateResponse>} - Pull request data or null on failure
    */
   create: async ({base, head, title, body}, options) => {
     const octokit = getClient(options);
@@ -162,16 +176,21 @@ export const pr = {
   },
 
   /**
+   * @typedef {Object} PRMergeRequest
+   * @property {number} pullNumber - Pull request number
+   * @property {'merge' | 'squash' | 'rebase'} mergeMethod - Merge method
+   *
+   * @link https://docs.github.com/en/rest/pulls/pulls?apiVersion=2022-11-28#merge-a-pull-request
+   */
+
+  /**
    * Merge a pull request
    *
-   * @param {number} pullNumber - The pull request number
-   * @param {Object} options - Merge options
-   * @param {string} [options.commitTitle] - Title for the merge commit
-   * @param {string} [options.commitMessage] - Message for the merge commit
-   * @param {string} [options.mergeMethod='merge'] - Merge method (merge, squash, rebase)
+   * @param {PRMergeRequest} mergeOptions - Merge options
+   * @param {ActionOptions} options - Action options
    * @returns {Promise<boolean>} - Whether the PR was merged successfully
    */
-  merge: async (pullNumber, {commitTitle, commitMessage, mergeMethod = 'merge'} = {}) => {
+  merge: async ({pullNumber, mergeMethod = 'merge'} = {}, options) => {
     const octokit = getClient();
     const repo = getRepository();
 
@@ -183,8 +202,6 @@ export const pr = {
       await octokit.rest.pulls.merge({
         ...repo,
         pull_number: pullNumber,
-        commit_title: commitTitle,
-        commit_message: commitMessage,
         merge_method: mergeMethod,
       });
 
@@ -197,95 +214,95 @@ export const pr = {
   },
 };
 
-/**
- * Create a GitHub release for a version
- *
- * @param {Object} options - Release options
- * @param {string} options.version - Version number (e.g. 1.0.0)
- * @param {string} options.tagName - Tag name (e.g. v1.0.0)
- * @param {string} options.title - Release title
- * @param {string} options.body - Release body/notes
- * @param {boolean} [options.draft=false] - Whether this is a draft release
- * @param {boolean} [options.prerelease=false] - Whether this is a prerelease
- * @returns {Promise<Object|null>} - Release data or null on failure
- */
-export const createRelease = async ({version, tagName, title, body, draft = false, prerelease = false}) => {
-  const octokit = getClient();
-  const repo = getRepository();
+// /**
+//  * Create a GitHub release for a version
+//  *
+//  * @param {Object} options - Release options
+//  * @param {string} options.version - Version number (e.g. 1.0.0)
+//  * @param {string} options.tagName - Tag name (e.g. v1.0.0)
+//  * @param {string} options.title - Release title
+//  * @param {string} options.body - Release body/notes
+//  * @param {boolean} [options.draft=false] - Whether this is a draft release
+//  * @param {boolean} [options.prerelease=false] - Whether this is a prerelease
+//  * @returns {Promise<Object|null>} - Release data or null on failure
+//  */
+// export const createRelease = async ({version, tagName, title, body, draft = false, prerelease = false}) => {
+//   const octokit = getClient();
+//   const repo = getRepository();
 
-  if (!octokit || !repo) {
-    return null;
-  }
+//   if (!octokit || !repo) {
+//     return null;
+//   }
 
-  try {
-    const {data: release} = await octokit.rest.repos.createRelease({
-      ...repo,
-      tag_name: tagName,
-      name: title || `Release ${version}`,
-      body: body || '',
-      draft,
-      prerelease,
-    });
+//   try {
+//     const {data: release} = await octokit.rest.repos.createRelease({
+//       ...repo,
+//       tag_name: tagName,
+//       name: title || `Release ${version}`,
+//       body: body || '',
+//       draft,
+//       prerelease,
+//     });
 
-    logging.notice(`Created GitHub release: ${release.html_url}`);
-    return release;
-  } catch (error) {
-    logging.error(`Failed to create GitHub release for ${version}`, error);
-    return null;
-  }
-};
+//     logging.notice(`Created GitHub release: ${release.html_url}`);
+//     return release;
+//   } catch (error) {
+//     logging.error(`Failed to create GitHub release for ${version}`, error);
+//     return null;
+//   }
+// };
 
-/**
- * Get the latest release from GitHub
- *
- * @returns {Promise<Object|null>} - Latest release data or null
- */
-export const getLatestRelease = async () => {
-  const octokit = getClient();
-  const repo = getRepository();
+// /**
+//  * Get the latest release from GitHub
+//  *
+//  * @returns {Promise<Object|null>} - Latest release data or null
+//  */
+// export const getLatestRelease = async () => {
+//   const octokit = getClient();
+//   const repo = getRepository();
 
-  if (!octokit || !repo) {
-    return null;
-  }
+//   if (!octokit || !repo) {
+//     return null;
+//   }
 
-  try {
-    const {data: release} = await octokit.rest.repos.getLatestRelease({
-      ...repo,
-    });
+//   try {
+//     const {data: release} = await octokit.rest.repos.getLatestRelease({
+//       ...repo,
+//     });
 
-    return release;
-  } catch (error) {
-    // Not an error if no releases exist yet
-    logging.warning('No releases found in the repository');
-    return null;
-  }
-};
+//     return release;
+//   } catch (error) {
+//     // Not an error if no releases exist yet
+//     logging.warning('No releases found in the repository');
+//     return null;
+//   }
+// };
 
-/**
- * Generate release notes based on commits since last release
- *
- * @param {string} previousTag - Previous release tag
- * @param {string} newTag - New release tag
- * @returns {Promise<string>} - Generated release notes
- */
-export const generateReleaseNotes = async (previousTag, newTag) => {
-  const octokit = getClient();
-  const repo = getRepository();
+// /**
+//  * Generate release notes based on commits since last release
+//  *
+//  * @param {string} previousTag - Previous release tag
+//  * @param {string} newTag - New release tag
+//  * @returns {Promise<string>} - Generated release notes
+//  */
+// export const generateReleaseNotes = async (previousTag, newTag) => {
+//   const octokit = getClient();
+//   const repo = getRepository();
 
-  if (!octokit || !repo) {
-    return '';
-  }
+//   if (!octokit || !repo) {
+//     return '';
+//   }
 
-  try {
-    const {data: notes} = await octokit.rest.repos.generateReleaseNotes({
-      ...repo,
-      tag_name: newTag,
-      previous_tag_name: previousTag,
-    });
+//   try {
+//     const {data: notes} = await octokit.rest.repos.generateReleaseNotes({
+//       ...repo,
+//       tag_name: newTag,
+//       previous_tag_name: previousTag,
+//     });
 
-    return notes.body;
-  } catch (error) {
-    logging.error('Failed to generate release notes', error);
-    return '';
-  }
-};
+//     return notes.body;
+//   } catch (error) {
+//     logging.error('Failed to generate release notes', error);
+//     return '';
+//   }
+// };

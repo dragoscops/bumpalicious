@@ -266,41 +266,6 @@ export async function createVersionPR(workspacesTree, options) {
 ///////////////////////
 
 /**
- * Find the common base path shared by all paths
- * @TODO: is this function needed?
- *
- * @param {string[]} paths - Array of normalized paths
- * @returns {string} - Common base path
- */
-function findCommonPath(paths) {
-  if (!paths || paths.length === 0) return '';
-  if (paths.length === 1) return paths[0];
-
-  const sortedPaths = [...paths].sort();
-  const firstPath = sortedPaths[0];
-  const lastPath = sortedPaths[sortedPaths.length - 1];
-
-  let commonPrefix = '';
-  const minLength = Math.min(firstPath.length, lastPath.length);
-
-  for (let i = 0; i < minLength; i++) {
-    if (firstPath[i] === lastPath[i]) {
-      commonPrefix += firstPath[i];
-    } else {
-      break;
-    }
-  }
-
-  // Get the path up to the last directory separator
-  const lastSeparatorIndex = commonPrefix.lastIndexOf('/');
-  if (lastSeparatorIndex !== -1) {
-    return commonPrefix.substring(0, lastSeparatorIndex);
-  }
-
-  return commonPrefix;
-}
-
-/**
  * Enrich workspaces
  * @TODO: is this function needed?
  *
