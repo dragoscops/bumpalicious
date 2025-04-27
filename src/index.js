@@ -47,9 +47,10 @@ const run = async () => {
     // and we only need to update the versions
     if (commitMessage.includes(options.prMessage)) {
       logging.info(`Version PR was merged with message: ${commitMessage}`);
-      const changedWorkspaces = await workspaces.enrichChangedWorkspaces(options.workspaces, lastTag);
+      // enrich all workspaces
+      const changedWorkspaces = await workspaces.enrichWorkspaces(options.workspaces, lastTag);
       const changedWorkspacesTrees = workspace.buildUpdatedWorkspacesTrees(changedWorkspaces);
-
+      // create tag
       workspace.createVersionTags(changedWorkspacesTrees[0].workspace.version, options);
     } else {
       // If the PR message is not found, we assume the PR is not created
