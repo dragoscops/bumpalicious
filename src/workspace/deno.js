@@ -5,7 +5,7 @@
 
 import fs from 'fs-extra';
 import path from 'path';
-import {DENO_VERSION_FILES} from '../core/constants.js';
+import {DENO_VERSION_FILES} from './constants.js';
 import * as logging from '../utils/logging.js';
 
 /**

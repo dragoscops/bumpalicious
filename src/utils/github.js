@@ -22,6 +22,7 @@ import * as workspace from './workspace.js';
  * @property {string} prAutoMerge - Whether to automatically merge the pull request
  * @property {string} token - GitHub/Gitea token for actions like creating pull requests
  * @property {Workspace[]} workspaces - Comma-separated workspace definitions with format "path:type"
+ * @property {ChangelogPreset} changelogPreset - The conventional-changelog preset to use (default: conventionalcommits)
  */
 
 export function getOptions() {
@@ -34,6 +35,7 @@ export function getOptions() {
     workspaces: core.getInput('workspaces')
       ? core.getInput('workspaces').split(',').map(workspace.stringToWorkspace)
       : [],
+    changelogPreset: core.getInput('changelog_preset') || 'conventionalcommits',
   };
 }
 

@@ -7,7 +7,7 @@ import fs from 'fs-extra';
 import path from 'path';
 import {execa} from 'execa';
 import * as logging from '../utils/logging.js';
-import {ZIG_VERSION_FILES} from '../core/constants.js';
+import {ZIG_VERSION_FILES} from './constants.js';
 
 /**
  * @typedef {Object} ZigConfig

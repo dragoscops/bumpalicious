@@ -8,6 +8,7 @@ import * as git from '../utils/git.js';
 import * as github from '../utils/github.js';
 import * as logging from '../utils/logging.js';
 import * as version from './version.js';
+import * as changelog from '../utils/changelog.js';
 
 /**
  * @typedef {import('../utils/github.js').ActionOptions} ActionOptions
@@ -49,10 +50,29 @@ export async function updateVersionsForChangedWorkspaces(commitMessage, lastTag,
     return [];
   }
 
-  // Update version files in workspaces
-  await updateVersionsForWorkspaces(updatedWorkspaces);
+  // Update version files in workspaces and generate changelogs
+  await updateVersionsForWorkspaces(updatedWorkspaces, {
+    generateChangelog: options.generateChangelog !== false,
+  });
 
   return updatedWorkspaces;
+}
+
+/**
+ * Enrich workspaces
+ *
+ * @param {Workspace[]} workspaces - Array of workspace specifications
+ * @returns {Promise<Workspace[]>}
+ */
+export async function enrichWorkspaces(workspaces) {
+  const enrichedWorkspaces = [];
+
+  for (const workspace of workspaces) {
+    const enrichedWorkspace = await enrichWorkspace(workspace.path, workspace.type);
+    enrichedWorkspaces.push(enrichedWorkspace);
+  }
+
+  return enrichedWorkspaces;
 }
 
 /**
@@ -175,7 +195,7 @@ export async function increaseVersionForWorkspaces({workspaces, commitMessage}) 
  * @param {Workspace[]} workspaces - Info about workspaces with new versions
  * @returns {Promise<Workspace[]>} - Updated workspace info
  */
-export async function updateVersionsForWorkspaces(workspaces) {
+export async function updateVersionsForWorkspaces(workspaces, {generateChangelog = true} = {}) {
   // Use GitHub workspace path if running in GitHub Actions, otherwise use current directory
   const originalDir = process.env.GITHUB_WORKSPACE ?? process.cwd();
   const updatedWorkspaces = [];
@@ -201,6 +221,17 @@ export async function updateVersionsForWorkspaces(workspaces) {
       } else {
         await workspaceDetect.text.updateVersion({projectPath: workspace.path, newVersion: workspace.version});
       }
+
+      // Generate changelog after updating version
+      if (generateChangelog) {
+        logging.info(`Generating changelog for ${workspace.name || workspace.path}`);
+        try {
+          await changelog.generateWorkspaceChangelog(workspace);
+        } catch (changelogError) {
+          logging.error(`Failed to generate changelog for ${workspace.name || workspace.path}:`, changelogError);
+        }
+      }
+
       updatedWorkspaces.push(workspace);
       logging.notice(`Updated ${workspace.name} version to ${workspace.version}`);
     } catch (error) {
@@ -247,12 +278,52 @@ export async function createVersionTags(version, options) {
  * @returns {Promise<void>}
  */
 export async function createVersionPR(workspacesTree, options) {
-  const prBranch = await git.branch.createVersion(workspacesTree[0].workspace.version);
+  const rootWorkspace = workspacesTree[0].workspace;
+
+  // Create a version branch
+  const prBranch = await git.branch.createVersion(rootWorkspace.version);
   await git.branch.push(prBranch);
 
-  const prTitle = `${options.prMessage} ${workspacesTree[0].workspace.version}`;
-  // TODO: pr body should contain the changelog
-  const prBody = prTitle;
+  const prTitle = `${options.prMessage} ${rootWorkspace.version}`;
+
+  // Generate changelogs before creating the PR body
+  const fs = await import('fs/promises');
+  const path = await import('path');
+
+  // Create PR body with changelog information
+  let prBody = `# Version Update: ${rootWorkspace.version}\n\n`;
+
+  // Include changes for each workspace
+  for (const node of workspacesTree) {
+    const workspace = node.workspace;
+    prBody += `## ${workspace.name} (${workspace.version})\n\n`;
+
+    // Try to read changelog content if it exists
+    try {
+      const changelogPath = path.join(workspace.path, 'CHANGELOG.md');
+      const changelogExists = await fs
+        .access(changelogPath)
+        .then(() => true)
+        .catch(() => false);
+
+      if (changelogExists) {
+        // Read just the latest entry (between the first and second heading)
+        const changelogContent = await fs.readFile(changelogPath, 'utf8');
+        const latestEntry = changelogContent.split(/^## /m)[1];
+
+        if (latestEntry) {
+          prBody += `## ${latestEntry}\n`;
+        } else {
+          prBody += `No changelog entries found for ${workspace.name}.\n\n`;
+        }
+      } else {
+        prBody += `No changelog found for ${workspace.name}.\n\n`;
+      }
+    } catch (error) {
+      logging.warning(`Failed to read changelog for ${workspace.name}: ${error.message}`);
+      prBody += `Failed to include changelog for ${workspace.name}.\n\n`;
+    }
+  }
 
   await git.pushChange(prTitle, prBranch);
 
@@ -268,22 +339,26 @@ export async function createVersionPR(workspacesTree, options) {
   );
 }
 
-///////////////////////
-
 /**
- * Enrich workspaces
- * @TODO: is this function needed?
+ * Generate changelogs for workspaces that have changed
  *
- * @param {Workspace[]} workspaces - Array of workspace specifications
- * @returns {Promise<Workspace[]>}
+ * @param {Workspace[]} workspaces - List of workspaces to consider
+ * @param {string} lastTag - Last git tag from which to detect changes
+ * @param {Object} options - Additional options
+ * @param {boolean} [options.firstRelease=false] - Whether this is the first release
+ * @param {string} [options.preset='conventionalcommits'] - The conventional-changelog preset to use
+ * @param {boolean} [options.append=true] - Whether to append to an existing changelog
+ * @returns {Promise<Array<{workspace: Workspace, success: boolean}>>} - Results of changelog generation
  */
-export async function enrichWorkspaces(workspaces) {
-  const enrichedWorkspaces = [];
+export async function generateChangelogsForChangedWorkspaces(workspaces, lastTag, options = {}) {
+  // First, get workspaces that have changed
+  const changedWorkspaces = await enrichChangedWorkspaces(workspaces, lastTag);
 
-  for (const workspace of workspaces) {
-    const enrichedWorkspace = await enrichWorkspace(workspace.path, workspace.type);
-    enrichedWorkspaces.push(enrichedWorkspace);
+  if (changedWorkspaces.length === 0) {
+    logging.info('No workspaces have changed, skipping changelog generation');
+    return [];
   }
 
-  return enrichedWorkspaces;
+  logging.info(`Generating changelogs for ${changedWorkspaces.length} workspaces`);
+  return changelog.generateWorkspacesChangelogs(changedWorkspaces, options);
 }

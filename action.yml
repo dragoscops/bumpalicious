@@ -30,6 +30,18 @@ inputs:
     description: 'Comma-separated workspace definitions with format "path:type", e.g., ".:text,packages/node:node"'
     required: false
     default: ".:text"
+  generate_changelog:
+    description: "Generate changelog files during version updates using conventional commits"
+    required: false
+    default: "true"
+  changelog_preset:
+    description: "The conventional-changelog preset to use for generating changelogs"
+    required: false
+    default: "conventionalcommits"
+  append_changelog:
+    description: "Whether to append to existing changelog files or overwrite them"
+    required: false
+    default: "true"
 
 # outputs:
 #   changed_workspaces_info:

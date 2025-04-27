@@ -5,7 +5,7 @@
 
 import fs from 'fs-extra';
 import path from 'path';
-import {GO_VERSION_FILES} from '../core/constants.js';
+import {GO_VERSION_FILES} from './constants.js';
 import * as logging from '../utils/logging.js';
 
 /**

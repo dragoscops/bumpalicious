@@ -380,5 +380,152 @@ describe('workspace.js module', () => {
         unMockWorkspace(updateMock);
       }
     });
+
+    describe('updateVersionsForWorkspaces(Workspace[])', () => {
+      beforeEach(() => {
+        mockConsole();
+        mockCConsole();
+        vi.mock('../utils/changelog.js', () => ({
+          generateWorkspaceChangelog: vi.fn().mockResolvedValue(true),
+        }));
+      });
+
+      afterEach(() => {
+        unMockCConsole();
+        unMockConsole();
+        vi.restoreAllMocks();
+      });
+
+      it('updates versions and generates changelogs for all workspaces', async () => {
+        const input = [
+          {path: '/test/workspace1', type: 'node', name: 'project1', version: '1.0.0'},
+          {path: '/test/workspace2', type: 'python', name: 'project2', version: '2.0.0'},
+        ];
+
+        vi.spyOn(process, 'chdir').mockImplementation(() => {});
+
+        const nodeMock = vi.fn().mockResolvedValue();
+        const pythonMock = vi.fn().mockResolvedValue();
+
+        vi.mock(
+          '../workspace/index.js',
+          () => ({
+            node: {updateVersion: nodeMock},
+            python: {updateVersion: pythonMock},
+          }),
+          {virtual: true},
+        );
+
+        const changelog = await import('../utils/changelog.js');
+
+        const result = await workspaces.updateVersionsForWorkspaces(input, {generateChangelog: true});
+
+        expect(nodeMock).toHaveBeenCalledWith({
+          projectPath: '/test/workspace1',
+          newVersion: '1.0.0',
+        });
+        expect(pythonMock).toHaveBeenCalledWith({
+          projectPath: '/test/workspace2',
+          newVersion: '2.0.0',
+        });
+        expect(changelog.generateWorkspaceChangelog).toHaveBeenCalledTimes(2);
+        expect(result).toEqual(input);
+      });
+
+      it('skips changelog generation when option is disabled', async () => {
+        const input = [{path: '/test/workspace1', type: 'node', name: 'project1', version: '1.0.0'}];
+
+        vi.spyOn(process, 'chdir').mockImplementation(() => {});
+
+        const nodeMock = vi.fn().mockResolvedValue();
+
+        vi.mock(
+          '../workspace/index.js',
+          () => ({
+            node: {updateVersion: nodeMock},
+          }),
+          {virtual: true},
+        );
+
+        const changelog = await import('../utils/changelog.js');
+
+        const result = await workspaces.updateVersionsForWorkspaces(input, {generateChangelog: false});
+
+        expect(nodeMock).toHaveBeenCalledWith({
+          projectPath: '/test/workspace1',
+          newVersion: '1.0.0',
+        });
+        expect(changelog.generateWorkspaceChangelog).not.toHaveBeenCalled();
+        expect(result).toEqual(input);
+      });
+    });
+  });
+
+  describe('generateChangelogsForChangedWorkspaces', () => {
+    beforeEach(() => {
+      mockConsole();
+      mockCConsole();
+
+      vi.mock('../utils/changelog.js', () => ({
+        generateWorkspacesChangelogs: vi.fn().mockResolvedValue([
+          {workspace: {name: 'project1'}, success: true},
+          {workspace: {name: 'project2'}, success: true},
+        ]),
+      }));
+    });
+
+    afterEach(() => {
+      unMockCConsole();
+      unMockConsole();
+      vi.restoreAllMocks();
+    });
+
+    it('generates changelogs for changed workspaces', async () => {
+      const input = [
+        {path: '/test/workspace1', type: 'node'},
+        {path: '/test/workspace2', type: 'python'},
+      ];
+
+      // Mock enrichChangedWorkspaces to return workspaces
+      vi.spyOn(workspaces, 'enrichChangedWorkspaces').mockResolvedValue([
+        {path: '/test/workspace1', type: 'node', name: 'project1', version: '1.0.0'},
+        {path: '/test/workspace2', type: 'python', name: 'project2', version: '2.0.0'},
+      ]);
+
+      const changelog = await import('../utils/changelog.js');
+
+      const result = await workspaces.generateChangelogsForChangedWorkspaces(input, 'v1.0.0', {
+        preset: 'conventionalcommits',
+        append: true,
+      });
+
+      expect(workspaces.enrichChangedWorkspaces).toHaveBeenCalledWith(input, 'v1.0.0');
+      expect(changelog.generateWorkspacesChangelogs).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({name: 'project1'}),
+          expect.objectContaining({name: 'project2'}),
+        ]),
+        {preset: 'conventionalcommits', append: true},
+      );
+      expect(result.length).toBe(2);
+    });
+
+    it('returns empty array when no workspaces have changed', async () => {
+      const input = [
+        {path: '/test/workspace1', type: 'node'},
+        {path: '/test/workspace2', type: 'python'},
+      ];
+
+      // Mock enrichChangedWorkspaces to return empty array
+      vi.spyOn(workspaces, 'enrichChangedWorkspaces').mockResolvedValue([]);
+
+      const changelog = await import('../utils/changelog.js');
+
+      const result = await workspaces.generateChangelogsForChangedWorkspaces(input, 'v1.0.0');
+
+      expect(workspaces.enrichChangedWorkspaces).toHaveBeenCalledWith(input, 'v1.0.0');
+      expect(changelog.generateWorkspacesChangelogs).not.toHaveBeenCalled();
+      expect(result).toEqual([]);
+    });
   });
 });
