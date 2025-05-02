@@ -4,11 +4,9 @@
  */
 
 import {join} from 'path';
-import {writeFile, access, readFile, unlink} from 'fs/promises';
-import {constants, createWriteStream} from 'fs';
 import conventionalChangelog from 'conventional-changelog-core';
 import * as logging from './logging.js';
-import {pipeline} from 'stream/promises';
+import {fs, stream} from './node-wrapper.js';
 
 /**
  * @typedef {import('./workspace.js').Workspace} Workspace
@@ -36,102 +34,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 `;
 
 /**
- * Check if a changelog file exists
+ * Generate changelogs for multiple workspaces
  *
- * @param {string} changelogPath - Path to the changelog file
- * @returns {Promise<boolean>} - Whether the changelog file exists
+ * @param {Workspace[]} workspaces - The workspaces to generate changelogs for
+ * @param {string} lastTag - The last tag to compare against (if no tag, a commit hash is used)
+ * @param {Object} options - Options for changelog generation
+ * @param {ChangelogPreset} [options.preset='conventionalcommits'] - The conventional-changelog preset to use
+ * @returns {Promise<Array<{workspace: Workspace, success: boolean}>>} - Results of changelog generation
  */
-export async function checkChangelogExists(changelogPath) {
-  try {
-    await access(changelogPath, constants.F_OK);
-    return true;
-  } catch (error) {
-    return false;
+export async function generateWorkspacesChangelogs(workspaces, lastTag, options = {}) {
+  if (!workspaces || !Array.isArray(workspaces) || workspaces.length === 0) {
+    logging.warning('No workspaces provided for changelog generation');
+    return [];
   }
-}
 
-/**
- * Create a new changelog file with default header
- *
- * @param {string} changelogPath - Path to create the changelog file
- * @returns {Promise<void>}
- */
-export async function createInitialChangelog(changelogPath) {
-  await writeFile(changelogPath, DEFAULT_CHANGELOG_HEADER + '## [Unreleased]\n\n');
-}
+  const results = [];
 
-/**
- * Create a conventional changelog stream for a workspace
- *
- * @param {Workspace} workspace - The workspace to generate changelog for
- * @param {string} lastTag - The last tag to compare against (or commit hash)
- * @param {ChangelogPreset} preset - The conventional-changelog preset to use
- * @returns {stream.Readable} - Readable stream containing the changelog
- */
-export function createChangelogStream(workspace, lastTag, preset) {
-  const repoInfo = {
-    host: 'https://github.com',
-    owner: process.env.GITHUB_REPOSITORY?.split('/')[0],
-    repository: process.env.GITHUB_REPOSITORY?.split('/')[1] || '',
-  };
+  for (const workspace of workspaces) {
+    try {
+      const success = await generateWorkspaceChangelog(workspace, lastTag, options);
+      results.push({workspace, success});
+    } catch (error) {
+      logging.error(`Failed to generate changelog for ${workspace.name || workspace.path}:`, error);
+      results.push({workspace, success: false});
+    }
+  }
 
-  // Configure the conventional-changelog options
-  return conventionalChangelog(
-    {
-      preset,
-      releaseCount: 0,
-      pkg: {path: workspace.path},
-      cwd: workspace.path,
-      // Use lastTag if provided
-      from: lastTag || undefined,
-    },
-    {
-      // Context for template rendering
-      version: workspace.version,
-      ...repoInfo,
-      linkCompare: true,
-    },
-  );
-}
-
-/**
- * Merge the new changelog content with existing content
- *
- * @param {string} changelogPath - Path to the existing changelog
- * @param {string} newContentPath - Path to the new changelog content
- * @returns {Promise<void>}
- */
-export async function mergeChangelogContent(changelogPath, newContentPath) {
-  // Read new content
-  const newContent = await readFile(newContentPath, 'utf8');
-
-  // Read existing content
-  let existingContent = await readFile(changelogPath, 'utf8');
-
-  // Extract the header (everything before the first ## section)
-  const headerMatch = existingContent.match(/^([\s\S]*?)(?=## |$)/);
-  const header = headerMatch ? headerMatch[0] : DEFAULT_CHANGELOG_HEADER;
-
-  // Merge content (header + new + existing without header)
-  const mergedContent = header + newContent + existingContent.substring(header.length);
-
-  // Write merged content
-  await writeFile(changelogPath, mergedContent);
-
-  // Clean up temp file
-  await unlink(newContentPath);
-}
-
-/**
- * Write changelog stream to a file
- *
- * @param {stream.Readable} changelogStream - Stream with changelog content
- * @param {string} outputPath - Path to write the content
- * @returns {Promise<void>}
- */
-export async function writeChangelogStream(changelogStream, outputPath) {
-  const output = createWriteStream(outputPath);
-  return pipeline(changelogStream, output);
+  return results;
 }
 
 /**
@@ -176,7 +105,7 @@ export async function generateWorkspaceChangelog(workspace, lastTag, {preset = '
     // Clean up temp file if it exists
     try {
       if (await checkChangelogExists(tempPath)) {
-        await unlink(tempPath);
+        await fs.unlink(tempPath);
       }
     } catch {
       // Ignore errors during cleanup
@@ -186,31 +115,100 @@ export async function generateWorkspaceChangelog(workspace, lastTag, {preset = '
 }
 
 /**
- * Generate changelogs for multiple workspaces
+ * Check if a changelog file exists
  *
- * @param {Workspace[]} workspaces - The workspaces to generate changelogs for
- * @param {string} lastTag - The last tag to compare against (if no tag, a commit hash is used)
- * @param {Object} options - Options for changelog generation
- * @param {ChangelogPreset} [options.preset='conventionalcommits'] - The conventional-changelog preset to use
- * @returns {Promise<Array<{workspace: Workspace, success: boolean}>>} - Results of changelog generation
+ * @param {string} changelogPath - Path to the changelog file
+ * @returns {Promise<boolean>} - Whether the changelog file exists
  */
-export async function generateWorkspacesChangelogs(workspaces, lastTag, options = {}) {
-  if (!workspaces || !Array.isArray(workspaces) || workspaces.length === 0) {
-    logging.warning('No workspaces provided for changelog generation');
-    return [];
+export async function checkChangelogExists(changelogPath) {
+  try {
+    await fs.async.access(changelogPath, fs.constants.F_OK);
+    return true;
+  } catch (error) {
+    return false;
   }
+}
 
-  const results = [];
+/**
+ * Create a new changelog file with default header
+ *
+ * @param {string} changelogPath - Path to create the changelog file
+ * @returns {Promise<void>}
+ */
+export async function createInitialChangelog(changelogPath) {
+  await fs.async.writeFile(changelogPath, DEFAULT_CHANGELOG_HEADER + '## [Unreleased]\n\n');
+}
 
-  for (const workspace of workspaces) {
-    try {
-      const success = await generateWorkspaceChangelog(workspace, lastTag, options);
-      results.push({workspace, success});
-    } catch (error) {
-      logging.error(`Failed to generate changelog for ${workspace.name || workspace.path}:`, error);
-      results.push({workspace, success: false});
-    }
-  }
+/**
+ * Create a conventional changelog stream for a workspace
+ *
+ * @param {Workspace} workspace - The workspace to generate changelog for
+ * @param {string} lastTag - The last tag to compare against (or commit hash)
+ * @param {ChangelogPreset} preset - The conventional-changelog preset to use
+ * @returns {stream.Readable} - Readable stream containing the changelog
+ */
+export function createChangelogStream(workspace, lastTag, preset) {
+  const repoInfo = {
+    host: 'https://github.com',
+    owner: process.env.GITHUB_REPOSITORY?.split('/')[0],
+    repository: process.env.GITHUB_REPOSITORY?.split('/')[1] || '',
+  };
 
-  return results;
+  // Configure the conventional-changelog options
+  return conventionalChangelog(
+    {
+      preset,
+      releaseCount: 0,
+      pkg: {path: workspace.path},
+      cwd: workspace.path,
+      // Use lastTag if provided
+      from: lastTag || undefined,
+    },
+    {
+      // Context for template rendering
+      version: workspace.version,
+      ...repoInfo,
+      linkCompare: true,
+    },
+  );
+}
+
+/**
+ * Write changelog stream to a file
+ *
+ * @param {stream.Readable} changelogStream - Stream with changelog content
+ * @param {string} outputPath - Path to write the content
+ * @returns {Promise<void>}
+ */
+export async function writeChangelogStream(changelogStream, outputPath) {
+  const output = fs.createWriteStream(outputPath);
+  return stream.async.pipeline(changelogStream, output);
+}
+
+/**
+ * Merge the new changelog content with existing content
+ *
+ * @param {string} changelogPath - Path to the existing changelog
+ * @param {string} newContentPath - Path to the new changelog content
+ * @returns {Promise<void>}
+ */
+export async function mergeChangelogContent(changelogPath, newContentPath) {
+  // Read new content
+  const newContent = await fs.async.readFile(newContentPath, 'utf8');
+
+  // Read existing content
+  let existingContent = await fs.async.readFile(changelogPath, 'utf8');
+
+  // Extract the header (everything before the first ## section)
+  const headerMatch = existingContent.match(/^([\s\S]*?)(?=## |$)/);
+  const header = headerMatch ? headerMatch[0] : DEFAULT_CHANGELOG_HEADER;
+
+  // Merge content (header + new + existing without header)
+  const mergedContent = header + newContent + existingContent.substring(header.length);
+
+  // Write merged content
+  await fs.async.writeFile(changelogPath, mergedContent);
+
+  // Clean up temp file
+  await fs.async.unlink(newContentPath);
 }
