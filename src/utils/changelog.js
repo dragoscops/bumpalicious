@@ -41,11 +41,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * @param {string} changelogPath - Path to the changelog file
  * @returns {Promise<boolean>} - Whether the changelog file exists
  */
-async function checkChangelogExists(changelogPath) {
+export async function checkChangelogExists(changelogPath) {
   try {
     await access(changelogPath, constants.F_OK);
     return true;
-  } finally {
+  } catch (error) {
     return false;
   }
 }
@@ -56,7 +56,7 @@ async function checkChangelogExists(changelogPath) {
  * @param {string} changelogPath - Path to create the changelog file
  * @returns {Promise<void>}
  */
-async function createInitialChangelog(changelogPath) {
+export async function createInitialChangelog(changelogPath) {
   await writeFile(changelogPath, DEFAULT_CHANGELOG_HEADER + '## [Unreleased]\n\n');
 }
 
@@ -68,7 +68,7 @@ async function createInitialChangelog(changelogPath) {
  * @param {ChangelogPreset} preset - The conventional-changelog preset to use
  * @returns {stream.Readable} - Readable stream containing the changelog
  */
-function createChangelogStream(workspace, lastTag, preset) {
+export function createChangelogStream(workspace, lastTag, preset) {
   const repoInfo = {
     host: 'https://github.com',
     owner: process.env.GITHUB_REPOSITORY?.split('/')[0],
@@ -101,7 +101,7 @@ function createChangelogStream(workspace, lastTag, preset) {
  * @param {string} newContentPath - Path to the new changelog content
  * @returns {Promise<void>}
  */
-async function mergeChangelogContent(changelogPath, newContentPath) {
+export async function mergeChangelogContent(changelogPath, newContentPath) {
   // Read new content
   const newContent = await readFile(newContentPath, 'utf8');
 
@@ -129,7 +129,7 @@ async function mergeChangelogContent(changelogPath, newContentPath) {
  * @param {string} outputPath - Path to write the content
  * @returns {Promise<void>}
  */
-async function writeChangelogStream(changelogStream, outputPath) {
+export async function writeChangelogStream(changelogStream, outputPath) {
   const output = createWriteStream(outputPath);
   return pipeline(changelogStream, output);
 }
