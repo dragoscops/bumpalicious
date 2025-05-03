@@ -125,6 +125,7 @@ describe('core/version.js module', () => {
       expect(increaseVersion('1.2.3', {type: 'preminor', identifier: 'beta'})).toBe('1.3.0-beta.0');
       expect(increaseVersion('1.2.3', {type: 'prepatch', identifier: 'rc'})).toBe('1.2.4-rc.0');
       expect(increaseVersion('1.2.3-alpha.0', {type: 'prerelease', identifier: 'alpha'})).toBe('1.2.3-alpha.1');
+      expect(increaseVersion('1.2.3-alpha.1', {type: 'prerelease', identifier: 'alpha'})).toBe('1.2.3-alpha.2');
     });
 
     it('handles release from pre-release versions', () => {
