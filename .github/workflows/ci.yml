@@ -30,11 +30,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-      # - name: Run Tests
-      #   run: |
-      #     npm i
-      #     GITHUB_ACTIONS=false npm run test
-      #     GITHUB_ACTIONS=true npm run test
+      - name: Run Tests
+        run: |
+          npm i
+          # GITHUB_ACTIONS=false npm run test
+          # GITHUB_ACTIONS=true npm run test
 
       # Only run version increase on push to main, not on pull requests
       - name: Increase Version
