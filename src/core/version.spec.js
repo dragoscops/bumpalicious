@@ -9,11 +9,11 @@ import {mockCConsole, setupLoggingCallsTest, unMockCConsole} from '../vitest/set
 
 describe('core/version.js module', () => {
   beforeEach(() => {
-    mockCConsole(['error']);
+    mockCConsole();
   });
 
   afterEach(() => {
-    unMockCConsole(['error']);
+    unMockCConsole();
   });
 
   describe('determineVersionIncreaseType(string)', () => {

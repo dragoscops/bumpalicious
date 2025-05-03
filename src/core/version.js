@@ -22,6 +22,23 @@ export function determineVersionIncreaseType(commitMessage) {
     return logging.error('No commit message provided');
   }
 
+  // If only "pre-release" is specified without any conventional commit indicator,
+  // return "prerelease" directly to increment just the pre-release number
+  if (
+    commitMessage.includes('pre-release') &&
+    !commitMessage.startsWith('feat:') &&
+    !commitMessage.startsWith('fix:') &&
+    !/^feat\([^)]+\):/.test(commitMessage) &&
+    !/^fix\([^)]+\):/.test(commitMessage) &&
+    !commitMessage.includes('BREAKING CHANGE') &&
+    !commitMessage.includes('feat!:') &&
+    !commitMessage.includes('feat(!)') &&
+    !commitMessage.includes('BREAKING-CHANGE') &&
+    !commitMessage.includes('BREAKING CHANGES')
+  ) {
+    return 'prerelease';
+  }
+
   // Check for BREAKING CHANGE or feat! for major version bump
   if (
     commitMessage.includes('BREAKING CHANGE') ||
@@ -30,6 +47,7 @@ export function determineVersionIncreaseType(commitMessage) {
     commitMessage.includes('BREAKING-CHANGE') ||
     commitMessage.includes('BREAKING CHANGES')
   ) {
+    // For pre-existing pre-release versions, we'll handle this in workspaces.js
     if (commitMessage.includes('pre-release')) {
       return 'premajor';
     }
@@ -37,6 +55,7 @@ export function determineVersionIncreaseType(commitMessage) {
   }
 
   if (commitMessage.startsWith('feat:') || /^feat\([^)]+\):/.test(commitMessage)) {
+    // For pre-existing pre-release versions, we'll handle this in workspaces.js
     if (commitMessage.includes('pre-release')) {
       return 'preminor';
     }
@@ -44,6 +63,7 @@ export function determineVersionIncreaseType(commitMessage) {
   }
 
   if (commitMessage.startsWith('fix:') || /^fix\([^)]+\):/.test(commitMessage)) {
+    // For pre-existing pre-release versions, we'll handle this in workspaces.js
     if (commitMessage.includes('pre-release')) {
       return 'prepatch';
     }
@@ -64,8 +84,13 @@ export function determineVersionPreReleaseIdentifier(commitMessage) {
     return logging.error('No commit message provided');
   }
 
-  const preReleaseIdentifier = commitMessage.match(/pre-release\s*:\s*([a-zA-Z0-9-_]+)/);
+  // More flexible regex that handles:
+  // 1. "pre-release:alpha" format (no space)
+  // 2. "pre-release: alpha" format (with space)
+  // 3. Case insensitivity
+  const preReleaseIdentifier = commitMessage.match(/pre-release\s*:\s*([a-zA-Z0-9\-_]+)/i);
   if (preReleaseIdentifier) {
+    logging.info(`Extracted pre-release identifier: "${preReleaseIdentifier[1]}"`);
     return preReleaseIdentifier[1];
   }
 
@@ -90,6 +115,19 @@ export function increaseVersion(currentVersion, options) {
   if (!version) {
     logging.error(`Invalid version: ${currentVersion}`);
     return currentVersion;
+  }
+
+  // Special handling for pre-release versions
+  if (version.prerelease.length > 0 && options.identifier) {
+    // If current version is already a pre-release with the same identifier,
+    // and increment type is 'pre*', we should use 'prerelease' instead
+    if (version.prerelease[0] === options.identifier && options.type.startsWith('pre')) {
+      logging.info(`Detected existing pre-release version ${currentVersion} with identifier ${options.identifier}`);
+      logging.info(`Changing version increment type from ${options.type} to prerelease`);
+
+      // Just increment the pre-release number
+      return semver.inc(currentVersion, 'prerelease', options.identifier);
+    }
   }
 
   return semver.inc(currentVersion, options.type, options.identifier);
