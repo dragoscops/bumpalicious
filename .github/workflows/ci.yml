@@ -33,7 +33,6 @@ jobs:
       - name: Run Tests
         run: |
           npm i
-          pwd
           # GITHUB_ACTIONS=false npm run test
           # GITHUB_ACTIONS=true npm run test
 
@@ -53,7 +52,7 @@ jobs:
           pr_auto_merge: true
 
       - name: Output Results
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        # if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           ls -la .
           echo "Version Tag: ${{ steps.version_step.outputs.tag }}"
