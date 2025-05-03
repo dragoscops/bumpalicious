@@ -3,6 +3,8 @@
  * @module core/workspaces
  */
 import path from 'path';
+import semver from 'semver';
+
 import * as workspaceDetect from '../workspace/index.js';
 import * as git from '../utils/git.js';
 import * as github from '../utils/github.js';
@@ -258,17 +260,30 @@ export async function createVersionCommit(workspaces, options) {
 }
 
 /**
+ * Create version tags based on the provided version
  *
- * @param {string} version
- * @param {ActionOptions} options
+ * @param {string} version - Version to create tags for
+ * @param {ActionOptions} options - Action options including shortTag settings
  */
 export async function createVersionTags(version, options) {
   const tagMessage = `chore: version bump for workspaces: ${options.workspaces.map((node) => node.name).join(', ')}`;
 
+  // Create the main version tag (e.g., v2.0.1)
   git.tag.createAndPush(`v${version}`, tagMessage);
-  // if (options.shortVersionTag && !version.includes('-')) {
-  //   git.tag.createAndPush(`v${version.split('.').slice(0, -1)}`, tagMessage);
-  // }
+
+  // Create a shorter tag (e.g., v2.0) if shortTag is set and the version doesn't have a pre-release suffix
+  if (options.shortTag) {
+    const parsedVersion = semver.parse(version);
+
+    // Only create short tags for non-prerelease versions
+    if (parsedVersion && parsedVersion.prerelease.length === 0) {
+      const shortVersion = `${parsedVersion.major}.${parsedVersion.minor}`;
+      git.tag.createAndPush(`v${shortVersion}`, tagMessage);
+      logging.info(`Created/updated short version tag v${shortVersion}`);
+    } else {
+      logging.info(`Skipping short version tag for pre-release version ${version}`);
+    }
+  }
 }
 
 /**

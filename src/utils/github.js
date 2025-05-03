@@ -20,22 +20,24 @@ import * as workspace from './workspace.js';
  * @property {boolean} pr - Whether to create a pull request with version changes
  * @property {string} prMessage - Message to use for the pull request
  * @property {string} prAutoMerge - Whether to automatically merge the pull request
- * @property {string} token - GitHub/Gitea token for actions like creating pull requests
+ * @property {string} shortTag - Whether to use short tags (e.g. v1.0.0) instead of full commit hashes
+ * @property {string} token - GitHub token for actions like creating pull requests
  * @property {Workspace[]} workspaces - Comma-separated workspace definitions with format "path:type"
  * @property {ChangelogPreset} changelogPreset - The conventional-changelog preset to use (default: conventionalcommits)
  */
 
 export function getOptions() {
   return {
-    token: process.env.GITHUB_TOKEN ?? core.getInput('github_token', {required: true}),
     branch: core.getInput('branch') || 'main',
+    changelogPreset: core.getInput('changelog_preset') || 'conventionalcommits',
     pr: core.getInput('pr') === 'true',
-    prMessage: core.getInput('pr_message'),
     prAutoMerge: core.getInput('pr_auto_merge') === 'true',
+    prMessage: core.getInput('pr_message'),
+    shortTag: core.getInput('short_tag') === 'true',
+    token: process.env.GITHUB_TOKEN ?? core.getInput('github_token', {required: true}),
     workspaces: core.getInput('workspaces')
       ? core.getInput('workspaces').split(',').map(workspace.stringToWorkspace)
       : [],
-    changelogPreset: core.getInput('changelog_preset') || 'conventionalcommits',
   };
 }
 

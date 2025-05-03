@@ -148,8 +148,9 @@ export const tag = {
   createAndPush: async (tagName, message) => {
     const exists = await tag.exists(tagName);
     if (exists) {
-      await tag.remove(tagName);
       logging.info(`Tag ${tagName} already exists, removing it first`);
+      // First delete the tag locally
+      await tag.remove(tagName);
     }
     await tag.create(tagName, message);
     await tag.push(tagName);
@@ -213,6 +214,15 @@ export const tag = {
     } catch (error) {
       logging.error(`Failed to delete tag ${tagName}:`, error);
     }
+
+    // TODO: Let's see if this is necessary or not
+    // // Also try to delete it from remote
+    // try {
+    //   await execa('git', ['push', 'origin', `:refs/tags/${tagName}`]);
+    //   logging.info(`Remote tag ${tagName} deleted successfully`);
+    // } catch (error) {
+    //   logging.warning(`Could not remove remote tag ${tagName}, it might not exist: ${error.message}`);
+    // }
   },
 };
 

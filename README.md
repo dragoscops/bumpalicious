@@ -6,18 +6,20 @@ A GitHub Action for automated version management based on conventional commits.
 
 - Automatically detects version files in projects
 - Supports multiple languages and project types:
-  - Node.js (package.json)
-  - Deno (deno.json, deno.jsonc)
+  - Node.js (package.json, jsr.json)
+  - Deno (deno.json, deno.jsonc, jsr.json)
   - Python (pyproject.toml, setup.py, setup.cfg)
   - Go (version.txt, version.go)
   - Rust (Cargo.toml)
+  - Zig (build.zig)
   - Generic text-based versioning (version, VERSION, etc.)
-- Updates version numbers according to semantic versioning rules
+- Smart pre-release version handling that understands semantic versioning
+- Updates version numbers according to conventional commits
 - Supports monorepos with multiple project types
-- Generates changelogs from git history using conventional commits
+- Generates changelogs using conventional commits specification
 - Creates well-formatted CHANGELOG.md files for each workspace
 - Includes changelog content in pull request descriptions
-- Optionally creates version branches, pull requests, and git tags
+- Creates Git tags with optional short version tags (e.g., v1.2 for v1.2.3)
 
 ## Usage
 
@@ -40,29 +42,29 @@ jobs:
           fetch-depth: 0
 
       - name: Update Version
-        uses: dragoscops/version-update@v1
+        uses: dragoscops/version-update@v2.0
         with:
           workspaces: ".:node"
-          create-pr: "true"
-          create-tags: "true"
-          update-changelog: "true"
+          pr: "true"
+          create_tags: "true"
+          changelog_preset: "conventionalcommits"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ## Inputs
 
-| Name                | Description                                                   | Required | Default               |
-| ------------------- | ------------------------------------------------------------- | -------- | --------------------- |
-| `workspaces`        | Comma-separated workspace definitions with format "path:type" | No       | `.:text`              |
-| `token`             | GitHub token for actions like creating pull requests          | No       | `${{ github.token }}` |
-| `pr`                | Whether to create a pull request with version changes         | No       | `false`               |
-| `pr_auto_merge`     | Whether to automatically merge the PR if all checks pass      | No       | `false`               |
-| `pr_message`        | Message to use for the pull request                           | No       | `chore: version update` |
-| `branch`            | Target branch for pull requests                               | No       | `main`                |
-| `generate_changelog`| Generate changelog files during version updates               | No       | `true`                |
-| `changelog_preset`  | The conventional-changelog preset to use                      | No       | `conventionalcommits` |
-| `append_changelog`  | Whether to append to existing changelog files                 | No       | `true`                |
+| Name                | Description                                                    | Required | Default               |
+| ------------------- | -------------------------------------------------------------- | -------- | --------------------- |
+| `workspaces`        | Comma-separated workspace definitions with format "path:type"  | No       | `.:text`              |
+| `token`             | GitHub token for actions like creating pull requests           | No       | `${{ github.token }}` |
+| `github_token`      | Alternative to token (for backward compatibility)              | No       | -                     |
+| `pr`                | Whether to create a pull request with version changes          | No       | `false`               |
+| `pr_auto_merge`     | Whether to automatically merge the PR if all checks pass       | No       | `false`               |
+| `pr_message`        | Message to use for the pull request                            | No       | `chore: version update` |
+| `branch`            | Target branch for pull requests                                | No       | `main`                |
+| `changelog_preset`  | The conventional-changelog preset to use                       | No       | `conventionalcommits` |
+| `short_tag`         | Create short version tags (e.g., v1.2 for v1.2.3)              | No       | `false`               |
 
 ### Workspace Types
 
@@ -73,6 +75,7 @@ The following workspace types are supported:
 - `python`: Python projects using pyproject.toml, setup.py, or setup.cfg
 - `go`: Go projects (creates a version.txt or updates version.go)
 - `rust`: Rust projects using Cargo.toml
+- `zig`: Zig projects using build.zig
 - `text`: Generic text-based version files
 
 ## Outputs
@@ -90,7 +93,7 @@ The following workspace types are supported:
 ### Basic Usage (Single Project)
 
 ```yaml
-uses: dragoscops/version-update@v1
+uses: dragoscops/version-update@v2.0
 with:
   workspaces: ".:node"
 ```
@@ -98,19 +101,19 @@ with:
 ### Monorepo with Multiple Project Types
 
 ```yaml
-uses: dragoscops/version-update@v1
+uses: dragoscops/version-update@v2.0
 with:
   workspaces: ".:node,packages/api:python,packages/ui:node"
-  create-pr: "true"
+  pr: "true"
 ```
 
 ### Create both PR and Tags
 
 ```yaml
-uses: dragoscops/version-update@v1
+uses: dragoscops/version-update@v2.0
 with:
-  create-pr: "true"
-  create-tags: "true"
+  pr: "true"
+  short_tag: "true"
 ```
 
 ## Version Bump Rules
@@ -121,6 +124,17 @@ This action follows [Conventional Commits](https://www.conventionalcommits.org/)
 - `feat:` - Minor version bump (1.0.0 -> 1.1.0)
 - `BREAKING CHANGE:` or `feat!:` - Major version bump (1.0.0 -> 2.0.0)
 
+### Pre-release Version Handling
+
+For pre-release versions, include `pre-release:identifier` in your commit message:
+
+- `feat: add new feature pre-release:alpha` - Creates a pre-minor release (1.0.0 -> 1.1.0-alpha.0)
+- `fix: bug fix pre-release:beta` - Creates a pre-patch release (1.0.0 -> 1.0.1-beta.0)
+
+When updating an existing pre-release version with the same identifier, the action intelligently increments just the pre-release number:
+
+- If current version is `1.2.0-alpha.0` and commit is `feat: update pre-release:alpha`, the version becomes `1.2.0-alpha.1` (not `1.3.0-alpha.0`)
+
 ## Changelog Generation
 
 This action can automatically generate CHANGELOG.md files for each workspace based on conventional commits in your repository. The changelog generation uses the [conventional-changelog](https://github.com/conventional-changelog/conventional-changelog) library.
@@ -130,12 +144,14 @@ This action can automatically generate CHANGELOG.md files for each workspace bas
 1. When a version update is triggered, the action will:
    - Identify workspaces that have changed since the last tag
    - Update the version numbers according to conventional commit messages
-   - Generate or update CHANGELOG.md files in each workspace
-   - Include changelog content in PR descriptions (if PRs are enabled)
+   - Intelligently handle pre-release versions (alpha, beta, etc.)
+   - Generate or update CHANGELOG.md files in each workspace 
+   - Create a PR with changelog content (if `pr: true`)
+   - Create Git tags for the new version (if `short_tag: true`, will also create shorter tags like v1.2)
 
 ### Conventional Commits
 
-For optimal changelog generation, your commits should follow the [Conventional Commits](https://www.conventionalcommits.org/) specification:
+For optimal version management and changelog generation, your commits must follow the [Conventional Commits](https://www.conventionalcommits.org/) specification:
 
 ```
 <type>[optional scope]: <description>
