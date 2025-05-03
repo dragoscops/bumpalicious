@@ -5,6 +5,7 @@ import * as nfs from 'fs';
 
 export const fs = {
   async: {},
+  /** @type import('fs').createWriteStream */
   createWriteStream: (...args) => nfs.createWriteStream(...args),
 };
 
