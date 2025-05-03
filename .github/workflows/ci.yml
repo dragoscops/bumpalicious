@@ -33,6 +33,7 @@ jobs:
       - name: Run Tests
         run: |
           npm i
+          pwd
           # GITHUB_ACTIONS=false npm run test
           # GITHUB_ACTIONS=true npm run test
 
