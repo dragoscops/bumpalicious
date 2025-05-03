@@ -29,13 +29,13 @@ describe('changelog.js module', () => {
 
   afterEach(() => {
     unMockCConsole();
-
     unMockNode();
   });
 
   describe('checkChangelogExists()', () => {
     it('returns true if changelog file exists', async () => {
       const result = await changelog.changelogExists('/path/to/CHANGELOG.md');
+
       expect(result).toBe(true);
     });
 
@@ -45,7 +45,9 @@ describe('changelog.js module', () => {
         throw new Error('File not found');
       });
 
-      await changelog.changelogExists('/path/to/CHANGELOG.md');
+      const result = await changelog.changelogExists('/path/to/CHANGELOG.md');
+
+      expect(result).toBe(false);
     });
   });
 

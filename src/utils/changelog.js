@@ -87,7 +87,8 @@ export async function generateWorkspaceChangelog(workspace, lastTag, {preset = '
   } catch (error) {
     // Clean up temp file if it exists
     try {
-      if (await changelogExists(tempPath)) {
+      const tempExists = await changelogExists(tempPath);
+      if (tempExists) {
         await fs.async.unlink(tempPath);
       }
     } catch {

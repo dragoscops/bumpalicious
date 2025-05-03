@@ -33,8 +33,8 @@ jobs:
       - name: Run Tests
         run: |
           npm i
-          # GITHUB_ACTIONS=false npm run test
-          # GITHUB_ACTIONS=true npm run test
+          GITHUB_ACTIONS=false npm run test
+          GITHUB_ACTIONS=true npm run test
 
       # Only run version increase on push to main, not on pull requests
       - name: Increase Version
@@ -48,12 +48,11 @@ jobs:
           token: ${{ secrets.GH_TOKEN }}
           workspaces: .:node
           branch: ${{ github.ref }}
-          pr: true
-          pr_auto_merge: true
+          # pr: true
+          # pr_auto_merge: true
 
       - name: Output Results
         # if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
-          ls -la .
           echo "Version Tag: ${{ steps.version_step.outputs.tag }}"
           echo "Status: ${{ steps.version_step.outputs.status }}"
