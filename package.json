@@ -1,10 +1,6 @@
 {
   "name": "version-update",
-<<<<<<< HEAD
   "version": "1.1.23",
-=======
-  "version": "2.5.0-alpha.0",
->>>>>>> ea7eaab6b809afda93c74d4131151eb376d338ce
   "description": "GitHub Action for automated version management based on conventional commits",
   "main": "dist/index.js",
   "type": "module",
