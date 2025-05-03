@@ -7,7 +7,7 @@ import {
   setupUpdateVersionTest,
   setupUpdateVersionTestNoConfig,
 } from '../vitest/setup.detect-update.tests.js';
-import {TEXT_VERSION_FILES} from '../core/constants.js';
+import {TEXT_VERSION_FILES} from './constants.js';
 
 describe('detect/text.js module', () => {
   beforeAll(() => {

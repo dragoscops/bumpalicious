@@ -7,7 +7,7 @@ import {
   setupUpdateVersionTest,
   setupUpdateVersionTestNoConfig,
 } from '../vitest/setup.detect-update.tests.js';
-import {GO_VERSION_FILES} from '../core/constants.js';
+import {GO_VERSION_FILES} from './constants.js';
 
 describe('detect/go.js module', () => {
   beforeAll(() => {

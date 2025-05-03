@@ -7,7 +7,7 @@ import {
   setupUpdateVersionTest,
   setupUpdateVersionTestNoConfig,
 } from '../vitest/setup.detect-update.tests.js';
-import {NODE_VERSION_FILES} from '../core/constants.js';
+import {NODE_VERSION_FILES} from './constants.js';
 
 describe('detect/deno.js module', () => {
   beforeAll(() => {

@@ -1,9 +1,11 @@
 import fs from 'fs-extra';
 import {expect} from 'vitest';
-import {TEXT_VERSION_FILES} from '../core/constants.js';
+import {TEXT_VERSION_FILES} from '../workspace/constants.js';
 import core from '@actions/core';
 import {setupLoggingCallsTest} from './setup.logging.tests.js';
 import {mockCConsole, unMockCConsole} from './setup.logging.tests.js';
+
+// TODO: Move this content to setup.workspace.tests.js
 
 export const folder = 'test-project';
 export const projectNameValue = 'project'; // Renamed from name to projectName

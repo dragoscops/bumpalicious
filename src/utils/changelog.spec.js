@@ -5,9 +5,10 @@ import conventionalChangelog from 'conventional-changelog-core';
 import {Readable} from 'stream';
 import {describe, it, expect, beforeEach, vi, afterEach} from 'vitest';
 
-import * as changelog from './changelog.js';
 import {fs, stream} from './node-wrapper.js';
+import * as changelog from './changelog.js';
 import {mockCConsole, unMockCConsole, setupLoggingCallsTest} from '../vitest/setup.logging.tests.js';
+import {mockNode, unMockNode} from '../vitest/setup.node.test.js';
 
 vi.mock('conventional-changelog-core', () => ({
   default: vi.fn().mockImplementation(() => {
@@ -23,35 +24,13 @@ describe('changelog.js module', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockCConsole();
-
-    vi.spyOn(fs.async, 'access').mockResolvedValue((path) => true);
-    vi.spyOn(fs.async, 'readFile').mockImplementation((path) => {
-      if (String(path).includes('.new.md')) {
-        return Promise.resolve('## 1.0.0 (2023-04-27)\n\n* feat: initial release\n');
-      }
-      return Promise.resolve('# Changelog\n\nAll notable changes...\n\n## [Unreleased]\n\n');
-    });
-    vi.spyOn(fs.async, 'writeFile').mockResolvedValue(undefined);
-    vi.spyOn(fs.async, 'unlink').mockResolvedValue(undefined);
-
-    vi.spyOn(fs, 'createWriteStream').mockReturnValue({
-      pipe: vi.fn(),
-    });
-
-    vi.spyOn(stream.async, 'pipeline').mockResolvedValue(undefined);
+    mockNode();
   });
 
   afterEach(() => {
     unMockCConsole();
 
-    fs.async.access.mockRestore();
-    fs.async.readFile.mockRestore();
-    fs.async.writeFile.mockRestore();
-    fs.async.unlink.mockRestore();
-
-    fs.createWriteStream.mockRestore();
-
-    stream.async.pipeline.mockRestore();
+    unMockNode();
   });
 
   describe('checkChangelogExists()', () => {

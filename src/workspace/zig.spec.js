@@ -7,7 +7,7 @@ import {
   setupUpdateVersionTest,
   setupUpdateVersionTestNoConfig,
 } from '../vitest/setup.detect-update.tests.js';
-import {ZIG_VERSION_FILES} from '../core/constants.js';
+import {ZIG_VERSION_FILES} from './constants.js';
 
 describe('detect/zig.js module', () => {
   beforeAll(() => {

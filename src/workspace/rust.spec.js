@@ -7,7 +7,7 @@ import {
   setupUpdateVersionTest,
   setupUpdateVersionTestNoConfig,
 } from '../vitest/setup.detect-update.tests.js';
-import {RUST_VERSION_FILES} from '../core/constants.js';
+import {RUST_VERSION_FILES} from './constants.js';
 
 describe('detect/rust.js module', () => {
   beforeAll(() => {
