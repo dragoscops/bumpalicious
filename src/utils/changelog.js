@@ -77,16 +77,16 @@ export async function generateWorkspaceChangelog(workspace, lastTag, {preset = '
       logging.info(`Created new changelog for ${workspace.name || workspace.path}`);
     }
 
-    // Create the conventional changelog stream
-    const changelogStream = createChangelogStream(workspace, lastTag, preset);
+    // // Create the conventional changelog stream
+    // const changelogStream = createChangelogStream(workspace, lastTag, preset);
 
-    // Write new changelog content to temp file
-    await writeChangelogStream(changelogStream, tempPath);
+    // // Write new changelog content to temp file
+    // await writeChangelogStream(changelogStream, tempPath);
 
-    // Merge with existing content
-    await mergeChangelogContent(changelogPath, tempPath);
+    // // Merge with existing content
+    // await mergeChangelogContent(changelogPath, tempPath);
 
-    logging.info(`Updated changelog for ${workspace.name || workspace.path} at ${changelogPath}`);
+    // logging.info(`Updated changelog for ${workspace.name || workspace.path} at ${changelogPath}`);
   } catch (error) {
     // Clean up temp file if it exists
     try {
