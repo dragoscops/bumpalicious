@@ -34,18 +34,21 @@ Object.entries(nfs).forEach(([key, value]) => {
 });
 
 export const stream = {
-  async: {},
+  async: {
+    /** @type import('stream/promises').pipeline */
+    pipeline: (...args) => astream.pipeline(...args),
+  },
 };
 
-Object.entries(astream).forEach(([key, value]) => {
-  if (typeof value === 'function') {
-    stream.async[key] = async (...args) => {
-      return value(...args).catch((error) => {
-        console.error(`Error in ${key}:`, error);
-        throw error;
-      });
-    };
-  } else {
-    stream.async[key] = value;
-  }
-});
+// Object.entries(astream).forEach(([key, value]) => {
+//   if (typeof value === 'function') {
+//     stream.async[key] = async (...args) => {
+//       return value(...args).catch((error) => {
+//         console.error(`Error in ${key}:`, error);
+//         throw error;
+//       });
+//     };
+//   } else {
+//     stream.async[key] = value;
+//   }
+// });

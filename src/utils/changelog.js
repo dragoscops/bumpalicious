@@ -40,27 +40,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * @param {string} lastTag - The last tag to compare against (if no tag, a commit hash is used)
  * @param {Object} options - Options for changelog generation
  * @param {ChangelogPreset} [options.preset='conventionalcommits'] - The conventional-changelog preset to use
- * @returns {Promise<Array<{workspace: Workspace, success: boolean}>>} - Results of changelog generation
+ * @returns {Promise<void>} - Results of changelog generation
  */
 export async function generateWorkspacesChangelogs(workspaces, lastTag, options = {}) {
   if (!workspaces || !Array.isArray(workspaces) || workspaces.length === 0) {
-    logging.warning('No workspaces provided for changelog generation');
-    return [];
+    return logging.error('No workspaces provided for changelog generation');
   }
-
-  const results = [];
 
   for (const workspace of workspaces) {
-    try {
-      const success = await generateWorkspaceChangelog(workspace, lastTag, options);
-      results.push({workspace, success});
-    } catch (error) {
-      logging.error(`Failed to generate changelog for ${workspace.name || workspace.path}:`, error);
-      results.push({workspace, success: false});
-    }
+    await generateWorkspaceChangelog(workspace, lastTag, options);
   }
-
-  return results;
 }
 
 /**
@@ -70,12 +59,11 @@ export async function generateWorkspacesChangelogs(workspaces, lastTag, options 
  * @param {string} lastTag - The last tag to compare against (if no tag, a commit hash is used)
  * @param {Object} options - Options for changelog generation
  * @param {ChangelogPreset} [options.preset='conventionalcommits'] - The conventional-changelog preset to use
- * @returns {Promise<boolean>} - Whether the changelog was generated successfully
+ * @returns {Promise<void>} - Whether the changelog was generated successfully
  */
 export async function generateWorkspaceChangelog(workspace, lastTag, {preset = 'conventionalcommits'} = {}) {
   if (!workspace || !workspace.path) {
-    logging.error('Invalid workspace provided for changelog generation');
-    return false;
+    return logging.error('Invalid workspace provided for changelog generation');
   }
 
   const changelogPath = join(workspace.path, 'CHANGELOG.md');
@@ -83,8 +71,8 @@ export async function generateWorkspaceChangelog(workspace, lastTag, {preset = '
 
   try {
     // Check if changelog exists, create if it doesn't
-    const changelogExists = await checkChangelogExists(changelogPath);
-    if (!changelogExists) {
+    const exists = await changelogExists(changelogPath);
+    if (!exists) {
       await createInitialChangelog(changelogPath);
       logging.info(`Created new changelog for ${workspace.name || workspace.path}`);
     }
@@ -99,18 +87,16 @@ export async function generateWorkspaceChangelog(workspace, lastTag, {preset = '
     await mergeChangelogContent(changelogPath, tempPath);
 
     logging.info(`Updated changelog for ${workspace.name || workspace.path} at ${changelogPath}`);
-    return true;
   } catch (error) {
-    logging.error(`Failed to generate changelog for ${workspace.name || workspace.path}:`, error);
     // Clean up temp file if it exists
     try {
-      if (await checkChangelogExists(tempPath)) {
+      if (await changelogExists(tempPath)) {
         await fs.unlink(tempPath);
       }
     } catch {
       // Ignore errors during cleanup
     }
-    return false;
+    logging.error(`Failed to generate changelog for ${workspace.name || workspace.path}:`, error);
   }
 }
 
@@ -120,7 +106,7 @@ export async function generateWorkspaceChangelog(workspace, lastTag, {preset = '
  * @param {string} changelogPath - Path to the changelog file
  * @returns {Promise<boolean>} - Whether the changelog file exists
  */
-export async function checkChangelogExists(changelogPath) {
+export async function changelogExists(changelogPath) {
   try {
     await fs.async.access(changelogPath, fs.constants.F_OK);
     return true;
@@ -136,7 +122,11 @@ export async function checkChangelogExists(changelogPath) {
  * @returns {Promise<void>}
  */
 export async function createInitialChangelog(changelogPath) {
-  await fs.async.writeFile(changelogPath, DEFAULT_CHANGELOG_HEADER + '## [Unreleased]\n\n');
+  try {
+    return fs.async.writeFile(changelogPath, DEFAULT_CHANGELOG_HEADER + '## [Unreleased]\n\n');
+  } catch (error) {
+    logging.error(`Failed to create initial changelog at ${changelogPath}:`, error);
+  }
 }
 
 /**
@@ -181,8 +171,7 @@ export function createChangelogStream(workspace, lastTag, preset) {
  * @returns {Promise<void>}
  */
 export async function writeChangelogStream(changelogStream, outputPath) {
-  const output = fs.createWriteStream(outputPath);
-  return stream.async.pipeline(changelogStream, output);
+  return stream.async.pipeline(changelogStream, fs.createWriteStream(outputPath));
 }
 
 /**
@@ -193,22 +182,26 @@ export async function writeChangelogStream(changelogStream, outputPath) {
  * @returns {Promise<void>}
  */
 export async function mergeChangelogContent(changelogPath, newContentPath) {
-  // Read new content
-  const newContent = await fs.async.readFile(newContentPath, 'utf8');
+  try {
+    // Read new content
+    const newContent = await fs.async.readFile(newContentPath, 'utf8');
 
-  // Read existing content
-  let existingContent = await fs.async.readFile(changelogPath, 'utf8');
+    // Read existing content
+    let existingContent = await fs.async.readFile(changelogPath, 'utf8');
 
-  // Extract the header (everything before the first ## section)
-  const headerMatch = existingContent.match(/^([\s\S]*?)(?=## |$)/);
-  const header = headerMatch ? headerMatch[0] : DEFAULT_CHANGELOG_HEADER;
+    // Extract the header (everything before the first ## section)
+    const headerMatch = existingContent.match(/^([\s\S]*?)(?=## |$)/);
+    const header = headerMatch ? headerMatch[0] : DEFAULT_CHANGELOG_HEADER;
 
-  // Merge content (header + new + existing without header)
-  const mergedContent = header + newContent + existingContent.substring(header.length);
+    // Merge content (header + new + existing without header)
+    const mergedContent = header + newContent + existingContent.substring(header.length);
 
-  // Write merged content
-  await fs.async.writeFile(changelogPath, mergedContent);
+    // Write merged content
+    await fs.async.writeFile(changelogPath, mergedContent);
 
-  // Clean up temp file
-  await fs.async.unlink(newContentPath);
+    // Clean up temp file
+    await fs.async.unlink(newContentPath);
+  } catch (error) {
+    logging.error(`Failed to merge changelog content:`, error);
+  }
 }
