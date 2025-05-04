@@ -7,6 +7,37 @@ import semver from 'semver';
 import * as logging from '../utils/logging.js';
 
 /**
+ * Increase version according to semver rules
+ *
+ * @param {string} currentVersion - Current version
+ * @param {string} commitMessage - Git commit message
+ * @returns {string} - New version
+ */
+export function increaseVersion(currentVersion, commitMessage) {
+  const increaseType = determineVersionIncreaseType(currentVersion, commitMessage);
+
+  if (!increaseType) {
+    logging.warning(`No version increase needed based on commit message: ${commitMessage}`);
+    return currentVersion;
+  }
+
+  logging.info(`Determined version increase type: ${increaseType} from commit: ${commitMessage}`);
+
+  const preReleaseIdentifier = determineVersionPreReleaseIdentifier(commitMessage);
+  if (preReleaseIdentifier) {
+    logging.info(`Pre-release identifier found in commit message: ${preReleaseIdentifier}`);
+  }
+
+  const version = semver.parse(currentVersion);
+  if (!version) {
+    logging.error(`Invalid version: ${currentVersion}`);
+    return currentVersion;
+  }
+
+  return semver.inc(currentVersion, increaseType, preReleaseIdentifier);
+}
+
+/**
  * @typedef {"major" | "premajor" | "minor" | "preminor" | "patch" | "prepatch" | "prerelease" | "release"} ReleaseType;
  */
 
@@ -14,36 +45,24 @@ import * as logging from '../utils/logging.js';
  * Determine version increase type from commit message
  * @link https://www.conventionalcommits.org/en/v1.0.0/#summary
  *
+ * @param {string} currentVersion - Current version
  * @param {string} commitMessage - Git commit message
  * @returns {ReleaseType | null} - Type of version increase or null for none
  */
-export function determineVersionIncreaseType(commitMessage) {
+export function determineVersionIncreaseType(currentVersion, commitMessage) {
   if (!commitMessage) {
     return logging.error('No commit message provided');
   }
-
-  // If only "pre-release" is specified without any conventional commit indicator,
-  // return "prerelease" directly to increment just the pre-release number
-  if (
-    commitMessage.includes('pre-release') &&
-    !commitMessage.startsWith('feat:') &&
-    !commitMessage.startsWith('fix:') &&
-    !/^feat\([^)]+\):/.test(commitMessage) &&
-    !/^fix\([^)]+\):/.test(commitMessage) &&
-    !commitMessage.includes('BREAKING CHANGE') &&
-    !commitMessage.includes('feat!:') &&
-    !commitMessage.includes('feat(!)') &&
-    !commitMessage.includes('BREAKING-CHANGE')
-  ) {
-    return 'prerelease';
+  if (!currentVersion) {
+    return logging.error('No version provided');
   }
 
   // Check for BREAKING CHANGE or feat! for major version bump
   if (
     commitMessage.includes('BREAKING CHANGE') ||
+    commitMessage.includes('BREAKING-CHANGE') ||
     commitMessage.includes('feat!:') ||
-    commitMessage.includes('feat(!)') ||
-    commitMessage.includes('BREAKING-CHANGE')
+    commitMessage.includes('feat(!)')
   ) {
     // For pre-existing pre-release versions, we'll handle this in workspaces.js
     if (commitMessage.includes('pre-release')) {
@@ -66,6 +85,11 @@ export function determineVersionIncreaseType(commitMessage) {
       return 'prepatch';
     }
     return 'patch';
+  }
+
+  const version = semver.parse(currentVersion);
+  if (commitMessage.includes('pre-release') && version.prerelease.length > 0) {
+    return 'prerelease';
   }
 
   return null;
@@ -93,40 +117,4 @@ export function determineVersionPreReleaseIdentifier(commitMessage) {
   }
 
   return null;
-}
-
-/**
- * @typedef {Object} IncreaseVersionOptions
- * @property {ReleaseType} type - Type of version increase
- * @property {string} identifier - Suffix for pre-release version
- */
-
-/**
- * Increase version according to semver rules
- *
- * @param {string} currentVersion - Current version
- * @param {IncreaseVersionOptions} options - Options for version increase
- * @returns {string} - New version
- */
-export function increaseVersion(currentVersion, options) {
-  const version = semver.parse(currentVersion);
-  if (!version) {
-    logging.error(`Invalid version: ${currentVersion}`);
-    return currentVersion;
-  }
-
-  // // Special handling for pre-release versions
-  // if (version.prerelease.length > 0 && options.identifier) {
-  //   // If current version is already a pre-release with the same identifier,
-  //   // and increment type is 'pre*', we should use 'prerelease' instead
-  //   if (version.prerelease[0] === options.identifier && options.type.startsWith('pre')) {
-  //     logging.info(`Detected existing pre-release version ${currentVersion} with identifier ${options.identifier}`);
-  //     logging.info(`Changing version increment type from ${options.type} to prerelease`);
-
-  //     // Just increment the pre-release number
-  //     return semver.inc(currentVersion, 'prerelease', options.identifier);
-  //   }
-  // }
-
-  return semver.inc(currentVersion, options.type, options.identifier);
 }

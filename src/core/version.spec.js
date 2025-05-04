@@ -16,59 +16,85 @@ describe('core/version.js module', () => {
     unMockCConsole();
   });
 
-  describe('determineVersionIncreaseType(string)', () => {
+  describe('determineVersionIncreaseType(currentVersion, string)', () => {
     it('calls logging.error when commit message is empty or undefined', () => {
-      determineVersionIncreaseType('');
+      determineVersionIncreaseType('1.0.0', '');
       setupLoggingCallsTest('error', [
         expect.stringContaining('ERROR:'),
         expect.stringContaining('No commit message provided'),
       ]);
 
-      determineVersionIncreaseType(undefined);
+      determineVersionIncreaseType('1.0.0', undefined);
       setupLoggingCallsTest('error', [
         expect.stringContaining('ERROR:'),
         expect.stringContaining('No commit message provided'),
       ]);
 
-      determineVersionIncreaseType(null);
+      determineVersionIncreaseType('1.0.0', null);
       setupLoggingCallsTest('error', [
         expect.stringContaining('ERROR:'),
         expect.stringContaining('No commit message provided'),
+      ]);
+    });
+
+    it('calls logging.error when version is empty or undefined', () => {
+      determineVersionIncreaseType('', 'feat: new feature');
+      setupLoggingCallsTest('error', [
+        expect.stringContaining('ERROR:'),
+        expect.stringContaining('No version provided'),
+      ]);
+
+      determineVersionIncreaseType(undefined, 'feat: new feature');
+      setupLoggingCallsTest('error', [
+        expect.stringContaining('ERROR:'),
+        expect.stringContaining('No version provided'),
+      ]);
+
+      determineVersionIncreaseType(null, 'feat: new feature');
+      setupLoggingCallsTest('error', [
+        expect.stringContaining('ERROR:'),
+        expect.stringContaining('No version provided'),
       ]);
     });
 
     it('returns "major" for breaking changes', () => {
-      expect(determineVersionIncreaseType('BREAKING CHANGE: completely rewrote API')).toBe('major');
-      expect(determineVersionIncreaseType('feat!: incompatible change')).toBe('major');
-      expect(determineVersionIncreaseType('feat(!): another breaking change')).toBe('major');
-      expect(determineVersionIncreaseType('something BREAKING-CHANGE something')).toBe('major');
-      expect(determineVersionIncreaseType('BREAKING CHANGES: multiple changes')).toBe('major');
+      expect(determineVersionIncreaseType('1.0.0', 'BREAKING CHANGE: completely rewrote API')).toBe('major');
+      expect(determineVersionIncreaseType('1.0.0', 'feat!: incompatible change')).toBe('major');
+      expect(determineVersionIncreaseType('1.0.0', 'feat(!): another breaking change')).toBe('major');
+      expect(determineVersionIncreaseType('1.0.0', 'something BREAKING-CHANGE something')).toBe('major');
+      expect(determineVersionIncreaseType('1.0.0', 'BREAKING CHANGES: multiple changes')).toBe('major');
     });
 
     it('returns "minor" for new features', () => {
-      expect(determineVersionIncreaseType('feat: added new feature')).toBe('minor');
-      expect(determineVersionIncreaseType('feat(core): added new core feature')).toBe('minor');
+      expect(determineVersionIncreaseType('1.0.0', 'feat: added new feature')).toBe('minor');
+      expect(determineVersionIncreaseType('1.0.0', 'feat(core): added new core feature')).toBe('minor');
     });
 
     it('returns "patch" for fixes', () => {
-      expect(determineVersionIncreaseType('fix: fixed a bug')).toBe('patch');
-      expect(determineVersionIncreaseType('fix(docs): fixed documentation')).toBe('patch');
+      expect(determineVersionIncreaseType('1.0.0', 'fix: fixed a bug')).toBe('patch');
+      expect(determineVersionIncreaseType('1.0.0', 'fix(docs): fixed documentation')).toBe('patch');
     });
 
     it('returns null for other conventional commit types', () => {
-      expect(determineVersionIncreaseType('docs: updated README')).toBeNull();
-      expect(determineVersionIncreaseType('chore: updated dependencies')).toBeNull();
-      expect(determineVersionIncreaseType('refactor: code improvements')).toBeNull();
-      expect(determineVersionIncreaseType('test: added tests')).toBeNull();
-      expect(determineVersionIncreaseType('style: formatting changes')).toBeNull();
-      expect(determineVersionIncreaseType('ci: updated CI configuration')).toBeNull();
-      expect(determineVersionIncreaseType('Random commit message')).toBeNull();
+      expect(determineVersionIncreaseType('1.0.0', 'docs: updated README')).toBeNull();
+      expect(determineVersionIncreaseType('1.0.0', 'chore: updated dependencies')).toBeNull();
+      expect(determineVersionIncreaseType('1.0.0', 'refactor: code improvements')).toBeNull();
+      expect(determineVersionIncreaseType('1.0.0', 'test: added tests')).toBeNull();
+      expect(determineVersionIncreaseType('1.0.0', 'style: formatting changes')).toBeNull();
+      expect(determineVersionIncreaseType('1.0.0', 'ci: updated CI configuration')).toBeNull();
+      expect(determineVersionIncreaseType('1.0.0', 'Random commit message')).toBeNull();
     });
 
     it('returns pre-release version types for pre-release commits', () => {
-      expect(determineVersionIncreaseType('feat: added new feature with pre-release')).toBe('preminor');
-      expect(determineVersionIncreaseType('fix: fixed a bug with pre-release')).toBe('prepatch');
-      expect(determineVersionIncreaseType('BREAKING CHANGE: completely rewrote API with pre-release')).toBe('premajor');
+      expect(determineVersionIncreaseType('1.0.0', 'feat: added new feature with pre-release')).toBe('preminor');
+      expect(determineVersionIncreaseType('1.0.0', 'fix: fixed a bug with pre-release')).toBe('prepatch');
+      expect(determineVersionIncreaseType('1.0.0', 'BREAKING CHANGE: completely rewrote API with pre-release')).toBe(
+        'premajor',
+      );
+    });
+
+    it('returns prerelease for pre-release commits on existing pre-release versions', () => {
+      expect(determineVersionIncreaseType('1.0.0-beta.0', 'chore: update with pre-release')).toBe('prerelease');
     });
   });
 
@@ -113,29 +139,27 @@ describe('core/version.js module', () => {
     });
   });
 
-  describe('increaseVersion(string, {ReleaseType, string})', () => {
-    it('increases version according to type', () => {
-      expect(increaseVersion('1.2.3', {type: 'major'})).toBe('2.0.0');
-      expect(increaseVersion('1.2.3', {type: 'minor'})).toBe('1.3.0');
-      expect(increaseVersion('1.2.3', {type: 'patch'})).toBe('1.2.4');
+  describe('increaseVersion(string, string)', () => {
+    it('increases version according to commit message type', () => {
+      expect(increaseVersion('1.2.3', 'feat!: breaking change')).toBe('2.0.0');
+      expect(increaseVersion('1.2.3', 'feat: add new feature')).toBe('1.3.0');
+      expect(increaseVersion('1.2.3', 'fix: fix a bug')).toBe('1.2.4');
     });
 
     it('handles pre-release versions', () => {
-      expect(increaseVersion('1.2.3', {type: 'premajor', identifier: 'alpha'})).toBe('2.0.0-alpha.0');
-      expect(increaseVersion('1.2.3', {type: 'preminor', identifier: 'beta'})).toBe('1.3.0-beta.0');
-      expect(increaseVersion('1.2.3', {type: 'prepatch', identifier: 'rc'})).toBe('1.2.4-rc.0');
-      expect(increaseVersion('1.2.3-alpha.0', {type: 'prerelease', identifier: 'alpha'})).toBe('1.2.3-alpha.1');
-      expect(increaseVersion('1.2.3-alpha.1', {type: 'prerelease', identifier: 'alpha'})).toBe('1.2.3-alpha.2');
+      expect(increaseVersion('1.2.3', 'feat!: breaking change pre-release: alpha')).toBe('2.0.0-alpha.0');
+      expect(increaseVersion('1.2.3', 'feat: add new feature pre-release: beta')).toBe('1.3.0-beta.0');
+      expect(increaseVersion('1.2.3', 'fix: fix a bug pre-release: rc')).toBe('1.2.4-rc.0');
+      expect(increaseVersion('1.2.3-alpha.0', 'chore: update pre-release: alpha')).toBe('1.2.3-alpha.1');
     });
 
-    it('handles release from pre-release versions', () => {
-      expect(increaseVersion('1.2.3-alpha.0', {type: 'release'})).toBe('1.2.3');
-      expect(increaseVersion('2.0.0-beta.5', {type: 'release'})).toBe('2.0.0');
+    it('returns the same version if no version changes are triggered', () => {
+      expect(increaseVersion('1.2.3', 'docs: update readme')).toEqual('1.2.3');
+      expect(increaseVersion('1.2.3', 'chore: update dependencies')).toEqual('1.2.3');
     });
 
-    it('returns original version for invalid inputs', () => {
-      expect(increaseVersion('invalid', {type: 'major'})).toBe('invalid');
-      expect(increaseVersion('1.2', {type: 'unknown'})).toBe('1.2');
+    it('returns original version for invalid version inputs', () => {
+      expect(increaseVersion('invalid', 'feat: new feature')).toBe('invalid');
     });
   });
 });

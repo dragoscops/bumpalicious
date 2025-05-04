@@ -162,33 +162,18 @@ export async function enrichWorkspace(workspacePath, workspaceType) {
  * @returns {Promise<Workspace[]>} - Updated workspace info with new versions
  */
 export async function increaseVersionForWorkspaces({workspaces, commitMessage}) {
-  const increaseType = version.determineVersionIncreaseType(commitMessage);
+  return workspaces
+    .map((workspace) => {
+      const updatedVersion = version.increaseVersion(workspace.version, commitMessage);
 
-  if (!increaseType) {
-    logging.warning(`No version increase needed based on commit message: ${commitMessage}`);
-    return [];
-  }
+      if (updatedVersion !== workspace.version) {
+        logging.info(`Increasing ${workspace.name} version ${workspace.version} -> ${updatedVersion}`);
+        return {...workspace, version: updatedVersion};
+      }
 
-  logging.info(`Determined version increase type: ${increaseType} from commit: ${commitMessage}`);
-
-  const preReleaseIdentifier = version.determineVersionPreReleaseIdentifier(commitMessage);
-  if (preReleaseIdentifier) {
-    logging.info(`Pre-release identifier found in commit message: ${preReleaseIdentifier}`);
-  }
-
-  return workspaces.map((workspace) => {
-    const updatedVersion = version.increaseVersion(workspace.version, {
-      type: increaseType,
-      identifier: preReleaseIdentifier,
-    });
-
-    if (updatedVersion !== workspace.version) {
-      logging.info(`Increasing ${workspace.name} version ${workspace.version} -> ${updatedVersion} (${increaseType})`);
-      return {...workspace, version: updatedVersion};
-    }
-
-    return workspace;
-  });
+      return null;
+    })
+    .filter((workspace) => workspace);
 }
 
 /**
