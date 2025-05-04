@@ -1,4 +1,4 @@
-# Version Update
+# Bumpalicious
 
 A GitHub Action for automated version management based on conventional commits.
 
@@ -6,10 +6,10 @@ A GitHub Action for automated version management based on conventional commits.
 
 - Automatically detects version files in projects
 - Supports multiple languages and project types:
-  - Node.js (package.json, jsr.json)
   - Deno (deno.json, deno.jsonc, jsr.json)
-  - Python (pyproject.toml, setup.py, setup.cfg)
   - Go (version.txt, version.go)
+  - Node.js (package.json, jsr.json)
+  - Python (pyproject.toml, setup.py, setup.cfg)
   - Rust (Cargo.toml)
   - Zig (build.zig)
   - Generic text-based versioning (version, VERSION, etc.)
@@ -42,7 +42,7 @@ jobs:
           fetch-depth: 0
 
       - name: Update Version
-        uses: dragoscops/version-update@v2.0
+        uses: dragoscops/bumpalicious@v2.0
         with:
           workspaces: ".:node"
           pr: "true"
@@ -70,13 +70,13 @@ jobs:
 
 The following workspace types are supported:
 
-- `node`: Node.js projects using package.json or jsr.json
 - `deno`: Deno projects using deno.json, deno.jsonc, or jsr.json
-- `python`: Python projects using pyproject.toml, setup.py, or setup.cfg
 - `go`: Go projects (creates a version.txt or updates version.go)
+- `node`: Node.js projects using package.json or jsr.json
+- `python`: Python projects using pyproject.toml, setup.py, or setup.cfg
 - `rust`: Rust projects using Cargo.toml
-- `zig`: Zig projects using build.zig
 - `text`: Generic text-based version files
+- `zig`: Zig projects using build.zig
 
 ## Outputs
 
@@ -93,7 +93,7 @@ The following workspace types are supported:
 ### Basic Usage (Single Project)
 
 ```yaml
-uses: dragoscops/version-update@v2.0
+uses: dragoscops/bumpalicious@v2.0
 with:
   workspaces: ".:node"
 ```
@@ -101,7 +101,7 @@ with:
 ### Monorepo with Multiple Project Types
 
 ```yaml
-uses: dragoscops/version-update@v2.0
+uses: dragoscops/bumpalicious@v2.0
 with:
   workspaces: ".:node,packages/api:python,packages/ui:node"
   pr: "true"
@@ -110,7 +110,7 @@ with:
 ### Create both PR and Tags
 
 ```yaml
-uses: dragoscops/version-update@v2.0
+uses: dragoscops/bumpalicious@v2.0
 with:
   pr: "true"
   short_tag: "true"
