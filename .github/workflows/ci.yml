@@ -23,9 +23,13 @@ jobs:
         with:
           fetch-depth: 0
       - name: Install Task
-        uses: arduino/setup-task@v2
-        with:
-          version: 3.x
+        # uses: arduino/setup-task@v2
+        # with:
+        #   version: 3.x
+        run: |
+          echo "Installing Task"
+          curl -sSL https://install-task.com/install.sh | sh
+          echo "Task installed"
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
