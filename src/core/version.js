@@ -33,8 +33,7 @@ export function determineVersionIncreaseType(commitMessage) {
     !commitMessage.includes('BREAKING CHANGE') &&
     !commitMessage.includes('feat!:') &&
     !commitMessage.includes('feat(!)') &&
-    !commitMessage.includes('BREAKING-CHANGE') &&
-    !commitMessage.includes('BREAKING CHANGES')
+    !commitMessage.includes('BREAKING-CHANGE')
   ) {
     return 'prerelease';
   }
@@ -44,8 +43,7 @@ export function determineVersionIncreaseType(commitMessage) {
     commitMessage.includes('BREAKING CHANGE') ||
     commitMessage.includes('feat!:') ||
     commitMessage.includes('feat(!)') ||
-    commitMessage.includes('BREAKING-CHANGE') ||
-    commitMessage.includes('BREAKING CHANGES')
+    commitMessage.includes('BREAKING-CHANGE')
   ) {
     // For pre-existing pre-release versions, we'll handle this in workspaces.js
     if (commitMessage.includes('pre-release')) {
@@ -117,18 +115,18 @@ export function increaseVersion(currentVersion, options) {
     return currentVersion;
   }
 
-  // Special handling for pre-release versions
-  if (version.prerelease.length > 0 && options.identifier) {
-    // If current version is already a pre-release with the same identifier,
-    // and increment type is 'pre*', we should use 'prerelease' instead
-    if (version.prerelease[0] === options.identifier && options.type.startsWith('pre')) {
-      logging.info(`Detected existing pre-release version ${currentVersion} with identifier ${options.identifier}`);
-      logging.info(`Changing version increment type from ${options.type} to prerelease`);
+  // // Special handling for pre-release versions
+  // if (version.prerelease.length > 0 && options.identifier) {
+  //   // If current version is already a pre-release with the same identifier,
+  //   // and increment type is 'pre*', we should use 'prerelease' instead
+  //   if (version.prerelease[0] === options.identifier && options.type.startsWith('pre')) {
+  //     logging.info(`Detected existing pre-release version ${currentVersion} with identifier ${options.identifier}`);
+  //     logging.info(`Changing version increment type from ${options.type} to prerelease`);
 
-      // Just increment the pre-release number
-      return semver.inc(currentVersion, 'prerelease', options.identifier);
-    }
-  }
+  //     // Just increment the pre-release number
+  //     return semver.inc(currentVersion, 'prerelease', options.identifier);
+  //   }
+  // }
 
   return semver.inc(currentVersion, options.type, options.identifier);
 }
