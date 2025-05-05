@@ -6,15 +6,15 @@
 <!-- [![Used by](https://img.shields.io/github/workflow/status/search?query=uses%3Adragoscops%2Fbumpalicious&style=flat-square&label=used%20by)](https://github.com/search?q=uses%3Adragoscops%2Fbumpalicious&type=code) -->
 
 ![jscpd](https://raw.githubusercontent.com/dragoscops/bumpalicious/main/.jscpd/jscpd-badge.svg?sanitize=true)
-[![Test Version Update Action](https://github.com/dragoscops/bumpalicious/actions/workflows/ci.yml/badge.svg)](https://github.com/dragoscops/bumpalicious/actions/workflows/ci.yml)
+[![Test Bumpalicious Action](https://github.com/dragoscops/bumpalicious/actions/workflows/ci.yml/badge.svg)](https://github.com/dragoscops/bumpalicious/actions/workflows/ci.yml)
+![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/dragoscops/version-update?labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit%20Reviews)
+
 
 
 <!-- Donation Badges -->
 
 [![Donate to this project using Patreon](https://img.shields.io/badge/patreon-donate-yellow.svg)](https://patreon.com/dragoscirjan)
 [![Donate to this project using Paypal](https://img.shields.io/badge/paypal-donate-yellow.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=QBP6DEBJDEMV2&source=url)
-![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/dragoscops/version-update?labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit%20Reviews)
-
 A GitHub Action for automated version management based on conventional commits.
 
 ## Features
