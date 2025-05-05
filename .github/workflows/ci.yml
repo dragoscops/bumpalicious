@@ -1,4 +1,4 @@
-name: Test Version Update Action
+name: Test Bumpalicious Action
 
 on:
   push:
