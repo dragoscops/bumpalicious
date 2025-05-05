@@ -6,7 +6,7 @@
 <!-- [![Used by](https://img.shields.io/github/workflow/status/search?query=uses%3Adragoscops%2Fbumpalicious&style=flat-square&label=used%20by)](https://github.com/search?q=uses%3Adragoscops%2Fbumpalicious&type=code) -->
 
 ![jscpd](https://raw.githubusercontent.com/dragoscops/bumpalicious/main/.jscpd/jscpd-badge.svg?sanitize=true)
-[![CI](https://github.com/dragoscops/bumpalicious/workflows/ci/badge.svg?branch=main)](https://github.com/dragoscops/bumpalicious/actions/workflows/ci.yml)
+[![Test Version Update Action](https://github.com/dragoscops/bumpalicious/actions/workflows/ci.yml/badge.svg)](https://github.com/dragoscops/bumpalicious/actions/workflows/ci.yml)
 
 
 <!-- Donation Badges -->
