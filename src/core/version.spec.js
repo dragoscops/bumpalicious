@@ -98,44 +98,71 @@ describe('core/version.js module', () => {
     });
   });
 
-  describe('determineVersionPreReleaseIdentifier(string)', () => {
+  describe('determineVersionPreReleaseIdentifier(currentVersion, string)', () => {
     it('calls logging.error when commit message is empty or undefined', () => {
-      determineVersionPreReleaseIdentifier('');
+      determineVersionPreReleaseIdentifier('1.0.0', '');
       setupLoggingCallsTest('error', [
         expect.stringContaining('ERROR:'),
         expect.stringContaining('No commit message provided'),
       ]);
 
-      determineVersionPreReleaseIdentifier(undefined);
+      determineVersionPreReleaseIdentifier('1.0.0', undefined);
       setupLoggingCallsTest('error', [
         expect.stringContaining('ERROR:'),
         expect.stringContaining('No commit message provided'),
       ]);
 
-      determineVersionPreReleaseIdentifier(null);
+      determineVersionPreReleaseIdentifier('1.0.0', null);
       setupLoggingCallsTest('error', [
         expect.stringContaining('ERROR:'),
         expect.stringContaining('No commit message provided'),
+      ]);
+    });
+
+    it('calls logging.error when version is empty or undefined', () => {
+      determineVersionPreReleaseIdentifier('', 'feat: new feature');
+      setupLoggingCallsTest('error', [
+        expect.stringContaining('ERROR:'),
+        expect.stringContaining('No version provided'),
+      ]);
+
+      determineVersionPreReleaseIdentifier(undefined, 'feat: new feature');
+      setupLoggingCallsTest('error', [
+        expect.stringContaining('ERROR:'),
+        expect.stringContaining('No version provided'),
+      ]);
+
+      determineVersionPreReleaseIdentifier(null, 'feat: new feature');
+      setupLoggingCallsTest('error', [
+        expect.stringContaining('ERROR:'),
+        expect.stringContaining('No version provided'),
       ]);
     });
 
     it('extracts pre-release identifier from commit messages', () => {
-      expect(determineVersionPreReleaseIdentifier('feat: new feature pre-release: alpha')).toBe('alpha');
-      expect(determineVersionPreReleaseIdentifier('fix: bug fix pre-release:beta')).toBe('beta');
-      expect(determineVersionPreReleaseIdentifier('BREAKING CHANGE: API change pre-release: rc')).toBe('rc');
+      expect(determineVersionPreReleaseIdentifier('1.0.0', 'feat: new feature pre-release: alpha')).toBe('alpha');
+      expect(determineVersionPreReleaseIdentifier('1.0.0', 'fix: bug fix pre-release:beta')).toBe('beta');
+      expect(determineVersionPreReleaseIdentifier('1.0.0', 'BREAKING CHANGE: API change pre-release: rc')).toBe('rc');
     });
 
     it('supports various identifier formats', () => {
-      expect(determineVersionPreReleaseIdentifier('pre-release: alpha1')).toBe('alpha1');
-      expect(determineVersionPreReleaseIdentifier('pre-release: beta-2')).toBe('beta-2');
-      expect(determineVersionPreReleaseIdentifier('pre-release: rc_3')).toBe('rc_3');
-      expect(determineVersionPreReleaseIdentifier('pre-release: next')).toBe('next');
+      expect(determineVersionPreReleaseIdentifier('1.0.0', 'pre-release: alpha1')).toBe('alpha1');
+      expect(determineVersionPreReleaseIdentifier('1.0.0', 'pre-release: beta-2')).toBe('beta-2');
+      expect(determineVersionPreReleaseIdentifier('1.0.0', 'pre-release: rc_3')).toBe('rc_3');
+      expect(determineVersionPreReleaseIdentifier('1.0.0', 'pre-release: next')).toBe('next');
     });
 
     it('returns null when no pre-release identifier is found', () => {
-      expect(determineVersionPreReleaseIdentifier('feat: new feature')).toBeNull();
-      expect(determineVersionPreReleaseIdentifier('pre-release without colon')).toBeNull();
-      expect(determineVersionPreReleaseIdentifier('unrelated commit message')).toBeNull();
+      expect(determineVersionPreReleaseIdentifier('1.0.0', 'feat: new feature')).toBeNull();
+      expect(determineVersionPreReleaseIdentifier('1.0.0', 'pre-release without colon')).toBeNull();
+      expect(determineVersionPreReleaseIdentifier('1.0.0', 'unrelated commit message')).toBeNull();
+    });
+
+    it('returns existing prerelease identifier from current version when available', () => {
+      expect(determineVersionPreReleaseIdentifier('1.0.0-alpha.0', 'chore: update without prerelease tag')).toBe(
+        'alpha',
+      );
+      expect(determineVersionPreReleaseIdentifier('2.3.0-beta.5', 'fix: minor fix')).toBe('beta');
     });
   });
 

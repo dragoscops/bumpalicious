@@ -23,7 +23,7 @@ export function increaseVersion(currentVersion, commitMessage) {
 
   logging.info(`Determined version increase type: ${increaseType} from commit: ${commitMessage}`);
 
-  const preReleaseIdentifier = determineVersionPreReleaseIdentifier(commitMessage);
+  const preReleaseIdentifier = determineVersionPreReleaseIdentifier(currentVersion, commitMessage);
   if (preReleaseIdentifier) {
     logging.info(`Pre-release identifier found in commit message: ${preReleaseIdentifier}`);
   }
@@ -57,6 +57,11 @@ export function determineVersionIncreaseType(currentVersion, commitMessage) {
     return logging.error('No version provided');
   }
 
+  const version = semver.parse(currentVersion);
+  if (commitMessage.includes('pre-release') && version.prerelease.length > 0) {
+    return 'prerelease';
+  }
+
   // Check for BREAKING CHANGE or feat! for major version bump
   if (
     commitMessage.includes('BREAKING CHANGE') ||
@@ -87,11 +92,6 @@ export function determineVersionIncreaseType(currentVersion, commitMessage) {
     return 'patch';
   }
 
-  const version = semver.parse(currentVersion);
-  if (commitMessage.includes('pre-release') && version.prerelease.length > 0) {
-    return 'prerelease';
-  }
-
   return null;
 }
 
@@ -101,9 +101,12 @@ export function determineVersionIncreaseType(currentVersion, commitMessage) {
  * @param {string} commitMessage - Git commit message
  * @returns {string|null} - Pre-release identifier or null if not found
  */
-export function determineVersionPreReleaseIdentifier(commitMessage) {
+export function determineVersionPreReleaseIdentifier(currentVersion, commitMessage) {
   if (!commitMessage) {
     return logging.error('No commit message provided');
+  }
+  if (!currentVersion) {
+    return logging.error('No version provided');
   }
 
   // More flexible regex that handles:
@@ -111,10 +114,10 @@ export function determineVersionPreReleaseIdentifier(commitMessage) {
   // 2. "pre-release: alpha" format (with space)
   // 3. Case insensitivity
   const preReleaseIdentifier = commitMessage.match(/pre-release\s*:\s*([a-zA-Z0-9\-_]+)/i);
-  if (preReleaseIdentifier) {
+  if (preReleaseIdentifier?.[1]) {
     logging.info(`Extracted pre-release identifier: "${preReleaseIdentifier[1]}"`);
     return preReleaseIdentifier[1];
   }
 
-  return null;
+  return semver.parse(currentVersion)?.prerelease?.[0] || null;
 }
