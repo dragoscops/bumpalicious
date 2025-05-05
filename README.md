@@ -1,11 +1,13 @@
 # Bumpalicious
 
-[![license](https://img.shields.io/github/license/dragoscops/bumpalicious.svg?style=flat-square)](https://github.com/dragoscops/bumpalicious/blob/master/LICENSE)
-[![downloads](https://img.shields.io/github/downloads/dragoscops/bumpalicious/total.svg?style=flat-square)](https://github.com/dragoscops/bumpalicious/releases)
+> A GitHub Action for automated version management based on conventional commits.
+
+[![MIT License](https://img.shields.io/github/license/dragoscops/bumpalicious.svg?style=flat-square)](https://github.com/dragoscops/bumpalicious/blob/master/LICENSE)
+<!-- [![Downloads](https://img.shields.io/github/downloads/dragoscops/bumpalicious/total.svg?style=flat-square)](https://github.com/dragoscops/bumpalicious/releases) -->
 [![Marketplace](https://img.shields.io/badge/GitHub%20Actions-Marketplace-blue.svg?style=flat-square)](https://github.com/marketplace/actions/bumpalicious)
 <!-- [![Used by](https://img.shields.io/github/workflow/status/search?query=uses%3Adragoscops%2Fbumpalicious&style=flat-square&label=used%20by)](https://github.com/search?q=uses%3Adragoscops%2Fbumpalicious&type=code) -->
 
-![jscpd](https://raw.githubusercontent.com/dragoscops/bumpalicious/main/.jscpd/jscpd-badge.svg?sanitize=true)
+![Jscpd](https://raw.githubusercontent.com/dragoscops/bumpalicious/main/.jscpd/jscpd-badge.svg?sanitize=true)
 [![Test Bumpalicious Action](https://github.com/dragoscops/bumpalicious/actions/workflows/ci.yml/badge.svg)](https://github.com/dragoscops/bumpalicious/actions/workflows/ci.yml)
 ![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/dragoscops/version-update?labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit%20Reviews)
 
@@ -15,7 +17,7 @@
 
 [![Donate to this project using Patreon](https://img.shields.io/badge/patreon-donate-yellow.svg)](https://patreon.com/dragoscirjan)
 [![Donate to this project using Paypal](https://img.shields.io/badge/paypal-donate-yellow.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=QBP6DEBJDEMV2&source=url)
-A GitHub Action for automated version management based on conventional commits.
+
 
 ## Features
 
