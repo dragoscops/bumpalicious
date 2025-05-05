@@ -18,8 +18,8 @@ import * as logging from '../utils/logging.js';
  * @returns {Promise<RustConfig>} - Detected version
  */
 export const detect = async (projectPath) => {
+  // jscpd:ignore-start
   const cargoPath = path.join(projectPath, 'Cargo.toml');
-
   if (await fs.pathExists(cargoPath)) {
     try {
       const content = await fs.readFile(cargoPath, 'utf8');
@@ -30,9 +30,10 @@ export const detect = async (projectPath) => {
         version: cargoData?.package?.version,
       };
     } catch (error) {
-      logging.error(`Error parsing ${file} file:`, error);
+      logging.error(`Error parsing Cargo.toml file:`, error);
     }
   }
+  // jscpd:ignore-end
 
   // TODO: Maybe... we should have this fix @ some point
   // try {

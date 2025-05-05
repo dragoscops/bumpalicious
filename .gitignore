@@ -1,3 +1,5 @@
 .DS_Store
 /.task
 node_modules
+
+.jscpd/html

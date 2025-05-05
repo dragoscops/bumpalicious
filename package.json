@@ -5,6 +5,7 @@
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
+    "cpd": "jscpd ./src",
     "prettify": "npx prettier --write \"./**/*.{js,json}\"",
     "-prepare": "npm run build",
     "test": "npx vitest run"
@@ -13,7 +14,14 @@
     "type": "git",
     "url": "git+https://github.com/dragoscops/version-update.git"
   },
-  "keywords": ["github", "actions", "version", "semver", "release", "conventional-commits"],
+  "keywords": [
+    "github",
+    "actions",
+    "version",
+    "semver",
+    "release",
+    "conventional-commits"
+  ],
   "author": "dragoscops",
   "license": "MIT",
   "bugs": {
@@ -33,9 +41,12 @@
     "semver": "^7.6.0"
   },
   "devDependencies": {
+    "@jscpd/badge-reporter": "^4.0.1",
+    "@jscpd/html-reporter": "^4.0.1",
     "@vercel/ncc": "^0.38.3",
     "eslint": "^8.57.0",
     "husky": "^9.1.7",
+    "jscpd": "^4.0.5",
     "prettier": "^3.5.3",
     "vitest": "^3.0.9"
   },

@@ -1,5 +1,7 @@
 # Bumpalicious
 
+![Duplicated Lines (%)](https://raw.githubusercontent.com/dragoscops/bumpalicious/main/.jscpd/jscpd-badge.svg?sanitize=true)
+
 A GitHub Action for automated version management based on conventional commits.
 
 ## Features

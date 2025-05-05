@@ -92,6 +92,7 @@ export const updateVersion = async ({projectPath, newVersion}) => {
     return updateVersionJsonc({projectPath, newVersion});
   }
 
+  // jscpd:ignore-start
   for (const file of DENO_VERSION_FILES) {
     const filePath = path.join(projectPath, file);
     if (await fs.pathExists(filePath)) {
@@ -105,6 +106,7 @@ export const updateVersion = async ({projectPath, newVersion}) => {
       }
     }
   }
+  // jscpd:ignore-end
 
   logging.error(`No version file found in the Deno project at ${projectPath}`);
 };
