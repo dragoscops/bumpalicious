@@ -71,15 +71,11 @@ jobs:
           TAG=${{ steps.version_step.outputs.tag }}
           VERSION=${TAG#v}
 
-          # Create a zip archive of the action code for reference (optional)
-          zip -r bumpalicious-${VERSION}.zip . -x "node_modules/*" "tmp/*" ".git/*"
-
           # Generate changelog content from the version commit
           CHANGELOG=$(git log -1 --pretty=format:"%b" ${TAG})
 
-          # Create GitHub release with the artifact
+          # Create GitHub release without artifacts
           gh release create ${TAG} \
             --title "Bumpalicious ${VERSION}" \
             --notes "${CHANGELOG}" \
-            --target main \
-            bumpalicious-${VERSION}.zip
+            --target main
