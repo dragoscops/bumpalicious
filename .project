@@ -41,6 +41,6 @@ Pseudocode description:
         - [x] create separate branch
         - [x] commit with above message
         - [x] create pull request
-  - if pull request merge detected
+  - [x] if pull request merge detected
     - [x] create tag
   - [x] print version details and success message
