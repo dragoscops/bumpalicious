@@ -60,7 +60,7 @@ jobs:
         # if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           echo "Version Tag: ${{ steps.version_step.outputs.tag }}"
-          echo "Status: ${{ steps.version_step.outputs.status }}"
+          echo "Version Status: ${{ steps.version_step.outcome }}"
 
       - name: Create GitHub Release
         if: steps.version_step.outputs.tag != '' && github.event_name == 'push' && github.ref == 'refs/heads/main'
