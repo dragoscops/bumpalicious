@@ -11,6 +11,7 @@ import * as git from './utils/git.js';
 import * as github from './utils/github.js';
 import * as logging from './utils/logging.js';
 import * as workspace from './utils/workspace.js';
+import * as core from '@actions/core';
 
 /**
  * Main function to run the GitHub Action
@@ -52,6 +53,7 @@ const run = async () => {
       const changedWorkspacesTrees = workspace.buildUpdatedWorkspacesTrees(changedWorkspaces);
       // create tag
       workspaces.createVersionTags(changedWorkspacesTrees[0].workspace.version, options);
+      core.setOutput('version', changedWorkspacesTrees[0].workspace.version);
     } else {
       // If the PR message is not found, we assume the PR is not created
       // and we need go through the entire version bumping process
@@ -86,6 +88,7 @@ const run = async () => {
         // Otherwise, create a commit with the version changes and tags
         workspaces.createVersionCommit(updatedWorkspaces, options);
         workspaces.createVersionTags(updatedWorkspacesTrees[0].workspace.version, options);
+        core.setOutput('version', updatedWorkspacesTrees[0].workspace.version);
       }
     }
   } catch (error) {

@@ -29,18 +29,18 @@ Pseudocode description:
       - [x] if no version got changed, exit early
       - [x] apply all calculated versions
       - [x] compose a tree of workspaces to determine root workspace
-      - for all tree nodes, except for root, update changelogs
-      - for root node
-        - if the only node do as tree nodes
-        - if not the only node add links to the changed changelogs
-      - compose message that will be used as commit or/and PR message
+      - [x] for all tree nodes, except for root, update changelogs
+      - or root node
+        - [x] if the only node do as tree nodes
+        - [x] if not the only node add links to the changed changelogs
+      - [x] compose message that will be used as commit or/and PR message
       - if no_pr
-        - commit with above message
-        - create tag
+        - [x] commit with above message
+        - [x] create tag
       - otherwise
-        - create separate branch
-        - commit with above message
-        - create pull request
+        - [x] create separate branch
+        - [x] commit with above message
+        - [x] create pull request
   - if pull request merge detected
-    - create tag
-  - print version details and success message
+    - [x] create tag
+  - [x] print version details and success message
