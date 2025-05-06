@@ -5,6 +5,8 @@
 import path from 'path';
 import semver from 'semver';
 
+import * as core from '@actions/core';
+
 import * as workspaceDetect from '../workspace/index.js';
 import * as git from '../utils/git.js';
 import * as github from '../utils/github.js';

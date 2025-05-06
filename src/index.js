@@ -11,7 +11,6 @@ import * as git from './utils/git.js';
 import * as github from './utils/github.js';
 import * as logging from './utils/logging.js';
 import * as workspace from './utils/workspace.js';
-import * as core from '@actions/core';
 
 /**
  * Main function to run the GitHub Action
