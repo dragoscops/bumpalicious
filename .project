@@ -37,7 +37,7 @@ Pseudocode description:
       - if no_pr
         - [x] commit with above message
         - [x] create tag
-      - otherwise
+      - [x] otherwise
         - [x] create separate branch
         - [x] commit with above message
         - [x] create pull request
