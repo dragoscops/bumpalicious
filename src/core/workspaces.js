@@ -255,6 +255,7 @@ export async function createVersionTags(version, options) {
 
   // Create the main version tag (e.g., v2.0.1)
   git.tag.createAndPush(`v${version}`, tagMessage);
+  core.setOutput('tag', version);
 
   // Create a shorter tag (e.g., v2.0) if shortTag is set and the version doesn't have a pre-release suffix
   if (options.shortTag) {

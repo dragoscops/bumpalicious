@@ -15,7 +15,7 @@ permissions:
   pull-requests: write
 
 jobs:
-  prereqs:
+  ci:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
