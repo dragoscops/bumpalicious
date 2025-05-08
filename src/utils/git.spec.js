@@ -366,7 +366,8 @@ describe('git.js module', () => {
         expect(result).toBeUndefined();
         setupLoggingCallsTest('error', [
           expect.stringContaining('ERROR'),
-          expect.stringContaining('No tags found in the repository'),
+          expect.stringContaining('Failed to get last created tag'),
+          expect.any(Error),
         ]);
       });
     });
