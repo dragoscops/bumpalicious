@@ -184,7 +184,10 @@ export const tag = {
       if (lastTag.trim()) {
         return lastTag.trim();
       }
-
+    } catch (error) {
+      logging.warning(`Failed to get last created tag; moving to commit hash detection: ${error.message}`);
+    }
+    try {
       // If no tag is found, get the first commit hash
       const {stdout: firstCommitHash} = await execa('git', ['rev-list', '--max-parents=0', 'HEAD']);
       return firstCommitHash.trim();
