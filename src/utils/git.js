@@ -174,15 +174,22 @@ export const tag = {
 
   /**
    * Get the last created tag in the repository.
+   * If no tags are found, returns the hash of the first commit.
    *
    * @returns Promise<string|null>
    */
   lastCreated: async () => {
     try {
-      const {stdout} = await execa('git', ['describe', '--tags', '--abbrev=0']);
-      return stdout.trim();
+      const {stdout: lastTag} = await execa('git', ['describe', '--tags', '--abbrev=0']);
+      if (lastTag.trim()) {
+        return lastTag.trim();
+      }
+
+      // If no tag is found, get the first commit hash
+      const {stdout: firstCommitHash} = await execa('git', ['rev-list', '--max-parents=0', 'HEAD']);
+      return firstCommitHash.trim();
     } catch (error) {
-      logging.error('No tags found in the repository');
+      logging.warn('Failed to get last created tag:', error);
     }
   },
 
