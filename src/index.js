@@ -31,9 +31,6 @@ const run = async () => {
     // Get last created tag or 1st commit message
     const lastTag = await git.tag.lastCreated();
     logging.info(`Last tag: ${lastTag}`);
-    if (!lastTag) {
-      logging.error('No tags found in the repository');
-    }
 
     // Get the last commit message
     const commitMessage = await git.log.lastMessage();
