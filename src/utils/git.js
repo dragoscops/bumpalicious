@@ -189,7 +189,7 @@ export const tag = {
       const {stdout: firstCommitHash} = await execa('git', ['rev-list', '--max-parents=0', 'HEAD']);
       return firstCommitHash.trim();
     } catch (error) {
-      logging.warn('Failed to get last created tag:', error);
+      logging.error('Failed to get last created tag:', error);
     }
   },
 
