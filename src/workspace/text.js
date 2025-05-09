@@ -52,7 +52,7 @@ export const updateVersion = async ({projectPath, newVersion}) => {
       try {
         await fs.readFile(versionPath, 'utf8');
         await fs.writeFile(versionPath, newVersion, 'utf8');
-        break; // Only update the first version file we find
+        return;
       } catch (error) {
         logging.error(`Error updating ${versionFile}:`, error);
       }
