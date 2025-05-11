@@ -89,6 +89,7 @@ export const getChangedFiles = async (repoPath, lastTag) => {
     }
 
     // Retrieve changed files in the repository since the last tag
+    console.log('git', ['diff', lastTag, '--name-only', '--', repoPath], {cwd: repoPath});
     const {stdout} = await execa('git', ['diff', lastTag, '--name-only', '--', repoPath], {cwd: repoPath});
     return stdout.trim().split('\n').filter(Boolean);
   } catch (error) {

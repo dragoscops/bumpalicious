@@ -89,7 +89,6 @@ export async function enrichWorkspaces(workspaces) {
 export async function enrichChangedWorkspaces(workspaces, lastTag) {
   const enrichedWorkspaces = [];
 
-  logging.startGroup('Enriching changed workspaces');
   for (const workspace of workspaces) {
     logging.startGroup(`Enriching workspace ${workspace.path}`);
     const changedFiles = await git.getChangedFiles(workspace.path, lastTag);
@@ -106,7 +105,6 @@ export async function enrichChangedWorkspaces(workspaces, lastTag) {
   if (enrichedWorkspaces.length === 0) {
     logging.warning('No changed workspaces found', JSON.stringify(workspaces));
   }
-  logging.endGroup();
 
   return enrichedWorkspaces;
 }
