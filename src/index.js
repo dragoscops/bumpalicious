@@ -38,12 +38,14 @@ const run = async () => {
     }
     logging.endGroup();
 
+    logging.startGroup('Github setup');
     // Setup git user
     await git.config.set({
       'user.name': 'GitHub Actions',
       'user.email': 'actions@github.com',
       'safe.directory': process.env.GITHUB_WORKSPACE || process.cwd(),
     });
+    logging.endGroup();
 
     // Check if the commit message contains the PR message
     // If it does, we assume the PR is already created
