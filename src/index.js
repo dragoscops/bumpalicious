@@ -21,7 +21,7 @@ const run = async () => {
     /** @type {import('./utils/github.js').ActionOptions} */
     const options = github.getOptions();
 
-    logging.info('Starting GitHub Action for version management');
+    //======================================================================
 
     logging.startGroup('Gathering workspaces info');
     logging.info(`Options: ${JSON.stringify(options)}`);
@@ -37,6 +37,10 @@ const run = async () => {
       logging.error('No commit message found');
     }
     logging.endGroup();
+
+    return;
+
+    //======================================================================
 
     logging.startGroup('Setting up Github');
     // Setup git user
