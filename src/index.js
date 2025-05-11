@@ -76,8 +76,7 @@ const run = async () => {
 
       //======================================================================
 
-      return;
-
+      logging.startGroup('Updating workspaces tree');
       // Organizes workspaces into a tree like structure to also determine the root workspace
       const updatedWorkspacesTrees = workspace.buildUpdatedWorkspacesTrees(updatedWorkspaces);
       if (updatedWorkspacesTrees.length > 1) {
@@ -86,6 +85,12 @@ const run = async () => {
       if (updatedWorkspacesTrees.length === 0) {
         logging.error('No workspaces found');
       }
+      logging.info(`Updated workspaces trees: ${JSON.stringify(updatedWorkspacesTrees)}`);
+      logging.endGroup();
+
+      //======================================================================
+
+      return;
 
       if (options.pr) {
         // If createPR is true, create a pull request with the version changes
