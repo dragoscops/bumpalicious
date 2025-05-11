@@ -42,8 +42,6 @@ const run = async () => {
       logging.error('No commit message found');
     }
 
-    return;
-
     // Check if the commit message contains the PR message
     // If it does, we assume the PR is already created
     // and we only need to update the versions
@@ -64,6 +62,8 @@ const run = async () => {
         logging.warning('No workspaces have changed');
         return;
       }
+
+      return;
 
       // Organizes workspaces into a tree like structure to also determine the root workspace
       const updatedWorkspacesTrees = workspace.buildUpdatedWorkspacesTrees(updatedWorkspaces);
