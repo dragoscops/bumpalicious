@@ -37,7 +37,7 @@ import * as changelog from '../utils/changelog.js';
  * @returns {Promise<Workspace[]>}
  */
 export async function updateVersionsForChangedWorkspaces(commitMessage, lastTag, options) {
-  logging.startGroup(`Enriching workspace ${workspace.path}`);
+  logging.startGroup('Enriching workspaces with additional info');
   // Enrich workspaces with additional info
   const changedWorkspaces = await enrichChangedWorkspaces(options.workspaces, lastTag);
   logging.endGroup();
