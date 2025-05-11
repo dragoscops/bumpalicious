@@ -44,6 +44,8 @@ export async function updateVersionsForChangedWorkspaces(commitMessage, lastTag,
     return;
   }
 
+  logging.startGroup(`Updating versions for ${changedWorkspaces.length} workspaces`);
+
   // Increase versions based on commit message
   const updatedWorkspaces = await increaseVersionForWorkspaces({
     workspaces: changedWorkspaces,
@@ -58,6 +60,8 @@ export async function updateVersionsForChangedWorkspaces(commitMessage, lastTag,
   await updateVersionsForWorkspaces(updatedWorkspaces, {
     generateChangelog: options.generateChangelog !== false,
   });
+
+  logging.endGroup();
 
   return updatedWorkspaces;
 }
