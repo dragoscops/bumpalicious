@@ -66,6 +66,8 @@ const run = async () => {
       if (updatedWorkspaces.length === 0) {
         logging.warning('No workspaces have changed');
         return;
+      } else {
+        logging.info(`Updated workspaces: ${JSON.stringify(updatedWorkspaces)}`);
       }
 
       return;
