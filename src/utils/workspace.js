@@ -60,20 +60,16 @@ export function buildUpdatedWorkspacesTrees(workspaces) {
     parent: null,
   }));
 
-  // Normalize all paths to be absolute and with consistent separators
-  const normalizedPaths = nodes.map((node) => ({
-    node,
-    normalizedPath: path.resolve(node.workspace.path).replace(/\\/g, '/'),
-  }));
-
   // Find potential parent-child relationships
-  for (let i = 0; i < normalizedPaths.length; i++) {
-    const {node: nodeA, normalizedPath: pathA} = normalizedPaths[i];
+  for (let i = 0; i < nodes.length; i++) {
+    const nodeA = nodes[i];
+    const pathA = nodeA.workspace.path; // Path is already normalized
 
-    for (let j = 0; j < normalizedPaths.length; j++) {
+    for (let j = 0; j < nodes.length; j++) {
       if (i === j) continue;
 
-      const {node: nodeB, normalizedPath: pathB} = normalizedPaths[j];
+      const nodeB = nodes[j];
+      const pathB = nodeB.workspace.path; // Path is already normalized
 
       // If pathA is contained within pathB, then B is a potential parent of A
       if (pathA.startsWith(`${pathB}/`)) {
