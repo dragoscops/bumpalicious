@@ -24,7 +24,7 @@ import * as logging from '../utils/logging.js';
  * @returns {Promise<DenoConfig>} - Detected version
  */
 export const detect = async (projectPath) => {
-  let defaultName = path.basename(path.normalize(projectPath));
+  const defaultName = path.basename(path.normalize(projectPath));
 
   for (const file of DENO_VERSION_FILES) {
     const configPath = path.join(projectPath, file);

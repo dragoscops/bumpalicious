@@ -6,13 +6,7 @@ export const DENO_VERSION_FILES = ['deno.jsonc', 'deno.json', 'jsr.json', 'packa
 /**
  * List of potential Go version files to check
  */
-export const GO_VERSION_FILES = [
-  'go.mod',
-  'pkg/version/version.go',
-  'internal/version/version.go',
-  'cmd/version.go',
-  'version.go',
-];
+export const GO_VERSION_FILES = ['go.mod', '**/version.go'];
 
 /**
  * List of potential Node.js version files to check

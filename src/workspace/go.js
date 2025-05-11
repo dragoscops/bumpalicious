@@ -5,8 +5,11 @@
 
 import fs from 'fs-extra';
 import path from 'path';
+import {glob} from 'tinyglobby';
+
 import {GO_VERSION_FILES} from './constants.js';
 import * as logging from '../utils/logging.js';
+import * as text from './text.js';
 
 /**
  * @typedef {Object} GoConfig
@@ -22,43 +25,44 @@ import * as logging from '../utils/logging.js';
  * @returns {Promise<GoConfig>} - Detected version
  */
 export const detect = async (projectPath) => {
-  const defaultName = path.basename(path.normalize(projectPath));
+  let name = null;
+  let version = null;
 
-  const goModPath = path.join(projectPath, GO_VERSION_FILES[0]); // go.mod
-  const exists = await fs.pathExists(goModPath);
-  if (exists) {
-    try {
-      const content = await fs.readFile(goModPath, 'utf8');
+  // Check for go.mod file to extract module name
+  const configMod = path.join(projectPath, 'go.mod');
+  try {
+    await fs.access(configMod);
+    const content = await fs.readFile(configMod, 'utf8');
 
-      // Some go.mod files might contain a version declaration
-      const versionMatch = content.match(/version\s*=\s*["']([^"']*)["']/);
-      return {
-        name: extractModuleNameFromGoMod(content) || defaultName,
-        version: versionMatch && versionMatch[1] ? versionMatch[1] : null,
-      };
-    } catch (error) {
-      logging.error('Error parsing go.mod:', error);
+    // Extract module name
+    name = content.match(/module\s+([\w\d./\-@:]+)/m)?.[1];
+
+    // Also check for version comment in go.mod
+    version = content.match(/\/\/\s*[vV]ersion:?\s*([\d.]+)/m)?.[1];
+    if (version) {
+      return {name, version};
     }
+  } catch (error) {
+    logging.error(`No go.mod found in the Go project at ${projectPath}, using default`);
   }
 
-  // Check for version.go files in various locations
-  for (const file of GO_VERSION_FILES.slice(1)) {
+  // Check for version.go files
+  const files = await glob(['**/version.go'], {cwd: projectPath});
+  for (const file of files) {
     const filePath = path.join(projectPath, file);
-    const exists = await fs.pathExists(filePath);
-    if (exists) {
-      try {
-        const content = await fs.readFile(filePath, 'utf8');
-        return {
-          name: defaultName,
-          version: extractVersionFromGoSource(content),
-        };
-      } catch (error) {
-        logging.error(`Error parsing ${file}:`, error);
-      }
+    const content = await fs.readFile(filePath, 'utf8');
+
+    // Check for standard version constant
+    const constVersion = content.match(/(const|var)\s+[vV]ersion\s*=\s*["']([^"']*)["']/m)?.[2];
+    if (constVersion) {
+      version = constVersion;
+      return {name, version};
     }
   }
 
-  logging.error(`No version file found in the Go project at ${projectPath}, using default`);
+  const {version: txtVersion} = await text.detect(projectPath);
+
+  return {name, version: txtVersion};
 };
 
 /**
