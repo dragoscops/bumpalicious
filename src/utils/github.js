@@ -38,7 +38,7 @@ export async function getOptions() {
     workspaces: [],
   };
   for (const ws of core.getInput('workspaces').split(',')) {
-    const parsedWs = await workspace.parseWorkspace(ws);
+    const parsedWs = await workspace.stringToWorkspace(ws);
     options.workspaces.push(parsedWs);
   }
   return options;
