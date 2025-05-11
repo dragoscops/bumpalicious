@@ -44,7 +44,7 @@ export async function updateVersionsForChangedWorkspaces(commitMessage, lastTag,
 
   // If no changed workspaces, exit early
   if (changedWorkspaces.length === 0) {
-    return;
+    return [];
   }
 
   return [];
@@ -111,8 +111,6 @@ export async function enrichChangedWorkspaces(workspaces, lastTag) {
       logging.warning(`Workspace '${workspace.path}' has not changed since last tag: ${lastTag}`);
     }
   }
-
-  return [];
 
   if (enrichedWorkspaces.length === 0) {
     logging.warning('No changed workspaces found', JSON.stringify(workspaces));
