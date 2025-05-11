@@ -38,8 +38,6 @@ const run = async () => {
     }
     logging.endGroup();
 
-    return;
-
     //======================================================================
 
     logging.startGroup('Setting up Github');
@@ -50,6 +48,10 @@ const run = async () => {
       'safe.directory': process.env.GITHUB_WORKSPACE || process.cwd(),
     });
     logging.endGroup();
+
+    //======================================================================
+
+    return;
 
     // Check if the commit message contains the PR message
     // If it does, we assume the PR is already created
