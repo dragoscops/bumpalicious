@@ -22,14 +22,9 @@ const run = async () => {
     const options = github.getOptions();
 
     logging.info('Starting GitHub Action for version management');
-    logging.info(`Options: ${JSON.stringify(options)}`);
 
-    // Setup git user
-    await git.config.set({
-      'user.name': 'GitHub Actions',
-      'user.email': 'actions@github.com',
-      'safe.directory': process.env.GITHUB_WORKSPACE || process.cwd(),
-    });
+    logging.startGroup('Gathering info');
+    logging.info(`Options: ${JSON.stringify(options)}`);
 
     // Get last created tag or 1st commit message
     const lastTag = await git.tag.lastCreated();
@@ -41,6 +36,14 @@ const run = async () => {
     if (!commitMessage) {
       logging.error('No commit message found');
     }
+    logging.endGroup();
+
+    // Setup git user
+    await git.config.set({
+      'user.name': 'GitHub Actions',
+      'user.email': 'actions@github.com',
+      'safe.directory': process.env.GITHUB_WORKSPACE || process.cwd(),
+    });
 
     // Check if the commit message contains the PR message
     // If it does, we assume the PR is already created
