@@ -90,7 +90,7 @@ export async function enrichChangedWorkspaces(workspaces, lastTag) {
   const enrichedWorkspaces = [];
 
   for (const workspace of workspaces) {
-    logging.startGroup(`Enriching workspace ${workspacePath}`);
+    logging.startGroup(`Enriching workspace ${workspace.path}`);
     const changedFiles = await git.getChangedFiles(workspace.path, lastTag);
     if (changedFiles.length > 0) {
       const enrichedWorkspace = await enrichWorkspace(workspace.path, workspace.type);
