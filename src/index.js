@@ -19,7 +19,7 @@ const run = async () => {
   try {
     // Get input parameters as a single options object
     /** @type {import('./utils/github.js').ActionOptions} */
-    const options = github.getOptions();
+    const options = await github.getOptions();
 
     logging.info('Starting GitHub Action for version management');
     logging.info(`Options: ${JSON.stringify(options)}`);
