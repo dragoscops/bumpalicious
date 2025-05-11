@@ -96,6 +96,8 @@ export async function enrichChangedWorkspaces(workspaces, lastTag) {
       const enrichedWorkspace = await enrichWorkspace(workspace.path, workspace.type);
       logging.info(`Workspace '${workspace.path}' has changed since last tag: ${lastTag}`);
       enrichedWorkspaces.push(enrichedWorkspace);
+    } else {
+      logging.warning(`Workspace '${workspace.path}' has not changed since last tag: ${lastTag}`);
     }
     logging.endGroup();
   }
