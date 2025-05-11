@@ -37,8 +37,8 @@ import * as changelog from '../utils/changelog.js';
  * @returns {Promise<Workspace[]>}
  */
 export async function updateVersionsForChangedWorkspaces(commitMessage, lastTag, options) {
-  logging.startGroup('Enriching workspaces with additional info');
   // Enrich workspaces with additional info
+  logging.startGroup('Enriching workspaces with additional info');
   const changedWorkspaces = await enrichChangedWorkspaces(options.workspaces, lastTag);
   logging.endGroup();
 
@@ -47,6 +47,8 @@ export async function updateVersionsForChangedWorkspaces(commitMessage, lastTag,
     return;
   }
 
+  return [];
+
   logging.startGroup(`Updating versions for ${changedWorkspaces.length} workspaces`);
 
   // Increase versions based on commit message
@@ -54,6 +56,7 @@ export async function updateVersionsForChangedWorkspaces(commitMessage, lastTag,
     workspaces: changedWorkspaces,
     commitMessage,
   });
+
   // If no version updates needed, exit early
   if (updatedWorkspaces.length === 0) {
     return [];
