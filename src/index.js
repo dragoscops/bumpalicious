@@ -23,7 +23,7 @@ const run = async () => {
 
     logging.info('Starting GitHub Action for version management');
 
-    logging.startGroup('Gathering info');
+    logging.startGroup('Gathering workspaces info');
     logging.info(`Options: ${JSON.stringify(options)}`);
 
     // Get last created tag or 1st commit message
@@ -38,7 +38,7 @@ const run = async () => {
     }
     logging.endGroup();
 
-    logging.startGroup('Github setup');
+    logging.startGroup('Setting up Github');
     // Setup git user
     await git.config.set({
       'user.name': 'GitHub Actions',
@@ -46,8 +46,6 @@ const run = async () => {
       'safe.directory': process.env.GITHUB_WORKSPACE || process.cwd(),
     });
     logging.endGroup();
-
-    return;
 
     // Check if the commit message contains the PR message
     // If it does, we assume the PR is already created

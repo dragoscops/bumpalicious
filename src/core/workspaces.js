@@ -47,6 +47,8 @@ export async function updateVersionsForChangedWorkspaces(commitMessage, lastTag,
   }
 
   logging.endGroup();
+
+  return;
   logging.startGroup(`Updating versions for ${changedWorkspaces.length} workspaces`);
 
   // Increase versions based on commit message
