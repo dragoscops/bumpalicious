@@ -25,7 +25,8 @@ export const detect = async (projectPath) => {
   const defaultName = path.basename(path.normalize(projectPath));
 
   const goModPath = path.join(projectPath, GO_VERSION_FILES[0]); // go.mod
-  if (await fs.pathExists(goModPath)) {
+  const exists = await fs.pathExists(goModPath);
+  if (exists) {
     try {
       const content = await fs.readFile(goModPath, 'utf8');
 
@@ -44,7 +45,7 @@ export const detect = async (projectPath) => {
   for (const file of GO_VERSION_FILES.slice(1)) {
     const filePath = path.join(projectPath, file);
     const exists = await fs.pathExists(filePath);
-    if (await fs.pathExists(filePath)) {
+    if (exists) {
       try {
         const content = await fs.readFile(filePath, 'utf8');
         return {
