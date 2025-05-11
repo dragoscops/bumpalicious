@@ -21,6 +21,9 @@ const run = async () => {
     /** @type {import('./utils/github.js').ActionOptions} */
     const options = github.getOptions();
 
+    logging.info('Starting GitHub Action for version management');
+    logging.info(`Options: ${JSON.stringify(options)}`);
+
     // Setup git user
     await git.config.set({
       'user.name': 'GitHub Actions',
