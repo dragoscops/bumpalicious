@@ -37,6 +37,8 @@ import * as changelog from '../utils/changelog.js';
  * @returns {Promise<Workspace[]>}
  */
 export async function updateVersionsForChangedWorkspaces(commitMessage, lastTag, options) {
+  logging.startGroup(`Enriching workspace ${workspace.path}`);
+
   // Enrich workspaces with additional info
   const changedWorkspaces = await enrichChangedWorkspaces(options.workspaces, lastTag);
   // If no changed workspaces, exit early
@@ -44,6 +46,7 @@ export async function updateVersionsForChangedWorkspaces(commitMessage, lastTag,
     return;
   }
 
+  logging.endGroup();
   logging.startGroup(`Updating versions for ${changedWorkspaces.length} workspaces`);
 
   // Increase versions based on commit message
@@ -55,6 +58,8 @@ export async function updateVersionsForChangedWorkspaces(commitMessage, lastTag,
   if (updatedWorkspaces.length === 0) {
     return [];
   }
+
+  logging.info(`Updated versions for ${updatedWorkspaces.length} workspaces`, updatedWorkspaces);
 
   // Update version files in workspaces and generate changelogs
   await updateVersionsForWorkspaces(updatedWorkspaces, {
@@ -94,7 +99,6 @@ export async function enrichChangedWorkspaces(workspaces, lastTag) {
   const enrichedWorkspaces = [];
 
   for (const workspace of workspaces) {
-    logging.startGroup(`Enriching workspace ${workspace.path}`);
     const changedFiles = await git.getChangedFiles(workspace.path, lastTag);
     if (changedFiles.length > 0) {
       const enrichedWorkspace = await enrichWorkspace(workspace.path, workspace.type);
@@ -103,7 +107,6 @@ export async function enrichChangedWorkspaces(workspaces, lastTag) {
     } else {
       logging.warning(`Workspace '${workspace.path}' has not changed since last tag: ${lastTag}`);
     }
-    logging.endGroup();
   }
 
   if (enrichedWorkspaces.length === 0) {
