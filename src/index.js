@@ -85,7 +85,7 @@ const run = async () => {
       if (updatedWorkspacesTrees.length === 0) {
         logging.error('No workspaces found');
       }
-      logging.info(`Updated workspaces trees -> Found ${JSON.stringify(updatedWorkspacesTrees)} main nodes`);
+      logging.info(`Updated workspaces trees -> Found ${updatedWorkspacesTrees.length} main nodes`);
       logging.endGroup();
 
       //======================================================================
