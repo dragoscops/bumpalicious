@@ -47,28 +47,26 @@ export async function updateVersionsForChangedWorkspaces(commitMessage, lastTag,
     return [];
   }
 
-  return [];
-
   logging.startGroup(`Updating versions for ${changedWorkspaces.length} workspaces`);
+  {
+    // Increase versions based on commit message
+    const updatedWorkspaces = await increaseVersionForWorkspaces({
+      workspaces: changedWorkspaces,
+      commitMessage,
+    });
 
-  // Increase versions based on commit message
-  const updatedWorkspaces = await increaseVersionForWorkspaces({
-    workspaces: changedWorkspaces,
-    commitMessage,
-  });
+    // If no version updates needed, exit early
+    if (updatedWorkspaces.length === 0) {
+      return [];
+    }
 
-  // If no version updates needed, exit early
-  if (updatedWorkspaces.length === 0) {
-    return [];
+    logging.info(`Updated versions for ${updatedWorkspaces.length} workspaces`, updatedWorkspaces);
+
+    // Update version files in workspaces and generate changelogs
+    await updateVersionsForWorkspaces(updatedWorkspaces, {
+      generateChangelog: options.generateChangelog !== false,
+    });
   }
-
-  logging.info(`Updated versions for ${updatedWorkspaces.length} workspaces`, updatedWorkspaces);
-
-  // Update version files in workspaces and generate changelogs
-  await updateVersionsForWorkspaces(updatedWorkspaces, {
-    generateChangelog: options.generateChangelog !== false,
-  });
-
   logging.endGroup();
 
   return updatedWorkspaces;
@@ -110,10 +108,6 @@ export async function enrichChangedWorkspaces(workspaces, lastTag) {
     } else {
       logging.warning(`Workspace '${workspace.path}' has not changed since last tag: ${lastTag}`);
     }
-  }
-
-  if (enrichedWorkspaces.length === 0) {
-    logging.warning('No changed workspaces found', JSON.stringify(workspaces));
   }
 
   return enrichedWorkspaces;
