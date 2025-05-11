@@ -48,25 +48,25 @@ export async function updateVersionsForChangedWorkspaces(commitMessage, lastTag,
   }
 
   logging.startGroup(`Updating versions for ${changedWorkspaces.length} workspaces`);
-  {
-    // Increase versions based on commit message
-    const updatedWorkspaces = await increaseVersionForWorkspaces({
-      workspaces: changedWorkspaces,
-      commitMessage,
-    });
 
-    // If no version updates needed, exit early
-    if (updatedWorkspaces.length === 0) {
-      return [];
-    }
+  // Increase versions based on commit message
+  const updatedWorkspaces = await increaseVersionForWorkspaces({
+    workspaces: changedWorkspaces,
+    commitMessage,
+  });
 
-    logging.info(`Updated versions for ${updatedWorkspaces.length} workspaces`, updatedWorkspaces);
-
-    // Update version files in workspaces and generate changelogs
-    await updateVersionsForWorkspaces(updatedWorkspaces, {
-      generateChangelog: options.generateChangelog !== false,
-    });
+  // If no version updates needed, exit early
+  if (updatedWorkspaces.length === 0) {
+    return [];
   }
+
+  logging.info(`Updated versions for ${updatedWorkspaces.length} workspaces`, updatedWorkspaces);
+
+  // Update version files in workspaces and generate changelogs
+  await updateVersionsForWorkspaces(updatedWorkspaces, {
+    generateChangelog: options.generateChangelog !== false,
+  });
+
   logging.endGroup();
 
   return updatedWorkspaces;
