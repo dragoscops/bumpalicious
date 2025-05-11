@@ -121,6 +121,8 @@ export async function enrichWorkspace(workspacePath, workspaceType) {
   process.chdir(workspacePath);
 
   try {
+    logging.startGroup(`Enriching workspace ${workspacePath}`);
+
     let name = '';
     let version = '';
 
@@ -140,8 +142,12 @@ export async function enrichWorkspace(workspacePath, workspaceType) {
     // Use '0.1.0' as fallback for version
     if (!version) {
       version = '0.1.0';
-      logging.warning(`Could not detect version for workspace ${name}, using default 0.1.0`);
+      logging.error(`Could not detect version for workspace ${name}, using default 0.1.0`);
     }
+
+    logging.info(`Detected workspace: ${name} [${workspaceType}] @ ${version}`);
+
+    logging.endGroup();
 
     return {
       path: workspacePath,

@@ -96,6 +96,10 @@ export const error = (...args) => {
       cconsole.error(colorize(String(error), 'red'));
     }
   }
+  while (openedGroups > 0) {
+    endGroup();
+    openedGroups--;
+  }
   process.exit(1);
 };
 
@@ -138,6 +142,8 @@ export const warning = (...args) => {
   cconsole.warning(colorize(clabels.warning, 'yellow'), ...args);
 };
 
+let openedGroups = 0;
+
 /**
  * Log a section header
  *
@@ -145,6 +151,7 @@ export const warning = (...args) => {
  */
 export const startGroup = (title) => {
   if (process.env.GITHUB_ACTIONS === 'true') {
+    openedGroups++;
     return core.startGroup(title);
   }
 
@@ -159,6 +166,7 @@ export const startGroup = (title) => {
  */
 export const endGroup = () => {
   if (process.env.GITHUB_ACTIONS === 'true') {
+    openedGroups--;
     return core.endGroup();
   }
 };
