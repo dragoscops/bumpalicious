@@ -14,14 +14,15 @@ import path from 'path';
  * @param {string} workspace
  * @returns {Workspace}
  */
-export function stringToWorkspace(workspace) {
+export async function stringToWorkspace(workspace) {
   const splited = workspace.split(':');
-  return {
-    ...(splited.length > 0 ? {path: splited[0]} : {}),
+  const ws = {
     ...(splited.length > 1 ? {type: splited[1]} : {}),
     ...(splited.length > 2 ? {name: splited[2]} : {}),
     ...(splited.length > 3 ? {version: splited[3]} : {}),
   };
+  ws.path = await path.resolve(splited[0]);
+  return ws;
 }
 
 /**

@@ -26,8 +26,8 @@ import * as workspace from './workspace.js';
  * @property {ChangelogPreset} changelogPreset - The conventional-changelog preset to use (default: conventionalcommits)
  */
 
-export function getOptions() {
-  return {
+export async function getOptions() {
+  const options = {
     branch: core.getInput('branch') || 'main',
     changelogPreset: core.getInput('changelog_preset') || 'conventionalcommits',
     pr: core.getInput('pr') === 'true',
@@ -35,10 +35,13 @@ export function getOptions() {
     prMessage: core.getInput('pr_message'),
     shortTag: core.getInput('short_tag') === 'true',
     token: process.env.GITHUB_TOKEN ?? core.getInput('github_token', {required: true}),
-    workspaces: core.getInput('workspaces')
-      ? core.getInput('workspaces').split(',').map(workspace.stringToWorkspace)
-      : [],
+    workspaces: [],
   };
+  for (const ws of core.getInput('workspaces').split(',')) {
+    const parsedWs = await workspace.parseWorkspace(ws);
+    options.workspaces.push(parsedWs);
+  }
+  return options;
 }
 
 /**
