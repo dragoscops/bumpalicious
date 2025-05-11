@@ -210,6 +210,7 @@ export async function updateVersionsForWorkspaces(workspaces, {generateChangelog
       } else {
         await workspaceDetect.text.updateVersion({projectPath: workspace.path, newVersion: workspace.version});
       }
+      logging.info(`${workspace.path} version bumped to ${workspace.version}`);
 
       // Generate changelog after updating version
       if (generateChangelog) {
