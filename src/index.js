@@ -51,8 +51,6 @@ const run = async () => {
 
     //======================================================================
 
-    return;
-
     // Check if the commit message contains the PR message
     // If it does, we assume the PR is already created
     // and we only need to update the versions
@@ -75,6 +73,8 @@ const run = async () => {
       } else {
         logging.info(`Updated workspaces: ${JSON.stringify(updatedWorkspaces)}`);
       }
+
+      //======================================================================
 
       return;
 
