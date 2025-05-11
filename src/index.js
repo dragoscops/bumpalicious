@@ -90,8 +90,6 @@ const run = async () => {
 
       //======================================================================
 
-      return;
-
       if (options.pr) {
         // If createPR is true, create a pull request with the version changes
         /** @type {import('./utils/github.js').PRCreateResponse} */
