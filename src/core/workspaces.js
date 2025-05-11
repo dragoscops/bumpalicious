@@ -90,12 +90,14 @@ export async function enrichChangedWorkspaces(workspaces, lastTag) {
   const enrichedWorkspaces = [];
 
   for (const workspace of workspaces) {
+    logging.startGroup(`Enriching workspace ${workspacePath}`);
     const changedFiles = await git.getChangedFiles(workspace.path, lastTag);
     if (changedFiles.length > 0) {
       const enrichedWorkspace = await enrichWorkspace(workspace.path, workspace.type);
       logging.info(`Workspace '${workspace.path}' has changed since last tag: ${lastTag}`);
       enrichedWorkspaces.push(enrichedWorkspace);
     }
+    logging.endGroup();
   }
 
   if (enrichedWorkspaces.length === 0) {
@@ -121,8 +123,6 @@ export async function enrichWorkspace(workspacePath, workspaceType) {
   process.chdir(workspacePath);
 
   try {
-    logging.startGroup(`Enriching workspace ${workspacePath}`);
-
     let name = '';
     let version = '';
 
@@ -146,8 +146,6 @@ export async function enrichWorkspace(workspacePath, workspaceType) {
     }
 
     logging.info(`Detected workspace: ${name} [${workspaceType}] @ ${version}`);
-
-    logging.endGroup();
 
     return {
       path: workspacePath,
