@@ -37,7 +37,7 @@ export async function getOptions() {
     token: process.env.GITHUB_TOKEN ?? core.getInput('github_token', {required: true}),
     workspaces: [],
   };
-  for (const ws of core.getInput('workspaces').split(',')) {
+  for (const ws of core.getInput('workspaces').split(',') || []) {
     // const parsedWs = await workspace.stringToWorkspace(ws);
     // options.workspaces.push(parsedWs);
   }
