@@ -47,6 +47,8 @@ const run = async () => {
     });
     logging.endGroup();
 
+    return;
+
     // Check if the commit message contains the PR message
     // If it does, we assume the PR is already created
     // and we only need to update the versions
