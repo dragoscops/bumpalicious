@@ -7,7 +7,7 @@ import fs from 'fs-extra';
 import path from 'path';
 import JSONC from 'tiny-jsonc';
 
-import {DENO_VERSION_FILES} from './constants.js';
+import {DEFAULT_VERSION, DENO_VERSION_FILES} from './constants.js';
 import * as logging from '../utils/logging.js';
 
 /**
@@ -35,12 +35,14 @@ export const detect = async (projectPath) => {
         const config = await (configPath.endsWith('jsonc')
           ? fs.readFile(configPath).then(JSONC.parse)
           : fs.readJson(configPath));
-        return {
+        const details = {
           name: config.name || defaultName,
-          version: config.version, // || '0.0.1',
+          version: config.version || DEFAULT_VERSION,
         };
+        logger.info(`Detected workspace details ${projectPath} from ${file}:`, details);
+        return details;
       } catch (error) {
-        logging.error(`Error parsing ${file} file:`, error);
+        logging.error(`Error parsing ${configPath} file:`, error);
       }
     }
   }

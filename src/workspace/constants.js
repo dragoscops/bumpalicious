@@ -1,4 +1,9 @@
 /**
+ * Default version to use when no version is specified
+ */
+export const DEFAULT_VERSION = '0.0.1';
+
+/**
  * List of potential version file names to check
  */
 export const DENO_VERSION_FILES = ['deno.jsonc', 'deno.json', 'jsr.json', 'package.json'];

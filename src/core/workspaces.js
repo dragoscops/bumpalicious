@@ -145,14 +145,6 @@ export async function enrichWorkspace(workspacePath, workspaceType) {
       name = path.basename(workspacePath);
     }
 
-    // Use '0.1.0' as fallback for version
-    if (!version) {
-      version = '0.1.0';
-      logging.error(`Could not detect version for workspace ${name}, using default 0.1.0`);
-    }
-
-    logging.info(`Detected workspace: ${name} [${workspaceType}] @ ${version}`);
-
     return {
       path: workspacePath,
       type: workspaceType.toLowerCase(),
