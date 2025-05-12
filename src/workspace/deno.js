@@ -39,7 +39,7 @@ export const detect = async (projectPath) => {
           name: config.name || defaultName,
           version: config.version || DEFAULT_VERSION,
         };
-        logger.info(`Detected workspace details ${projectPath} from ${file}:`, details);
+        logging.info(`Detected workspace details ${projectPath} from ${file}:`, details);
         return details;
       } catch (error) {
         logging.error(`Error parsing ${configPath} file:`, error);
