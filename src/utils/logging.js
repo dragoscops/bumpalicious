@@ -71,7 +71,7 @@ export const formatWorkspace = (workspace) => {
 export const debug = (...args) => {
   if (process.env.GITHUB_ACTIONS === 'true') {
     core.debug(args[0]);
-    return cconsole.debug(...args.slice(1));
+    return args.length > 1 ? cconsole.debug(...args.slice(1)) : null;
   }
   cconsole.debug(colorize(clabels.debug, 'white'), ...args);
 };
@@ -85,7 +85,9 @@ export const error = (...args) => {
   const [message, error, ...rest] = args;
   if (process.env.GITHUB_ACTIONS === 'true') {
     core.error(`${message}${error ? ': ' + error.message : ''}`);
-    cconsole.error(...(error instanceof Error ? rest : args.slice(1)));
+    if (args.length > 1) {
+      cconsole.error(...(error instanceof Error ? rest : args.slice(1)));
+    }
   } else {
     cconsole.error(colorize(clabels.error, 'red'), ...args);
   }
@@ -111,7 +113,7 @@ export const error = (...args) => {
 export const info = (...args) => {
   if (process.env.GITHUB_ACTIONS === 'true') {
     core.info(args[0]);
-    return cconsole.info(...args.slice(1));
+    return args.length > 1 ? cconsole.info(...args.slice(1)) : null;
   }
   cconsole.info(colorize(clabels.info, 'green'), ...args);
 };
@@ -124,7 +126,7 @@ export const info = (...args) => {
 export const notice = (...args) => {
   if (process.env.GITHUB_ACTIONS === 'true') {
     core.notice(args[0]);
-    return cconsole.notice(...args.slice(1));
+    return args.length > 1 ? cconsole.notice(...args.slice(1)) : null;
   }
   cconsole.notice(colorize(clabels.notice, 'blue'), ...args);
 };
@@ -137,7 +139,7 @@ export const notice = (...args) => {
 export const warning = (...args) => {
   if (process.env.GITHUB_ACTIONS === 'true') {
     core.warning(args[0]);
-    return cconsole.warning(...args.slice(1));
+    return args.length > 1 ? cconsole.warning(...args.slice(1)) : null;
   }
   cconsole.warning(colorize(clabels.warning, 'yellow'), ...args);
 };
