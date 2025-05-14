@@ -9,6 +9,7 @@ import {glob} from 'tinyglobby';
 
 import * as logging from '../utils/logging.js';
 import * as text from './text.js';
+import {DEFAULT_VERSION} from './constants.js';
 
 /**
  * @typedef {Object} GoConfig
@@ -35,33 +36,35 @@ export const detect = async (projectPath) => {
 
     // Extract module name
     name = content.match(/module\s+([\w\d./\-@:]+)/m)?.[1];
-
     // Also check for version comment in go.mod
     version = content.match(/\/\/\s*[vV]ersion:?\s*([\d.]+)/m)?.[1];
-    if (version) {
-      return {name, version};
+
+    if (!name) {
+      logging.error(`No module name detected in go.mod at ${projectPath}`);
     }
   } catch (error) {
     logging.error(`No go.mod found in the Go project at ${projectPath}, using default`);
   }
 
-  // Check for version.go files
-  const files = await glob(['**/version.go'], {cwd: projectPath});
-  for (const file of files) {
-    const filePath = path.join(projectPath, file);
-    const content = await fs.readFile(filePath, 'utf8');
+  if (!version) {
+    // Check for version.go files
+    const files = await glob(['**/version.go'], {cwd: projectPath});
+    for (const file of files) {
+      const filePath = path.join(projectPath, file);
+      const content = await fs.readFile(filePath, 'utf8');
 
-    // Check for standard version constant
-    const constVersion = content.match(/(const|var)\s+[vV]ersion\s*=\s*["']([^"']*)["']/m)?.[2];
-    if (constVersion) {
-      version = constVersion;
-      return {name, version};
+      // Check for standard version constant
+      const constVersion = content.match(/(const|var)\s+[vV]ersion\s*=\s*["']([^"']*)["']/m)?.[2];
+      if (constVersion) {
+        version = constVersion;
+        return {name, version};
+      }
+
+      // Limitation: the func Version() string { return "1.0.0" } pattern
+      // should be handled as
+      // const version = "1.0.0"
+      // func Version() string { return version }
     }
-
-    // Limitation: the func Version() string { return "1.0.0" } pattern
-    // should be handled as
-    // const version = "1.0.0"
-    // func Version() string { return version }
   }
 
   const {version: txtVersion} = await text.detect(projectPath);
