@@ -45,7 +45,11 @@ export const detect = async (projectPath) => {
     logging.error(`No go.mod found in the Go project at ${projectPath}, using default`);
   }
 
+  logging.debug(`Detected module name: ${name}, version: ${version} from go.mod`);
+
   if (!version) {
+    logging.debug('Version invalid in go.mod, looking for version.go files');
+
     // Check for version.go files
     const files = await glob(['**/version.go'], {cwd: projectPath});
     for (const file of files) {
@@ -65,9 +69,16 @@ export const detect = async (projectPath) => {
     }
   }
 
-  const {version: txtVersion} = await text.detect(projectPath);
+  logging.debug(`Detected version: ${version} from version.go`);
 
-  return {name, version: txtVersion};
+  if (!version) {
+    const {version: txtVersion} = await text.detect(projectPath);
+    version = txtVersion;
+
+    logging.debug(`Detected version: ${version} from text version file`);
+  }
+
+  return {name, version};
 };
 
 /**
