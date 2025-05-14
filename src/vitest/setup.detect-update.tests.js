@@ -33,7 +33,7 @@ const configMocks = {
     name: projectNameValue,
     version: oldVersion,
   }),
-  'go.mod': [`module github.com/${projectNameValue}`, `go 1.16`, `version = "${oldVersion}"`].join('\n'),
+  'go.mod': [`module github.com/${projectNameValue}`, `go 1.16`, `// version: ${oldVersion}`].join('\n'),
   'version.go': [
     'package version',
     `const Version = "${oldVersion}"`,

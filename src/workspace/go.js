@@ -9,7 +9,6 @@ import {glob} from 'tinyglobby';
 
 import * as logging from '../utils/logging.js';
 import * as text from './text.js';
-import {DEFAULT_VERSION} from './constants.js';
 
 /**
  * @typedef {Object} GoConfig
@@ -35,7 +34,7 @@ export const detect = async (projectPath) => {
     const content = await fs.readFile(configMod, 'utf8');
 
     // Extract module name
-    name = content.match(/module\s+([\w\d./\-@:]+)/m)?.[1];
+    name = content.match(/module\s+([\w\d.\/\-@:]+)/m)?.[1];
     // Also check for version comment in go.mod
     version = content.match(/\/\/\s*[vV]ersion:?\s*([\d.]+)/m)?.[1];
 
@@ -54,9 +53,8 @@ export const detect = async (projectPath) => {
       const content = await fs.readFile(filePath, 'utf8');
 
       // Check for standard version constant
-      const constVersion = content.match(/(const|var)\s+[vV]ersion\s*=\s*["']([^"']*)["']/m)?.[2];
-      if (constVersion) {
-        version = constVersion;
+      version = content.match(/(const|var)\s+[vV]ersion\s*=\s*["']([^"']*)["']/m)?.[2];
+      if (version) {
         return {name, version};
       }
 
