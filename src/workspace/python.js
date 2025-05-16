@@ -132,7 +132,7 @@ export const updateVersion = async ({projectPath, newVersion}) => {
     poetryProject = {
       ...(poetryProject ?? {}),
       tool: {
-        ...(project?.tool ?? {}),
+        ...(poetryProject?.tool ?? {}),
         poetry: {
           ...poetryProject.tool?.poetry,
           version: newVersion,
