@@ -106,20 +106,20 @@ export const detect = async (projectPath) => {
  * @param {string} options.newVersion - New version to set
  */
 export const updateVersion = async ({projectPath, newVersion}) => {
-  const pyprojectTomlPath = path.join(projectPath, 'pyproject.toml');
+  const pyProjectTomlPath = path.join(projectPath, 'pyproject.toml');
   try {
-    await fs.access(pyprojectTomlPath);
-    let pyproject = await fs.readFile(pyprojectTomlPath, 'utf8').then(toml.parse);
+    await fs.access(pyProjectTomlPath);
+    let pyProject = await fs.readFile(pyProjectTomlPath, 'utf8').then(toml.parse);
 
-    pyproject = {
-      ...(pyproject ?? {}),
+    pyProject = {
+      ...(pyProject ?? {}),
       project: {
-        ...(pyproject.project ?? {}),
+        ...(pyProject.project ?? {}),
         version: newVersion,
       },
     };
 
-    return fs.writeFile(pyprojectTomlPath, toml.stringify(pyproject));
+    return fs.writeFile(pyProjectTomlPath, toml.stringify(pyProject));
   } catch (error) {
     logging.warning(`pyproject.toml not found or invalid in ${projectPath}; moving on...`, error);
   }
@@ -127,20 +127,20 @@ export const updateVersion = async ({projectPath, newVersion}) => {
   const poetryTomlPath = path.join(projectPath, 'poetry.toml');
   try {
     await fs.access(poetryTomlPath);
-    let pyproject = fs.readFile(poetryTomlPath, 'utf8').then(toml.parse);
+    let poetryProject = fs.readFile(poetryTomlPath, 'utf8').then(toml.parse);
 
-    pyproject = {
-      ...(pyproject ?? {}),
+    poetryProject = {
+      ...(poetryProject ?? {}),
       tool: {
         ...(project?.tool ?? {}),
         poetry: {
-          ...pyproject.tool?.poetry,
+          ...poetryProject.tool?.poetry,
           version: newVersion,
         },
       },
     };
 
-    return fs.writeFile(poetryTomlPath, toml.stringify(pyproject));
+    return fs.writeFile(poetryTomlPath, toml.stringify(poetryProject));
   } catch (error) {
     logging.warning(`poetry.toml not found or invalid in ${projectPath}; moving on...`, error);
   }
