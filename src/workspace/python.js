@@ -109,8 +109,7 @@ export const updateVersion = async ({projectPath, newVersion}) => {
   const pyprojectTomlPath = path.join(projectPath, 'pyproject.toml');
   try {
     await fs.access(pyprojectTomlPath);
-    const pyprojectData = await fs.readFile(pyprojectTomlPath, 'utf8');
-    let pyproject = toml.parse(pyprojectData);
+    let pyproject = await fs.readFile(pyprojectTomlPath, 'utf8').then(toml.parse);
 
     pyproject = {
       ...(pyproject ?? {}),
@@ -128,8 +127,7 @@ export const updateVersion = async ({projectPath, newVersion}) => {
   const poetryTomlPath = path.join(projectPath, 'poetry.toml');
   try {
     await fs.access(poetryTomlPath);
-    const poetryData = await fs.readFile(poetryTomlPath, 'utf8');
-    let pyproject = toml.parse(poetryData);
+    let pyproject = fs.readFile(poetryTomlPath, 'utf8').then(toml.parse);
 
     pyproject = {
       ...(pyproject ?? {}),
@@ -159,6 +157,7 @@ export const updateVersion = async ({projectPath, newVersion}) => {
     try {
       await fs.access(filePath);
       let content = await fs.readFile(filePath, 'utf8');
+
       if (file === '__init__.py') {
         content = content.replace(setupMatches[file], `__version__ = "${newVersion}"`);
       } else {
