@@ -164,7 +164,7 @@ export const updateVersion = async ({projectPath, newVersion}) => {
         content = content.replace(setupMatches[file], `version = "${newVersion}"`);
       }
 
-      return fs.writeFile(projectPath, content);
+      return fs.writeFile(filePath, content);
     } catch (error) {
       logging.warning(`${file} not found or invalid in ${projectPath}; moving on...`, error);
     }
