@@ -120,8 +120,7 @@ export const updateVersion = async ({projectPath, newVersion}) => {
       },
     };
 
-    await fs.writeFile(pyprojectTomlPath, toml.stringify(pyproject));
-    return;
+    return fs.writeFile(pyprojectTomlPath, toml.stringify(pyproject));
   } catch (error) {
     logging.warning(`pyproject.toml not found or invalid in ${projectPath}; moving on...`, error);
   }
@@ -143,8 +142,7 @@ export const updateVersion = async ({projectPath, newVersion}) => {
       },
     };
 
-    await fs.writeFile(poetryTomlPath, toml.stringify(pyproject));
-    return;
+    return fs.writeFile(poetryTomlPath, toml.stringify(pyproject));
   } catch (error) {
     logging.warning(`poetry.toml not found or invalid in ${projectPath}; moving on...`, error);
   }
