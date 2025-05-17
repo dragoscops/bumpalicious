@@ -7,7 +7,7 @@ import fs from 'fs-extra';
 import path from 'path';
 import {execa} from 'execa';
 import * as logging from '../utils/logging.js';
-import {ZIG_VERSION_FILES} from './constants.js';
+import {DEFAULT_VERSION, ZIG_VERSION_FILES} from './constants.js';
 
 /**
  * @typedef {Object} ZigConfig
@@ -23,37 +23,64 @@ import {ZIG_VERSION_FILES} from './constants.js';
  * @returns {Promise<ZigConfig>} - Detected version
  */
 export const detect = async (projectPath) => {
-  const defaultName = path.basename(path.normalize(projectPath));
+  // Initialize with default values
+  const defaultName = path.basename(projectPath);
+  let buildName = null;
+  let buildVersion = null;
+  let zonName = null;
+  let zonVersion = null;
+  let buildExists = false;
+  let zonExists = false;
 
+  // Check build.zig file
+  const buildPath = path.join(projectPath, 'build.zig');
+  try {
+    await fs.access(buildPath);
+    buildExists = true;
+    const content = await fs.readFile(buildPath, 'utf8');
+    buildName = extractNameFromZigContent(content);
+    buildVersion = extractVersionFromZigContent(content);
+    logging.debug(`Found build.zig with name: ${buildName}, version: ${buildVersion}`);
+  } catch (error) {
+    logging.warning(`Unable to find or parse build.zig:`, error);
+  }
+
+  // Check build.zig.zon file
   const zonPath = path.join(projectPath, 'build.zig.zon');
-  if (await fs.pathExists(zonPath)) {
+  try {
+    await fs.access(zonPath);
+    zonExists = true;
     const content = await fs.readFile(zonPath, 'utf8');
     const zonData = parseZigZonFile(content);
-    return {
-      name: zonData?.name || defaultName,
-      version: zonData?.version || null,
-    };
+    zonName = zonData?.name;
+    zonVersion = zonData?.version;
+    logging.debug(`Found build.zig.zon with name: ${zonName}, version: ${zonVersion}`);
+  } catch (error) {
+    logging.warning(`Unable to find or parse build.zig.zon:`, error);
   }
 
-  const buildPath = path.join(projectPath, 'build.zig');
-  if (await fs.pathExists(buildPath)) {
-    const content = await fs.readFile(buildPath, 'utf8');
-    return {
-      name: extractNameFromZigContent(content) || defaultName,
-      version: extractVersionFromZigContent(content),
-    };
-  }
+  // Determine final values with explicit precedence rules
+  // For project name: prefer .zon name, then build.zig name, then directory name
+  // For version: prefer .zon version, then build.zig version, then default
+  const name = isValidString(zonName) ? zonName : isValidString(buildName) ? buildName : defaultName;
 
-  try {
-    const {stdout} = await execa('zig', ['version'], {cwd: projectPath});
-    if (stdout.trim()) {
-      return stdout.trim();
+  const version = isValidString(zonVersion) ? zonVersion : isValidString(buildVersion) ? buildVersion : DEFAULT_VERSION;
+
+  // Log useful debug info about which values were selected
+  if (buildExists || zonExists) {
+    logging.debug(`Selected Zig project name: ${name}, version: ${version}`);
+    if (buildExists && zonExists && buildName !== zonName) {
+      logging.warning(`Different names in build.zig (${buildName}) and build.zig.zon (${zonName})`);
     }
-  } catch {
-    // Ignore errors if zig command fails
+    if (buildExists && zonExists && buildVersion !== zonVersion) {
+      logging.warning(`Different versions in build.zig (${buildVersion}) and build.zig.zon (${zonVersion})`);
+    }
   }
 
-  logging.error(`No version file found in the Zig project at ${projectPath}`);
+  return {
+    name,
+    version,
+  };
 };
 
 /**
@@ -134,6 +161,16 @@ const parseZigZonFile = (content) => {
  * @param {string} options.newVersion - New version to set
  * @returns {Promise<boolean>} - True if the update was successful
  */
+/**
+ * Helper function to check if a string is valid (not null, undefined, or empty)
+ *
+ * @param {string|null|undefined} str - String to check
+ * @returns {boolean} - True if the string is valid
+ */
+const isValidString = (str) => {
+  return str !== null && str !== undefined && str !== '';
+};
+
 export const updateVersion = async ({projectPath, newVersion}) => {
   const patterns = [
     [/version\s*=\s*"([^"]+)"/, `version = "${newVersion}"`],
@@ -141,23 +178,66 @@ export const updateVersion = async ({projectPath, newVersion}) => {
     [/(const\s+VERSION\s*=\s*)"([^"]+)"/i, `$1"${newVersion}"`],
   ];
 
-  for (const configPath of ZIG_VERSION_FILES) {
-    const configFile = path.join(projectPath, configPath);
-    if (await fs.pathExists(configFile)) {
-      try {
-        const content = await fs.readFile(configFile, 'utf8');
+  let updateSuccessful = false;
+  const updatedFiles = [];
 
-        for (const [pattern, replacement] of patterns) {
-          if (pattern.test(content)) {
-            await fs.writeFile(filePath, content.replace(pattern, replacement), 'utf8');
-            return;
-          }
+  // Update build.zig.zon if it exists
+  const zonPath = path.join(projectPath, 'build.zig.zon');
+  if (await fs.pathExists(zonPath)) {
+    try {
+      const content = await fs.readFile(zonPath, 'utf8');
+      let updatedContent = content;
+
+      for (const [pattern, replacement] of patterns) {
+        if (pattern.test(content)) {
+          updatedContent = content.replace(pattern, replacement);
+          await fs.writeFile(zonPath, updatedContent, 'utf8');
+          updateSuccessful = true;
+          updatedFiles.push('build.zig.zon');
+          logging.debug(`Updated version in build.zig.zon to ${newVersion}`);
+          break;
         }
-      } catch (error) {
-        logging.error(`Failed to update Zig project version: ${error.message}`);
       }
+
+      if (content === updatedContent) {
+        logging.warning(`Could not find version pattern to update in build.zig.zon`);
+      }
+    } catch (error) {
+      logging.error(`Failed to update version in build.zig.zon: ${error.message}`);
     }
   }
 
-  logging.error(`No version file found in the Zig project at ${projectPath}`);
+  // Update build.zig if it exists
+  const buildPath = path.join(projectPath, 'build.zig');
+  if (await fs.pathExists(buildPath)) {
+    try {
+      const content = await fs.readFile(buildPath, 'utf8');
+      let updatedContent = content;
+
+      for (const [pattern, replacement] of patterns) {
+        if (pattern.test(content)) {
+          updatedContent = content.replace(pattern, replacement);
+          await fs.writeFile(buildPath, updatedContent, 'utf8');
+          updateSuccessful = true;
+          updatedFiles.push('build.zig');
+          logging.debug(`Updated version in build.zig to ${newVersion}`);
+          break;
+        }
+      }
+
+      if (content === updatedContent) {
+        logging.warning(`Could not find version pattern to update in build.zig`);
+      }
+    } catch (error) {
+      logging.error(`Failed to update version in build.zig: ${error.message}`);
+    }
+  }
+
+  if (updateSuccessful) {
+    logging.info(`Updated Zig project version to ${newVersion} in: ${updatedFiles.join(', ')}`);
+    return true;
+  } else {
+    logging.error(`No version file found or could not update version in the Zig project at ${projectPath}`);
+    return false;
+  }
 };
