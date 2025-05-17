@@ -164,7 +164,7 @@ async function updateVersionGoFiles(projectPath, newVersion) {
       if (content.match(/(const|var)\s+[vV]ersion\s*=\s*["']([^"']*)["']/m)) {
         const updatedContent = content.replace(
           /(const|var)\s+([vV]ersion\s*=\s*["'])([^"']*)["']/m,
-          `$1$2${newVersion}"`,
+          `$1 $2${newVersion}"`,
         );
 
         if (updatedContent !== content) {
