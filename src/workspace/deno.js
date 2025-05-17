@@ -28,22 +28,19 @@ export const detect = async (projectPath) => {
 
   for (const file of DENO_VERSION_FILES) {
     const configPath = path.join(projectPath, file);
-    const exists = await fs.pathExists(configPath);
-
-    if (exists) {
-      try {
-        const config = await (configPath.endsWith('jsonc')
-          ? fs.readFile(configPath).then(JSONC.parse)
-          : fs.readJson(configPath));
-        const details = {
-          name: config.name || defaultName,
-          version: config.version || DEFAULT_VERSION,
-        };
-        logging.info(`Detected workspace details ${projectPath} from ${file}:`, details);
-        return details;
-      } catch (error) {
-        logging.error(`Error parsing ${configPath} file:`, error);
-      }
+    try {
+      await fs.access(configPath);
+      const config = await (configPath.endsWith('jsonc')
+        ? fs.readFile(configPath).then(JSONC.parse)
+        : fs.readJson(configPath));
+      const details = {
+        name: config.name || defaultName,
+        version: config.version || DEFAULT_VERSION,
+      };
+      logging.info(`Detected workspace details ${projectPath} from ${file}:`, details);
+      return details;
+    } catch (error) {
+      logging.warning(`Failed to find or parsing ${configPath} file:`, error);
     }
   }
 
