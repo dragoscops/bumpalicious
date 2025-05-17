@@ -36,7 +36,7 @@ export const detect = async (projectPath) => {
     // Extract module name
     name = content.match(/module\s+([\w\d.\/\-@:]+)/m)?.[1];
     // Also check for version comment in go.mod
-    version = content.match(/\/\/\s*[vV]ersion:?\s*([\d.]+)/m)?.[1];
+    version = content.match(/\/\/\s*[vV]ersion:?\s*([0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9a-zA-Z.]+)*)/m)?.[1];
 
     if (!name) {
       logging.error(`No module name detected in go.mod at ${projectPath}`);
@@ -68,8 +68,6 @@ export const detect = async (projectPath) => {
       // func Version() string { return version }
     }
   }
-
-  logging.debug(`Detected version: ${version} from version.go`);
 
   if (!version) {
     const {version: txtVersion} = await text.detect(projectPath);
