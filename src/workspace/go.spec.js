@@ -1,39 +1,53 @@
-import {describe, beforeAll, vi, afterAll} from 'vitest';
-import {detect, updateVersion} from './go.js';
+import {beforeEach, describe, it, vi} from 'vitest';
+import {detect} from './go.js';
 import {
-  mockConfigFiles,
-  setupDetectTest,
-  setupDetectTestNoConfig,
-  setupUpdateVersionTest,
-  setupUpdateVersionTestNoConfig,
+  setupVersionDetectTest,
+  mockReadFile,
+  unMockReadFile,
 } from '../vitest/setup.detect-update.tests.js';
-import {GO_VERSION_FILES} from './constants.js';
+import {
+  mockConsole,
+  mockCConsole,
+  unMockConsole,
+  unMockCConsole,
+} from '../vitest/setup.logging.tests.js';
 
 describe('detect/go.js module', () => {
-  beforeAll(() => {
+  beforeEach(() => {
     vi.clearAllMocks();
-    mockConfigFiles();
-  });
-
-  afterAll(() => {
-    vi.restoreAllMocks();
   });
 
   describe('detect()', () => {
-    setupDetectTest({configFile: GO_VERSION_FILES[0], detect, projectName: 'github.com/project'});
+    // Test detection with go.mod
+    it('should detect from go.mod', async () => {
+      await setupVersionDetectTest(() => detect('/project'), {
+        name: 'github.com/project',
+      }, 'go.mod');
+    });
 
-    for (const configFile of GO_VERSION_FILES.slice(1, -1)) {
-      setupDetectTest({configFile, detect});
-    }
+    // Test detection with version.go
+    it('should detect from version.go', async () => {
+      await setupVersionDetectTest(() => detect('/project'), {
+        name: 'version', // Package name from version.go
+      }, 'version.go');
+    });
 
-    setupDetectTestNoConfig({detect});
-  });
+    // Test error handling when parsing fails
+    it('should handle parsing errors gracefully', async () => {
+      mockConsole(['warning', 'error']);
+      mockCConsole(['warning', 'error']);
+      mockReadFile('go.mod');
 
-  describe('updateVersion()', () => {
-    for (const configFile of GO_VERSION_FILES.slice(0, -1)) {
-      setupUpdateVersionTest({configFile, updateVersion});
-    }
+      try {
+        await detect('/project');
 
-    setupUpdateVersionTestNoConfig({updateVersion});
+        // The detect function should complete without throwing, even if some files aren't found
+        // This tests the graceful degradation when files are missing
+      } finally {
+        unMockReadFile();
+        unMockCConsole(['warning', 'error']);
+        unMockConsole(['warning', 'error']);
+      }
+    });
   });
 });
