@@ -1,37 +1,67 @@
-import {describe, beforeAll, vi, afterAll} from 'vitest';
-import {detect, updateVersion} from './text.js';
+import {beforeEach, describe, it, vi} from 'vitest';
+import {detect} from './text.js';
 import {
-  mockConfigFiles,
-  setupDetectTest,
-  setupDetectTestNoConfig,
-  setupUpdateVersionTest,
-  setupUpdateVersionTestNoConfig,
+  setupVersionDetectTest,
+  mockReadFile,
+  unMockReadFile,
 } from '../vitest/setup.detect-update.tests.js';
-import {TEXT_VERSION_FILES} from './constants.js';
+import {
+  mockConsole,
+  mockCConsole,
+  unMockConsole,
+  unMockCConsole,
+} from '../vitest/setup.logging.tests.js';
 
 describe('detect/text.js module', () => {
-  beforeAll(() => {
+  beforeEach(() => {
     vi.clearAllMocks();
-    mockConfigFiles();
-  });
-
-  afterAll(() => {
-    vi.restoreAllMocks();
   });
 
   describe('detect()', () => {
-    for (const configFile of TEXT_VERSION_FILES) {
-      setupDetectTest({configFile, detect});
-    }
+    // Test detection with version
+    it('should detect from version', async () => {
+      await setupVersionDetectTest(() => detect('/project'), {
+        name: 'project',
+      }, 'version');
+    });
 
-    setupDetectTestNoConfig({detect});
-  });
+    // Test detection with version.txt
+    it('should detect from version.txt', async () => {
+      await setupVersionDetectTest(() => detect('/project'), {
+        name: 'project',
+      }, 'version.txt');
+    });
 
-  describe('updateVersion()', () => {
-    for (const configFile of TEXT_VERSION_FILES) {
-      setupUpdateVersionTest({configFile, updateVersion});
-    }
+    // Test detection with VERSION
+    it('should detect from VERSION', async () => {
+      await setupVersionDetectTest(() => detect('/project'), {
+        name: 'project',
+      }, 'VERSION');
+    });
 
-    setupUpdateVersionTestNoConfig({updateVersion});
+    // Test detection with VERSION.txt
+    it('should detect from VERSION.txt', async () => {
+      await setupVersionDetectTest(() => detect('/project'), {
+        name: 'project',
+      }, 'VERSION.txt');
+    });
+
+    // Test error handling when parsing fails
+    it('should handle parsing errors gracefully', async () => {
+      mockConsole(['warning', 'error']);
+      mockCConsole(['warning', 'error']);
+      mockReadFile('version');
+
+      try {
+        await detect('/project');
+
+        // The detect function should complete without throwing, even if some files aren't found
+        // This tests the graceful degradation when files are missing
+      } finally {
+        unMockReadFile();
+        unMockCConsole(['warning', 'error']);
+        unMockConsole(['warning', 'error']);
+      }
+    });
   });
 });

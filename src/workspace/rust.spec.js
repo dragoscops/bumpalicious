@@ -1,37 +1,46 @@
-import {describe, beforeAll, vi, afterAll} from 'vitest';
-import {detect, updateVersion} from './rust.js';
+import {beforeEach, describe, it, vi} from 'vitest';
+import {detect} from './rust.js';
 import {
-  mockConfigFiles,
-  setupDetectTest,
-  setupDetectTestNoConfig,
-  setupUpdateVersionTest,
-  setupUpdateVersionTestNoConfig,
+  setupVersionDetectTest,
+  mockReadFile,
+  unMockReadFile,
 } from '../vitest/setup.detect-update.tests.js';
-import {RUST_VERSION_FILES} from './constants.js';
+import {
+  mockConsole,
+  mockCConsole,
+  unMockConsole,
+  unMockCConsole,
+} from '../vitest/setup.logging.tests.js';
 
 describe('detect/rust.js module', () => {
-  beforeAll(() => {
+  beforeEach(() => {
     vi.clearAllMocks();
-    mockConfigFiles();
-  });
-
-  afterAll(() => {
-    vi.restoreAllMocks();
   });
 
   describe('detect()', () => {
-    for (const configFile of RUST_VERSION_FILES) {
-      setupDetectTest({configFile, detect});
-    }
+    // Test detection with Cargo.toml
+    it('should detect from Cargo.toml', async () => {
+      await setupVersionDetectTest(() => detect('/project'), {
+        name: 'project',
+      }, 'Cargo.toml');
+    });
 
-    setupDetectTestNoConfig({detect});
-  });
+    // Test error handling when parsing fails
+    it('should handle parsing errors gracefully', async () => {
+      mockConsole(['warning', 'error']);
+      mockCConsole(['warning', 'error']);
+      mockReadFile('Cargo.toml');
 
-  describe('updateVersion()', () => {
-    for (const configFile of RUST_VERSION_FILES) {
-      setupUpdateVersionTest({configFile, updateVersion});
-    }
+      try {
+        await detect('/project');
 
-    setupUpdateVersionTestNoConfig({updateVersion});
+        // The detect function should complete without throwing, even if some files aren't found
+        // This tests the graceful degradation when files are missing
+      } finally {
+        unMockReadFile();
+        unMockCConsole(['warning', 'error']);
+        unMockConsole(['warning', 'error']);
+      }
+    });
   });
 });

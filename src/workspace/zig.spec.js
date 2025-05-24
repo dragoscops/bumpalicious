@@ -1,37 +1,53 @@
-import {describe, beforeAll, vi, afterAll} from 'vitest';
-import {detect, updateVersion} from './zig.js';
+import {beforeEach, describe, it, vi} from 'vitest';
+import {detect} from './zig.js';
 import {
-  mockConfigFiles,
-  setupDetectTest,
-  setupDetectTestNoConfig,
-  setupUpdateVersionTest,
-  setupUpdateVersionTestNoConfig,
+  setupVersionDetectTest,
+  mockReadFile,
+  unMockReadFile,
 } from '../vitest/setup.detect-update.tests.js';
-import {ZIG_VERSION_FILES} from './constants.js';
+import {
+  mockConsole,
+  mockCConsole,
+  unMockConsole,
+  unMockCConsole,
+} from '../vitest/setup.logging.tests.js';
 
 describe('detect/zig.js module', () => {
-  beforeAll(() => {
+  beforeEach(() => {
     vi.clearAllMocks();
-    mockConfigFiles();
-  });
-
-  afterAll(() => {
-    vi.restoreAllMocks();
   });
 
   describe('detect()', () => {
-    for (const configFile of ZIG_VERSION_FILES) {
-      setupDetectTest({configFile, detect});
-    }
+    // Test detection with build.zig
+    it('should detect from build.zig', async () => {
+      await setupVersionDetectTest(() => detect('/project'), {
+        name: 'project',
+      }, 'build.zig');
+    });
 
-    setupDetectTestNoConfig({detect});
-  });
+    // Test detection with build.zig.zon
+    it('should detect from build.zig.zon', async () => {
+      await setupVersionDetectTest(() => detect('/project'), {
+        name: 'project',
+      }, 'build.zig.zon');
+    });
 
-  describe('updateVersion()', () => {
-    for (const configFile of ZIG_VERSION_FILES) {
-      setupUpdateVersionTest({configFile, updateVersion});
-    }
+    // Test error handling when parsing fails
+    it('should handle parsing errors gracefully', async () => {
+      mockConsole(['warning', 'error']);
+      mockCConsole(['warning', 'error']);
+      mockReadFile('build.zig');
 
-    setupUpdateVersionTestNoConfig({updateVersion});
+      try {
+        await detect('/project');
+
+        // The detect function should complete without throwing, even if some files aren't found
+        // This tests the graceful degradation when files are missing
+      } finally {
+        unMockReadFile();
+        unMockCConsole(['warning', 'error']);
+        unMockConsole(['warning', 'error']);
+      }
+    });
   });
 });

@@ -3,16 +3,8 @@
  * @module detect/text
  */
 
-import fs from 'fs-extra';
 import path from 'path';
-import {TEXT_VERSION_FILES} from './constants.js';
-import * as logging from '../utils/logging.js';
-
-/**
- * @typedef {Object} TextConfig
- * @property {string} name - Project name
- * @property {string} version - Project version
- */
+import * as d from '../core/version/detect.js';
 
 /**
  * Detect version from a text-based project
@@ -21,43 +13,28 @@ import * as logging from '../utils/logging.js';
  * @param {string} projectPath - Project to read details from
  * @returns {Promise<TextConfig>} - Detected version
  */
-export const detect = async (projectPath) => {
-  for (const versionFile of TEXT_VERSION_FILES) {
-    const filePath = path.join(projectPath, versionFile);
+export const detect = async (projectPath) =>
+  d.anyOf(projectPath, 'text', [
+    d.configParser(path.join(projectPath, 'version'), {
+      parser: (data) => data.trim(), // pass through raw content and trim
+      version: [(content) => content],
+      name: [() => path.basename(path.normalize(projectPath))],
+    }),
+    d.configParser(path.join(projectPath, 'version.txt'), {
+      parser: (data) => data.trim(),
+      version: [(content) => content],
+      name: [() => path.basename(path.normalize(projectPath))],
+    }),
+    d.configParser(path.join(projectPath, 'VERSION'), {
+      parser: (data) => data.trim(),
+      version: [(content) => content],
+      name: [() => path.basename(path.normalize(projectPath))],
+    }),
+    d.configParser(path.join(projectPath, 'VERSION.txt'), {
+      parser: (data) => data.trim(),
+      version: [(content) => content],
+      name: [() => path.basename(path.normalize(projectPath))],
+    }),
+  ]);
 
-    if (await fs.pathExists(filePath)) {
-      const content = await fs.readFile(filePath, 'utf8');
-      return {
-        name: path.basename(path.normalize(projectPath)),
-        version: content.trim(),
-      };
-    }
-  }
 
-  logging.error(`No version file found in the project at ${projectPath}`);
-};
-
-/**
- * Update version in a text-based project
- * Looking for version or VERSION files
- *
- * @param {Object} options - Update options
- * @param {string} options.projectPath - Path to the project
- * @param {string} options.newVersion - New version to set
- */
-export const updateVersion = async ({projectPath, newVersion}) => {
-  for (const versionFile of TEXT_VERSION_FILES) {
-    const versionPath = path.join(projectPath, versionFile);
-    if (await fs.pathExists(versionPath)) {
-      try {
-        await fs.readFile(versionPath, 'utf8');
-        await fs.writeFile(versionPath, newVersion, 'utf8');
-        return;
-      } catch (error) {
-        logging.error(`Error updating ${versionFile}:`, error);
-      }
-    }
-  }
-
-  logging.error(`No version file found in the project at ${projectPath}`);
-};
