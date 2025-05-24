@@ -22,7 +22,7 @@ describe('detect.js', () => {
   describe('configParser', () => {
     // Test for deno.json
     it('should parse deno.json file correctly', async () => {
-      setupVersionDetectTest(
+      await setupVersionDetectTest(
         detect.configParser('deno.json', {
           parser: JSON.parse,
           version: ['version'],
@@ -34,7 +34,7 @@ describe('detect.js', () => {
     // Test for go.mod
     it('should parse go.mod file correctly with version comment', async () => {
       // Create custom parser for go.mod
-      setupVersionDetectTest(
+      await setupVersionDetectTest(
         detect.configParser('go.mod', {
           parser: (data) => data, // pass through raw content
           version: [/\/\/\s*[vV]ersion:?\s*([0-9]+\.[0-9]+\.[0-9]+)/m],
@@ -49,7 +49,7 @@ describe('detect.js', () => {
     // Test for Cargo.toml
     it('should parse Cargo.toml file correctly', async () => {
       // Create parser with custom parser function
-      setupVersionDetectTest(
+      await setupVersionDetectTest(
         detect.configParser('Cargo.toml', {
           parser: toml.parse,
           version: ['package.version'],
@@ -71,7 +71,7 @@ describe('detect.js', () => {
       };
 
       // Create parser with function extractors
-      setupVersionDetectTest(
+      await setupVersionDetectTest(
         detect.configParser('custom-parser.txt', {
           parser: (data) => data, // pass through raw content
           version: [customVersionExtractor],
@@ -86,7 +86,7 @@ describe('detect.js', () => {
 
     // Test with multiple extractors (string path and regex)
     it('should try multiple extractors in order', async () => {
-      setupVersionDetectTest(
+      await setupVersionDetectTest(
         detect.configParser('poetry.toml', {
           parser: toml.parse,
           version: ['project.version', 'tool.poetry.version'],
@@ -115,7 +115,7 @@ describe('detect.js', () => {
         name: ['name'],
       });
 
-      setupVersionDetectTest(() =>
+      await setupVersionDetectTest(() =>
         detect.anyOf('/project', 'deno', [denoJsoncParser, denoJsonParser, packageJsonParser]),
       );
     });
@@ -182,7 +182,7 @@ describe('detect.js', () => {
       });
 
       // Test the merge function
-      setupVersionDetectTest(() => detect.merge('/project', 'zig', [buildZigParser, buildZigZonParser]));
+      await setupVersionDetectTest(() => detect.merge('/project', 'zig', [buildZigParser, buildZigZonParser]));
     });
 
     it('should log an error when no parsers are provided', async () => {

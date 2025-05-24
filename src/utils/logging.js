@@ -1,5 +1,7 @@
 import core from '@actions/core';
 
+// TODO: refactor using stuff like core.warning = core.warning || console.warn
+
 /**
  * Logging utilities for consistent output formatting
  * @module utils/logging

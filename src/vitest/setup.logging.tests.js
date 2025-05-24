@@ -33,12 +33,21 @@ export const unMockConsole = (keys = []) => {
   });
 };
 
-export const setupLoggingCallsTest = (logFunction, expectedArgs) => {
+export const setupLoggingCallsTest = (logFunction, expectedArgs, nth = 0) => {
   if (!process.env.GITHUB_ACTIONS || process.env.GITHUB_ACTIONS === 'false') {
     expect(logging.cconsole[logFunction]).toHaveBeenCalled();
-    expect(logging.cconsole[logFunction]).toHaveBeenCalledWith(...expectedArgs);
+    if (nth === 0) {
+      expect(logging.cconsole[logFunction]).toHaveBeenCalledWith(...expectedArgs);
+    } else {
+      expect(logging.cconsole[logFunction]).toHaveBeenNthCalledWith(nth, ...expectedArgs);
+    }
   } else {
     expect(core[logFunction]).toHaveBeenCalled();
-    expect(core[logFunction]).toHaveBeenCalledWith(expectedArgs[1]);
+
+    if (nth === 0) {
+      expect(core[logFunction]).toHaveBeenCalledWith(expectedArgs[1]);
+    } else {
+      expect(core[logFunction]).toHaveBeenNthCalledWith(nth, expectedArgs[1]);
+    }
   }
 };

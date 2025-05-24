@@ -126,10 +126,16 @@ export function configParser(
       return {version: null, name: null}; // Return empty project info instead of null
     }
 
-    const parsedData = mapper.parser(data);
-
     let version = null;
     let name = null;
+    let parsedData = null;
+
+    try {
+      parsedData = mapper.parser(data);
+    } catch (e) {
+      logging.warning(`Failed to parse ${filePath} with provided parser:`, e);
+      return {version, name};
+    }
 
     try {
       // Extract version and name using helper functions

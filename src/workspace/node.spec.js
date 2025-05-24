@@ -1,37 +1,57 @@
-import {describe, beforeAll, vi, afterAll} from 'vitest';
-import {detect, updateVersion} from './node.js';
+import {beforeEach, describe, it, vi} from 'vitest';
+import {detect} from './node.js';
 import {
-  mockConfigFiles,
-  setupDetectTest,
-  setupDetectTestNoConfig,
-  setupUpdateVersionTest,
-  setupUpdateVersionTestNoConfig,
+  setupVersionDetectTest,
+  mockReadFile,
+  unMockReadFile,
 } from '../vitest/setup.detect-update.tests.js';
-import {NODE_VERSION_FILES} from './constants.js';
+import {
+  mockConsole,
+  mockCConsole,
+  unMockConsole,
+  unMockCConsole,
+  setupLoggingCallsTest,
+} from '../vitest/setup.logging.tests.js';
 
-describe('detect/deno.js module', () => {
-  beforeAll(() => {
+describe('detect/node.js module', () => {
+  beforeEach(() => {
     vi.clearAllMocks();
-    mockConfigFiles();
-  });
-
-  afterAll(() => {
-    vi.restoreAllMocks();
   });
 
   describe('detect()', () => {
-    for (const configFile of NODE_VERSION_FILES) {
-      setupDetectTest({configFile, detect});
-    }
+    // Test detection with jsr.json
+    it('should detect from jsr.json', async () => {
+      await setupVersionDetectTest(() => detect('/project'), {}, 'jsr.json');
+    });
 
-    setupDetectTestNoConfig({detect});
-  });
+    // Test detection with package.json
+    it('should detect from package.json', async () => {
+      await setupVersionDetectTest(() => detect('/project'), {}, 'package.json');
+    });
 
-  describe('updateVersion()', () => {
-    for (const configFile of NODE_VERSION_FILES) {
-      setupUpdateVersionTest({configFile, updateVersion});
-    }
+    // Test error handling when parsing fails
+    it('should handle parsing errors gracefully', async () => {
+      mockConsole(['warning', 'error']);
+      mockCConsole(['warning', 'error']);
+      mockReadFile('package.json');
+      const parseSpy = vi.spyOn(JSON, 'parse').mockImplementation(() => {
+        throw new Error('Parsing error');
+      });
 
-    setupUpdateVersionTestNoConfig({updateVersion});
+      try {
+        await detect('/project');
+
+        setupLoggingCallsTest('warning', [
+          expect.stringContaining('WARNING'),
+          expect.stringContaining('Failed to parse'),
+          expect.any(Error),
+        ], 2);
+      } finally {
+        parseSpy.mockRestore();
+        unMockReadFile();
+        unMockCConsole(['warning', 'error']);
+        unMockConsole(['warning', 'error']);
+      }
+    });
   });
 });

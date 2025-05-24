@@ -1,9 +1,7 @@
-import fs from 'fs-extra';
 import {TEXT_VERSION_FILES} from '../workspace/constants.js';
 import * as detect from '../core/version/detect.js';
+import * as logging from '../utils/logging.js';
 import {mockConsole, mockCConsole, unMockConsole, unMockCConsole} from './setup.logging.tests.js';
-
-// TODO: Move this content to setup.workspace.tests.js
 
 export const folder = 'test-project';
 export const projectNameValue = 'project'; // Renamed from name to projectName
@@ -11,14 +9,27 @@ export const oldVersion = '1.7.3';
 export const projectPath = '/test/project';
 export const newVersion = '2.0.0';
 
-export const mockReadFile = () => {
+export const mockReadFile = (file = null) => {
   vi.spyOn(detect.forMock, 'readFile').mockImplementation(async (path) => {
+    if (file) {
+      // If a specific file is provided, return its content
+      if (path.endsWith(file) || path === file) {
+        return Promise.resolve(configMocks[file]);
+      }
+      logging.warning(`Mocked readFile: File not found for path: ${path}`);
+      return Promise.resolve('');
+    }
+
     for (const [key, value] of Object.entries(configMocks)) {
       if (path.endsWith(key) || path === key) {
+        console.log('  → Found matching file:', key);
         return Promise.resolve(value);
       }
     }
-    return Promise.reject(new Error('File not found'));
+
+    logging.warning(`Mocked readFile: File not found for path: ${path}`);
+    console.log('  → No matching file found');
+    return Promise.resolve('');
   });
 };
 
@@ -32,8 +43,9 @@ export const setupVersionDetectTest = async (
     name: projectNameValue,
     version: oldVersion,
   },
+  testFile = null,
 ) => {
-  mockReadFile();
+  mockReadFile(testFile);
   mockConsole(['error']);
   mockCConsole(['error']);
   try {
@@ -105,7 +117,6 @@ const configMocks = {
     ` const NAME = "${projectNameValue}";`,
     ` const VERSION = "${oldVersion}";`,
     '',
-    ,
     '  const exe = b.addExecutable(.{',
     '    .name = NAME,',
     '    .root_source_file = .{ .path = "src/main.zig" },',
@@ -131,135 +142,3 @@ const configMocks = {
   ].join('\n'),
 };
 // console.log(configMocks)
-
-// export const mockConfigFiles = () => {
-//   fs.readJson.mockImplementation((path) => {
-//     for (const [key, value] of Object.entries(configMocks)) {
-//       if (path.endsWith(key)) {
-//         try {
-//           return Promise.resolve(JSON.parse(value));
-//         } catch {
-//           // Non-JSON files will return the raw content
-//           return Promise.resolve(value);
-//         }
-//       }
-//     }
-//     return Promise.reject(new Error('File not found'));
-//   });
-
-//   fs.readFile.mockImplementation((path) => {
-//     for (const [key, value] of Object.entries(configMocks)) {
-//       if (path.endsWith(key)) {
-//         return Promise.resolve(value);
-//       }
-//     }
-//     return Promise.reject(new Error('File not found'));
-//   });
-// };
-
-// /**
-//  * Set Up Tests for Detecting Version when Version Files Exist
-//  *
-//  * @param {Object} options - Update options
-//  * @param {string} options.detectVersion - Path to the project
-//  * @param {string|string[]} options.configFile - New version to set
-//  */
-// export const setupDetectTest = ({detect, configFile, projectName = projectNameValue}) => {
-//   describe(`when ${configFile} config file exists`, () => {
-//     it(`will call fs.read* with correct arguments and return a version`, async () => {
-//       fs.existingFile = configFile;
-
-//       const config = await detect(projectPath);
-
-//       if (configFile.endsWith('json')) {
-//         expect(fs.readJson).toHaveBeenCalledWith(`${projectPath}/${configFile}`);
-//       } else {
-//         expect(fs.readFile).toHaveBeenCalledWith(`${projectPath}/${configFile}`, 'utf8');
-//       }
-//       expect(config.name).toEqual(projectName);
-//       expect(config.version).toEqual(oldVersion);
-//     });
-//   });
-// };
-
-// export const setupDetectTestNoConfig = ({detect}) => {
-//   describe('when no config file exists', () => {
-//     it(`ends with error message`, async () => {
-//       fs.existingFile = 'unknown';
-
-//       try {
-//         mockCConsole(['error']);
-//         await detect(projectPath);
-//         setupLoggingCallsTest('error', [
-//           expect.stringContaining('ERROR'),
-//           expect.stringContaining('No version file found'),
-//         ]);
-//       } finally {
-//         unMockCConsole(['error']);
-//       }
-//     });
-//   });
-// };
-
-// export const setupUpdateVersionTest = ({configFile, updateVersion}) => {
-//   describe(`when ${configFile} config file exists`, () => {
-//     // Skip deno.jsonc which is tested separately
-//     it(`will call fs.read* and fs.write* with correct arguments`, async () => {
-//       fs.existingFile = configFile;
-//       mockCConsole(['error']);
-
-//       try {
-//         await updateVersion({projectPath, newVersion});
-
-//         if (configFile.endsWith('json')) {
-//           expect(fs.readJson).toHaveBeenCalledWith(`${projectPath}/${configFile}`);
-//           expect(fs.writeJson).toHaveBeenCalledWith(
-//             `${projectPath}/${configFile}`,
-//             expect.objectContaining({version: newVersion}),
-//             {spaces: 2},
-//           );
-//           return;
-//         }
-
-//         expect(fs.readFile).toHaveBeenCalledWith(`${projectPath}/${configFile}`, 'utf8');
-
-//         switch (true) {
-//           case /\.(toml|zig|zon)$/gi.testconfigFile:
-//             expect(fs.writeFile).toHaveBeenCalledWith(
-//               `${projectPath}/${configFile}`,
-//               expect.stringContaining(`version = "${newVersion}"`),
-//               'utf8',
-//             );
-//             break;
-//           case configFile.endsWith('jsonc'):
-//             expect(fs.writeFile).toHaveBeenCalledWith(
-//               `${projectPath}/${configFile}`,
-//               expect.stringContaining(`"version": "${newVersion}"`),
-//             );
-//             break;
-//         }
-//       } finally {
-//         unMockCConsole(['error']);
-//       }
-//     });
-//   });
-// };
-
-// export const setupUpdateVersionTestNoConfig = ({updateVersion}) => {
-//   describe('when no config file exists', () => {
-//     it(`ends with error message`, async () => {
-//       fs.existingFile = 'unknown';
-
-//       try {
-//         mockCConsole(['error']);
-//         await updateVersion({projectPath, newVersion});
-//         setupLoggingCallsTest('error', [
-//           expect.stringContaining('ERROR'),
-//           expect.stringContaining('No version file found'),
-//         ]);
-//       } finally {
-//         unMockCConsole(['error']);
-//       }
-//     });
-//   });
-// };

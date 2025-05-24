@@ -7,7 +7,7 @@ import fs from 'fs-extra';
 import path from 'path';
 import JSONC from 'tiny-jsonc';
 
-import * as d from '../../core/version/detect.js';
+import * as d from '../core/version/detect.js';
 
 /**
  * Detect version from a Deno project
@@ -16,30 +16,29 @@ import * as d from '../../core/version/detect.js';
  * @param {string} projectPath - Project to read details from
  * @returns {Promise<DenoConfig>} - Detected version
  */
-export const detect = async (projectPath) => {
-  return d.anyOf([
-    d.configParser(path.join(projectPath,'deno.jsonc'), {
+export const detect = async (projectPath) =>
+  d.anyOf(projectPath, 'deno', [
+    d.configParser(path.join(projectPath, 'deno.jsonc'), {
       parser: JSONC.parse,
       version: ['version'],
       name: ['name'],
     }),
-    d.configParser(path.join(projectPath,'deno.json'), {
+    d.configParser(path.join(projectPath, 'deno.json'), {
       parser: JSON.parse,
       version: ['version'],
       name: ['name'],
     }),
-    d.configParser(path.join(projectPath,'jsr.json'), {
+    d.configParser(path.join(projectPath, 'jsr.json'), {
       parser: JSON.parse,
       version: ['version'],
       name: ['name'],
     }),
-    d.configParser(path.join(projectPath,'package.json'), {
+    d.configParser(path.join(projectPath, 'package.json'), {
       parser: JSON.parse,
       version: ['version'],
       name: ['name'],
     }),
   ]);
-};
 
 /**
  * Update version in a Deno project
