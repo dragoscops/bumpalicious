@@ -7,14 +7,7 @@ import fs from 'fs-extra';
 import path from 'path';
 import JSONC from 'tiny-jsonc';
 
-import {DEFAULT_VERSION, DENO_VERSION_FILES} from './constants.js';
-import * as logging from '../utils/logging.js';
-
-/**
- * @typedef {Object} DenoConfig
- * @property {string} name - Project name
- * @property {string} version - Project version
- */
+import * as d from '../../core/version/detect.js';
 
 /**
  * Detect version from a Deno project
@@ -24,27 +17,28 @@ import * as logging from '../utils/logging.js';
  * @returns {Promise<DenoConfig>} - Detected version
  */
 export const detect = async (projectPath) => {
-  const defaultName = path.basename(path.normalize(projectPath));
-
-  for (const file of DENO_VERSION_FILES) {
-    const configPath = path.join(projectPath, file);
-    try {
-      await fs.access(configPath);
-      const config = await (configPath.endsWith('jsonc')
-        ? fs.readFile(configPath).then(JSONC.parse)
-        : fs.readJson(configPath));
-      const details = {
-        name: config.name || defaultName,
-        version: config.version || DEFAULT_VERSION,
-      };
-      logging.info(`Detected workspace details ${projectPath} from ${file}:`, details);
-      return details;
-    } catch (error) {
-      logging.warning(`Failed to find or parsing ${configPath} file:`, error);
-    }
-  }
-
-  logging.error(`No version file found in the Deno project at ${projectPath}`);
+  return d.anyOf([
+    d.configParser(path.join(projectPath,'deno.jsonc'), {
+      parser: JSONC.parse,
+      version: ['version'],
+      name: ['name'],
+    }),
+    d.configParser(path.join(projectPath,'deno.json'), {
+      parser: JSON.parse,
+      version: ['version'],
+      name: ['name'],
+    }),
+    d.configParser(path.join(projectPath,'jsr.json'), {
+      parser: JSON.parse,
+      version: ['version'],
+      name: ['name'],
+    }),
+    d.configParser(path.join(projectPath,'package.json'), {
+      parser: JSON.parse,
+      version: ['version'],
+      name: ['name'],
+    }),
+  ]);
 };
 
 /**

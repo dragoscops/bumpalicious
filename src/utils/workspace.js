@@ -19,10 +19,10 @@ import * as logging from './logging.js';
 export function stringToWorkspace(workspace) {
   const splited = workspace.split(':');
   return {
-    ...(splited.length > 1 ? { path: path.resolve(splited[0]) } : {}),
-    ...(splited.length > 1 ? { type: splited[1] } : {}),
-    ...(splited.length > 2 ? { name: splited[2] } : {}),
-    ...(splited.length > 3 ? { version: splited[3] } : {}),
+    ...(splited.length > 1 ? {path: path.resolve(splited[0])} : {}),
+    ...(splited.length > 1 ? {type: splited[1]} : {}),
+    ...(splited.length > 2 ? {name: splited[2]} : {}),
+    ...(splited.length > 3 ? {version: splited[3]} : {}),
   };
 }
 
@@ -96,16 +96,3 @@ export function buildUpdatedWorkspacesTrees(workspaces) {
   // Return array of root nodes - already sorted by the algorithm
   return rootNodes;
 }
-
-export async function parseJsonConfig(configPath, options = { versionPath: 'version', namePath: 'name' }) { }
-
-export async function parseTextConfig(configPath, options = { versionRegex: /.*/i, nameRegex: /.*/i }) {
-  try {
-    await fs.access(configPath);
-  } catch (e) {
-    logging.warning(`Failed to find or access ${configPath}:`, e);
-  }
-}
-
-export async function parseTomlConfig(configPath, options = { versionPath: 'version', namePath: 'name' }) { }
-
