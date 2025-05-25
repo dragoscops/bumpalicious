@@ -1,16 +1,7 @@
 import {beforeEach, describe, it, vi} from 'vitest';
 import {detect} from './rust.js';
-import {
-  setupVersionDetectTest,
-  mockReadFile,
-  unMockReadFile,
-} from '../vitest/setup.detect-update.tests.js';
-import {
-  mockConsole,
-  mockCConsole,
-  unMockConsole,
-  unMockCConsole,
-} from '../vitest/setup.logging.tests.js';
+import {setupVersionDetectTest, mockReadFile, unMockReadFile} from '../vitest/setup.detect-update.tests.js';
+import {mockConsole, mockCConsole, unMockConsole, unMockCConsole} from '../vitest/setup.logging.tests.js';
 
 describe('detect/rust.js module', () => {
   beforeEach(() => {
@@ -20,9 +11,13 @@ describe('detect/rust.js module', () => {
   describe('detect()', () => {
     // Test detection with Cargo.toml
     it('should detect from Cargo.toml', async () => {
-      await setupVersionDetectTest(() => detect('/project'), {
-        name: 'project',
-      }, 'Cargo.toml');
+      await setupVersionDetectTest(
+        () => detect('/project'),
+        {
+          name: 'project',
+        },
+        'Cargo.toml',
+      );
     });
 
     // Test error handling when parsing fails

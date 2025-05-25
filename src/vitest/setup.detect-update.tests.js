@@ -1,5 +1,6 @@
 import {TEXT_VERSION_FILES} from '../workspace/constants.js';
 import * as detect from '../core/version/detect.js';
+import * as update from '../core/version/update.js';
 import * as logging from '../utils/logging.js';
 import {mockConsole, mockCConsole, unMockConsole, unMockCConsole} from './setup.logging.tests.js';
 
@@ -22,19 +23,29 @@ export const mockReadFile = (file = null) => {
 
     for (const [key, value] of Object.entries(configMocks)) {
       if (path.endsWith(key) || path === key) {
-        console.log('  → Found matching file:', key);
         return Promise.resolve(value);
       }
     }
 
     logging.warning(`Mocked readFile: File not found for path: ${path}`);
-    console.log('  → No matching file found');
     return Promise.resolve('');
+  });
+};
+
+export const mockWriteFile = (shouldThrow = false) => {
+  vi.spyOn(update.forMock, 'writeFile').mockImplementation(async (path, _content) => {
+    if (shouldThrow) {
+      logging.error(`Mocked writeFile error for path: ${path}`);
+    }
   });
 };
 
 export const unMockReadFile = () => {
   detect.forMock.readFile.mockRestore();
+};
+
+export const unMockWriteFile = () => {
+  update.forMock.writeFile.mockRestore();
 };
 
 export const setupVersionDetectTest = async (
@@ -62,6 +73,26 @@ export const setupVersionDetectTest = async (
     unMockReadFile();
     unMockConsole(['error']);
     unMockCConsole(['error']);
+  }
+};
+
+export const setupVersionUpdateTest = async (updater, expectedResult = '') => {
+  // mockCConsole();
+  // mockConsole();
+  mockReadFile();
+  mockWriteFile();
+  try {
+    await updater(newVersion);
+
+    expect(update.forMock.writeFile).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.stringContaining(expectedResult),
+    );
+  } finally {
+    unMockWriteFile();
+    unMockReadFile();
+    // unMockConsole();
+    // unMockCConsole();
   }
 };
 

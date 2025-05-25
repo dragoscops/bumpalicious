@@ -1,16 +1,7 @@
 import {beforeEach, describe, it, vi} from 'vitest';
 import {detect} from './text.js';
-import {
-  setupVersionDetectTest,
-  mockReadFile,
-  unMockReadFile,
-} from '../vitest/setup.detect-update.tests.js';
-import {
-  mockConsole,
-  mockCConsole,
-  unMockConsole,
-  unMockCConsole,
-} from '../vitest/setup.logging.tests.js';
+import {setupVersionDetectTest, mockReadFile, unMockReadFile} from '../vitest/setup.detect-update.tests.js';
+import {mockConsole, mockCConsole, unMockConsole, unMockCConsole} from '../vitest/setup.logging.tests.js';
 
 describe('detect/text.js module', () => {
   beforeEach(() => {
@@ -20,30 +11,46 @@ describe('detect/text.js module', () => {
   describe('detect()', () => {
     // Test detection with version
     it('should detect from version', async () => {
-      await setupVersionDetectTest(() => detect('/project'), {
-        name: 'project',
-      }, 'version');
+      await setupVersionDetectTest(
+        () => detect('/project'),
+        {
+          name: 'project',
+        },
+        'version',
+      );
     });
 
     // Test detection with version.txt
     it('should detect from version.txt', async () => {
-      await setupVersionDetectTest(() => detect('/project'), {
-        name: 'project',
-      }, 'version.txt');
+      await setupVersionDetectTest(
+        () => detect('/project'),
+        {
+          name: 'project',
+        },
+        'version.txt',
+      );
     });
 
     // Test detection with VERSION
     it('should detect from VERSION', async () => {
-      await setupVersionDetectTest(() => detect('/project'), {
-        name: 'project',
-      }, 'VERSION');
+      await setupVersionDetectTest(
+        () => detect('/project'),
+        {
+          name: 'project',
+        },
+        'VERSION',
+      );
     });
 
     // Test detection with VERSION.txt
     it('should detect from VERSION.txt', async () => {
-      await setupVersionDetectTest(() => detect('/project'), {
-        name: 'project',
-      }, 'VERSION.txt');
+      await setupVersionDetectTest(
+        () => detect('/project'),
+        {
+          name: 'project',
+        },
+        'VERSION.txt',
+      );
     });
 
     // Test error handling when parsing fails

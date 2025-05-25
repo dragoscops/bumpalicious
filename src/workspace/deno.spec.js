@@ -53,11 +53,11 @@ describe('detect/deno.js module', () => {
       try {
         await detect('/project');
 
-        setupLoggingCallsTest('warning', [
-          expect.stringContaining('WARNING'),
-          expect.stringContaining('Failed to parse'),
-          expect.any(Error),
-        ], 2);
+        setupLoggingCallsTest(
+          'warning',
+          [expect.stringContaining('WARNING'), expect.stringContaining('Failed to parse'), expect.any(Error)],
+          2,
+        );
       } finally {
         parseSpy.mockRestore();
         unMockReadFile();

@@ -22,4 +22,3 @@ export const detect = async (projectPath) =>
       name: ['package.name'],
     }),
   ]);
-

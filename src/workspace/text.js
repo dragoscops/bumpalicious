@@ -36,5 +36,3 @@ export const detect = async (projectPath) =>
       name: [() => path.basename(path.normalize(projectPath))],
     }),
   ]);
-
-

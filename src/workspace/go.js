@@ -23,12 +23,12 @@ export const detect = async (projectPath) =>
     d.configParser(path.join(projectPath, 'version.go'), {
       parser: (data) => data, // pass through raw content
       version: [/(?:const|var)\s+[vV]ersion\s*=\s*"([^"]*)"/m],
-      name: [(content) => {
-        // Extract package name or use a default approach
-        const packageMatch = content.match(/package\s+(\w+)/m);
-        return packageMatch ? packageMatch[1] : null;
-      }],
+      name: [
+        (content) => {
+          // Extract package name or use a default approach
+          const packageMatch = content.match(/package\s+(\w+)/m);
+          return packageMatch ? packageMatch[1] : null;
+        },
+      ],
     }),
   ]);
-
-

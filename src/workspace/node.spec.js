@@ -1,10 +1,6 @@
 import {beforeEach, describe, it, vi} from 'vitest';
 import {detect} from './node.js';
-import {
-  setupVersionDetectTest,
-  mockReadFile,
-  unMockReadFile,
-} from '../vitest/setup.detect-update.tests.js';
+import {setupVersionDetectTest, mockReadFile, unMockReadFile} from '../vitest/setup.detect-update.tests.js';
 import {
   mockConsole,
   mockCConsole,
@@ -41,11 +37,11 @@ describe('detect/node.js module', () => {
       try {
         await detect('/project');
 
-        setupLoggingCallsTest('warning', [
-          expect.stringContaining('WARNING'),
-          expect.stringContaining('Failed to parse'),
-          expect.any(Error),
-        ], 2);
+        setupLoggingCallsTest(
+          'warning',
+          [expect.stringContaining('WARNING'), expect.stringContaining('Failed to parse'), expect.any(Error)],
+          2,
+        );
       } finally {
         parseSpy.mockRestore();
         unMockReadFile();

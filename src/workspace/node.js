@@ -26,5 +26,3 @@ export const detect = async (projectPath) =>
       name: ['name'],
     }),
   ]);
-
-

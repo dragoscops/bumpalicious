@@ -1,16 +1,7 @@
 import {beforeEach, describe, it, vi} from 'vitest';
 import {detect} from './zig.js';
-import {
-  setupVersionDetectTest,
-  mockReadFile,
-  unMockReadFile,
-} from '../vitest/setup.detect-update.tests.js';
-import {
-  mockConsole,
-  mockCConsole,
-  unMockConsole,
-  unMockCConsole,
-} from '../vitest/setup.logging.tests.js';
+import {setupVersionDetectTest, mockReadFile, unMockReadFile} from '../vitest/setup.detect-update.tests.js';
+import {mockConsole, mockCConsole, unMockConsole, unMockCConsole} from '../vitest/setup.logging.tests.js';
 
 describe('detect/zig.js module', () => {
   beforeEach(() => {
@@ -20,16 +11,24 @@ describe('detect/zig.js module', () => {
   describe('detect()', () => {
     // Test detection with build.zig
     it('should detect from build.zig', async () => {
-      await setupVersionDetectTest(() => detect('/project'), {
-        name: 'project',
-      }, 'build.zig');
+      await setupVersionDetectTest(
+        () => detect('/project'),
+        {
+          name: 'project',
+        },
+        'build.zig',
+      );
     });
 
     // Test detection with build.zig.zon
     it('should detect from build.zig.zon', async () => {
-      await setupVersionDetectTest(() => detect('/project'), {
-        name: 'project',
-      }, 'build.zig.zon');
+      await setupVersionDetectTest(
+        () => detect('/project'),
+        {
+          name: 'project',
+        },
+        'build.zig.zon',
+      );
     });
 
     // Test error handling when parsing fails

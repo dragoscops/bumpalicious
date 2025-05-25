@@ -1,16 +1,7 @@
 import {beforeEach, describe, it, vi} from 'vitest';
 import {detect} from './go.js';
-import {
-  setupVersionDetectTest,
-  mockReadFile,
-  unMockReadFile,
-} from '../vitest/setup.detect-update.tests.js';
-import {
-  mockConsole,
-  mockCConsole,
-  unMockConsole,
-  unMockCConsole,
-} from '../vitest/setup.logging.tests.js';
+import {setupVersionDetectTest, mockReadFile, unMockReadFile} from '../vitest/setup.detect-update.tests.js';
+import {mockConsole, mockCConsole, unMockConsole, unMockCConsole} from '../vitest/setup.logging.tests.js';
 
 describe('detect/go.js module', () => {
   beforeEach(() => {
@@ -20,16 +11,24 @@ describe('detect/go.js module', () => {
   describe('detect()', () => {
     // Test detection with go.mod
     it('should detect from go.mod', async () => {
-      await setupVersionDetectTest(() => detect('/project'), {
-        name: 'github.com/project',
-      }, 'go.mod');
+      await setupVersionDetectTest(
+        () => detect('/project'),
+        {
+          name: 'github.com/project',
+        },
+        'go.mod',
+      );
     });
 
     // Test detection with version.go
     it('should detect from version.go', async () => {
-      await setupVersionDetectTest(() => detect('/project'), {
-        name: 'version', // Package name from version.go
-      }, 'version.go');
+      await setupVersionDetectTest(
+        () => detect('/project'),
+        {
+          name: 'version', // Package name from version.go
+        },
+        'version.go',
+      );
     });
 
     // Test error handling when parsing fails

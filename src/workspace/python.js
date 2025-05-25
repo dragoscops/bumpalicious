@@ -42,5 +42,3 @@ export const detect = async (projectPath) =>
       name: [/__name__\s*=\s*["']([^"']+)["']/m],
     }),
   ]);
-
-
