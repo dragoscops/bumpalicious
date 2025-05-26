@@ -1,6 +1,12 @@
 import {beforeEach, describe, it, vi} from 'vitest';
-import {detect} from './node.js';
-import {setupVersionDetectTest, mockReadFile, unMockReadFile} from '../vitest/setup.detect-update.tests.js';
+import {detect, update} from './node.js';
+import {
+  setupVersionDetectTest,
+  mockReadFile,
+  unMockReadFile,
+  newVersion,
+  setupVersionUpdateTest,
+} from '../vitest/setup.detect-update.tests.js';
 import {
   mockConsole,
   mockCConsole,
@@ -48,6 +54,16 @@ describe('detect/node.js module', () => {
         unMockCConsole(['warning', 'error']);
         unMockConsole(['warning', 'error']);
       }
+    });
+  });
+
+  describe('update()', () => {
+    it('should update version in jsr.json when only jsr.json exists', async () => {
+      await setupVersionUpdateTest(() => update('/project', newVersion), `"version": "${newVersion}"`, 'jsr.json');
+    });
+
+    it('should update version in package.json when only package.json exists', async () => {
+      await setupVersionUpdateTest(() => update('/project', newVersion), `"version": "${newVersion}"`, 'package.json');
     });
   });
 });

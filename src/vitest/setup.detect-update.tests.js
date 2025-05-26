@@ -34,6 +34,7 @@ export const mockReadFile = (file = null) => {
 
 export const mockWriteFile = (shouldThrow = false) => {
   vi.spyOn(update.forMock, 'writeFile').mockImplementation(async (path, _content) => {
+    console.log(`writeFile ${path} ${_content}`);
     if (shouldThrow) {
       logging.error(`Mocked writeFile error for path: ${path}`);
     }
@@ -84,15 +85,24 @@ export const setupVersionUpdateTest = async (updater, expectedResult = '') => {
   try {
     await updater(newVersion);
 
-    expect(update.forMock.writeFile).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.stringContaining(expectedResult),
-    );
+    if (typeof expectedResult === 'string') {
+      expect(update.forMock.writeFile).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.stringContaining(expectedResult),
+      );
+    } else {
+      for (const index in expectedResult) {
+        expect(update.forMock.writeFile).toHaveBeenCalledWith(
+          expect.any(String),
+          expect.stringContaining(expectedResult[index]),
+        );
+      }
+    }
   } finally {
     unMockWriteFile();
     unMockReadFile();
-    // unMockConsole();
-    // unMockCConsole();
+    unMockConsole();
+    unMockCConsole();
   }
 };
 
@@ -117,7 +127,7 @@ const configMocks = {
     name: projectNameValue,
     version: oldVersion,
   }),
-  'go.mod': [`module github.com/${projectNameValue}`, `go 1.16`, `// version: ${oldVersion}`].join('\n'),
+  'go.mod': [`module github.com/${projectNameValue}`, `go 1.16`, `// Version: ${oldVersion}`].join('\n'),
   'version.go': [
     'package version',
     `const Version = "${oldVersion}"`,

@@ -4,11 +4,6 @@
 export const DEFAULT_VERSION = '0.0.1';
 
 /**
- * List of potential version file names to check
- */
-export const DENO_VERSION_FILES = ['deno.jsonc', 'deno.json', 'jsr.json', 'package.json'];
-
-/**
  * List of potential Go version files to check
  */
 export const GO_VERSION_FILES = ['go.mod', '**/version.go'];
@@ -16,7 +11,7 @@ export const GO_VERSION_FILES = ['go.mod', '**/version.go'];
 /**
  * List of potential Node.js version files to check
  */
-export const NODE_VERSION_FILES = DENO_VERSION_FILES.slice(2);
+export const NODE_VERSION_FILES = ['jsr.json', 'package.json'];
 
 /**
  * List of potential Python version files to check
@@ -29,7 +24,7 @@ export const PYTHON_VERSION_FILES = ['pyproject.toml', 'setup.py', 'setup.cfg', 
 export const RUST_VERSION_FILES = ['Cargo.toml'];
 
 /**
- * List of potential Rust version files to check
+ * List of potential Text version files to check
  */
 export const TEXT_VERSION_FILES = ['version', 'version.txt', 'VERSION', 'VERSION.txt'];
 

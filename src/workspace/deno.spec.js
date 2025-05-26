@@ -1,11 +1,13 @@
 import {beforeEach, describe, it, vi} from 'vitest';
-import {detect} from './deno.js';
+import {detect, update} from './deno.js';
 import {
-  mockConfigFiles,
   setupVersionDetectTest,
-  projectNameValue,
   mockReadFile,
   unMockReadFile,
+  newVersion,
+  setupVersionUpdateTest,
+  mockWriteFile,
+  unMockWriteFile,
 } from '../vitest/setup.detect-update.tests.js';
 import {
   mockConsole,
@@ -63,6 +65,49 @@ describe('detect/deno.js module', () => {
         unMockReadFile();
         unMockCConsole(['warning', 'error']);
         unMockConsole(['warning', 'error']);
+      }
+    });
+  });
+
+  describe('update()', () => {
+    it('should update version in deno.jsonc when only deno.jsonc exists', async () => {
+      await setupVersionUpdateTest(() => update('/project', newVersion), `"version": "${newVersion}"`, 'deno.jsonc');
+    });
+
+    it('should update version in deno.json when only deno.json exists', async () => {
+      await setupVersionUpdateTest(() => update('/project', newVersion), `"version": "${newVersion}"`, 'deno.json');
+    });
+
+    it('should update version in jsr.json when only jsr.json exists', async () => {
+      await setupVersionUpdateTest(() => update('/project', newVersion), `"version": "${newVersion}"`, 'jsr.json');
+    });
+
+    it('should update version in package.json when only package.json exists', async () => {
+      await setupVersionUpdateTest(() => update('/project', newVersion), `"version": "${newVersion}"`, 'package.json');
+    });
+
+    // TODO: must find a way to test this
+    it.skip('should update all deno config files when multiple exist', async () => {
+      // Test that all deno files are updated when they exist
+      mockReadFile(); // This will make all config files available
+      mockWriteFile();
+
+      try {
+        await update('/project', newVersion);
+
+        // Verify all files were written to with the new version
+        const expectedFiles = ['deno.jsonc', 'jsr.json', 'package.json'];
+        expect(mockWriteFile).toHaveBeenCalledTimes(expectedFiles.length);
+
+        expectedFiles.forEach((file) => {
+          expect(mockWriteFile).toHaveBeenCalledWith(
+            expect.stringContaining(file),
+            expect.stringContaining(`"version": "${newVersion}"`),
+          );
+        });
+      } finally {
+        unMockWriteFile();
+        unMockReadFile();
       }
     });
   });

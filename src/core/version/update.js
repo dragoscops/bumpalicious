@@ -16,7 +16,7 @@ export const forMock = {
       logging.error(`Failed to write ${filePath}:`, error);
     }
   },
-  readFile: detect.forMock.readFile,
+  readFile: async (...args) => detect.forMock.readFile(...args),
 };
 
 /**
@@ -29,7 +29,6 @@ export const forMock = {
  * @property {function(string): any} parser - Function to parse file content
  * @property {function(any): string} serializer - Function to serialize data back to string
  * @property {ValueUpdater[]} version - Array of regex patterns or functions to update version
- * @property {ValueUpdater[]} [name] - Array of regex patterns or functions to update name (optional)
  */
 
 /**
@@ -40,7 +39,7 @@ export const forMock = {
  */
 
 /**
- * @typedef {function(string): Promise<UpdateResult>} FileUpdater
+ * @typedef {function(string): Promise<void>} FileUpdater
  */
 
 /**
@@ -56,7 +55,6 @@ export function configUpdater(
     parser: JSON.parse,
     serializer: (data) => JSON.stringify(data, null, 2),
     version: [],
-    name: [],
   },
 ) {
   /**
@@ -148,16 +146,12 @@ export function configUpdater(
    * The updater function that processes a file and updates the version
    *
    * @param {string} newVersion - New version to set
-   * @returns {Promise<UpdateResult>} - Update result
    */
   return async (newVersion) => {
     const data = await forMock.readFile(filePath);
     if (!data) {
-      return {
-        success: false,
-        filePath,
-        error: 'File not found or could not be read',
-      };
+      logging.error(`File not found or could not be read: ${filePath}`);
+      return;
     }
 
     let parsedData = null;
@@ -166,8 +160,8 @@ export function configUpdater(
     try {
       parsedData = mapper.parser(data);
     } catch (e) {
-      logging.warning(`Failed to parse ${filePath} with provided parser:`, e);
-      // Continue with raw data for regex-based updates
+      logging.error(`Failed to parse ${filePath} with provided parser:`, e);
+      return;
     }
 
     try {
@@ -181,34 +175,13 @@ export function configUpdater(
           newData = mapper.serializer(versionResult.newParsedData);
         }
 
-        const writeSuccess = await forMock.writeFile(filePath, newData);
-        if (writeSuccess) {
-          logging.info(`Updated version to ${newVersion} in ${filePath}`);
-          return {
-            success: true,
-            filePath,
-          };
-        } else {
-          return {
-            success: false,
-            filePath,
-            error: 'Failed to write updated content to file',
-          };
-        }
+        await forMock.writeFile(filePath, newData);
+        logging.info(`Updated version to ${newVersion} in ${filePath}`);
       } else {
-        return {
-          success: false,
-          filePath,
-          error: 'No matching version pattern found to update',
-        };
+        logging.error(`No matching version pattern found to update in ${filePath}`);
       }
     } catch (error) {
       logging.error(`Failed to update ${filePath}:`, error);
-      return {
-        success: false,
-        filePath,
-        error: error.message,
-      };
     }
   };
 }
@@ -220,34 +193,25 @@ export function configUpdater(
  * @param {string} projectType - Type of the project (e.g., "deno", "rust")
  * @param {string} newVersion - New version to set
  * @param {FileUpdater[]} updaters - Array of updater functions
- * @returns {Promise<UpdateResult[]>} - Array of update results
+ * @returns {Promise<void>}
  */
 export async function updateAll(folderPath, projectType, newVersion, updaters = []) {
   if (updaters.length === 0) {
     logging.error(`No updaters provided to updateAll for ${projectType} project in ${folderPath}`);
-    return [];
+    return;
   }
 
-  const results = [];
-  let successCount = 0;
-
+  let count = 0;
   for (const updater of updaters) {
-    const result = await updater(newVersion);
-    results.push(result);
-    if (result.success) {
-      successCount++;
-    }
+    await updater(newVersion);
+    count ++;
   }
 
-  if (successCount > 0) {
-    logging.info(
-      `Updated version to ${newVersion} in ${successCount}/${results.length} files for ${projectType} project`,
-    );
-  } else {
-    logging.error(`Failed to update version in any files for ${projectType} project in ${folderPath}`);
+  if (count === 0) {
+    logging.error(`No files updated for ${projectType} project in ${folderPath}`);
   }
 
-  return results;
+  logging.info(`Attempted to update version to ${newVersion} in ${updaters.length} files for ${projectType} project`);
 }
 
 /**
@@ -257,22 +221,14 @@ export async function updateAll(folderPath, projectType, newVersion, updaters = 
  * @param {string} projectType - Type of the project (e.g., "deno", "rust")
  * @param {string} newVersion - New version to set
  * @param {FileUpdater[]} updaters - Array of updater functions
- * @returns {Promise<UpdateResult|null>} - Update result or null if no files were updated
+ * @returns {Promise<void>}
  */
 export async function updateFirst(folderPath, projectType, newVersion, updaters = []) {
   if (updaters.length === 0) {
     logging.error(`No updaters provided to updateFirst for ${projectType} project in ${folderPath}`);
-    return null;
+    return;
   }
 
-  for (const updater of updaters) {
-    const result = await updater(newVersion);
-    if (result.success) {
-      logging.info(`Updated version to ${newVersion} for ${projectType} project in ${result.filePath}`);
-      return result;
-    }
-  }
-
-  logging.error(`Failed to update version for ${projectType} project in ${folderPath}`);
-  return null;
+  await updaters[0](newVersion);
+  logging.info(`Attempted to update version to ${newVersion} for ${projectType} project`);
 }

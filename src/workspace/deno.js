@@ -3,11 +3,11 @@
  * @module detect/deno
  */
 
-import fs from 'fs-extra';
 import path from 'path';
 import JSONC from 'tiny-jsonc';
 
 import * as d from '../core/version/detect.js';
+import * as u from '../core/version/update.js';
 
 /**
  * Detect version from a Deno project
@@ -23,59 +23,36 @@ export const detect = async (projectPath) =>
       version: ['version'],
       name: ['name'],
     }),
-    d.configParser(path.join(projectPath, 'deno.json'), {
-      parser: JSON.parse,
-      version: ['version'],
-      name: ['name'],
-    }),
-    d.configParser(path.join(projectPath, 'jsr.json'), {
-      parser: JSON.parse,
-      version: ['version'],
-      name: ['name'],
-    }),
-    d.configParser(path.join(projectPath, 'package.json'), {
-      parser: JSON.parse,
-      version: ['version'],
-      name: ['name'],
-    }),
+    ...['deno.json', 'jsr.json', 'package.json'].map((file) =>
+      d.configParser(path.join(projectPath, file), {
+        parser: JSON.parse,
+        version: ['version'],
+        name: ['name'],
+      }),
+    ),
   ]);
 
 /**
  * Update version in a Deno project
- * Looking for deno.json, deno.jsonc, jsr.json, or package.json files
+ * Looking for deno.jsonc, deno.json, jsr.json, or package.json files
+ * Updates all files found since Deno projects may publish to multiple repositories
  *
- * @param {Object} options - Update options
- * @param {string} options.projectPath - Path to the project
- * @param {string} options.newVersion - New version to set
+ * @param {string} projectPath - Path to the project
+ * @param {string} newVersion - New version to set
+ * @returns {Promise<void>}
  */
-export const updateVersion = async ({projectPath, newVersion}) => {
-  for (const file of DENO_VERSION_FILES) {
-    const configPath = path.join(projectPath, file);
-    const exists = await fs.pathExists(configPath);
-
-    if (exists) {
-      try {
-        let config = await (configPath.endsWith('jsonc')
-          ? fs.readFile(configPath).then(JSONC.parse)
-          : fs.readJson(configPath));
-
-        if (configPath.endsWith('jsonc')) {
-          if (!config.version) {
-            return fs.writeJson(configPath, {version: newVersion}, {spaces: 2});
-          }
-
-          config = await fs.readFile(configPath, 'utf8');
-          config = config.replace(/"version"\s*:\s*"[^"]*"/g, `"version": "${newVersion}"`);
-          return fs.writeFile(configPath, config);
-        }
-
-        config.version = newVersion;
-        return fs.writeJson(configPath, config, {spaces: 2});
-      } catch (error) {
-        logging.error(`Failed to update Deno project version: ${error.message}`, error);
-      }
-    }
-  }
-
-  logging.error(`No version file found in the Deno project at ${projectPath}`);
-};
+export const update = async (projectPath, newVersion) =>
+  u.updateAll(projectPath, 'deno', newVersion, [
+    u.configUpdater(path.join(projectPath, 'deno.jsonc'), {
+      parser: JSONC.parse,
+      serializer: (data) => JSON.stringify(data, null, 2),
+      version: ['version'],
+    }),
+    ...['deno.json', 'jsr.json', 'package.json'].map((file) =>
+      u.configUpdater(path.join(projectPath, file), {
+        parser: JSON.parse,
+        serializer: (data) => JSON.stringify(data, null, 2),
+        version: ['version'],
+      }),
+    ),
+  ]);

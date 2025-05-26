@@ -1,8 +1,21 @@
 import {describe, it, expect, beforeEach, vi} from 'vitest';
-import {configUpdater, updateAll, updateFirst} from './update.js';;
-import {newVersion, setupVersionUpdateTest} from '../../vitest/setup.detect-update.tests.js';
-
-
+import * as update from './update.js';
+import {
+  mockReadFile,
+  mockWriteFile,
+  newVersion,
+  setupVersionDetectTest,
+  setupVersionUpdateTest,
+  unMockReadFile,
+  unMockWriteFile,
+} from '../../vitest/setup.detect-update.tests.js';
+import {
+  mockCConsole,
+  mockConsole,
+  setupLoggingCallsTest,
+  unMockCConsole,
+  unMockConsole,
+} from '../../vitest/setup.logging.tests.js';
 
 describe('update.js module', () => {
   beforeEach(() => {
@@ -12,7 +25,7 @@ describe('update.js module', () => {
   describe('configUpdater', () => {
     it('should create an updater function for JSON files', async () => {
       setupVersionUpdateTest(
-        configUpdater('package.json', {
+        update.configUpdater('package.json', {
           parser: JSON.parse,
           serializer: (data) => JSON.stringify(data, null, 2),
           version: ['version'],
@@ -21,90 +34,123 @@ describe('update.js module', () => {
       );
     });
 
-    // it('should create an updater function for regex-based updates', async () => {
-    //   const mockWriteFile = vi.fn().mockResolvedValue(true);
-    //   const mockReadFile = vi.fn().mockResolvedValue('const VERSION = "1.0.0";');
+    it('should create an updater function for regex-based updates', async () => {
+      setupVersionUpdateTest(
+        update.configUpdater('go.mod', {
+          parser: (data) => data, // pass through
+          serializer: (data) => data,
+          version: [[/\/\/\s*[vV]ersion:?\s*(\d+\.\d+\.\d+(?:[-+][\da-zA-Z.]+)*)/m, '// version: $VERSION']],
+        }),
+        `// version: ${newVersion}`,
+      );
+    });
 
-    //   const originalForMock = await import('./update.js').then((m) => m.forMock);
-    //   vi.spyOn(originalForMock, 'writeFile').mockImplementation(mockWriteFile);
-    //   vi.spyOn(originalForMock, 'readFile').mockImplementation(mockReadFile);
+    it('should create an updater function', async () => {
+      setupVersionUpdateTest(
+        update.configUpdater('version', {
+          parser: (data) => data, // pass through
+          serializer: (data) => data,
+          version: (data) => newVersion,
+        }),
+        newVersion,
+      );
+    });
 
-    //   const updater = configUpdater('/project/version.js', {
-    //     parser: (data) => data, // pass through
-    //     serializer: (data) => data,
-    //     version: [[/const VERSION = "([^"]+)";/, 'const VERSION = "$VERSION";']],
-    //   });
+    it('should handle file read errors gracefully', async () => {
+      mockReadFile();
+      mockCConsole();
+      mockConsole();
 
-    //   const result = await updater('2.0.0');
+      try {
+        await update.configUpdater('missing.json')(newVersion);
 
-    //   expect(result.success).toBe(true);
-    //   expect(mockWriteFile).toHaveBeenCalledWith('/project/version.js', 'const VERSION = "2.0.0";');
-    // });
-
-    // it('should handle file read errors gracefully', async () => {
-    //   const mockReadFile = vi.fn().mockResolvedValue(null);
-
-    //   const originalForMock = await import('./update.js').then((m) => m.forMock);
-    //   vi.spyOn(originalForMock, 'readFile').mockImplementation(mockReadFile);
-
-    //   const updater = configUpdater('/project/missing.json');
-    //   const result = await updater('2.0.0');
-
-    //   expect(result.success).toBe(false);
-    //   expect(result.error).toBe('File not found or could not be read');
-    // });
+        setupLoggingCallsTest('error', [
+          expect.stringContaining('ERROR'),
+          expect.stringContaining('File not found or could not be read'),
+        ]);
+      } finally {
+        unMockReadFile();
+        unMockCConsole();
+        unMockConsole();
+      }
+    });
   });
 
-  // describe('updateAll', () => {
-  //   it('should update all files with matching patterns', async () => {
-  //     const updater1 = vi.fn().mockResolvedValue({success: true, filePath: '/project/package.json'});
-  //     const updater2 = vi.fn().mockResolvedValue({success: true, filePath: '/project/version.txt'});
-  //     const updater3 = vi
-  //       .fn()
-  //       .mockResolvedValue({success: false, filePath: '/project/missing.json', error: 'Not found'});
+  describe('updateAll', () => {
+    it('should update all files with matching patterns', async () => {
+      setupVersionUpdateTest(
+        async () =>
+          await update.updateAll('/project', 'test', newVersion, [
+            update.configUpdater('package.json', {
+              parser: JSON.parse,
+              serializer: (data) => JSON.stringify(data, null, 2),
+              version: ['version'],
+            }),
+            update.configUpdater('version', {
+              parser: (data) => data, // pass through
+              serializer: (data) => data,
+              version: (data) => newVersion,
+            }),
+          ]),
+        [`"version": "${newVersion}"`, newVersion],
+      );
+    });
+  });
 
-  //     const results = await updateAll('/project', 'test', '2.0.0', [updater1, updater2, updater3]);
+  describe('updateFirst', () => {
+    it('should update only the first file with a matching pattern', async () => {
+      mockCConsole();
+      mockConsole();
+      mockReadFile();
+      mockWriteFile();
 
-  //     expect(results).toHaveLength(3);
-  //     expect(results[0].success).toBe(true);
-  //     expect(results[1].success).toBe(true);
-  //     expect(results[2].success).toBe(false);
-  //     expect(updater1).toHaveBeenCalledWith('2.0.0');
-  //     expect(updater2).toHaveBeenCalledWith('2.0.0');
-  //     expect(updater3).toHaveBeenCalledWith('2.0.0');
-  //   });
-  // });
+      try {
+        await update.updateFirst('/project', 'test', newVersion, [
+          update.configUpdater('go.mod', {
+            parser: (data) => data, // pass through
+            serializer: (data) => data,
+            version: [[/\/\/\s*[vV]ersion:?\s*(\d+\.\d+\.\d+(?:[-+][\da-zA-Z.]+)*)/m, '// version: $VERSION']],
+          }),
+          update.configUpdater('version', {
+            parser: (data) => data, // pass through
+            serializer: (data) => data,
+            version: (data) => newVersion,
+          }),
+        ]);
 
-  // describe('updateFirst', () => {
-  //   it('should update only the first file with a matching pattern', async () => {
-  //     const updater1 = vi
-  //       .fn()
-  //       .mockResolvedValue({success: false, filePath: '/project/missing.json', error: 'Not found'});
-  //     const updater2 = vi.fn().mockResolvedValue({success: true, filePath: '/project/package.json'});
-  //     const updater3 = vi.fn(); // Should not be called
+        expect(update.forMock.writeFile).toHaveBeenCalledWith(
+          'go.mod',
+          expect.stringContaining(`// version: ${newVersion}`),
+        );
+        expect(update.forMock.writeFile).not.toHaveBeenCalledWith('version', newVersion);
+      } finally {
+        unMockReadFile();
+        unMockWriteFile();
+        unMockCConsole();
+        unMockConsole();
+      }
+    });
 
-  //     const result = await updateFirst('/project', 'test', '2.0.0', [updater1, updater2, updater3]);
+    it('should return null if no files can be updated', async () => {
+      mockCConsole();
+      mockConsole();
+      mockReadFile();
 
-  //     expect(result?.success).toBe(true);
-  //     expect(result?.filePath).toBe('/project/package.json');
-  //     expect(updater1).toHaveBeenCalledWith('2.0.0');
-  //     expect(updater2).toHaveBeenCalledWith('2.0.0');
-  //     expect(updater3).not.toHaveBeenCalled();
-  //   });
+      try {
+        await update.updateFirst('/project', 'test', newVersion, [
+          update.configUpdater('nonexistent.json', {}),
+          update.configUpdater('nonexistent.json', {}),
+        ]);
 
-  //   it('should return null if no files can be updated', async () => {
-  //     const updater1 = vi
-  //       .fn()
-  //       .mockResolvedValue({success: false, filePath: '/project/missing1.json', error: 'Not found'});
-  //     const updater2 = vi
-  //       .fn()
-  //       .mockResolvedValue({success: false, filePath: '/project/missing2.json', error: 'Not found'});
-
-  //     const result = await updateFirst('/project', 'test', '2.0.0', [updater1, updater2]);
-
-  //     expect(result).toBeNull();
-  //     expect(updater1).toHaveBeenCalledWith('2.0.0');
-  //     expect(updater2).toHaveBeenCalledWith('2.0.0');
-  //   });
-  // });
+        setupLoggingCallsTest('error', [
+          expect.stringContaining('ERROR'),
+          expect.stringContaining('File not found or could not be read'),
+        ]);
+      } finally {
+        unMockReadFile();
+        unMockCConsole();
+        unMockConsole();
+      }
+    });
+  });
 });
