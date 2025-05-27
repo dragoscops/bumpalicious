@@ -120,32 +120,35 @@ describe('detect.js', () => {
       );
     });
 
-    it('should log an error when no parsers are provided', async () => {
-      mockConsole(['error']);
-      mockCConsole(['error']);
+    it('should log a warning when no parsers are provided', async () => {
+      mockConsole(['warning']);
+      mockCConsole(['warning']);
       try {
         // Execute anyOf with no parsers
-        await detect.anyOf('/project', 'deno', []);
+        const result = await detect.anyOf('/project', 'deno', []);
+
+        // Should return null version and name
+        expect(result).toEqual({version: null, name: null});
 
         // Verification will be handled by the mocked logging setup
-        setupLoggingCallsTest('error', [
-          expect.stringContaining('ERROR'),
+        setupLoggingCallsTest('warning', [
+          expect.stringContaining('WARNING'),
           expect.stringContaining('No parsers provided to anyOf aggregator for'),
         ]);
       } finally {
-        unMockConsole(['error']);
-        unMockCConsole(['error']);
+        unMockConsole(['warning']);
+        unMockCConsole(['warning']);
       }
     });
 
-    it('should log an error when no valid version is found', async () => {
-      mockConsole(['error']);
-      mockCConsole(['error']);
+    it('should log a warning when no valid version is found', async () => {
+      mockConsole(['warning']);
+      mockCConsole(['warning']);
       mockReadFile();
 
       try {
         // Execute anyOf with a parser that won't find a version
-        await detect.anyOf('/project', 'deno', [
+        const result = await detect.anyOf('/project', 'deno', [
           detect.configParser('deno.json', {
             parser: JSON.parse,
             version: ['nonexistent'],
@@ -153,14 +156,17 @@ describe('detect.js', () => {
           }),
         ]);
 
+        // Should return null version and name
+        expect(result).toEqual({version: null, name: null});
+
         // Verification will be handled by the mocked logging setup
-        setupLoggingCallsTest('error', [
-          expect.stringContaining('ERROR'),
+        setupLoggingCallsTest('warning', [
+          expect.stringContaining('WARNING'),
           expect.stringContaining('Could not detect version for'),
         ]);
       } finally {
-        unMockConsole(['error']);
-        unMockCConsole(['error']);
+        unMockConsole(['warning']);
+        unMockCConsole(['warning']);
         unMockReadFile();
       }
     });
@@ -185,32 +191,35 @@ describe('detect.js', () => {
       await setupVersionDetectTest(() => detect.merge('/project', 'zig', [buildZigParser, buildZigZonParser]));
     });
 
-    it('should log an error when no parsers are provided', async () => {
-      mockConsole(['error']);
-      mockCConsole(['error']);
+    it('should log a warning when no parsers are provided', async () => {
+      mockConsole(['warning']);
+      mockCConsole(['warning']);
       try {
-        // Execute anyOf with no parsers
-        await detect.merge('/project', 'zig', []);
+        // Execute merge with no parsers
+        const result = await detect.merge('/project', 'zig', []);
+
+        // Should return null version and name
+        expect(result).toEqual({version: null, name: null});
 
         // Verification will be handled by the mocked logging setup
-        setupLoggingCallsTest('error', [
-          expect.stringContaining('ERROR'),
+        setupLoggingCallsTest('warning', [
+          expect.stringContaining('WARNING'),
           expect.stringContaining('No parsers provided to merge aggregator for'),
         ]);
       } finally {
-        unMockConsole(['error']);
-        unMockCConsole(['error']);
+        unMockConsole(['warning']);
+        unMockCConsole(['warning']);
       }
     });
 
-    it('should log an error when merged result has no version or name', async () => {
-      mockConsole(['error']);
-      mockCConsole(['error']);
+    it('should log a warning when merged result has no version or name', async () => {
+      mockConsole(['warning']);
+      mockCConsole(['warning']);
       mockReadFile();
 
       try {
-        // Execute anyOf with a parser that won't find a version
-        await detect.merge('/project', 'deno', [
+        // Execute merge with a parser that won't find a version
+        const result = await detect.merge('/project', 'deno', [
           detect.configParser('build.zig', {
             parser: (data) => data,
             version: [/test/i],
@@ -218,14 +227,17 @@ describe('detect.js', () => {
           }),
         ]);
 
+        // Should return null version and name
+        expect(result).toEqual({version: null, name: null});
+
         // Verification will be handled by the mocked logging setup
-        setupLoggingCallsTest('error', [
-          expect.stringContaining('ERROR'),
+        setupLoggingCallsTest('warning', [
+          expect.stringContaining('WARNING'),
           expect.stringContaining('Could not detect version for'),
         ]);
       } finally {
-        unMockConsole(['error']);
-        unMockCConsole(['error']);
+        unMockConsole(['warning']);
+        unMockCConsole(['warning']);
         unMockReadFile();
       }
     });

@@ -13,7 +13,7 @@ export const forMock = {
     try {
       await fs.writeFile(filePath, content, 'utf8');
     } catch (error) {
-      logging.error(`Failed to write ${filePath}:`, error);
+      logging.warning(`Failed to write ${filePath}:`, error);
     }
   },
   readFile: async (...args) => detect.forMock.readFile(...args),
@@ -39,8 +39,41 @@ export const forMock = {
  */
 
 /**
- * @typedef {function(string): Promise<void>} FileUpdater
+ * @typedef {function(string): Promise<boolean>} FileUpdater
  */
+
+/**
+ * Converts ValueUpdater[] to ValueExtractor[] for use with configParser
+ *
+ * @param {ValueUpdater[]} updaters - Array of updaters
+ * @returns {import('./detect.js').ValueExtractor[]} - Array of extractors
+ */
+function convertUpdatersToExtractors(updaters) {
+  if (!Array.isArray(updaters)) {
+    return [];
+  }
+
+  return updaters.map(updater => {
+    if (typeof updater === 'string') {
+      // String path - same for both
+      return updater;
+    }
+    if (Array.isArray(updater) && updater.length === 2) {
+      // [RegExp, replacement] -> RegExp for extraction
+      return updater[0];
+    }
+    if (typeof updater === 'function') {
+      // Function updater -> function extractor (simplified)
+      return (data) => {
+        // Try to extract existing version using a simple regex
+        const versionMatch = data.match(/["']?(\d+\.\d+\.\d+[^"'\s]*)["']?/);
+        return versionMatch ? versionMatch[1] : null;
+      };
+    }
+    // Fallback: return the updater as-is (should handle most cases)
+    return updater;
+  });
+}
 
 /**
  * Creates a file updater function based on provided mapping configuration
@@ -146,12 +179,26 @@ export function configUpdater(
    * The updater function that processes a file and updates the version
    *
    * @param {string} newVersion - New version to set
+   * @returns {Promise<boolean>} - True if update was successful, false otherwise
    */
   return async (newVersion) => {
+    // First, try to detect if the file has a version using converted mapper configuration
+    const detector = detect.configParser(filePath, {
+      parser: mapper.parser,
+      version: convertUpdatersToExtractors(mapper.version),
+      name: [], // We don't need name for update validation
+    });
+
+    const detectedInfo = await detector();
+    if (!detectedInfo.version) {
+      logging.warning(`No version detected in ${filePath}, skipping update`);
+      return false;
+    }
+
     const data = await forMock.readFile(filePath);
     if (!data) {
-      logging.error(`File not found or could not be read: ${filePath}`);
-      return;
+      logging.warning(`File not found or could not be read: ${filePath}`);
+      return false;
     }
 
     let parsedData = null;
@@ -160,8 +207,8 @@ export function configUpdater(
     try {
       parsedData = mapper.parser(data);
     } catch (e) {
-      logging.error(`Failed to parse ${filePath} with provided parser:`, e);
-      return;
+      logging.warning(`Failed to parse ${filePath} with provided parser:`, e);
+      return false;
     }
 
     try {
@@ -177,11 +224,14 @@ export function configUpdater(
 
         await forMock.writeFile(filePath, newData);
         logging.info(`Updated version to ${newVersion} in ${filePath}`);
+        return true;
       } else {
-        logging.error(`No matching version pattern found to update in ${filePath}`);
+        logging.warning(`No matching version pattern found to update in ${filePath}`);
+        return false;
       }
     } catch (error) {
-      logging.error(`Failed to update ${filePath}:`, error);
+      logging.warning(`Failed to update ${filePath}:`, error);
+      return false;
     }
   };
 }
@@ -193,25 +243,29 @@ export function configUpdater(
  * @param {string} projectType - Type of the project (e.g., "deno", "rust")
  * @param {string} newVersion - New version to set
  * @param {FileUpdater[]} updaters - Array of updater functions
- * @returns {Promise<void>}
+ * @returns {Promise<boolean>} - True if at least one file was updated successfully
  */
 export async function updateAll(folderPath, projectType, newVersion, updaters = []) {
   if (updaters.length === 0) {
-    logging.error(`No updaters provided to updateAll for ${projectType} project in ${folderPath}`);
-    return;
+    logging.warning(`No updaters provided to updateAll for ${projectType} project in ${folderPath}`);
+    return false;
   }
 
-  let count = 0;
+  let successCount = 0;
   for (const updater of updaters) {
-    await updater(newVersion);
-    count ++;
+    const success = await updater(newVersion);
+    if (success) {
+      successCount++;
+    }
   }
 
-  if (count === 0) {
-    logging.error(`No files updated for ${projectType} project in ${folderPath}`);
+  if (successCount === 0) {
+    logging.warning(`No files updated for ${projectType} project in ${folderPath}`);
+    return false;
   }
 
-  logging.info(`Attempted to update version to ${newVersion} in ${updaters.length} files for ${projectType} project`);
+  logging.info(`Updated version to ${newVersion} in ${successCount} of ${updaters.length} files for ${projectType} project`);
+  return true;
 }
 
 /**
@@ -221,14 +275,19 @@ export async function updateAll(folderPath, projectType, newVersion, updaters = 
  * @param {string} projectType - Type of the project (e.g., "deno", "rust")
  * @param {string} newVersion - New version to set
  * @param {FileUpdater[]} updaters - Array of updater functions
- * @returns {Promise<void>}
+ * @returns {Promise<boolean>} - True if the first file was updated successfully
  */
 export async function updateFirst(folderPath, projectType, newVersion, updaters = []) {
   if (updaters.length === 0) {
-    logging.error(`No updaters provided to updateFirst for ${projectType} project in ${folderPath}`);
-    return;
+    logging.warning(`No updaters provided to updateFirst for ${projectType} project in ${folderPath}`);
+    return false;
   }
 
-  await updaters[0](newVersion);
-  logging.info(`Attempted to update version to ${newVersion} for ${projectType} project`);
+  const success = await updaters[0](newVersion);
+  if (success) {
+    logging.info(`Updated version to ${newVersion} for ${projectType} project`);
+  } else {
+    logging.warning(`Failed to update version for ${projectType} project`);
+  }
+  return success;
 }

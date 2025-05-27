@@ -18,7 +18,7 @@ export const mockReadFile = (file = null) => {
         return Promise.resolve(configMocks[file]);
       }
       logging.warning(`Mocked readFile: File not found for path: ${path}`);
-      return Promise.resolve('');
+      return Promise.resolve(null);
     }
 
     for (const [key, value] of Object.entries(configMocks)) {
@@ -28,7 +28,7 @@ export const mockReadFile = (file = null) => {
     }
 
     logging.warning(`Mocked readFile: File not found for path: ${path}`);
-    return Promise.resolve('');
+    return Promise.resolve(null);
   });
 };
 

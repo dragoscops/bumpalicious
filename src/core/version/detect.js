@@ -159,7 +159,8 @@ export function configParser(
  */
 export async function anyOf(folderPath, projectType, parsers = []) {
   if (parsers.length === 0) {
-    logging.error(`No parsers provided to anyOf aggregator for ${projectType} project in ${folderPath}`);
+    logging.warning(`No parsers provided to anyOf aggregator for ${projectType} project in ${folderPath}`);
+    return {version: null, name: null};
   }
   for (const parser of parsers) {
     const projectInfo = await parser();
@@ -168,7 +169,8 @@ export async function anyOf(folderPath, projectType, parsers = []) {
     }
   }
 
-  logging.error(`Could not detect version for ${projectType} project in ${folderPath}`);
+  logging.warning(`Could not detect version for ${projectType} project in ${folderPath}`);
+  return {version: null, name: null};
 }
 
 /**
@@ -181,7 +183,8 @@ export async function anyOf(folderPath, projectType, parsers = []) {
  */
 export async function merge(folderPath, projectType, parsers = []) {
   if (parsers.length === 0) {
-    logging.error(`No parsers provided to merge aggregator for ${projectType} project in ${folderPath}`);
+    logging.warning(`No parsers provided to merge aggregator for ${projectType} project in ${folderPath}`);
+    return {version: null, name: null};
   }
   const projectInfo = {
     version: null,
@@ -202,5 +205,6 @@ export async function merge(folderPath, projectType, parsers = []) {
     return projectInfo;
   }
 
-  logging.error(`Could not detect version for ${projectType} project in ${folderPath}`);
+  logging.warning(`Could not detect version for ${projectType} project in ${folderPath}`);
+  return {version: null, name: null};
 }

@@ -58,20 +58,21 @@ describe('update.js module', () => {
 
     it('should handle file read errors gracefully', async () => {
       mockReadFile();
-      mockCConsole();
-      mockConsole();
+      mockCConsole(['warning']);
+      mockConsole(['warning']);
 
       try {
-        await update.configUpdater('missing.json')(newVersion);
+        const result = await update.configUpdater('missing.json')(newVersion);
 
-        setupLoggingCallsTest('error', [
-          expect.stringContaining('ERROR'),
-          expect.stringContaining('File not found or could not be read'),
+        expect(result).toBe(false);
+        setupLoggingCallsTest('warning', [
+          expect.stringContaining('WARNING'),
+          expect.stringContaining('No version detected'),
         ]);
       } finally {
         unMockReadFile();
-        unMockCConsole();
-        unMockConsole();
+        unMockCConsole(['warning']);
+        unMockConsole(['warning']);
       }
     });
   });
@@ -142,9 +143,9 @@ describe('update.js module', () => {
           update.configUpdater('nonexistent.json', {}),
         ]);
 
-        setupLoggingCallsTest('error', [
-          expect.stringContaining('ERROR'),
-          expect.stringContaining('File not found or could not be read'),
+        setupLoggingCallsTest('warning', [
+          expect.stringContaining('WARNING'),
+          expect.stringContaining('No version detected'),
         ]);
       } finally {
         unMockReadFile();
