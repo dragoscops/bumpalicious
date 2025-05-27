@@ -78,12 +78,13 @@ export const setupVersionDetectTest = async (
 };
 
 export const setupVersionUpdateTest = async (updater, expectedResult = '') => {
-  // mockCConsole();
-  // mockConsole();
+  mockCConsole();
+  mockConsole();
   mockReadFile();
   mockWriteFile();
   try {
-    await updater(newVersion);
+    const result = await updater(newVersion);
+    expect(result).toBeTruthy();
 
     if (typeof expectedResult === 'string') {
       expect(update.forMock.writeFile).toHaveBeenCalledWith(

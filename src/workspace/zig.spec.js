@@ -1,7 +1,20 @@
 import {beforeEach, describe, it, vi} from 'vitest';
-import {detect} from './zig.js';
-import {setupVersionDetectTest, mockReadFile, unMockReadFile} from '../vitest/setup.detect-update.tests.js';
-import {mockConsole, mockCConsole, unMockConsole, unMockCConsole} from '../vitest/setup.logging.tests.js';
+import {detect, update} from './zig.js';
+import * as updateModule from '../core/version/update.js';
+import {
+  setupVersionDetectTest,
+  mockReadFile,
+  unMockReadFile,
+  newVersion,
+  mockWriteFile,
+  unMockWriteFile,
+} from '../vitest/setup.detect-update.tests.js';
+import {
+  mockConsole,
+  mockCConsole,
+  unMockConsole,
+  unMockCConsole,
+} from '../vitest/setup.logging.tests.js';
 
 describe('detect/zig.js module', () => {
   beforeEach(() => {
@@ -46,6 +59,83 @@ describe('detect/zig.js module', () => {
         unMockReadFile();
         unMockCConsole(['warning', 'error']);
         unMockConsole(['warning', 'error']);
+      }
+    });
+  });
+
+  describe('update()', () => {
+    // Test update with build.zig specifically
+    it('should update build.zig when only build.zig is present', async () => {
+      mockReadFile('build.zig');
+      mockWriteFile();
+
+      try {
+        await update('/project', newVersion);
+
+        expect(updateModule.forMock.writeFile).toHaveBeenCalled();
+        expect(updateModule.forMock.writeFile.mock.calls.some(call =>
+          call[0].includes('build.zig') && call[1].includes('const VERSION = "2.0.0"')
+        )).toBe(true);
+      } finally {
+        unMockWriteFile();
+        unMockReadFile();
+      }
+    });
+
+    // Test update with build.zig.zon specifically
+    it('should update build.zig.zon when only build.zig.zon is present', async () => {
+      mockReadFile('build.zig.zon');
+      mockWriteFile();
+
+      try {
+        await update('/project', newVersion);
+
+        expect(updateModule.forMock.writeFile).toHaveBeenCalled();
+        expect(updateModule.forMock.writeFile.mock.calls.some(call =>
+          call[0].includes('build.zig.zon') && call[1].includes('.version = "2.0.0"')
+        )).toBe(true);
+      } finally {
+        unMockWriteFile();
+        unMockReadFile();
+      }
+    });
+
+    // Test error handling when file writing fails
+    it('should handle write errors gracefully', async () => {
+      mockConsole(['warning', 'error']);
+      mockCConsole(['warning', 'error']);
+      mockReadFile('build.zig');
+      mockWriteFile(true); // true = should throw error
+
+      try {
+        await update('/project', newVersion);
+
+        // The update should complete without throwing, even when write fails
+        // This tests graceful error handling
+      } finally {
+        unMockWriteFile();
+        unMockReadFile();
+        unMockCConsole(['warning', 'error']);
+        unMockConsole(['warning', 'error']);
+      }
+    });
+
+    // Test update with multiple files when both are present
+    it('should update both build.zig and build.zig.zon when both are present', async () => {
+      // Mock both files being present
+      mockReadFile(); // This will return content for any file requested
+      mockWriteFile();
+
+      try {
+        await update('/project', newVersion);
+
+        // Should write to both files
+        expect(updateModule.forMock.writeFile.mock.calls.length).toBe(2);
+        expect(updateModule.forMock.writeFile.mock.calls.some(call => call[0].includes('build.zig'))).toBe(true);
+        expect(updateModule.forMock.writeFile.mock.calls.some(call => call[0].includes('build.zig.zon'))).toBe(true);
+      } finally {
+        unMockWriteFile();
+        unMockReadFile();
       }
     });
   });

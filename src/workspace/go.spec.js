@@ -1,6 +1,6 @@
 import {beforeEach, describe, it, vi} from 'vitest';
-import {detect} from './go.js';
-import {setupVersionDetectTest, mockReadFile, unMockReadFile} from '../vitest/setup.detect-update.tests.js';
+import {detect, update} from './go.js';
+import {setupVersionDetectTest, setupVersionUpdateTest, mockReadFile, unMockReadFile, newVersion} from '../vitest/setup.detect-update.tests.js';
 import {mockConsole, mockCConsole, unMockConsole, unMockCConsole} from '../vitest/setup.logging.tests.js';
 
 describe('detect/go.js module', () => {
@@ -47,6 +47,24 @@ describe('detect/go.js module', () => {
         unMockCConsole(['warning', 'error']);
         unMockConsole(['warning', 'error']);
       }
+    });
+  });
+
+  describe('update()', () => {
+    // Test updating go.mod
+    it('should update version in go.mod', async () => {
+      await setupVersionUpdateTest(
+        () => update('/project', newVersion),
+        `// version: ${newVersion}`,
+      );
+    });
+
+    // Test updating version.go
+    it('should update version in version.go', async () => {
+      await setupVersionUpdateTest(
+        () => update('/project', newVersion),
+        `const Version = "${newVersion}"`,
+      );
     });
   });
 });

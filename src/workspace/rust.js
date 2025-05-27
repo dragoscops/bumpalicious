@@ -6,6 +6,7 @@
 import toml from '@iarna/toml';
 import path from 'path';
 import * as d from '../core/version/detect.js';
+import * as u from '../core/version/update.js';
 
 /**
  * Detect version from a Rust project
@@ -20,5 +21,23 @@ export const detect = async (projectPath) =>
       parser: toml.parse,
       version: ['package.version'],
       name: ['package.name'],
+    }),
+  ]);
+
+/**
+ * Update version in a Rust project
+ * Looking for Cargo.toml file
+ * Updates the file if found
+ *
+ * @param {string} projectPath - Path to the project
+ * @param {string} newVersion - New version to set
+ * @returns {Promise<void>}
+ */
+export const update = async (projectPath, newVersion) =>
+  u.updateAll(projectPath, 'rust', newVersion, [
+    u.configUpdater(path.join(projectPath, 'Cargo.toml'), {
+      parser: toml.parse,
+      serializer: toml.stringify,
+      version: ['package.version'],
     }),
   ]);

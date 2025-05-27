@@ -6,6 +6,8 @@ import {
   unMockReadFile,
   newVersion,
   setupVersionUpdateTest,
+  mockWriteFile,
+  unMockWriteFile,
 } from '../vitest/setup.detect-update.tests.js';
 import {
   mockConsole,
@@ -64,6 +66,31 @@ describe('detect/node.js module', () => {
 
     it('should update version in package.json when only package.json exists', async () => {
       await setupVersionUpdateTest(() => update('/project', newVersion), `"version": "${newVersion}"`, 'package.json');
+    });
+
+    // TODO: must find a way to test this
+    it.skip('should update all node config files when multiple exist', async () => {
+      // Test that all node files are updated when they exist
+      mockReadFile(); // This will make all config files available
+      mockWriteFile();
+
+      try {
+        await update('/project', newVersion);
+
+        // Verify all files were written to with the new version
+        const expectedFiles = ['jsr.json', 'package.json'];
+        expect(mockWriteFile).toHaveBeenCalledTimes(expectedFiles.length);
+
+        expectedFiles.forEach((file) => {
+          expect(mockWriteFile).toHaveBeenCalledWith(
+            expect.stringContaining(file),
+            expect.stringContaining(`"version": "${newVersion}"`),
+          );
+        });
+      } finally {
+        unMockWriteFile();
+        unMockReadFile();
+      }
     });
   });
 });

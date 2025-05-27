@@ -5,6 +5,7 @@
 
 import path from 'path';
 import * as d from '../core/version/detect.js';
+import * as u from '../core/version/update.js';
 
 /**
  * Detect version from a Zig project
@@ -24,5 +25,28 @@ export const detect = async (projectPath) =>
       parser: (data) => data, // pass through raw content
       version: [/\.version\s*=\s*"([^"]+)"/m],
       name: [/\.name\s*=\s*"([^"]+)"/m],
+    }),
+  ]);
+
+/**
+ * Update version in a Zig project
+ * Looking for build.zig and build.zig.zon files
+ * Updates all files found since Zig projects may have version info in multiple files
+ *
+ * @param {string} projectPath - Path to the project
+ * @param {string} newVersion - New version to set
+ * @returns {Promise<void>}
+ */
+export const update = async (projectPath, newVersion) =>
+  u.updateAll(projectPath, 'zig', newVersion, [
+    u.configUpdater(path.join(projectPath, 'build.zig'), {
+      parser: (data) => data,
+      serializer: (data) => data,
+      version: [[/const\s+VERSION\s*=\s*"([^"]+)"/i, `const VERSION = "${newVersion}"`]],
+    }),
+    u.configUpdater(path.join(projectPath, 'build.zig.zon'), {
+      parser: (data) => data,
+      serializer: (data) => data,
+      version: [[/\.version\s*=\s*"([^"]+)"/m, `.version = "${newVersion}"`]],
     }),
   ]);

@@ -16,16 +16,13 @@ import * as u from '../core/version/update.js';
  */
 export const detect = async (projectPath) =>
   d.anyOf(projectPath, 'node', [
-    d.configParser(path.join(projectPath, 'jsr.json'), {
-      parser: JSON.parse,
-      version: ['version'],
-      name: ['name'],
-    }),
-    d.configParser(path.join(projectPath, 'package.json'), {
-      parser: JSON.parse,
-      version: ['version'],
-      name: ['name'],
-    }),
+    ...['jsr.json', 'package.json'].map((file) =>
+      d.configParser(path.join(projectPath, file), {
+        parser: JSON.parse,
+        version: ['version'],
+        name: ['name'],
+      }),
+    ),
   ]);
 
 /**
@@ -39,14 +36,11 @@ export const detect = async (projectPath) =>
  */
 export const update = async (projectPath, newVersion) =>
   u.updateAll(projectPath, 'node', newVersion, [
-    u.configUpdater(path.join(projectPath, 'jsr.json'), {
-      parser: JSON.parse,
-      serializer: (data) => JSON.stringify(data, null, 2),
-      version: ['version'],
-    }),
-    u.configUpdater(path.join(projectPath, 'package.json'), {
-      parser: JSON.parse,
-      serializer: (data) => JSON.stringify(data, null, 2),
-      version: ['version'],
-    }),
+    ...['jsr.json', 'package.json'].map((file) =>
+      u.configUpdater(path.join(projectPath, file), {
+        parser: JSON.parse,
+        serializer: (data) => JSON.stringify(data, null, 2),
+        version: ['version'],
+      }),
+    ),
   ]);

@@ -50,7 +50,7 @@ describe('update.js module', () => {
         update.configUpdater('version', {
           parser: (data) => data, // pass through
           serializer: (data) => data,
-          version: (data) => newVersion,
+          version: [(data) => newVersion],
         }),
         newVersion,
       );
