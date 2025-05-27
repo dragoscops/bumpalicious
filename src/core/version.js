@@ -4,34 +4,48 @@
  */
 
 import semver from 'semver';
-import * as logging from '../utils/logging.js';
+import {logger} from '../utils/logging.js';
+
+export const log = logger.child({module: 'version'});
+
+// Log message constants
+export const infoDeterminedVersionIncreaseType = 'Determined version increase type from commit';
+export const infoPreReleaseIdentifierFound = 'Pre-release identifier found in commit message';
+export const infoPreReleaseIdentifierExtracted = 'Pre-release identifier extracted';
+
+export const warnNoVersionProvided = 'No version provided';
+export const warnInvalidVersionProvided = 'Invalid version provided';
+export const warnNoCommitMessageProvided = 'No commit message provided';
+export const warnNoVersionIncreaseNeeded = 'No version increase needed based on commit message';
+
+// ...existing code...
 
 /**
  * Increase version according to semver rules
  *
  * @param {string} currentVersion - Current version
  * @param {string} commitMessage - Git commit message
- * @returns {string} - New version
+ * @returns {string|null} - New version
  */
 export function increaseVersion(currentVersion, commitMessage) {
   const increaseType = determineVersionIncreaseType(currentVersion, commitMessage);
 
   if (!increaseType) {
-    logging.warning(`No version increase needed based on commit message: ${commitMessage}`);
-    return currentVersion;
+    log.warn({commitMessage}, warnNoVersionIncreaseNeeded);
+    return null;
   }
 
-  logging.info(`Determined version increase type: ${increaseType} from commit: ${commitMessage}`);
+  log.info({increaseType, commitMessage}, infoDeterminedVersionIncreaseType);
 
   const preReleaseIdentifier = determineVersionPreReleaseIdentifier(currentVersion, commitMessage);
   if (preReleaseIdentifier) {
-    logging.info(`Pre-release identifier found in commit message: ${preReleaseIdentifier}`);
+    log.info({preReleaseIdentifier, commitMessage}, infoPreReleaseIdentifierFound);
   }
 
   const version = semver.parse(currentVersion);
   if (!version) {
-    logging.error(`Invalid version: ${currentVersion}`);
-    return currentVersion;
+    log.warn({currentVersion}, warnInvalidVersionProvided);
+    return null;
   }
 
   return semver.inc(currentVersion, increaseType, preReleaseIdentifier);
@@ -51,13 +65,20 @@ export function increaseVersion(currentVersion, commitMessage) {
  */
 export function determineVersionIncreaseType(currentVersion, commitMessage) {
   if (!commitMessage) {
-    return logging.error('No commit message provided');
+    log.warn(warnNoCommitMessageProvided);
+    return null;
   }
   if (!currentVersion) {
-    return logging.error('No version provided');
+    log.warn(warnNoVersionProvided);
+    return null;
   }
 
   const version = semver.parse(currentVersion);
+  if (!version) {
+    log.warn({currentVersion}, warnInvalidVersionProvided);
+    return null;
+  }
+
   if (commitMessage.includes('pre-release') && version.prerelease.length > 0) {
     return 'prerelease';
   }
@@ -103,21 +124,30 @@ export function determineVersionIncreaseType(currentVersion, commitMessage) {
  */
 export function determineVersionPreReleaseIdentifier(currentVersion, commitMessage) {
   if (!commitMessage) {
-    return logging.error('No commit message provided');
+    log.warn(warnNoCommitMessageProvided);
+    return null;
   }
   if (!currentVersion) {
-    return logging.error('No version provided');
+    log.warn(warnNoVersionProvided);
+    return null;
   }
 
   // More flexible regex that handles:
   // 1. "pre-release:alpha" format (no space)
   // 2. "pre-release: alpha" format (with space)
   // 3. Case insensitivity
-  const preReleaseIdentifier = commitMessage.match(/pre-release\s*:\s*([a-zA-Z0-9\-_]+)/i);
-  if (preReleaseIdentifier?.[1]) {
-    logging.info(`Extracted pre-release identifier: "${preReleaseIdentifier[1]}"`);
-    return preReleaseIdentifier[1];
+  const preReleaseRegex = /pre-release\s*:\s*([a-zA-Z0-9_-]+)/i;
+  const preReleaseMatch = preReleaseRegex.exec(commitMessage);
+  if (preReleaseMatch?.[1]) {
+    log.info({preReleaseIdentifier: preReleaseMatch[1]}, infoPreReleaseIdentifierExtracted);
+    return preReleaseMatch[1];
   }
 
-  return semver.parse(currentVersion)?.prerelease?.[0] || null;
+  const version = semver.parse(currentVersion);
+  if (!version) {
+    log.warn({currentVersion}, warnInvalidVersionProvided);
+    return null;
+  }
+
+  return version?.prerelease?.[0] || null
 }

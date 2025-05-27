@@ -9,12 +9,7 @@ import {
   mockWriteFile,
   unMockWriteFile,
 } from '../vitest/setup.detect-update.tests.js';
-import {
-  mockConsole,
-  mockCConsole,
-  unMockConsole,
-  unMockCConsole,
-} from '../vitest/setup.logging.tests.js';
+import {mockConsole, mockCConsole, unMockConsole, unMockCConsole} from '../vitest/setup.logging.tests.js';
 
 describe('detect/text.js module', () => {
   beforeEach(() => {
@@ -117,10 +112,7 @@ describe('detect/text.js module', () => {
         expect(mockWriteFile).toHaveBeenCalledTimes(expectedFiles.length);
 
         expectedFiles.forEach((file) => {
-          expect(mockWriteFile).toHaveBeenCalledWith(
-            expect.stringContaining(file),
-            newVersion,
-          );
+          expect(mockWriteFile).toHaveBeenCalledWith(expect.stringContaining(file), newVersion);
         });
       } finally {
         unMockWriteFile();

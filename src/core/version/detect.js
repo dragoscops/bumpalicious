@@ -1,6 +1,8 @@
 import fs from 'fs/promises';
 import * as logging from '../../utils/logging.js';
 
+export const errorReadFile = 'Failed to read file:';
+
 /**
  * Safely reads a file from the filesystem
  *
@@ -13,7 +15,7 @@ export const forMock = {
       await fs.access(filePath);
       return fs.readFile(filePath, 'utf8');
     } catch (error) {
-      logging.warning(`Failed to read ${filePath}:`, error);
+      logging.warning(`${errorReadFile} ${filePath}:`, error);
     }
   },
 };
@@ -114,6 +116,7 @@ export function configParser(
 
     return null;
   };
+
   /**
    * The parser function that processes a file and extracts project info
    *

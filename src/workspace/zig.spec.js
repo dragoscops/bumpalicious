@@ -9,12 +9,7 @@ import {
   mockWriteFile,
   unMockWriteFile,
 } from '../vitest/setup.detect-update.tests.js';
-import {
-  mockConsole,
-  mockCConsole,
-  unMockConsole,
-  unMockCConsole,
-} from '../vitest/setup.logging.tests.js';
+import {mockConsole, mockCConsole, unMockConsole, unMockCConsole} from '../vitest/setup.logging.tests.js';
 
 describe('detect/zig.js module', () => {
   beforeEach(() => {
@@ -73,9 +68,11 @@ describe('detect/zig.js module', () => {
         await update('/project', newVersion);
 
         expect(updateModule.forMock.writeFile).toHaveBeenCalled();
-        expect(updateModule.forMock.writeFile.mock.calls.some(call =>
-          call[0].includes('build.zig') && call[1].includes('const VERSION = "2.0.0"')
-        )).toBe(true);
+        expect(
+          updateModule.forMock.writeFile.mock.calls.some(
+            (call) => call[0].includes('build.zig') && call[1].includes('const VERSION = "2.0.0"'),
+          ),
+        ).toBe(true);
       } finally {
         unMockWriteFile();
         unMockReadFile();
@@ -91,9 +88,11 @@ describe('detect/zig.js module', () => {
         await update('/project', newVersion);
 
         expect(updateModule.forMock.writeFile).toHaveBeenCalled();
-        expect(updateModule.forMock.writeFile.mock.calls.some(call =>
-          call[0].includes('build.zig.zon') && call[1].includes('.version = "2.0.0"')
-        )).toBe(true);
+        expect(
+          updateModule.forMock.writeFile.mock.calls.some(
+            (call) => call[0].includes('build.zig.zon') && call[1].includes('.version = "2.0.0"'),
+          ),
+        ).toBe(true);
       } finally {
         unMockWriteFile();
         unMockReadFile();
@@ -131,8 +130,8 @@ describe('detect/zig.js module', () => {
 
         // Should write to both files
         expect(updateModule.forMock.writeFile.mock.calls.length).toBe(2);
-        expect(updateModule.forMock.writeFile.mock.calls.some(call => call[0].includes('build.zig'))).toBe(true);
-        expect(updateModule.forMock.writeFile.mock.calls.some(call => call[0].includes('build.zig.zon'))).toBe(true);
+        expect(updateModule.forMock.writeFile.mock.calls.some((call) => call[0].includes('build.zig'))).toBe(true);
+        expect(updateModule.forMock.writeFile.mock.calls.some((call) => call[0].includes('build.zig.zon'))).toBe(true);
       } finally {
         unMockWriteFile();
         unMockReadFile();

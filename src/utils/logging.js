@@ -1,6 +1,14 @@
 import core from '@actions/core';
+import pino from 'pino';
 
-// TODO: refactor using stuff like core.warning = core.warning || console.warn
+export const logger = pino({
+  transport: {
+    target: 'pino-pretty',
+    options: {
+      colorize: true,
+    },
+  },
+});
 
 /**
  * Logging utilities for consistent output formatting

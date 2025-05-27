@@ -3,58 +3,60 @@
  * @module core/version.spec
  */
 
-import {describe, expect, it, vi, beforeEach, afterEach} from 'vitest';
-import {determineVersionIncreaseType, determineVersionPreReleaseIdentifier, increaseVersion} from './version.js';
-import {mockCConsole, setupLoggingCallsTest, unMockCConsole} from '../vitest/setup.logging.tests.js';
+import {describe, expect, it, beforeEach, afterEach} from 'vitest';
+import {
+  determineVersionIncreaseType,
+  determineVersionPreReleaseIdentifier,
+  increaseVersion,
+  log,
+  warnNoCommitMessageProvided,
+  warnNoVersionProvided,
+  warnInvalidVersionProvided,
+  warnNoCommitMessageProvided,
+  warnNoVersionProvided
+} from './version.js';
+import {mockPino, setupPinoLoggingCallsTest, unMockPino} from '../vitest/setup.logging.tests.js';
 
 describe('core/version.js module', () => {
   beforeEach(() => {
-    mockCConsole();
+    mockPino([], log);
   });
 
   afterEach(() => {
-    unMockCConsole();
+    unMockPino([], log);
   });
 
   describe('determineVersionIncreaseType(currentVersion, string)', () => {
-    it('calls logging.error when commit message is empty or undefined', () => {
+    it('calls log.warn when commit message is empty or undefined', () => {
       determineVersionIncreaseType('1.0.0', '');
-      setupLoggingCallsTest('error', [
-        expect.stringContaining('ERROR:'),
-        expect.stringContaining('No commit message provided'),
-      ]);
+      setupPinoLoggingCallsTest('warn', [warnNoCommitMessageProvided], log);
 
       determineVersionIncreaseType('1.0.0', undefined);
-      setupLoggingCallsTest('error', [
-        expect.stringContaining('ERROR:'),
-        expect.stringContaining('No commit message provided'),
-      ]);
+      setupPinoLoggingCallsTest('warn', [warnNoCommitMessageProvided], log, 2);
 
       determineVersionIncreaseType('1.0.0', null);
-      setupLoggingCallsTest('error', [
-        expect.stringContaining('ERROR:'),
-        expect.stringContaining('No commit message provided'),
-      ]);
+      setupPinoLoggingCallsTest('warn', [warnNoCommitMessageProvided], log, 3);
     });
 
-    it('calls logging.error when version is empty or undefined', () => {
+    it('calls log.warn when version is empty or undefined', () => {
       determineVersionIncreaseType('', 'feat: new feature');
-      setupLoggingCallsTest('error', [
-        expect.stringContaining('ERROR:'),
-        expect.stringContaining('No version provided'),
-      ]);
+      setupPinoLoggingCallsTest('warn', [warnNoVersionProvided], log);
 
       determineVersionIncreaseType(undefined, 'feat: new feature');
-      setupLoggingCallsTest('error', [
-        expect.stringContaining('ERROR:'),
-        expect.stringContaining('No version provided'),
-      ]);
+      setupPinoLoggingCallsTest('warn', [warnNoVersionProvided], log, 2);
 
       determineVersionIncreaseType(null, 'feat: new feature');
-      setupLoggingCallsTest('error', [
-        expect.stringContaining('ERROR:'),
-        expect.stringContaining('No version provided'),
-      ]);
+      setupPinoLoggingCallsTest('warn', [warnNoVersionProvided], log, 3);
+    });
+
+    it('calls log.warn and returns null for invalid version format', () => {
+      const result = determineVersionIncreaseType('invalid-version', 'feat: new feature');
+      expect(result).toBeNull();
+      setupPinoLoggingCallsTest('warn', [{currentVersion: 'invalid-version'}, warnInvalidVersionProvided], log);
+
+      const result2 = determineVersionIncreaseType('1.2', 'feat: new feature');
+      expect(result2).toBeNull();
+      setupPinoLoggingCallsTest('warn', [{currentVersion: '1.2'}, warnInvalidVersionProvided], log, 2);
     });
 
     it('returns "major" for breaking changes', () => {
@@ -99,44 +101,26 @@ describe('core/version.js module', () => {
   });
 
   describe('determineVersionPreReleaseIdentifier(currentVersion, string)', () => {
-    it('calls logging.error when commit message is empty or undefined', () => {
+    it('calls log.warn when commit message is empty or undefined', () => {
       determineVersionPreReleaseIdentifier('1.0.0', '');
-      setupLoggingCallsTest('error', [
-        expect.stringContaining('ERROR:'),
-        expect.stringContaining('No commit message provided'),
-      ]);
+      setupPinoLoggingCallsTest('warn', [warnNoCommitMessageProvided], log);
 
       determineVersionPreReleaseIdentifier('1.0.0', undefined);
-      setupLoggingCallsTest('error', [
-        expect.stringContaining('ERROR:'),
-        expect.stringContaining('No commit message provided'),
-      ]);
+      setupPinoLoggingCallsTest('warn', [warnNoCommitMessageProvided], log, 2);
 
       determineVersionPreReleaseIdentifier('1.0.0', null);
-      setupLoggingCallsTest('error', [
-        expect.stringContaining('ERROR:'),
-        expect.stringContaining('No commit message provided'),
-      ]);
+      setupPinoLoggingCallsTest('warn', [warnNoCommitMessageProvided], log, 3);
     });
 
-    it('calls logging.error when version is empty or undefined', () => {
+    it('calls log.warn when version is empty or undefined', () => {
       determineVersionPreReleaseIdentifier('', 'feat: new feature');
-      setupLoggingCallsTest('error', [
-        expect.stringContaining('ERROR:'),
-        expect.stringContaining('No version provided'),
-      ]);
+      setupPinoLoggingCallsTest('warn', [warnNoVersionProvided], log);
 
       determineVersionPreReleaseIdentifier(undefined, 'feat: new feature');
-      setupLoggingCallsTest('error', [
-        expect.stringContaining('ERROR:'),
-        expect.stringContaining('No version provided'),
-      ]);
+      setupPinoLoggingCallsTest('warn', [warnNoVersionProvided], log, 2);
 
       determineVersionPreReleaseIdentifier(null, 'feat: new feature');
-      setupLoggingCallsTest('error', [
-        expect.stringContaining('ERROR:'),
-        expect.stringContaining('No version provided'),
-      ]);
+      setupPinoLoggingCallsTest('warn', [warnNoVersionProvided], log, 3);
     });
 
     it('extracts pre-release identifier from commit messages', () => {
@@ -150,6 +134,16 @@ describe('core/version.js module', () => {
       expect(determineVersionPreReleaseIdentifier('1.0.0', 'pre-release: beta-2')).toBe('beta-2');
       expect(determineVersionPreReleaseIdentifier('1.0.0', 'pre-release: rc_3')).toBe('rc_3');
       expect(determineVersionPreReleaseIdentifier('1.0.0', 'pre-release: next')).toBe('next');
+    });
+
+    it('calls log.warn and returns null for invalid version format', () => {
+      const result = determineVersionPreReleaseIdentifier('invalid-version', 'feat: new feature');
+      expect(result).toBeNull();
+      setupPinoLoggingCallsTest('warn', [{currentVersion: 'invalid-version'}, warnInvalidVersionProvided], log);
+
+      const result2 = determineVersionPreReleaseIdentifier('1.2', 'feat: new feature');
+      expect(result2).toBeNull();
+      setupPinoLoggingCallsTest('warn', [{currentVersion: '1.2'}, warnInvalidVersionProvided], log, 2);
     });
 
     it('returns null when no pre-release identifier is found', () => {
@@ -180,13 +174,13 @@ describe('core/version.js module', () => {
       expect(increaseVersion('1.2.3-alpha.0', 'chore: update pre-release: alpha')).toBe('1.2.3-alpha.1');
     });
 
-    it('returns the same version if no version changes are triggered', () => {
-      expect(increaseVersion('1.2.3', 'docs: update readme')).toEqual('1.2.3');
-      expect(increaseVersion('1.2.3', 'chore: update dependencies')).toEqual('1.2.3');
+    it('returns null if no version changes are triggered', () => {
+      expect(increaseVersion('1.2.3', 'docs: update readme')).toBeNull();
+      expect(increaseVersion('1.2.3', 'chore: update dependencies')).toBeNull();
     });
 
-    it('returns original version for invalid version inputs', () => {
-      expect(increaseVersion('invalid', 'feat: new feature')).toBe('invalid');
+    it('returns null for invalid version inputs', () => {
+      expect(increaseVersion('invalid', 'feat: new feature')).toBeNull();
     });
   });
 });

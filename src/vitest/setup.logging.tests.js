@@ -1,6 +1,24 @@
 import * as core from '@actions/core';
 import * as logging from '../utils/logging.js';
 
+export const mockPino = (keys = [], logger = logging.logger) => {
+  const pinoMethods = ['debug', 'info', 'warn', 'error', 'fatal', 'trace'];
+  (keys.length ? keys : pinoMethods).forEach((key) => {
+    if (typeof logger[key] === 'function') {
+      vi.spyOn(logger, key).mockImplementation((...args) => {});
+    }
+  });
+};
+
+export const unMockPino = (keys = [], logger = logging.logger) => {
+  const pinoMethods = ['debug', 'info', 'warn', 'error', 'fatal', 'trace'];
+  (keys.length ? keys : pinoMethods).forEach((key) => {
+    if (typeof logger[key] === 'function' && typeof logger[key].mockRestore === 'function') {
+      logger[key].mockRestore();
+    }
+  });
+};
+
 export const mockCConsole = (keys = []) => {
   (keys.length ? keys : Object.keys(logging.cconsole)).forEach((key) => {
     if (typeof logging.cconsole[key] === 'function') {
@@ -49,5 +67,14 @@ export const setupLoggingCallsTest = (logFunction, expectedArgs, nth = 0) => {
     } else {
       expect(core[logFunction]).toHaveBeenNthCalledWith(nth, expectedArgs[1]);
     }
+  }
+};
+
+export const setupPinoLoggingCallsTest = (logFunction, expectedArgs, logger = logging.logger, nth = 0) => {
+  expect(logger[logFunction]).toHaveBeenCalled();
+  if (nth === 0) {
+    expect(logger[logFunction]).toHaveBeenCalledWith(...expectedArgs);
+  } else {
+    expect(logger[logFunction]).toHaveBeenNthCalledWith(nth, ...expectedArgs);
   }
 };

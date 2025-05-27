@@ -123,7 +123,11 @@ describe('detect/python.js module', () => {
     });
 
     it('should update version in __init__.py when only __init__.py exists', async () => {
-      await setupVersionUpdateTest(() => update('/project', newVersion), `__version__ = "${newVersion}"`, '__init__.py');
+      await setupVersionUpdateTest(
+        () => update('/project', newVersion),
+        `__version__ = "${newVersion}"`,
+        '__init__.py',
+      );
     });
 
     // TODO: must find a way to test this

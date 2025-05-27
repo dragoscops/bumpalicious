@@ -53,7 +53,7 @@ function convertUpdatersToExtractors(updaters) {
     return [];
   }
 
-  return updaters.map(updater => {
+  return updaters.map((updater) => {
     if (typeof updater === 'string') {
       // String path - same for both
       return updater;
@@ -264,7 +264,9 @@ export async function updateAll(folderPath, projectType, newVersion, updaters = 
     return false;
   }
 
-  logging.info(`Updated version to ${newVersion} in ${successCount} of ${updaters.length} files for ${projectType} project`);
+  logging.info(
+    `Updated version to ${newVersion} in ${successCount} of ${updaters.length} files for ${projectType} project`,
+  );
   return true;
 }
 
