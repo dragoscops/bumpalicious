@@ -1,7 +1,13 @@
 import fs from 'fs/promises';
-import * as logging from '../../utils/logging.js';
+import {log as logger} from '../version.js';
 
-export const errorReadFile = 'Failed to read file:';
+export const log = logger.child({module: 'detect'});
+
+// Log message constants
+export const warnFailedToRead = 'Failed to read file';
+export const warnFailedToParseWithProvidedParser = 'Failed to parse version file';
+export const warnNoProvidedParsersToAggregator = 'No parsers provided to aggregator';
+export const warnFailedToAggregateVersion = 'Failed to aggregate version';
 
 /**
  * Safely reads a file from the filesystem
@@ -15,7 +21,7 @@ export const forMock = {
       await fs.access(filePath);
       return fs.readFile(filePath, 'utf8');
     } catch (error) {
-      logging.warning(`${errorReadFile} ${filePath}:`, error);
+      log.warn({filePath, error}, warnFailedToRead);
     }
   },
 };
@@ -83,7 +89,7 @@ export function configParser(
     }
 
     if (extractor instanceof RegExp) {
-      const match = data.match(extractor);
+      const match = extractor.exec(data);
       return match?.[1] ?? null;
     }
 
@@ -135,8 +141,8 @@ export function configParser(
 
     try {
       parsedData = mapper.parser(data);
-    } catch (e) {
-      logging.warning(`Failed to parse ${filePath} with provided parser:`, e);
+    } catch (error) {
+      log.warn({filePath, error}, warnFailedToParseWithProvidedParser);
       return {version, name};
     }
 
@@ -145,7 +151,7 @@ export function configParser(
       version = extractValue(data, parsedData, mapper.version);
       name = extractValue(data, parsedData, mapper.name);
     } catch (error) {
-      logging.warning(`Failed to parse ${filePath}:`, error);
+      log.warn({filePath, error}, warnFailedToParseWithProvidedParser);
     }
 
     return {version, name};
@@ -162,7 +168,7 @@ export function configParser(
  */
 export async function anyOf(folderPath, projectType, parsers = []) {
   if (parsers.length === 0) {
-    logging.warning(`No parsers provided to anyOf aggregator for ${projectType} project in ${folderPath}`);
+    log.warn({folderPath, projectType, aggregator: 'anyOf'}, warnNoProvidedParsersToAggregator);
     return {version: null, name: null};
   }
   for (const parser of parsers) {
@@ -172,7 +178,7 @@ export async function anyOf(folderPath, projectType, parsers = []) {
     }
   }
 
-  logging.warning(`Could not detect version for ${projectType} project in ${folderPath}`);
+  log.warn({folderPath, projectType, aggregator: 'anyOf'}, warnFailedToAggregateVersion);
   return {version: null, name: null};
 }
 
@@ -186,7 +192,7 @@ export async function anyOf(folderPath, projectType, parsers = []) {
  */
 export async function merge(folderPath, projectType, parsers = []) {
   if (parsers.length === 0) {
-    logging.warning(`No parsers provided to merge aggregator for ${projectType} project in ${folderPath}`);
+    log.warn({folderPath, projectType, aggregator: 'merge'}, warnNoProvidedParsersToAggregator);
     return {version: null, name: null};
   }
   const projectInfo = {
@@ -208,6 +214,6 @@ export async function merge(folderPath, projectType, parsers = []) {
     return projectInfo;
   }
 
-  logging.warning(`Could not detect version for ${projectType} project in ${folderPath}`);
+  log.warn({folderPath, projectType, aggregator: 'merge'}, warnFailedToAggregateVersion);
   return {version: null, name: null};
 }

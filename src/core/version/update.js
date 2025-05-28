@@ -1,6 +1,24 @@
 import fs from 'fs/promises';
-import * as logging from '../../utils/logging.js';
+import {log as logger} from '../version.js';
 import * as detect from './detect.js';
+
+export const log = logger.child({module: 'update'});
+
+// Log message constants
+export const warnFailedToWrite = 'Failed to write file';
+export const warnNoVersionDetected = 'No version detected in file, skipping update';
+export const warnFileNotFoundOrCouldNotBeRead = 'File not found or could not be read';
+export const warnFailedToParseWithProvidedParser = 'Failed to parse file with provided parser';
+export const warnNoMatchingVersionPatternFound = 'No matching version pattern found to update in file';
+export const warnFailedToUpdate = 'Failed to update file';
+export const warnNoUpdatersProvidedToUpdateAll = 'No updaters provided to updateAll';
+export const warnNoFilesUpdated = 'No files updated';
+export const warnNoUpdatersProvidedToUpdateFirst = 'No updaters provided to updateFirst';
+export const warnFailedToUpdateVersion = 'Failed to update version';
+export const warnUpdaterFunctionFailed = 'Updater function failed';
+export const infoUpdatedVersion = 'Updated version in file';
+export const infoUpdatedVersionInFiles = 'Updated version in files';
+export const infoUpdatedVersionForProject = 'Updated version for project';
 
 /**
  * Safely writes content to a file
@@ -13,7 +31,7 @@ export const forMock = {
     try {
       await fs.writeFile(filePath, content, 'utf8');
     } catch (error) {
-      logging.warning(`Failed to write ${filePath}:`, error);
+      log.warn({filePath, error}, warnFailedToWrite);
     }
   },
   readFile: async (...args) => detect.forMock.readFile(...args),
@@ -146,7 +164,7 @@ export function configUpdater(
         const result = updater(data, newValue);
         return {success: result !== null && result !== undefined, newData: result};
       } catch (error) {
-        logging.warning('Updater function failed:', error);
+        log.warn({error}, warnUpdaterFunctionFailed);
       }
     }
 
@@ -191,13 +209,13 @@ export function configUpdater(
 
     const detectedInfo = await detector();
     if (!detectedInfo.version) {
-      logging.warning(`No version detected in ${filePath}, skipping update`);
+      log.warn({filePath}, warnNoVersionDetected);
       return false;
     }
 
     const data = await forMock.readFile(filePath);
     if (!data) {
-      logging.warning(`File not found or could not be read: ${filePath}`);
+      log.warn({filePath}, warnFileNotFoundOrCouldNotBeRead);
       return false;
     }
 
@@ -207,7 +225,7 @@ export function configUpdater(
     try {
       parsedData = mapper.parser(data);
     } catch (e) {
-      logging.warning(`Failed to parse ${filePath} with provided parser:`, e);
+      log.warn({filePath, error: e}, warnFailedToParseWithProvidedParser);
       return false;
     }
 
@@ -223,14 +241,14 @@ export function configUpdater(
         }
 
         await forMock.writeFile(filePath, newData);
-        logging.info(`Updated version to ${newVersion} in ${filePath}`);
+        log.info({filePath, newVersion}, infoUpdatedVersion);
         return true;
       } else {
-        logging.warning(`No matching version pattern found to update in ${filePath}`);
+        log.warn({filePath}, warnNoMatchingVersionPatternFound);
         return false;
       }
     } catch (error) {
-      logging.warning(`Failed to update ${filePath}:`, error);
+      log.warn({filePath, error}, warnFailedToUpdate);
       return false;
     }
   };
@@ -247,7 +265,7 @@ export function configUpdater(
  */
 export async function updateAll(folderPath, projectType, newVersion, updaters = []) {
   if (updaters.length === 0) {
-    logging.warning(`No updaters provided to updateAll for ${projectType} project in ${folderPath}`);
+    log.warn({folderPath, projectType}, warnNoUpdatersProvidedToUpdateAll);
     return false;
   }
 
@@ -260,13 +278,11 @@ export async function updateAll(folderPath, projectType, newVersion, updaters = 
   }
 
   if (successCount === 0) {
-    logging.warning(`No files updated for ${projectType} project in ${folderPath}`);
+    log.warn({folderPath, projectType}, warnNoFilesUpdated);
     return false;
   }
 
-  logging.info(
-    `Updated version to ${newVersion} in ${successCount} of ${updaters.length} files for ${projectType} project`,
-  );
+  log.info({newVersion, successCount, totalFiles: updaters.length, projectType}, infoUpdatedVersionInFiles);
   return true;
 }
 
@@ -281,15 +297,15 @@ export async function updateAll(folderPath, projectType, newVersion, updaters = 
  */
 export async function updateFirst(folderPath, projectType, newVersion, updaters = []) {
   if (updaters.length === 0) {
-    logging.warning(`No updaters provided to updateFirst for ${projectType} project in ${folderPath}`);
+    log.warn({folderPath, projectType}, warnNoUpdatersProvidedToUpdateFirst);
     return false;
   }
 
   const success = await updaters[0](newVersion);
   if (success) {
-    logging.info(`Updated version to ${newVersion} for ${projectType} project`);
+    log.info({newVersion, projectType}, infoUpdatedVersionForProject);
   } else {
-    logging.warning(`Failed to update version for ${projectType} project`);
+    log.warn({projectType}, warnFailedToUpdateVersion);
   }
   return success;
 }

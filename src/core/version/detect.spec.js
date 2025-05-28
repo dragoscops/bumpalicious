@@ -1,4 +1,4 @@
-import {describe, it} from 'vitest';
+import {describe, it, beforeEach, afterEach} from 'vitest';
 import JSONC from 'tiny-jsonc';
 import toml from '@iarna/toml';
 
@@ -9,16 +9,22 @@ import {
   unMockReadFile,
 } from '../../vitest/setup.detect-update.tests';
 import * as detect from './detect.js';
-import * as logging from '../../utils/logging.js';
 import {
-  mockCConsole,
-  mockConsole,
-  setupLoggingCallsTest,
-  unMockCConsole,
-  unMockConsole,
-} from '../../vitest/setup.logging.tests.js';
+  warnNoProvidedParsersToAggregator,
+  warnFailedToAggregateVersion,
+  log,
+} from './detect.js';
+import {mockPino, setupPinoLoggingCallsTest, unMockPino} from '../../vitest/setup.logging.tests.js';
 
 describe('detect.js', () => {
+  beforeEach(() => {
+    mockPino([], log);
+  });
+
+  afterEach(() => {
+    unMockPino([], log);
+  });
+
   describe('configParser', () => {
     // Test for deno.json
     it('should parse deno.json file correctly', async () => {
@@ -37,8 +43,8 @@ describe('detect.js', () => {
       await setupVersionDetectTest(
         detect.configParser('go.mod', {
           parser: (data) => data, // pass through raw content
-          version: [/\/\/\s*[vV]ersion:?\s*([0-9]+\.[0-9]+\.[0-9]+)/m],
-          name: [/module\s+([\w\d.\/\-@:]+)/m],
+          version: [/\/\/\s*[vV]ersion:?\s*(\d+\.\d+\.\d+)/m],
+          name: [/module\s+([\w./\-@:]+)/m],
         }),
         {
           name: `github.com/${projectNameValue}`,
@@ -61,7 +67,7 @@ describe('detect.js', () => {
     // Test extraction with function extractor
     it('should use function extractor when provided', async () => {
       const customVersionExtractor = (data) => {
-        const match = data.match(/version:\s*([0-9]+\.[0-9]+\.[0-9]+[^\s]*)/);
+        const match = data.match(/version:\s*(\d+\.\d+\.\d+[^\s]*)/);
         return match?.[1] ?? null;
       };
 
@@ -121,54 +127,35 @@ describe('detect.js', () => {
     });
 
     it('should log a warning when no parsers are provided', async () => {
-      mockConsole(['warning']);
-      mockCConsole(['warning']);
-      try {
-        // Execute anyOf with no parsers
-        const result = await detect.anyOf('/project', 'deno', []);
+      // Execute anyOf with no parsers
+      const result = await detect.anyOf('/project', 'deno', []);
 
-        // Should return null version and name
-        expect(result).toEqual({version: null, name: null});
+      // Should return null version and name
+      expect(result).toEqual({version: null, name: null});
 
-        // Verification will be handled by the mocked logging setup
-        setupLoggingCallsTest('warning', [
-          expect.stringContaining('WARNING'),
-          expect.stringContaining('No parsers provided to anyOf aggregator for'),
-        ]);
-      } finally {
-        unMockConsole(['warning']);
-        unMockCConsole(['warning']);
-      }
+      // Check the pino log was called with the expected message
+      setupPinoLoggingCallsTest('warn', [{folderPath: '/project', projectType: 'deno', aggregator: 'anyOf'}, warnNoProvidedParsersToAggregator], log);
     });
 
     it('should log a warning when no valid version is found', async () => {
-      mockConsole(['warning']);
-      mockCConsole(['warning']);
       mockReadFile();
 
-      try {
-        // Execute anyOf with a parser that won't find a version
-        const result = await detect.anyOf('/project', 'deno', [
-          detect.configParser('deno.json', {
-            parser: JSON.parse,
-            version: ['nonexistent'],
-            name: ['name'],
-          }),
-        ]);
+      // Execute anyOf with a parser that won't find a version
+      const result = await detect.anyOf('/project', 'deno', [
+        detect.configParser('deno.json', {
+          parser: JSON.parse,
+          version: ['nonexistent'],
+          name: ['name'],
+        }),
+      ]);
 
-        // Should return null version and name
-        expect(result).toEqual({version: null, name: null});
+      // Should return null version and name
+      expect(result).toEqual({version: null, name: null});
 
-        // Verification will be handled by the mocked logging setup
-        setupLoggingCallsTest('warning', [
-          expect.stringContaining('WARNING'),
-          expect.stringContaining('Could not detect version for'),
-        ]);
-      } finally {
-        unMockConsole(['warning']);
-        unMockCConsole(['warning']);
-        unMockReadFile();
-      }
+      // Check the pino log was called with the expected message
+      setupPinoLoggingCallsTest('warn', [{folderPath: '/project', projectType: 'deno', aggregator: 'anyOf'}, warnFailedToAggregateVersion], log);
+
+      unMockReadFile();
     });
   });
 
@@ -192,54 +179,35 @@ describe('detect.js', () => {
     });
 
     it('should log a warning when no parsers are provided', async () => {
-      mockConsole(['warning']);
-      mockCConsole(['warning']);
-      try {
-        // Execute merge with no parsers
-        const result = await detect.merge('/project', 'zig', []);
+      // Execute merge with no parsers
+      const result = await detect.merge('/project', 'zig', []);
 
-        // Should return null version and name
-        expect(result).toEqual({version: null, name: null});
+      // Should return null version and name
+      expect(result).toEqual({version: null, name: null});
 
-        // Verification will be handled by the mocked logging setup
-        setupLoggingCallsTest('warning', [
-          expect.stringContaining('WARNING'),
-          expect.stringContaining('No parsers provided to merge aggregator for'),
-        ]);
-      } finally {
-        unMockConsole(['warning']);
-        unMockCConsole(['warning']);
-      }
+      // Check the pino log was called with the expected message
+      setupPinoLoggingCallsTest('warn', [{folderPath: '/project', projectType: 'zig', aggregator: 'merge'}, warnNoProvidedParsersToAggregator], log);
     });
 
     it('should log a warning when merged result has no version or name', async () => {
-      mockConsole(['warning']);
-      mockCConsole(['warning']);
       mockReadFile();
 
-      try {
-        // Execute merge with a parser that won't find a version
-        const result = await detect.merge('/project', 'deno', [
-          detect.configParser('build.zig', {
-            parser: (data) => data,
-            version: [/test/i],
-            name: [/test/i],
-          }),
-        ]);
+      // Execute merge with a parser that won't find a version
+      const result = await detect.merge('/project', 'deno', [
+        detect.configParser('build.zig', {
+          parser: (data) => data,
+          version: [/test/i],
+          name: [/test/i],
+        }),
+      ]);
 
-        // Should return null version and name
-        expect(result).toEqual({version: null, name: null});
+      // Should return null version and name
+      expect(result).toEqual({version: null, name: null});
 
-        // Verification will be handled by the mocked logging setup
-        setupLoggingCallsTest('warning', [
-          expect.stringContaining('WARNING'),
-          expect.stringContaining('Could not detect version for'),
-        ]);
-      } finally {
-        unMockConsole(['warning']);
-        unMockCConsole(['warning']);
-        unMockReadFile();
-      }
+      // Check the pino log was called with the expected message
+      setupPinoLoggingCallsTest('warn', [{folderPath: '/project', projectType: 'deno', aggregator: 'merge'}, warnFailedToAggregateVersion], log);
+
+      unMockReadFile();
     });
   });
 });

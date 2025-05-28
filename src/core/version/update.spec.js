@@ -1,25 +1,27 @@
-import {describe, it, expect, beforeEach, vi} from 'vitest';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import * as update from './update.js';
+import {
+  warnNoVersionDetected,
+  log,
+} from './update.js';
 import {
   mockReadFile,
   mockWriteFile,
   newVersion,
-  setupVersionDetectTest,
   setupVersionUpdateTest,
   unMockReadFile,
   unMockWriteFile,
 } from '../../vitest/setup.detect-update.tests.js';
-import {
-  mockCConsole,
-  mockConsole,
-  setupLoggingCallsTest,
-  unMockCConsole,
-  unMockConsole,
-} from '../../vitest/setup.logging.tests.js';
+import {mockPino, setupPinoLoggingCallsTest, unMockPino} from '../../vitest/setup.logging.tests.js';
 
 describe('update.js module', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockPino([], log);
+  });
+
+  afterEach(() => {
+    unMockPino([], log);
   });
 
   describe('configUpdater', () => {
@@ -58,21 +60,17 @@ describe('update.js module', () => {
 
     it('should handle file read errors gracefully', async () => {
       mockReadFile();
-      mockCConsole(['warning']);
-      mockConsole(['warning']);
 
       try {
         const result = await update.configUpdater('missing.json')(newVersion);
 
         expect(result).toBe(false);
-        setupLoggingCallsTest('warning', [
-          expect.stringContaining('WARNING'),
-          expect.stringContaining('No version detected'),
-        ]);
+        setupPinoLoggingCallsTest('warn', [
+          {filePath: 'missing.json'},
+          warnNoVersionDetected,
+        ], log);
       } finally {
         unMockReadFile();
-        unMockCConsole(['warning']);
-        unMockConsole(['warning']);
       }
     });
   });
@@ -100,8 +98,6 @@ describe('update.js module', () => {
 
   describe('updateFirst', () => {
     it('should update only the first file with a matching pattern', async () => {
-      mockCConsole();
-      mockConsole();
       mockReadFile();
       mockWriteFile();
 
@@ -127,14 +123,10 @@ describe('update.js module', () => {
       } finally {
         unMockReadFile();
         unMockWriteFile();
-        unMockCConsole();
-        unMockConsole();
       }
     });
 
     it('should return null if no files can be updated', async () => {
-      mockCConsole();
-      mockConsole();
       mockReadFile();
 
       try {
@@ -143,14 +135,12 @@ describe('update.js module', () => {
           update.configUpdater('nonexistent.json', {}),
         ]);
 
-        setupLoggingCallsTest('warning', [
-          expect.stringContaining('WARNING'),
-          expect.stringContaining('No version detected'),
-        ]);
+        setupPinoLoggingCallsTest('warn', [
+          {filePath: 'nonexistent.json'},
+          warnNoVersionDetected,
+        ], log);
       } finally {
         unMockReadFile();
-        unMockCConsole();
-        unMockConsole();
       }
     });
   });
