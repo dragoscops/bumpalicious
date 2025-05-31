@@ -13,17 +13,17 @@ import {
   warnNoVersionProvided,
   warnInvalidVersionProvided,
   warnNoCommitMessageProvided,
-  warnNoVersionProvided
+  warnNoVersionProvided,
 } from './version.js';
 import {mockPino, setupPinoLoggingCallsTest, unMockPino} from '../vitest/setup.logging.tests.js';
 
 describe('core/version.js module', () => {
   beforeEach(() => {
-    mockPino([], log);
+    mockPino(log);
   });
 
   afterEach(() => {
-    unMockPino([], log);
+    unMockPino(log);
   });
 
   describe('determineVersionIncreaseType(currentVersion, string)', () => {

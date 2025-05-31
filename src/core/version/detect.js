@@ -1,10 +1,10 @@
 import fs from 'fs/promises';
 import {log as logger} from '../version.js';
+import * as changelog from '../../utils/changelog.js';
 
 export const log = logger.child({module: 'detect'});
 
 // Log message constants
-export const warnFailedToRead = 'Failed to read file';
 export const warnFailedToParseWithProvidedParser = 'Failed to parse version file';
 export const warnNoProvidedParsersToAggregator = 'No parsers provided to aggregator';
 export const warnFailedToAggregateVersion = 'Failed to aggregate version';
@@ -16,14 +16,7 @@ export const warnFailedToAggregateVersion = 'Failed to aggregate version';
  * @returns {Promise<string|null>} Content of the file or null if the file doesn't exist
  */
 export const forMock = {
-  readFile: async (filePath) => {
-    try {
-      await fs.access(filePath);
-      return fs.readFile(filePath, 'utf8');
-    } catch (error) {
-      log.warn({filePath, error}, warnFailedToRead);
-    }
-  },
+  readFile: async (filePath) => changelog.forMock.readFile(filePath),
 };
 
 /**

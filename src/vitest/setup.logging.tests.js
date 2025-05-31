@@ -1,73 +1,22 @@
-import * as core from '@actions/core';
 import * as logging from '../utils/logging.js';
+import {vi} from 'vitest';
 
-export const mockPino = (keys = [], logger = logging.logger) => {
-  const pinoMethods = ['debug', 'info', 'warn', 'error', 'fatal', 'trace'];
-  (keys.length ? keys : pinoMethods).forEach((key) => {
+const pinoMethods = ['debug', 'info', 'warn', 'error', 'fatal', 'trace'];
+
+export const mockPino = (logger = logging.logger) => {
+  pinoMethods.forEach((key) => {
     if (typeof logger[key] === 'function') {
       vi.spyOn(logger, key).mockImplementation((...args) => {});
     }
   });
 };
 
-export const unMockPino = (keys = [], logger = logging.logger) => {
-  const pinoMethods = ['debug', 'info', 'warn', 'error', 'fatal', 'trace'];
-  (keys.length ? keys : pinoMethods).forEach((key) => {
+export const unMockPino = (logger = logging.logger) => {
+  pinoMethods.forEach((key) => {
     if (typeof logger[key] === 'function' && typeof logger[key].mockRestore === 'function') {
       logger[key].mockRestore();
     }
   });
-};
-
-export const mockCConsole = (keys = []) => {
-  (keys.length ? keys : Object.keys(logging.cconsole)).forEach((key) => {
-    if (typeof logging.cconsole[key] === 'function') {
-      vi.spyOn(logging.cconsole, key).mockImplementation((...args) => {});
-    }
-  });
-};
-
-export const unMockCConsole = (keys = []) => {
-  (keys.length ? keys : Object.keys(logging.cconsole)).forEach((key) => {
-    if (typeof console[key] === 'function' && typeof logging.cconsole[key].mockRestore === 'function') {
-      logging.cconsole[key].mockRestore();
-    }
-  });
-};
-
-export const mockConsole = (keys = []) => {
-  (keys.length ? keys : Object.keys(console)).forEach((key) => {
-    if (typeof console[key] === 'function') {
-      vi.spyOn(console, key).mockImplementation((...args) => {});
-    }
-  });
-};
-
-export const unMockConsole = (keys = []) => {
-  (keys.length ? keys : Object.keys(console)).forEach((key) => {
-    if (typeof console[key] === 'function' && typeof console[key].mockRestore === 'function') {
-      console[key].mockRestore();
-    }
-  });
-};
-
-export const setupLoggingCallsTest = (logFunction, expectedArgs, nth = 0) => {
-  if (!process.env.GITHUB_ACTIONS || process.env.GITHUB_ACTIONS === 'false') {
-    expect(logging.cconsole[logFunction]).toHaveBeenCalled();
-    if (nth === 0) {
-      expect(logging.cconsole[logFunction]).toHaveBeenCalledWith(...expectedArgs);
-    } else {
-      expect(logging.cconsole[logFunction]).toHaveBeenNthCalledWith(nth, ...expectedArgs);
-    }
-  } else {
-    expect(core[logFunction]).toHaveBeenCalled();
-
-    if (nth === 0) {
-      expect(core[logFunction]).toHaveBeenCalledWith(expectedArgs[1]);
-    } else {
-      expect(core[logFunction]).toHaveBeenNthCalledWith(nth, expectedArgs[1]);
-    }
-  }
 };
 
 export const setupPinoLoggingCallsTest = (logFunction, expectedArgs, logger = logging.logger, nth = 0) => {

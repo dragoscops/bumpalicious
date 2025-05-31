@@ -5,8 +5,10 @@
 
 import * as core from '@actions/core';
 import {getOctokit} from '@actions/github';
-import * as logging from './logging.js';
+import {logger} from './logging.js';
 import * as workspace from './workspace.js';
+
+const log = logger.child({module: 'utils/github'});
 
 /**
  * @typedef {import('./workspace.js').Workspace} Workspace
@@ -51,14 +53,14 @@ export const getClient = (options) => {
   const {token} = options;
 
   if (!token) {
-    logging.error('No GitHub token provided. Set the GITHUB_TOKEN environment variable or github_token input.');
+    log.error('No GitHub token provided. Set the GITHUB_TOKEN environment variable or github_token input.');
     return null;
   }
 
   try {
     return getOctokit(token);
   } catch (error) {
-    logging.error('Failed to create GitHub API client', error);
+    log.error('Failed to create GitHub API client', error);
     return null;
   }
 };
@@ -78,14 +80,14 @@ export const getRepository = () => {
   const repoEnv = process.env.GITHUB_REPOSITORY;
 
   if (!repoEnv) {
-    logging.error('GITHUB_REPOSITORY environment variable not found');
+    log.error('GITHUB_REPOSITORY environment variable not found');
     return null;
   }
 
   const [owner, repo] = repoEnv.split('/');
 
   if (!owner || !repo) {
-    logging.error(`Invalid repository format: ${repoEnv}`);
+    log.error(`Invalid repository format: ${repoEnv}`);
     return null;
   }
 
@@ -113,17 +115,19 @@ export const pr = {
    *
    * @param {PRCreateRequest} createOptions - Pull request options
    * @param {ActionOptions} options - Action options
-   * @returns {Promise<PRCreateResponse>} - Pull request data or null on failure
+   * @returns {Promise<PRCreateResponse|null>} - Pull request data or null on failure
    */
   create: async ({base, head, title, body}, options) => {
     const octokit = getClient(options);
     const repo = getRepository();
 
     if (!octokit) {
-      logging.error('Failed to create pull request: Octokit client not found');
+      log.error('Failed to create pull request: Octokit client not found');
+      return null;
     }
     if (!repo) {
-      logging.error('Failed to create pull request: repository not found');
+      log.error('Failed to create pull request: repository not found');
+      return null;
     }
 
     try {
@@ -135,10 +139,11 @@ export const pr = {
         body,
       });
 
-      logging.info(`Pull request created successfully: ${pullRequest.html_url}`);
+      log.info(`Pull request created successfully: ${pullRequest.html_url}`);
       return pullRequest;
     } catch (error) {
-      logging.error('Failed to create pull request:', error);
+      log.error('Failed to create pull request:', error);
+      return null;
     }
   },
 
@@ -148,10 +153,11 @@ export const pr = {
    * @param {Object} options - Options for checking pull request
    * @param {string} options.base - Base branch
    * @param {string} options.head - Head branch
+   * @param {ActionOptions} actionOptions - Action options containing GitHub token
    * @returns {Promise<Object|null>} - PR data if exists, null otherwise
    */
-  exists: async ({base, head}) => {
-    const octokit = getClient();
+  exists: async ({base, head}, actionOptions) => {
+    const octokit = getClient(actionOptions);
     const repo = getRepository();
 
     if (!octokit || !repo) {
@@ -168,7 +174,7 @@ export const pr = {
 
       return pullRequests.length > 0 ? pullRequests[0] : null;
     } catch (error) {
-      logging.error('Failed to check for existing pull request:', error);
+      log.error('Failed to check for existing pull request:', error);
       return null;
     }
   },
@@ -195,104 +201,11 @@ export const pr = {
         merge_method: mergeMethod,
       });
 
-      logging.info(`Pull request #${pullNumber} merged successfully`);
+      log.info(`Pull request #${pullNumber} merged successfully`);
       return true;
     } catch (error) {
-      logging.error(`Failed to merge pull request #${pullNumber}:`, error);
+      log.error(`Failed to merge pull request #${pullNumber}:`, error);
       return false;
     }
   },
 };
-
-// /**
-//  * Create a GitHub release for a version
-//  *
-//  * @param {Object} options - Release options
-//  * @param {string} options.version - Version number (e.g. 1.0.0)
-//  * @param {string} options.tagName - Tag name (e.g. v1.0.0)
-//  * @param {string} options.title - Release title
-//  * @param {string} options.body - Release body/notes
-//  * @param {boolean} [options.draft=false] - Whether this is a draft release
-//  * @param {boolean} [options.prerelease=false] - Whether this is a prerelease
-//  * @returns {Promise<Object|null>} - Release data or null on failure
-//  */
-// export const createRelease = async ({version, tagName, title, body, draft = false, prerelease = false}) => {
-//   const octokit = getClient();
-//   const repo = getRepository();
-
-//   if (!octokit || !repo) {
-//     return null;
-//   }
-
-//   try {
-//     const {data: release} = await octokit.rest.repos.createRelease({
-//       ...repo,
-//       tag_name: tagName,
-//       name: title || `Release ${version}`,
-//       body: body || '',
-//       draft,
-//       prerelease,
-//     });
-
-//     logging.notice(`Created GitHub release: ${release.html_url}`);
-//     return release;
-//   } catch (error) {
-//     logging.error(`Failed to create GitHub release for ${version}`, error);
-//     return null;
-//   }
-// };
-
-// /**
-//  * Get the latest release from GitHub
-//  *
-//  * @returns {Promise<Object|null>} - Latest release data or null
-//  */
-// export const getLatestRelease = async () => {
-//   const octokit = getClient();
-//   const repo = getRepository();
-
-//   if (!octokit || !repo) {
-//     return null;
-//   }
-
-//   try {
-//     const {data: release} = await octokit.rest.repos.getLatestRelease({
-//       ...repo,
-//     });
-
-//     return release;
-//   } catch (error) {
-//     // Not an error if no releases exist yet
-//     logging.warning('No releases found in the repository');
-//     return null;
-//   }
-// };
-
-// /**
-//  * Generate release notes based on commits since last release
-//  *
-//  * @param {string} previousTag - Previous release tag
-//  * @param {string} newTag - New release tag
-//  * @returns {Promise<string>} - Generated release notes
-//  */
-// export const generateReleaseNotes = async (previousTag, newTag) => {
-//   const octokit = getClient();
-//   const repo = getRepository();
-
-//   if (!octokit || !repo) {
-//     return '';
-//   }
-
-//   try {
-//     const {data: notes} = await octokit.rest.repos.generateReleaseNotes({
-//       ...repo,
-//       tag_name: newTag,
-//       previous_tag_name: previousTag,
-//     });
-
-//     return notes.body;
-//   } catch (error) {
-//     logging.error('Failed to generate release notes', error);
-//     return '';
-//   }
-// };

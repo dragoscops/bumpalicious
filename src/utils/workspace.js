@@ -1,6 +1,8 @@
 import path from 'path';
 
-import * as logging from './logging.js';
+import {logger} from './logging.js';
+
+export const log = logger.child({module: 'utils/workspace'});
 
 /**
  * @typedef {Object} Workspace
@@ -19,7 +21,7 @@ import * as logging from './logging.js';
 export function stringToWorkspace(workspace) {
   const splited = workspace.split(':');
   return {
-    ...(splited.length > 1 ? {path: path.resolve(splited[0])} : {}),
+    ...(splited.length >= 1 ? {path: splited[0]} : {}),
     ...(splited.length > 1 ? {type: splited[1]} : {}),
     ...(splited.length > 2 ? {name: splited[2]} : {}),
     ...(splited.length > 3 ? {version: splited[3]} : {}),

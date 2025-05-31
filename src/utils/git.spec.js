@@ -1,25 +1,25 @@
 import {execa} from 'execa';
-import {describe, it, expect, beforeEach, vi, afterAll, beforeAll} from 'vitest';
+import {describe, it, expect, beforeEach, vi, afterAll} from 'vitest';
 
 import * as git from './git.js';
-import {mockCConsole, unMockCConsole, setupLoggingCallsTest} from '../vitest/setup.logging.tests.js';
+import {mockPino, unMockPino, setupPinoLoggingCallsTest} from '../vitest/setup.logging.tests.js';
 
 describe('git.js module', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockCConsole();
+    mockPino(git.log);
   });
 
   afterAll(() => {
-    unMockCConsole();
+    unMockPino(git.log);
   });
 
-  describe('log object', () => {
+  describe('gitLog object', () => {
     describe('lastMessage()', () => {
       it('returns the latest commit message', async () => {
         execa.mockResolvedValueOnce({stdout: 'feat: add new feature\n'});
 
-        const message = await git.log.lastMessage();
+        const message = await git.gitLog.lastMessage();
 
         expect(execa).toHaveBeenCalledWith('git', ['log', '-1', '--pretty=%B']);
         expect(message).toBe('feat: add new feature');
@@ -28,13 +28,10 @@ describe('git.js module', () => {
       it('logs error and returns undefined on failure', async () => {
         execa.mockRejectedValueOnce(new Error('Mocked error'));
 
-        const message = await git.log.lastMessage();
+        const message = await git.gitLog.lastMessage();
 
-        setupLoggingCallsTest('error', [
-          expect.stringContaining('ERROR'),
-          expect.stringContaining('Failed to get latest commit message'),
-        ]);
-        expect(message).toBeUndefined();
+        setupPinoLoggingCallsTest('warn', [{error: 'Mocked error'}, git.warnFailedToGetLatestCommitMessage], git.log);
+        expect(message).toBeNull();
       });
     });
   });
@@ -81,7 +78,6 @@ describe('git.js module', () => {
 
       expect(result).toEqual(['file1.js', 'file2.js']);
     });
-
     it('logs error and exits when git command fails', async () => {
       const repoPath = '/path/to/repo';
       const lastTag = 'v1.0.0';
@@ -89,13 +85,9 @@ describe('git.js module', () => {
 
       execa.mockRejectedValueOnce(error);
 
-      const result = await git.getChangedFiles(repoPath, lastTag);
+      await git.getChangedFiles(repoPath, lastTag);
 
-      setupLoggingCallsTest('error', [
-        expect.stringContaining('ERROR'),
-        expect.stringContaining(`Error retrieving changed files in repository ${repoPath}:`),
-        expect.any(Error),
-      ]);
+      setupPinoLoggingCallsTest('error', [{repoPath, error}, git.errorRetrievingChangedFiles], git.log);
     });
 
     it('handles empty output from git command', async () => {
@@ -203,10 +195,7 @@ describe('git.js module', () => {
 
         const config = await git.config.get();
 
-        setupLoggingCallsTest('error', [
-          expect.stringContaining('ERROR'),
-          expect.stringContaining('Failed to get git config'),
-        ]);
+        setupPinoLoggingCallsTest('warn', [{error: 'Git command failed'}, git.warnFailedToGetGitConfig], git.log);
         expect(config).toEqual({});
       });
     });
@@ -218,10 +207,7 @@ describe('git.js module', () => {
         await git.config.set({'user.name': 'Test User'});
 
         expect(execa).toHaveBeenCalledWith('git', ['config', '--global', 'user.name', 'Test User']);
-        setupLoggingCallsTest('info', [
-          expect.stringContaining('INFO'),
-          expect.stringContaining('Git config user.name set to Test User'),
-        ]);
+        setupPinoLoggingCallsTest('info', [{key: 'user.name', value: 'Test User'}, git.infoGitConfigSet], git.log);
       });
 
       it('logs error message when setting config fails', async () => {
@@ -231,10 +217,11 @@ describe('git.js module', () => {
         await git.config.set({'invalid.key': 'value'});
 
         expect(execa).toHaveBeenCalledWith('git', ['config', '--global', 'invalid.key', 'value']);
-        setupLoggingCallsTest('error', [
-          expect.stringContaining('ERROR'),
-          expect.stringContaining('Failed to set git config invalid.key'),
-        ]);
+        setupPinoLoggingCallsTest(
+          'warn',
+          [{key: 'invalid.key', error: 'Config error'}, git.warnFailedToSetGitConfig],
+          git.log,
+        );
       });
     });
   });
@@ -247,10 +234,7 @@ describe('git.js module', () => {
         await git.tag.create('v1.0.0', 'Version 1.0.0 release');
 
         expect(execa).toHaveBeenCalledWith('git', ['tag', '-a', 'v1.0.0', '-m', 'Version 1.0.0 release']);
-        setupLoggingCallsTest('info', [
-          expect.stringContaining('INFO'),
-          expect.stringContaining('Tag v1.0.0 created successfully'),
-        ]);
+        setupPinoLoggingCallsTest('info', [{tagName: 'v1.0.0'}, git.infoTagCreated], git.log);
       });
 
       it('logs error when tag creation fails', async () => {
@@ -259,11 +243,7 @@ describe('git.js module', () => {
 
         await git.tag.create('invalid-tag', 'message');
 
-        setupLoggingCallsTest('error', [
-          expect.stringContaining('ERROR'),
-          expect.stringContaining('Failed to create tag invalid-tag'),
-          expect.any(Error),
-        ]);
+        setupPinoLoggingCallsTest('warn', [{tagName: 'invalid-tag', error}, git.warnFailedToCreateTag], git.log);
       });
     });
 
@@ -293,25 +273,17 @@ describe('git.js module', () => {
         expect(execa).toHaveBeenNthCalledWith(3, 'git', ['tag', '-a', 'v1.0.0', '-m', 'Version 1.0.0']);
         expect(execa).toHaveBeenNthCalledWith(4, 'git', ['push', 'origin', 'v1.0.0']);
 
-        setupLoggingCallsTest('info', [
-          expect.stringContaining('INFO'),
-          expect.stringContaining('Tag v1.0.0 already exists, removing it first'),
-        ]);
+        setupPinoLoggingCallsTest('info', [{tagName: 'v1.0.0'}, git.infoTagAlreadyExists], git.log);
       });
 
-      // TODO: command contains multiple execa calls; need to mock them all
-      // it('logs error when createAndPush fails', async () => {
-      //   const error = new Error('Tag error');
-      //   execa.mockRejectedValueOnce(error);
+      it('logs error when createAndPush fails', async () => {
+        const error = new Error('Tag error');
+        execa.mockRejectedValueOnce(error);
 
-      //   await git.tag.createAndPush('v1.0.0', 'Version 1.0.0');
+        await git.tag.createAndPush('v1.0.0', 'Version 1.0.0');
 
-      //   setupLoggingCallsTest('error', [
-      //     expect.stringContaining('ERROR'),
-      //     expect.stringContaining('Failed to create and push tag v1.0.0'),
-      //     expect.any(Error),
-      //   ]);
-      // });
+        setupPinoLoggingCallsTest('warn', [{tagName: 'v1.0.0', error}, git.warnFailedToCheckTagExists], git.log);
+      });
     });
 
     describe('exists()', () => {
@@ -339,11 +311,7 @@ describe('git.js module', () => {
         const result = await git.tag.exists('v1.0.0');
 
         expect(result).toBe(false);
-        setupLoggingCallsTest('error', [
-          expect.stringContaining('ERROR'),
-          expect.stringContaining('Failed to check if tag v1.0.0 exists'),
-          expect.any(Error),
-        ]);
+        setupPinoLoggingCallsTest('warn', [{tagName: 'v1.0.0', error}, git.warnFailedToCheckTagExists], git.log);
       });
     });
 
@@ -360,15 +328,12 @@ describe('git.js module', () => {
       it('logs error when no tags are found', async () => {
         const error = new Error('No tags found');
         execa.mockRejectedValueOnce(error);
+        execa.mockRejectedValueOnce(new Error('No commits found'));
 
         const result = await git.tag.lastCreated();
 
-        expect(result).toBeUndefined();
-        setupLoggingCallsTest('error', [
-          expect.stringContaining('ERROR'),
-          expect.stringContaining('Failed to get last created tag'),
-          expect.any(Error),
-        ]);
+        expect(result).toBeNull();
+        setupPinoLoggingCallsTest('warn', [{error: error.message}, git.warnFailedToGetLastCreatedTag], git.log);
       });
     });
 
@@ -379,10 +344,7 @@ describe('git.js module', () => {
         await git.tag.push('v1.0.0');
 
         expect(execa).toHaveBeenCalledWith('git', ['push', 'origin', 'v1.0.0']);
-        setupLoggingCallsTest('info', [
-          expect.stringContaining('INFO'),
-          expect.stringContaining('Tag v1.0.0 pushed successfully'),
-        ]);
+        setupPinoLoggingCallsTest('info', [{tagName: 'v1.0.0'}, git.infoTagPushed], git.log);
       });
 
       it('logs error when push fails', async () => {
@@ -391,11 +353,7 @@ describe('git.js module', () => {
 
         await git.tag.push('v1.0.0');
 
-        setupLoggingCallsTest('error', [
-          expect.stringContaining('ERROR'),
-          expect.stringContaining('Failed to push tag v1.0.0'),
-          expect.any(Error),
-        ]);
+        setupPinoLoggingCallsTest('warn', [{tagName: 'v1.0.0', error}, git.warnFailedToPushTag], git.log);
       });
     });
 
@@ -406,10 +364,7 @@ describe('git.js module', () => {
         await git.tag.remove('v1.0.0');
 
         expect(execa).toHaveBeenCalledWith('git', ['tag', '-d', 'v1.0.0']);
-        setupLoggingCallsTest('info', [
-          expect.stringContaining('INFO'),
-          expect.stringContaining('Tag v1.0.0 deleted successfully'),
-        ]);
+        setupPinoLoggingCallsTest('info', [{tagName: 'v1.0.0'}, git.infoTagDeleted], git.log);
       });
 
       it('logs error when tag removal fails', async () => {
@@ -418,11 +373,7 @@ describe('git.js module', () => {
 
         await git.tag.remove('v1.0.0');
 
-        setupLoggingCallsTest('error', [
-          expect.stringContaining('ERROR'),
-          expect.stringContaining('Failed to delete tag v1.0.0'),
-          expect.any(Error),
-        ]);
+        setupPinoLoggingCallsTest('warn', [{tagName: 'v1.0.0', error}, git.warnFailedToDeleteTag], git.log);
       });
     });
   });
@@ -436,10 +387,7 @@ describe('git.js module', () => {
 
         expect(execa).toHaveBeenCalledWith('git', ['checkout', '-b', 'feature/new-feature']);
         expect(result).toBe('feature/new-feature');
-        setupLoggingCallsTest('info', [
-          expect.stringContaining('INFO'),
-          expect.stringContaining('Branch feature/new-feature created successfully'),
-        ]);
+        setupPinoLoggingCallsTest('info', [{branchName: 'feature/new-feature'}, git.infoBranchCreated], git.log);
       });
 
       it('logs error when branch creation fails', async () => {
@@ -448,11 +396,11 @@ describe('git.js module', () => {
 
         await git.branch.create('invalid-branch');
 
-        setupLoggingCallsTest('error', [
-          expect.stringContaining('ERROR'),
-          expect.stringContaining('Failed to create branch invalid-branch'),
-          expect.any(Error),
-        ]);
+        setupPinoLoggingCallsTest(
+          'warn',
+          [{branchName: 'invalid-branch', error}, git.warnFailedToCreateBranch],
+          git.log,
+        );
       });
     });
 
@@ -473,10 +421,7 @@ describe('git.js module', () => {
         await git.branch.remove('feature/old-feature');
 
         expect(execa).toHaveBeenCalledWith('git', ['branch', '-d', 'feature/old-feature']);
-        setupLoggingCallsTest('info', [
-          expect.stringContaining('INFO'),
-          expect.stringContaining('Branch feature/old-feature deleted successfully'),
-        ]);
+        setupPinoLoggingCallsTest('info', [{branchName: 'feature/old-feature'}, git.infoBranchDeleted], git.log);
       });
 
       it('logs error when branch removal fails', async () => {
@@ -485,11 +430,11 @@ describe('git.js module', () => {
 
         await git.branch.remove('non-existent-branch');
 
-        setupLoggingCallsTest('error', [
-          expect.stringContaining('ERROR'),
-          expect.stringContaining('Failed to delete branch non-existent-branch'),
-          expect.any(Error),
-        ]);
+        setupPinoLoggingCallsTest(
+          'warn',
+          [{branchName: 'non-existent-branch', error}, git.warnFailedToDeleteBranch],
+          git.log,
+        );
       });
     });
 
@@ -500,10 +445,7 @@ describe('git.js module', () => {
         await git.branch.push('feature/branch');
 
         expect(execa).toHaveBeenCalledWith('git', ['push', 'origin', 'feature/branch']);
-        setupLoggingCallsTest('info', [
-          expect.stringContaining('INFO'),
-          expect.stringContaining('Branch feature/branch pushed successfully'),
-        ]);
+        setupPinoLoggingCallsTest('info', [{branchName: 'feature/branch'}, git.infoBranchPushed], git.log);
       });
 
       it('logs error when branch push fails', async () => {
@@ -512,11 +454,7 @@ describe('git.js module', () => {
 
         await git.branch.push('feature/branch');
 
-        setupLoggingCallsTest('error', [
-          expect.stringContaining('ERROR'),
-          expect.stringContaining('Failed to push branch feature/branch'),
-          expect.any(Error),
-        ]);
+        setupPinoLoggingCallsTest('warn', [{branchName: 'feature/branch', error}, git.warnFailedToPushBranch], git.log);
       });
     });
   });

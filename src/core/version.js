@@ -149,5 +149,5 @@ export function determineVersionPreReleaseIdentifier(currentVersion, commitMessa
     return null;
   }
 
-  return version?.prerelease?.[0] || null
+  return version?.prerelease?.[0] || null;
 }

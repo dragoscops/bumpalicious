@@ -1,55 +1,30 @@
-import * as afs from 'fs/promises';
-import * as astream from 'stream/promises';
+/**
+ * Node.js built-in modules wrapper for easier testing and mocking
+ * @module utils/node-wrapper
+ */
 
-import * as nfs from 'fs';
+import {promises as fsPromises, constants as fsConstants, createWriteStream} from 'fs';
+import {pipeline} from 'stream';
+import {promisify} from 'util';
 
+/**
+ * File system utilities with both sync and async methods
+ */
 export const fs = {
-  async: {
-    /** @type typeof import('fs/promises').access */
-    access: async (...args) => afs.access(...args),
-    /** @type typeof import('fs/promises').readFile */
-    readFile: async (...args) => afs.readFile(...args),
-    /** @type typeof import('fs/promises').writeFile */
-    writeFile: async (...args) => afs.writeFile(...args),
-    /** @type typeof import('fs/promises').unlink */
-    unlink: async (...args) => afs.unlink(...args),
-  },
-  /** @type typeof import('fs').createWriteStream */
-  createWriteStream: (...args) => nfs.createWriteStream(...args),
-
-  /** @type typeof import('fs').constants / */
-  constants: nfs.constants,
+  // Async methods (promises)
+  async: fsPromises,
+  // Constants
+  constants: fsConstants,
+  // Stream methods
+  createWriteStream,
 };
 
-// Object.entries(afs).forEach(([key, value]) => {
-//   if (typeof value === 'function') {
-//     fs.async[key] = async (...args) => {
-//       return value(...args).catch((error) => {
-//         console.error(`Error in ${key}:`, error);
-//         throw error;
-//       });
-//     };
-//   } else {
-//     fs.async[key] = value;
-//   }
-// });
-
+/**
+ * Stream utilities with promisified methods
+ */
 export const stream = {
+  // Async pipeline
   async: {
-    /** @type typeof import('stream/promises').pipeline */
-    pipeline: (...args) => astream.pipeline(...args),
+    pipeline: promisify(pipeline),
   },
 };
-
-// Object.entries(astream).forEach(([key, value]) => {
-//   if (typeof value === 'function') {
-//     stream.async[key] = async (...args) => {
-//       return value(...args).catch((error) => {
-//         console.error(`Error in ${key}:`, error);
-//         throw error;
-//       });
-//     };
-//   } else {
-//     stream.async[key] = value;
-//   }
-// });

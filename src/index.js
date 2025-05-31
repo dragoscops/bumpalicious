@@ -6,11 +6,14 @@
  * @module index
  */
 
+import core from '@actions/core';
 import * as workspaces from './core/workspaces.js';
 import * as git from './utils/git.js';
 import * as github from './utils/github.js';
-import * as logging from './utils/logging.js';
+import {logger} from './utils/log.js';
 import * as workspace from './utils/workspace.js';
+
+const log = logger.child({module: 'bumpalicious'});
 
 /**
  * Main function to run the GitHub Action
@@ -23,31 +26,31 @@ const run = async () => {
 
     //======================================================================
 
-    logging.startGroup('Gathering workspaces info');
-    logging.info(`Options: ${JSON.stringify(options)}`);
+    core.startGroup('Gathering workspaces info');
+    log.info(`Options: ${JSON.stringify(options)}`);
 
     // Get last created tag or 1st commit message
     const lastTag = await git.tag.lastCreated();
-    logging.info(`Last tag: ${lastTag}`);
+    log.info(`Last tag: ${lastTag}`);
 
     // Get the last commit message
     const commitMessage = await git.log.lastMessage();
-    logging.info(`Latest commit message: ${commitMessage}`);
+    log.info(`Latest commit message: ${commitMessage}`);
     if (!commitMessage) {
-      logging.error('No commit message found');
+      log.error('No commit message found');
     }
-    logging.endGroup();
+    core.endGroup();
 
     //======================================================================
 
-    logging.startGroup('Setting up Github');
+    core.startGroup('Setting up Github');
     // Setup git user
     await git.config.set({
       'user.name': 'GitHub Actions',
       'user.email': 'actions@github.com',
       'safe.directory': process.env.GITHUB_WORKSPACE || process.cwd(),
     });
-    logging.endGroup();
+    core.endGroup();
 
     //======================================================================
 
@@ -55,7 +58,7 @@ const run = async () => {
     // If it does, we assume the PR is already created
     // and we only need to update the versions
     if (commitMessage.includes(options.prMessage)) {
-      logging.info(`Version PR was merged with message: ${commitMessage}`);
+      log.info(`Version PR was merged with message: ${commitMessage}`);
       // enrich all workspaces
       const changedWorkspaces = await workspaces.enrichWorkspaces(options.workspaces, lastTag);
       const changedWorkspacesTrees = workspace.buildUpdatedWorkspacesTrees(changedWorkspaces);
@@ -68,25 +71,25 @@ const run = async () => {
       // Check if the workspaces have changed since the last tag
       const updatedWorkspaces = await workspaces.updateVersionsForChangedWorkspaces(commitMessage, lastTag, options);
       if (updatedWorkspaces.length === 0) {
-        logging.warning('No workspaces have changed');
+        log.warn('No workspaces have changed');
         return;
       } else {
-        logging.info(`Updated workspaces: ${JSON.stringify(updatedWorkspaces)}`);
+        log.info(`Updated workspaces: ${JSON.stringify(updatedWorkspaces)}`);
       }
 
       //======================================================================
 
-      logging.startGroup('Updating workspaces tree');
+      core.startGroup('Updating workspaces tree');
       // Organizes workspaces into a tree like structure to also determine the root workspace
       const updatedWorkspacesTrees = workspace.buildUpdatedWorkspacesTrees(updatedWorkspaces);
       if (updatedWorkspacesTrees.length > 1) {
-        logging.error('Workspaces folder should only have a root workspace');
+        log.error('Workspaces folder should only have a root workspace');
       }
       if (updatedWorkspacesTrees.length === 0) {
-        logging.error('No workspaces found');
+        log.error('No workspaces found');
       }
-      logging.info(`Updated workspaces trees -> Found ${updatedWorkspacesTrees.length} main nodes`);
-      logging.endGroup();
+      log.info(`Updated workspaces trees -> Found ${updatedWorkspacesTrees.length} main nodes`);
+      core.endGroup();
 
       //======================================================================
 
@@ -107,7 +110,7 @@ const run = async () => {
       }
     }
   } catch (error) {
-    logging.error(`Action failed: ${error.message}`);
+    log.error(`Action failed: ${error.message}`);
   }
 };
 

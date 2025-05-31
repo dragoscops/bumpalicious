@@ -1,9 +1,7 @@
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import * as update from './update.js';
-import {
-  warnNoVersionDetected,
-  log,
-} from './update.js';
+import * as changelog from '../../utils/changelog.js';
+import {warnNoVersionDetected, log} from './update.js';
 import {
   mockReadFile,
   mockWriteFile,
@@ -17,11 +15,11 @@ import {mockPino, setupPinoLoggingCallsTest, unMockPino} from '../../vitest/setu
 describe('update.js module', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockPino([], log);
+    mockPino(log);
   });
 
   afterEach(() => {
-    unMockPino([], log);
+    unMockPino(log);
   });
 
   describe('configUpdater', () => {
@@ -65,10 +63,7 @@ describe('update.js module', () => {
         const result = await update.configUpdater('missing.json')(newVersion);
 
         expect(result).toBe(false);
-        setupPinoLoggingCallsTest('warn', [
-          {filePath: 'missing.json'},
-          warnNoVersionDetected,
-        ], log);
+        setupPinoLoggingCallsTest('warn', [{filePath: 'missing.json'}, warnNoVersionDetected], log);
       } finally {
         unMockReadFile();
       }
@@ -115,11 +110,11 @@ describe('update.js module', () => {
           }),
         ]);
 
-        expect(update.forMock.writeFile).toHaveBeenCalledWith(
+        expect(changelog.forMock.writeFile).toHaveBeenCalledWith(
           'go.mod',
           expect.stringContaining(`// version: ${newVersion}`),
         );
-        expect(update.forMock.writeFile).not.toHaveBeenCalledWith('version', newVersion);
+        expect(changelog.forMock.writeFile).not.toHaveBeenCalledWith('version', newVersion);
       } finally {
         unMockReadFile();
         unMockWriteFile();
@@ -135,10 +130,7 @@ describe('update.js module', () => {
           update.configUpdater('nonexistent.json', {}),
         ]);
 
-        setupPinoLoggingCallsTest('warn', [
-          {filePath: 'nonexistent.json'},
-          warnNoVersionDetected,
-        ], log);
+        setupPinoLoggingCallsTest('warn', [{filePath: 'nonexistent.json'}, warnNoVersionDetected], log);
       } finally {
         unMockReadFile();
       }

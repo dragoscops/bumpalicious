@@ -9,20 +9,16 @@ import {
   unMockReadFile,
 } from '../../vitest/setup.detect-update.tests';
 import * as detect from './detect.js';
-import {
-  warnNoProvidedParsersToAggregator,
-  warnFailedToAggregateVersion,
-  log,
-} from './detect.js';
+import {warnNoProvidedParsersToAggregator, warnFailedToAggregateVersion, log} from './detect.js';
 import {mockPino, setupPinoLoggingCallsTest, unMockPino} from '../../vitest/setup.logging.tests.js';
 
 describe('detect.js', () => {
   beforeEach(() => {
-    mockPino([], log);
+    mockPino(log);
   });
 
   afterEach(() => {
-    unMockPino([], log);
+    unMockPino(log);
   });
 
   describe('configParser', () => {
@@ -134,7 +130,11 @@ describe('detect.js', () => {
       expect(result).toEqual({version: null, name: null});
 
       // Check the pino log was called with the expected message
-      setupPinoLoggingCallsTest('warn', [{folderPath: '/project', projectType: 'deno', aggregator: 'anyOf'}, warnNoProvidedParsersToAggregator], log);
+      setupPinoLoggingCallsTest(
+        'warn',
+        [{folderPath: '/project', projectType: 'deno', aggregator: 'anyOf'}, warnNoProvidedParsersToAggregator],
+        log,
+      );
     });
 
     it('should log a warning when no valid version is found', async () => {
@@ -153,7 +153,11 @@ describe('detect.js', () => {
       expect(result).toEqual({version: null, name: null});
 
       // Check the pino log was called with the expected message
-      setupPinoLoggingCallsTest('warn', [{folderPath: '/project', projectType: 'deno', aggregator: 'anyOf'}, warnFailedToAggregateVersion], log);
+      setupPinoLoggingCallsTest(
+        'warn',
+        [{folderPath: '/project', projectType: 'deno', aggregator: 'anyOf'}, warnFailedToAggregateVersion],
+        log,
+      );
 
       unMockReadFile();
     });
@@ -186,7 +190,11 @@ describe('detect.js', () => {
       expect(result).toEqual({version: null, name: null});
 
       // Check the pino log was called with the expected message
-      setupPinoLoggingCallsTest('warn', [{folderPath: '/project', projectType: 'zig', aggregator: 'merge'}, warnNoProvidedParsersToAggregator], log);
+      setupPinoLoggingCallsTest(
+        'warn',
+        [{folderPath: '/project', projectType: 'zig', aggregator: 'merge'}, warnNoProvidedParsersToAggregator],
+        log,
+      );
     });
 
     it('should log a warning when merged result has no version or name', async () => {
@@ -205,7 +213,11 @@ describe('detect.js', () => {
       expect(result).toEqual({version: null, name: null});
 
       // Check the pino log was called with the expected message
-      setupPinoLoggingCallsTest('warn', [{folderPath: '/project', projectType: 'deno', aggregator: 'merge'}, warnFailedToAggregateVersion], log);
+      setupPinoLoggingCallsTest(
+        'warn',
+        [{folderPath: '/project', projectType: 'deno', aggregator: 'merge'}, warnFailedToAggregateVersion],
+        log,
+      );
 
       unMockReadFile();
     });

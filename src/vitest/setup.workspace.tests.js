@@ -1,4 +1,5 @@
-import * as workspace from '../workspace/index.js';
+import * as workspace from '../core/version/workspace/index.js';
+import {vi} from 'vitest';
 
 const counters = {};
 let id = 0;
@@ -34,7 +35,7 @@ export const mockWorkspace = (
     detect: vi.spyOn(workspace[type], 'detect').mockImplementation((workspacePath) => {
       return Promise.resolve(values[counters[mockId]++]);
     }),
-    updateVersion: vi.spyOn(workspace[type], 'updateVersion').mockImplementation((workspacePath) => {
+    update: vi.spyOn(workspace[type], 'update').mockImplementation((projectPath, newVersion) => {
       return Promise.resolve();
     }),
   };
@@ -42,5 +43,5 @@ export const mockWorkspace = (
 
 export const unMockWorkspace = (mock) => {
   mock.detect.mockRestore();
-  mock.updateVersion.mockRestore();
+  mock.update.mockRestore();
 };

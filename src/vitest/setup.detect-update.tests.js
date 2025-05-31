@@ -1,8 +1,9 @@
-import {TEXT_VERSION_FILES} from '../workspace/constants.js';
-import * as detect from '../core/version/detect.js';
 import * as update from '../core/version/update.js';
-import * as logging from '../utils/logging.js';
-import {mockConsole, mockCConsole, unMockConsole, unMockCConsole} from './setup.logging.tests.js';
+import * as changelog from '../utils/changelog.js';
+import {logger} from '../utils/logging.js';
+import {mockConsole, mockCConsole, unMockConsole, unMockCConsole, mockPino, unMockPino} from './setup.logging.tests.js';
+
+const log = logger.child({module: 'vitest/version-detect-update-tests'});
 
 export const folder = 'test-project';
 export const projectNameValue = 'project'; // Renamed from name to projectName
@@ -11,42 +12,42 @@ export const projectPath = '/test/project';
 export const newVersion = '2.0.0';
 
 export const mockReadFile = (file = null) => {
-  vi.spyOn(detect.forMock, 'readFile').mockImplementation(async (path) => {
+  vi.spyOn(changelog.forMock, 'readFile').mockImplementation(async (filePath) => {
     if (file) {
       // If a specific file is provided, return its content
-      if (path.endsWith(file) || path === file) {
+      if (filePath.endsWith(file) || filePath === file) {
         return Promise.resolve(configMocks[file]);
       }
-      logging.warning(`Mocked readFile: File not found for path: ${path}`);
+      log.warn({filePath, error: null}, changelog.warnFailedToRead);
       return Promise.resolve(null);
     }
 
     for (const [key, value] of Object.entries(configMocks)) {
-      if (path.endsWith(key) || path === key) {
+      if (filePath.endsWith(key) || filePath === key) {
         return Promise.resolve(value);
       }
     }
 
-    logging.warning(`Mocked readFile: File not found for path: ${path}`);
+    log.warn({filePath, error: null}, changelog.warnFailedToRead);
     return Promise.resolve(null);
   });
 };
 
 export const mockWriteFile = (shouldThrow = false) => {
-  vi.spyOn(update.forMock, 'writeFile').mockImplementation(async (path, _content) => {
+  vi.spyOn(changelog.forMock, 'writeFile').mockImplementation(async (path, _content) => {
     console.log(`writeFile ${path} ${_content}`);
     if (shouldThrow) {
-      logging.error(`Mocked writeFile error for path: ${path}`);
+      log.error({filePath: path, error: null}, changelog.warnFailedToWrite);
     }
   });
 };
 
 export const unMockReadFile = () => {
-  detect.forMock.readFile.mockRestore();
+  changelog.forMock.readFile.mockRestore();
 };
 
 export const unMockWriteFile = () => {
-  update.forMock.writeFile.mockRestore();
+  changelog.forMock.writeFile.mockRestore();
 };
 
 export const setupVersionDetectTest = async (
@@ -58,8 +59,7 @@ export const setupVersionDetectTest = async (
   testFile = null,
 ) => {
   mockReadFile(testFile);
-  mockConsole(['error']);
-  mockCConsole(['error']);
+  mockPino();
   try {
     // Execute
     const result = await parser();
@@ -72,14 +72,12 @@ export const setupVersionDetectTest = async (
     });
   } finally {
     unMockReadFile();
-    unMockConsole(['error']);
-    unMockCConsole(['error']);
+    unMockPino();
   }
 };
 
 export const setupVersionUpdateTest = async (updater, expectedResult = '') => {
-  mockCConsole();
-  mockConsole();
+  mockPino();
   mockReadFile();
   mockWriteFile();
   try {
@@ -87,13 +85,13 @@ export const setupVersionUpdateTest = async (updater, expectedResult = '') => {
     expect(result).toBeTruthy();
 
     if (typeof expectedResult === 'string') {
-      expect(update.forMock.writeFile).toHaveBeenCalledWith(
+      expect(changelog.forMock.writeFile).toHaveBeenCalledWith(
         expect.any(String),
         expect.stringContaining(expectedResult),
       );
     } else {
       for (const index in expectedResult) {
-        expect(update.forMock.writeFile).toHaveBeenCalledWith(
+        expect(changelog.forMock.writeFile).toHaveBeenCalledWith(
           expect.any(String),
           expect.stringContaining(expectedResult[index]),
         );
@@ -102,8 +100,7 @@ export const setupVersionUpdateTest = async (updater, expectedResult = '') => {
   } finally {
     unMockWriteFile();
     unMockReadFile();
-    unMockConsole();
-    unMockCConsole();
+    unMockPino();
   }
 };
 
@@ -145,7 +142,7 @@ const configMocks = {
     `__version__ = "${oldVersion}"`,
     `__name__ = "${projectNameValue}"`,
   ].join('\n'),
-  ...TEXT_VERSION_FILES.reduce((acc, file) => {
+  ...['version', 'version.txt', 'VERSION', 'VERSION.txt'].reduce((acc, file) => {
     acc[file] = oldVersion;
     return acc;
   }, {}),

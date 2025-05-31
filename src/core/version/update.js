@@ -1,11 +1,11 @@
 import fs from 'fs/promises';
 import {log as logger} from '../version.js';
 import * as detect from './detect.js';
+import * as changelog from '../../utils/changelog.js';
 
 export const log = logger.child({module: 'update'});
 
 // Log message constants
-export const warnFailedToWrite = 'Failed to write file';
 export const warnNoVersionDetected = 'No version detected in file, skipping update';
 export const warnFileNotFoundOrCouldNotBeRead = 'File not found or could not be read';
 export const warnFailedToParseWithProvidedParser = 'Failed to parse file with provided parser';
@@ -27,14 +27,8 @@ export const infoUpdatedVersionForProject = 'Updated version for project';
  * @param {string} content - Content to write to the file
  */
 export const forMock = {
-  writeFile: async (filePath, content) => {
-    try {
-      await fs.writeFile(filePath, content, 'utf8');
-    } catch (error) {
-      log.warn({filePath, error}, warnFailedToWrite);
-    }
-  },
-  readFile: async (...args) => detect.forMock.readFile(...args),
+  writeFile: async (...args) => changelog.forMock.writeFile(...args),
+  readFile: async (...args) => changelog.forMock.readFile(...args),
 };
 
 /**
