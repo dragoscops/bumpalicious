@@ -1,7 +1,10 @@
-import * as update from '../core/version/update.js';
+import {execa} from 'execa';
 import * as changelog from '../utils/changelog.js';
 import {logger} from '../utils/logging.js';
-import {mockConsole, mockCConsole, unMockConsole, unMockCConsole, mockPino, unMockPino} from './setup.logging.tests.js';
+import {mockPino, unMockPino} from './setup.logging.tests.js';
+import fs from 'fs/promises';
+import path from 'path';
+import {tmpdir} from 'os';
 
 const log = logger.child({module: 'vitest/version-detect-update-tests'});
 
@@ -11,6 +14,7 @@ export const oldVersion = '1.7.3';
 export const projectPath = '/test/project';
 export const newVersion = '2.0.0';
 
+// TODO: Remove this when all tests are migrated to the new setup
 export const mockReadFile = (file = null) => {
   vi.spyOn(changelog.forMock, 'readFile').mockImplementation(async (filePath) => {
     if (file) {
@@ -33,19 +37,22 @@ export const mockReadFile = (file = null) => {
   });
 };
 
+// TODO: Remove this when all tests are migrated to the new setup
 export const mockWriteFile = (shouldThrow = false) => {
   vi.spyOn(changelog.forMock, 'writeFile').mockImplementation(async (path, _content) => {
-    console.log(`writeFile ${path} ${_content}`);
+    // console.log(`writeFile ${path} ${_content}`);
     if (shouldThrow) {
       log.error({filePath: path, error: null}, changelog.warnFailedToWrite);
     }
   });
 };
 
+// TODO: Remove this when all tests are migrated to the new setup
 export const unMockReadFile = () => {
   changelog.forMock.readFile.mockRestore();
 };
 
+// TODO: Remove this when all tests are migrated to the new setup
 export const unMockWriteFile = () => {
   changelog.forMock.writeFile.mockRestore();
 };
@@ -76,6 +83,45 @@ export const setupVersionDetectTest = async (
   }
 };
 
+/**
+ * @typedef {import('../detect.js').ProjectInfo} ProjectInfo
+ */
+
+/**
+ *
+ * @param {() => Promise<string>} creator
+ * @param {() => Promise<ProjectInfo>} parser
+ * @param {ProjectInfo} expected
+ */
+export const setupVersionDetectTest2 = async ({
+  creator,
+  parser,
+  expected = {
+    name: projectNameValue,
+    version: oldVersion,
+  },
+}) => {
+  // mockPino();
+  let projectPath = null;
+  try {
+    projectPath = await creator();
+    // Execute
+    const result = await parser(projectPath);
+
+    // Verify
+    expect(result).toEqual({
+      name: projectNameValue,
+      version: oldVersion,
+      ...expected,
+    });
+  } catch (error) {
+    throw error;
+  } finally {
+    unMockPino();
+    await removeTempProjectFolder(projectPath);
+  }
+};
+
 export const setupVersionUpdateTest = async (updater, expectedResult = '') => {
   mockPino();
   mockReadFile();
@@ -103,6 +149,34 @@ export const setupVersionUpdateTest = async (updater, expectedResult = '') => {
     unMockPino();
   }
 };
+
+/**
+ * Creates a temporary folder for testing purposes.
+ *
+ * @param {string} prefix - Prefix for the temporary folder name, defaults to 'node'.
+ * @returns {Promise<string>} - A promise that resolves to the path of the created temporary folder.
+ */
+export const createTempProjectFolder = async (prefix = 'node') => {
+  const tempDir = await fs.mkdtemp(path.join(tmpdir(), `${prefix}-`));
+  await execa(['git', 'init'], {cwd: tempDir});
+  await fs.writeFile(path.join(tempDir, 'README.md'), '# Test Project\nThis is a test project.');
+  return tempDir;
+};
+
+export const removeTempProjectFolder = async (folderPath) => {
+  if (projectPath) {
+    return fs.rm(folderPath, {recursive: true});
+  }
+};
+
+/**
+ * Creates a JSON file with the specified content.
+ * @param {string} filePath
+ * @param {Object} content
+ * @returns {Promise<void>}
+ */
+export const createJsonFile = async (filePath, content = {version: oldVersion, name: projectNameValue}) =>
+  fs.writeFile(filePath, JSON.stringify(content, null, 2));
 
 const configMocks = {
   'custom-parser.txt': 'version: 1.2.3-beta\nname: MyApp',

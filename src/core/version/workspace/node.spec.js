@@ -10,23 +10,62 @@ import {
   setupVersionUpdateTest,
   mockWriteFile,
   unMockWriteFile,
+  createJsonFile,
+  setupVersionDetectTest2,
+  oldVersion,
+  createTempProjectFolder,
+  projectNameValue,
 } from '../../../vitest/setup.detect-update.tests.js';
 import {mockPino, unMockPino, setupPinoLoggingCallsTest} from '../../../vitest/setup.logging.tests.js';
+import path from 'path';
+
+const generateCreator =
+  (files = ['jsr.json']) =>
+  async () => {
+    const tempFolder = await createTempProjectFolder('node');
+    await Promise.all(files.map((file, index) =>
+      createJsonFile(path.join(tempFolder, file), {
+        name: `${projectNameValue}${index === 0 ? '' : index}`,
+        version: oldVersion,
+      }),
+    ));
+    return tempFolder;
+  };
 
 describe('detect/node.js module', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
   });
 
   describe('detect()', () => {
     // Test detection with jsr.json
     it('should detect from jsr.json', async () => {
-      await setupVersionDetectTest(() => detect('/project'), {}, 'jsr.json');
+      await setupVersionDetectTest2({
+        creator: generateCreator(),
+        parser: detect,
+        expected: {name: projectNameValue, version: oldVersion},
+      });
     });
 
     // Test detection with package.json
     it('should detect from package.json', async () => {
-      await setupVersionDetectTest(() => detect('/project'), {}, 'package.json');
+      await setupVersionDetectTest2({
+        creator: generateCreator(['package.json']),
+        parser: detect,
+        expected: {name: projectNameValue, version: oldVersion},
+      });
+    });
+
+    // Test detection with jsr.json, package.json
+    it('should detect from jsr.json, package.json', async () => {
+      await setupVersionDetectTest2({
+        creator: generateCreator(['jsr.json', 'package.json']),
+        parser: detect,
+        expected: {
+          name: projectNameValue,
+          version: oldVersion,
+        },
+      });
     });
 
     // Test error handling when parsing fails

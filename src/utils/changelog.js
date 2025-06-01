@@ -4,7 +4,8 @@
  */
 
 import conventionalChangelog from 'conventional-changelog-core';
-import {constants as fsConstants, createWriteStream, promises as fs} from 'fs';
+import {constants, createWriteStream} from 'fs';
+import fs from 'fs/promises';
 import {join} from 'path';
 import {pipeline} from 'stream/promises';
 
@@ -31,7 +32,7 @@ export const forMock = {
    */
   fileExists: async (filePath) => {
     try {
-      await fs.access(filePath, fsConstants.F_OK);
+      await fs.access(filePath, constants.F_OK);
       return true;
     } catch {
       return false;
@@ -50,16 +51,17 @@ export const forMock = {
    * Read file content with error logging
    * @param {string} filePath - Path to the file to read
    * @param {string} [encoding='utf8'] - File encoding
-   * @returns {Promise<string>} - File content as string
+   * @returns {Promise<string|null>} - File content as string
    * @throws {Error} - Throws error if file cannot be read
    */
   readFile: async (filePath, encoding = 'utf8') => {
     try {
+      await fs.access(filePath, constants.R_OK);
       return fs.readFile(filePath, encoding);
     } catch (error) {
       log.warn({filePath, error}, warnFailedToRead);
-      throw error;
     }
+    return null;
   },
 
   /**

@@ -12,7 +12,7 @@ import * as github from '../utils/github.js';
 import {logger} from '../utils/logging.js';
 import * as version from './version.js';
 import * as changelog from '../utils/changelog.js';
-import { projectName } from '../constants.js';
+import {projectName} from '../constants.js';
 
 export const log = logger.child({module: `${projectName}/core/workspaces`});
 

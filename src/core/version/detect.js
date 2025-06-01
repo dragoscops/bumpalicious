@@ -10,16 +10,6 @@ export const warnNoProvidedParsersToAggregator = 'No parsers provided to aggrega
 export const warnFailedToAggregateVersion = 'Failed to aggregate version';
 
 /**
- * Safely reads a file from the filesystem
- *
- * @param {string} filePath - Path to the file to read
- * @returns {Promise<string|null>} Content of the file or null if the file doesn't exist
- */
-export const forMock = {
-  readFile: async (filePath) => changelog.forMock.readFile(filePath),
-};
-
-/**
  * @typedef {(string) => string|null} ValueExtractorFunction
  * @typedef {string|RegExp|ValueExtractorFunction} ValueExtractor
  */
@@ -127,7 +117,7 @@ export function configParser(
     let name = null;
     let parsedData = null;
 
-    const data = await forMock.readFile(filePath);
+    const data = await changelog.forMock.readFile(filePath);
     if (!data) {
       return {version: null, name: null}; // Return empty project info instead of null
     }

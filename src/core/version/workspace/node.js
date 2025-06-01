@@ -8,11 +8,15 @@ import * as d from '../detect.js';
 import * as u from '../update.js';
 
 /**
+ * @typedef {import('../detect.js').ProjectInfo} ProjectInfo
+ */
+
+/**
  * Detect version from a Node.js project
  * Looking for jsr.json or package.json files
  *
  * @param {string} projectPath - Project to read details from
- * @returns {Promise<NodeConfig>} - Detected version
+ * @returns {Promise<ProjectInfo>} - Detected version
  */
 export const detect = async (projectPath) =>
   d.anyOf(projectPath, 'node', [
