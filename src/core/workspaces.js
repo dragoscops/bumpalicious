@@ -4,7 +4,6 @@
  */
 import path from 'path';
 import semver from 'semver';
-
 import * as core from '@actions/core';
 
 import * as workspaceDetect from './version/workspace/index.js';
@@ -13,8 +12,9 @@ import * as github from '../utils/github.js';
 import {logger} from '../utils/logging.js';
 import * as version from './version.js';
 import * as changelog from '../utils/changelog.js';
+import { projectName } from '../constants.js';
 
-export const log = logger.child({module: 'core/workspaces'});
+export const log = logger.child({module: `${projectName}/core/workspaces`});
 
 // Log message constants
 const LOG_MESSAGES = {
@@ -67,6 +67,9 @@ export async function updateVersionsForChangedWorkspaces(commitMessage, lastTag,
   if (changedWorkspaces.length === 0) {
     return [];
   }
+
+  // TODO: remove next line
+  return [];
 
   log.info({count: changedWorkspaces.length}, `Updating versions for ${changedWorkspaces.length} workspaces`);
 
@@ -121,11 +124,11 @@ export async function enrichWorkspaces(workspaces) {
 export async function enrichChangedWorkspaces(workspaces, lastTag) {
   const enrichedWorkspaces = [];
 
-  for (const workspace of workspaces) {
+  for (let workspace of workspaces) {
     const changedFiles = await git.commits.getChangedFiles(workspace.path, lastTag);
     if (changedFiles.length > 0) {
       const enrichedWorkspace = await enrichWorkspace(workspace.path, workspace.type);
-      log.info({workspace, lastTag, changedFiles}, LOG_MESSAGES.WORKSPACE_CHANGED);
+      log.info({workspace: enrichedWorkspace, lastTag, changedFiles}, LOG_MESSAGES.WORKSPACE_CHANGED);
       enrichedWorkspaces.push(enrichedWorkspace);
     } else {
       log.warn({workspace, lastTag}, LOG_MESSAGES.WORKSPACE_UNCHANGED);
@@ -161,7 +164,6 @@ export async function enrichWorkspace(workspacePath, workspaceType) {
       ({name, version} = await workspaceDetect.text.detect(workspacePath));
       log.warn({workspaceType, workspacePath}, LOG_MESSAGES.UNKNOWN_WORKSPACE_TYPE);
     }
-    log.info({name, version}, 'Detected workspace version and name');
 
     // Use directory name as fallback for project name
     if (!name) {
