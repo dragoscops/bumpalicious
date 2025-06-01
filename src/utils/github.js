@@ -28,6 +28,10 @@ const log = logger.child({module: 'utils/github'});
  * @property {ChangelogPreset} changelogPreset - The conventional-changelog preset to use (default: conventionalcommits)
  */
 
+/**
+ * Get action options from input parameters
+ * @returns {ActionOptions} - Action options parsed from inputs
+ */
 export function getOptions() {
   return {
     branch: core.getInput('branch') || 'main',

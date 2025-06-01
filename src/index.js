@@ -12,8 +12,9 @@ import * as git from './utils/git.js';
 import * as github from './utils/github.js';
 import {logger} from './utils/logging.js';
 import * as workspace from './utils/workspace.js';
+import { projectName } from './constants.js';
 
-const log = logger.child({module: 'bumpalicious'});
+const log = logger.child({module: projectName});
 
 /**
  * Main function to run the GitHub Action
@@ -21,17 +22,19 @@ const log = logger.child({module: 'bumpalicious'});
 const run = async () => {
   try {
     // Get input parameters as a single options object
-    /** @type {import('./utils/github.js').ActionOptions} */
     const options = github.getOptions();
 
     //======================================================================
 
     core.startGroup('Gathering workspaces info');
-    log.info(`Options: ${JSON.stringify(options)}`);
+    log.info({options}, 'Options received');
 
-  //   // Get last created tag or 1st commit message
-  //   const lastTag = await git.tag.lastCreated();
-  //   log.info(`Last tag: ${lastTag}`);
+    // Get last created tag or 1st commit message
+    const lastTag = await git.tag.lastCreated();
+    if (!lastTag) {
+      core.error('No tags found in the repository. Please create a tag before running this action.');
+    }
+    log.info({lastTag}, 'Last created tag');
 
   //   // Get the last commit message
   //   const commitMessage = await git.log.lastMessage();

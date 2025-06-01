@@ -5,8 +5,9 @@
 
 import {execa} from 'execa';
 import {logger} from './logging.js';
+import { projectName } from '../constants.js';
 
-export const log = logger.child({module: 'utils/git'});
+export const log = logger.child({module: `${projectName}/utils/git`});
 
 // Log message constants
 export const infoGitConfigSet = 'Git config set successfully';
