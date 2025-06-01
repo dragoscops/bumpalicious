@@ -105,116 +105,22 @@ describe('git.js module', () => {
   });
 
   describe('config object', () => {
-    describe('get()', () => {
-      it('parses git config and returns a key-value object when no key is provided', async () => {
-        // Mock git config output with some common properties
-        const mockConfigOutput = `
-          user.name=GitHub Actions
-          user.email=actions@github.com
-          core.editor=vim
-          alias.st=status
-          remote.origin.url=https://github.com/user/repo.git
-        `;
-        execa.mockResolvedValueOnce({stdout: mockConfigOutput});
-
-        const config = await git.config.get();
-
-        expect(execa).toHaveBeenCalledWith('git', ['config', '--list']);
-        expect(config).toEqual({
-          'user.name': 'GitHub Actions',
-          'user.email': 'actions@github.com',
-          'core.editor': 'vim',
-          'alias.st': 'status',
-          'remote.origin.url': 'https://github.com/user/repo.git',
-        });
-      });
-
-      it('returns subset of keys that start with provided key prefix', async () => {
-        const mockConfigOutput = `
-          user.name=GitHub Actions
-          user.email=actions@github.com
-          core.editor=vim
-          alias.st=status
-          alias.co=checkout
-          alias.br=branch
-          remote.origin.url=https://github.com/user/repo.git
-        `;
-        execa.mockResolvedValueOnce({stdout: mockConfigOutput});
-
-        const config = await git.config.get('alias');
-
-        expect(execa).toHaveBeenCalledWith('git', ['config', '--list']);
-        expect(config).toEqual({
-          'alias.st': 'status',
-          'alias.co': 'checkout',
-          'alias.br': 'branch',
-        });
-      });
-
-      it('returns empty object when no keys match the provided prefix', async () => {
-        const mockConfigOutput = `
-          user.name=GitHub Actions
-          user.email=actions@github.com
-          core.editor=vim
-        `;
-        execa.mockResolvedValueOnce({stdout: mockConfigOutput});
-
-        const config = await git.config.get('nonexistent');
-
-        expect(config).toEqual({});
-      });
-
-      it('handles empty git config', async () => {
-        execa.mockResolvedValueOnce({stdout: ''});
-
-        const config = await git.config.get();
-
-        expect(config).toEqual({});
-      });
-
-      it('handles git config with invalid format', async () => {
-        // Some lines might not have a valid key=value format
-        const mockConfigOutput = `
-          user.name=GitHub Actions
-          invalid line
-          core.editor=vim
-        `;
-        execa.mockResolvedValueOnce({stdout: mockConfigOutput});
-
-        const config = await git.config.get();
-
-        // Should skip the invalid line
-        expect(config).toEqual({
-          'user.name': 'GitHub Actions',
-          'core.editor': 'vim',
-        });
-      });
-
-      it('logs error and returns empty object on failure', async () => {
-        execa.mockRejectedValueOnce(new Error('Git command failed'));
-
-        const config = await git.config.get();
-
-        setupPinoLoggingCallsTest('warn', [{error: 'Git command failed'}, git.warnFailedToGetGitConfig], git.log);
-        expect(config).toEqual({});
-      });
-    });
-
     describe('set()', () => {
       it('sets git config value and logs success message', async () => {
         execa.mockResolvedValueOnce({});
 
-        await git.config.set({'user.name': 'Test User'});
+        const result = await git.config.set({'user.name': 'Test User'});
 
         expect(execa).toHaveBeenCalledWith('git', ['config', '--global', 'user.name', 'Test User']);
         setupPinoLoggingCallsTest('info', [{key: 'user.name', value: 'Test User'}, git.infoGitConfigSet], git.log);
+        expect(result).toBe(true);
       });
 
-      it('logs error message when setting config fails', async () => {
+      it('logs error message and returns false when setting config fails', async () => {
         const error = new Error('Config error');
         execa.mockRejectedValueOnce(error);
 
-        await git.config.set({'invalid.key': 'value'});
+        const result = await git.config.set({'invalid.key': 'value'});
 
         expect(execa).toHaveBeenCalledWith('git', ['config', '--global', 'invalid.key', 'value']);
         setupPinoLoggingCallsTest(
@@ -222,6 +128,43 @@ describe('git.js module', () => {
           [{key: 'invalid.key', error: 'Config error'}, git.warnFailedToSetGitConfig],
           git.log,
         );
+        expect(result).toBe(false);
+      });
+
+      it('sets multiple config values and returns true when all succeed', async () => {
+        execa.mockResolvedValue({});
+
+        const result = await git.config.set({
+          'user.name': 'Test User',
+          'user.email': 'test@example.com'
+        });
+
+        expect(execa).toHaveBeenCalledWith('git', ['config', '--global', 'user.name', 'Test User']);
+        expect(execa).toHaveBeenCalledWith('git', ['config', '--global', 'user.email', 'test@example.com']);
+        expect(result).toBe(true);
+      });
+
+      it('stops at first failure and returns false when setting multiple configs', async () => {
+        execa.mockResolvedValueOnce({}) // First call succeeds
+          .mockRejectedValueOnce(new Error('Second config fails')); // Second call fails
+
+        const result = await git.config.set({
+          'user.name': 'Test User',
+          'user.email': 'test@example.com'
+        });
+
+        expect(execa).toHaveBeenCalledWith('git', ['config', '--global', 'user.name', 'Test User']);
+        expect(execa).toHaveBeenCalledWith('git', ['config', '--global', 'user.email', 'test@example.com']);
+        expect(result).toBe(false);
+      });
+
+      it('sets config locally when global flag is false', async () => {
+        execa.mockResolvedValueOnce({});
+
+        const result = await git.config.set({'user.name': 'Test User'}, false);
+
+        expect(execa).toHaveBeenCalledWith('git', ['config', 'user.name', 'Test User']);
+        expect(result).toBe(true);
       });
     });
   });

@@ -35,6 +35,7 @@ const run = async () => {
       core.error('No tags found in the repository. Please create a tag before running this action.');
     }
     log.info({lastTag}, 'Last created tag');
+    core.notice(`Last created tag: ${lastTag}`);
 
     // Get the last commit message
     const commitMessage = await git.commits.lastMessage();
@@ -42,20 +43,21 @@ const run = async () => {
       core.error('No commit messages found in the repository. Please make a commit before running this action.');
     }
     log.info({commitMessage}, 'Last commit message');
+    core.notice(`Last commit message: ${commitMessage}`);
     core.endGroup();
 
     //======================================================================
 
-  //   core.startGroup('Setting up Github');
-  //   // Setup git user
-  //   await git.config.set({
-  //     'user.name': 'GitHub Actions',
-  //     'user.email': 'actions@github.com',
-  //     'safe.directory': process.env.GITHUB_WORKSPACE || process.cwd(),
-  //   });
-  //   core.endGroup();
+    core.startGroup('Setting up Github');
+    // Setup git user
+    await git.config.set({
+      'user.name': 'GitHub Actions',
+      'user.email': 'actions@github.com',
+      'safe.directory': process.env.GITHUB_WORKSPACE || process.cwd(),
+    });
+    core.endGroup();
 
-  //   //======================================================================
+    //======================================================================
 
   //   // Check if the commit message contains the PR message
   //   // If it does, we assume the PR is already created

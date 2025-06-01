@@ -43,70 +43,32 @@ export const warnFailedToPullBranch = 'Failed to pull branch';
 export const errorRetrievingChangedFiles = 'Error retrieving changed files in repository';
 
 export const config = {
-  /**
-   * Get the current git configuration as a key-value object
-   *
-   * @param {string|null} [key] - Optional key prefix to filter by
-   * @returns {Promise<Object>} - Current git configuration as a key-value object
-   */
-  get: async (key = null) => {
-    try {
-      const {stdout} = await execa('git', ['config', '--list']);
-
-      // Initialize empty object for storing config
-      const configObject = {};
-
-      // Split by lines and process each line
-      const lines = stdout.trim().split('\n');
-
-      for (const line of lines) {
-        // Skip empty lines
-        const trimmedLine = line.trim();
-        if (!trimmedLine) continue;
-
-        // Parse each line as key=value
-        const separatorIndex = trimmedLine.indexOf('=');
-        if (separatorIndex > 0) {
-          const configKey = trimmedLine.substring(0, separatorIndex).trim();
-          const value = trimmedLine.substring(separatorIndex + 1).trim();
-          configObject[configKey] = value;
-        }
-      }
-
-      // If a key prefix is provided, filter the results
-      if (key) {
-        const filteredConfig = {};
-        for (const configKey in configObject) {
-          if (configKey.startsWith(key)) {
-            filteredConfig[configKey] = configObject[configKey];
-          }
-        }
-        return filteredConfig;
-      }
-
-      return configObject;
-    } catch (error) {
-      log.warn({error: error.message}, warnFailedToGetGitConfig);
-      return {};
-    }
-  },
 
   /**
    * Set git configuration options
    *
    * @param {Object.<string, string>} options - Key-value pairs of git configuration options to set
    * @param {boolean} [global=true] - Whether to set globally or locally
-   * @returns {Promise<void>} - Resolves when the configuration is set
+   * @returns {Promise<boolean>} - Returns true if all options were set successfully, false if any failed
    */
   set: async (options, global = true) => {
+    let result = true;
     for (const [key, value] of Object.entries(options)) {
       try {
-        await execa('git', ['config', global ? '--global' : '', key, value]);
+        const args = ['config'];
+        if (global) {
+          args.push('--global');
+        }
+        args.push(key, value);
+        await execa('git', args);
         log.info({key, value}, infoGitConfigSet);
       } catch (error) {
         log.warn({key, error: error.message}, warnFailedToSetGitConfig);
+        result = false;
+        break;
       }
     }
+    return result;
   },
 };
 
