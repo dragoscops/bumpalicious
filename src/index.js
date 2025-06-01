@@ -10,7 +10,7 @@ import core from '@actions/core';
 import * as workspaces from './core/workspaces.js';
 import * as git from './utils/git.js';
 import * as github from './utils/github.js';
-import {logger} from './utils/log.js';
+import {logger} from './utils/logging.js';
 import * as workspace from './utils/workspace.js';
 
 const log = logger.child({module: 'bumpalicious'});
