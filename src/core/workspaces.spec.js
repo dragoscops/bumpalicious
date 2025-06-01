@@ -27,7 +27,7 @@ describe('workspace.js module', () => {
     });
 
     it('detects workspace details using the appropriate detector', async () => {
-      const workspacePath = '/test/workspace';
+      const workspacePath = 'test/workspace';
       const workspaceType = 'node';
       const detectMock = mockWorkspace('node', [
         {
@@ -39,9 +39,9 @@ describe('workspace.js module', () => {
       try {
         const result = await workspaces.enrichWorkspace(workspacePath, workspaceType);
 
-        expect(detectMock.detect).toHaveBeenCalledWith(expect.stringContaining('test\\workspace'));
+        expect(detectMock.detect).toHaveBeenCalledWith(expect.stringContaining('test'));
         expect(result).toEqual({
-          path: expect.stringContaining('test\\workspace'),
+          path: expect.stringContaining('test'),
           type: workspaceType,
           name: 'test-project',
           version: '1.0.0',
@@ -52,7 +52,7 @@ describe('workspace.js module', () => {
     });
 
     it('falls back to directory name when name detection fails', async () => {
-      const workspacePath = '/test/awesome-project';
+      const workspacePath = 'test/awesome-project';
       const workspaceType = 'node';
       const detectMock = mockWorkspaceDetect('node', [
         {
@@ -72,7 +72,7 @@ describe('workspace.js module', () => {
     });
 
     it('falls back to default version when version detection fails', async () => {
-      const workspacePath = '/test/workspace';
+      const workspacePath = 'test/workspace';
       const workspaceType = 'node';
       const detectMock = mockWorkspaceDetect('node', [
         {
@@ -91,7 +91,7 @@ describe('workspace.js module', () => {
     });
 
     it('handles unknown workspace type by falling back to text', async () => {
-      const workspacePath = '/test/workspace';
+      const workspacePath = 'test/workspace';
       const workspaceType = 'unknown';
       mockPino(workspaces.log);
       const detectMock = mockWorkspaceDetect('text', [
@@ -105,7 +105,7 @@ describe('workspace.js module', () => {
         const result = await workspaces.enrichWorkspace(workspacePath, workspaceType);
 
         expect(workspaces.log.warn).toHaveBeenCalledWith(
-          {workspaceType: 'unknown', workspacePath: expect.stringContaining('test\\workspace')},
+          {workspaceType: 'unknown', workspacePath: expect.stringContaining('test')},
           'Unknown workspace type, defaulting to text',
         );
         expect(result.type).toBe('unknown');
@@ -119,8 +119,8 @@ describe('workspace.js module', () => {
   describe('enrichWorkspaces(Workspace[])', () => {
     it('enriches multiple workspaces', async () => {
       const input = [
-        {path: '/test/workspace1', type: 'node'},
-        {path: '/test/workspace2', type: 'python'},
+        {path: 'test/workspace1', type: 'node'},
+        {path: 'test/workspace2', type: 'python'},
       ];
       const detectMocks = {
         node: mockWorkspaceDetect('node', [
@@ -140,12 +140,12 @@ describe('workspace.js module', () => {
       try {
         const result = await workspaces.enrichWorkspaces(input);
 
-        expect(detectMocks.node).toHaveBeenCalledWith(expect.stringContaining('test\\workspace1'));
-        expect(detectMocks.python).toHaveBeenCalledWith(expect.stringContaining('test\\workspace2'));
+        expect(detectMocks.node).toHaveBeenCalledWith(expect.stringContaining('test'));
+        expect(detectMocks.python).toHaveBeenCalledWith(expect.stringContaining('test'));
 
         expect(result).toEqual([
-          {path: expect.stringContaining('test\\workspace1'), type: 'node', name: 'node-project', version: '0.5.0'},
-          {path: expect.stringContaining('test\\workspace2'), type: 'python', name: 'python-project', version: '0.6.0'},
+          {path: expect.stringContaining('test'), type: 'node', name: 'node-project', version: '0.5.0'},
+          {path: expect.stringContaining('test'), type: 'python', name: 'python-project', version: '0.6.0'},
         ]);
       } finally {
         detectMocks.node.mockRestore();
@@ -170,8 +170,8 @@ describe('workspace.js module', () => {
 
     it('only enriches workspaces with changed files', async () => {
       const input = [
-        {path: '/test/workspace1', type: 'node'},
-        {path: '/test/workspace2', type: 'python'},
+        {path: 'test/workspace1', type: 'node'},
+        {path: 'test/workspace2', type: 'python'},
       ];
       const detectMocks = {
         node: mockWorkspaceDetect('node', [
@@ -197,9 +197,9 @@ describe('workspace.js module', () => {
       try {
         const result = await workspaces.enrichChangedWorkspaces(input, 'v1.0.0');
 
-        expect(detectMocks.node).toHaveBeenCalledWith(expect.stringContaining('test\\workspace1'));
+        expect(detectMocks.node).toHaveBeenCalledWith(expect.stringContaining('test'));
 
-        expect(result).toEqual([{path: expect.stringContaining('test\\workspace1'), type: 'node', name: 'node-project', version: '1.0.0'}]);
+        expect(result).toEqual([{path: expect.stringContaining('test'), type: 'node', name: 'node-project', version: '1.0.0'}]);
       } finally {
         detectMocks.node.mockRestore();
         detectMocks.python.mockRestore();
@@ -209,8 +209,8 @@ describe('workspace.js module', () => {
 
     it('returns empty array when no workspaces have changes', async () => {
       const input = [
-        {path: '/test/workspace1', type: 'node'},
-        {path: '/test/workspace2', type: 'python'},
+        {path: 'test/workspace1', type: 'node'},
+        {path: 'test/workspace2', type: 'python'},
       ];
       vi.spyOn(git, 'getChangedFiles').mockResolvedValue([]);
 
