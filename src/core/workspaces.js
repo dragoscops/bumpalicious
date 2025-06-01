@@ -161,6 +161,7 @@ export async function enrichWorkspace(workspacePath, workspaceType) {
       ({name, version} = await workspaceDetect.text.detect(workspacePath));
       log.warn({workspaceType, workspacePath}, LOG_MESSAGES.UNKNOWN_WORKSPACE_TYPE);
     }
+    log.info({name, version}, 'Detected workspace version and name');
 
     // Use directory name as fallback for project name
     if (!name) {
