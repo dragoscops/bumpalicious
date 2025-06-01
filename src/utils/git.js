@@ -5,7 +5,7 @@
 
 import {execa} from 'execa';
 import {logger} from './logging.js';
-import { projectName } from '../constants.js';
+import {projectName} from '../constants.js';
 
 export const log = logger.child({module: `${projectName}/utils/git`});
 
@@ -24,7 +24,7 @@ export const infoChangesCommitted = 'Changes committed with message';
 export const infoBranchCheckedOut = 'Checked out to branch';
 
 export const warnFailedToGetGitConfig = 'Failed to get git config';
-export const warnFailedToSetGitConfig = 'Failed to set git config';
+export const errorFailedToSetGitConfig = 'Failed to set git config';
 export const warnFailedToGetLatestCommitMessage = 'Failed to get latest commit message';
 export const warnFailedToCreateTag = 'Failed to create tag';
 export const warnFailedToCheckTagExists = 'Failed to check if tag exists';
@@ -43,7 +43,6 @@ export const warnFailedToPullBranch = 'Failed to pull branch';
 export const errorRetrievingChangedFiles = 'Error retrieving changed files in repository';
 
 export const config = {
-
   /**
    * Set git configuration options
    *
@@ -63,37 +62,13 @@ export const config = {
         await execa('git', args);
         log.info({key, value}, infoGitConfigSet);
       } catch (error) {
-        log.warn({key, error: error.message}, warnFailedToSetGitConfig);
+        log.error({key, error: error}, errorFailedToSetGitConfig);
         result = false;
         break;
       }
     }
     return result;
   },
-};
-
-/**
- * Get the list of files that have changed in a repository since the last tag.
- *
- * @param {string} repoPath - Path to the repository
- * @param {string} lastTag - Last git tag
- * @returns {Promise<string[]>} - Array of file paths that changed, empty array on error
- */
-export const getChangedFiles = async (repoPath, lastTag) => {
-  try {
-    // If no tag is provided, return all tracked files as changed
-    if (!lastTag) {
-      const {stdout} = await execa('git', ['ls-files'], {cwd: repoPath});
-      return stdout.trim().split('\n').filter(Boolean);
-    }
-
-    // Retrieve changed files in the repository since the last tag
-    const {stdout} = await execa('git', ['diff', lastTag, '--name-only', '--', repoPath], {cwd: repoPath});
-    return stdout.trim().split('\n').filter(Boolean);
-  } catch (error) {
-    log.error({repoPath, error}, errorRetrievingChangedFiles);
-    return [];
-  }
 };
 
 /**
@@ -127,6 +102,30 @@ export const commits = {
     } catch (error) {
       log.warn({error: error.message}, warnFailedToGetLatestCommitMessage);
       return null;
+    }
+  },
+
+  /**
+   * Get the list of files that have changed in a repository since the last tag.
+   *
+   * @param {string} repoPath - Path to the repository
+   * @param {string} lastTag - Last git tag
+   * @returns {Promise<string[]>} - Array of file paths that changed, empty array on error
+   */
+  getChangedFiles: async (repoPath, lastTag) => {
+    try {
+      // If no tag is provided, return all tracked files as changed
+      if (!lastTag) {
+        const {stdout} = await execa('git', ['ls-files'], {cwd: repoPath});
+        return stdout.trim().split('\n').filter(Boolean);
+      }
+
+      // Retrieve changed files in the repository since the last tag
+      const {stdout} = await execa('git', ['diff', lastTag, '--name-only', '--', repoPath], {cwd: repoPath});
+      return stdout.trim().split('\n').filter(Boolean);
+    } catch (error) {
+      log.error({repoPath, error}, errorRetrievingChangedFiles);
+      return [];
     }
   },
 };

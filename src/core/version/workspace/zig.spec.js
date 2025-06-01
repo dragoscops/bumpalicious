@@ -10,7 +10,14 @@ import {
   mockWriteFile,
   unMockWriteFile,
 } from '../../../vitest/setup.detect-update.tests.js';
-import {mockConsole, mockCConsole, unMockConsole, unMockCConsole, mockPino, unMockPino} from '../../../vitest/setup.logging.tests.js';
+import {
+  mockConsole,
+  mockCConsole,
+  unMockConsole,
+  unMockCConsole,
+  mockPino,
+  unMockPino,
+} from '../../../vitest/setup.logging.tests.js';
 
 describe('detect/zig.js module', () => {
   beforeEach(() => {
@@ -52,7 +59,8 @@ describe('detect/zig.js module', () => {
         // This tests the graceful degradation when files are missing
       } finally {
         unMockReadFile();
-        unMockPino();      }
+        unMockPino();
+      }
     });
   });
 

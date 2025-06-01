@@ -14,7 +14,7 @@ describe('git.js module', () => {
     unMockPino(git.log);
   });
 
-  describe('gitLog object', () => {
+  describe('commits object', () => {
     describe('lastMessage()', () => {
       it('returns the latest commit message', async () => {
         execa.mockResolvedValueOnce({stdout: 'feat: add new feature\n'});
@@ -34,73 +34,73 @@ describe('git.js module', () => {
         expect(message).toBeNull();
       });
     });
-  });
 
-  describe('getChangedFiles()', () => {
-    it('returns files that changed since the specified tag', async () => {
-      const repoPath = '/path/to/repo';
-      const lastTag = 'v1.0.0';
-      const changedFiles = ['file1.js', 'file2.js', 'dir/file3.js'];
+    describe('getChangedFiles()', () => {
+      it('returns files that changed since the specified tag', async () => {
+        const repoPath = '/path/to/repo';
+        const lastTag = 'v1.0.0';
+        const changedFiles = ['file1.js', 'file2.js', 'dir/file3.js'];
 
-      execa.mockResolvedValueOnce({
-        stdout: changedFiles.join('\n'),
+        execa.mockResolvedValueOnce({
+          stdout: changedFiles.join('\n'),
+        });
+
+        const result = await git.commits.getChangedFiles(repoPath, lastTag);
+
+        expect(execa).toHaveBeenCalledWith('git', ['diff', lastTag, '--name-only', '--', repoPath], {cwd: repoPath});
+        expect(result).toEqual(changedFiles);
       });
 
-      const result = await git.getChangedFiles(repoPath, lastTag);
+      it('returns all tracked files when no tag is provided', async () => {
+        const repoPath = '/path/to/repo';
+        const trackedFiles = ['file1.js', 'file2.js', 'dir/file3.js'];
 
-      expect(execa).toHaveBeenCalledWith('git', ['diff', lastTag, '--name-only', '--', repoPath], {cwd: repoPath});
-      expect(result).toEqual(changedFiles);
-    });
+        execa.mockResolvedValueOnce({
+          stdout: trackedFiles.join('\n'),
+        });
 
-    it('returns all tracked files when no tag is provided', async () => {
-      const repoPath = '/path/to/repo';
-      const trackedFiles = ['file1.js', 'file2.js', 'dir/file3.js'];
+        const result = await git.commits.getChangedFiles(repoPath, null);
 
-      execa.mockResolvedValueOnce({
-        stdout: trackedFiles.join('\n'),
+        expect(execa).toHaveBeenCalledWith('git', ['ls-files'], {cwd: repoPath});
+        expect(result).toEqual(trackedFiles);
       });
 
-      const result = await git.getChangedFiles(repoPath, null);
+      it('filters out empty lines in the git command output', async () => {
+        const repoPath = '/path/to/repo';
+        const lastTag = 'v1.0.0';
 
-      expect(execa).toHaveBeenCalledWith('git', ['ls-files'], {cwd: repoPath});
-      expect(result).toEqual(trackedFiles);
-    });
+        execa.mockResolvedValueOnce({
+          stdout: 'file1.js\n\nfile2.js\n',
+        });
 
-    it('filters out empty lines in the git command output', async () => {
-      const repoPath = '/path/to/repo';
-      const lastTag = 'v1.0.0';
+        const result = await git.commits.getChangedFiles(repoPath, lastTag);
 
-      execa.mockResolvedValueOnce({
-        stdout: 'file1.js\n\nfile2.js\n',
+        expect(result).toEqual(['file1.js', 'file2.js']);
+      });
+      it('logs error and exits when git command fails', async () => {
+        const repoPath = '/path/to/repo';
+        const lastTag = 'v1.0.0';
+        const error = new Error('Git command failed');
+
+        execa.mockRejectedValueOnce(error);
+
+        await git.commits.getChangedFiles(repoPath, lastTag);
+
+        setupPinoLoggingCallsTest('error', [{repoPath, error}, git.errorRetrievingChangedFiles], git.log);
       });
 
-      const result = await git.getChangedFiles(repoPath, lastTag);
+      it('handles empty output from git command', async () => {
+        const repoPath = '/path/to/repo';
+        const lastTag = 'v1.0.0';
 
-      expect(result).toEqual(['file1.js', 'file2.js']);
-    });
-    it('logs error and exits when git command fails', async () => {
-      const repoPath = '/path/to/repo';
-      const lastTag = 'v1.0.0';
-      const error = new Error('Git command failed');
+        execa.mockResolvedValueOnce({
+          stdout: '',
+        });
 
-      execa.mockRejectedValueOnce(error);
+        const result = await git.commits.getChangedFiles(repoPath, lastTag);
 
-      await git.getChangedFiles(repoPath, lastTag);
-
-      setupPinoLoggingCallsTest('error', [{repoPath, error}, git.errorRetrievingChangedFiles], git.log);
-    });
-
-    it('handles empty output from git command', async () => {
-      const repoPath = '/path/to/repo';
-      const lastTag = 'v1.0.0';
-
-      execa.mockResolvedValueOnce({
-        stdout: '',
+        expect(result).toEqual([]);
       });
-
-      const result = await git.getChangedFiles(repoPath, lastTag);
-
-      expect(result).toEqual([]);
     });
   });
 
@@ -123,11 +123,7 @@ describe('git.js module', () => {
         const result = await git.config.set({'invalid.key': 'value'});
 
         expect(execa).toHaveBeenCalledWith('git', ['config', '--global', 'invalid.key', 'value']);
-        setupPinoLoggingCallsTest(
-          'warn',
-          [{key: 'invalid.key', error: 'Config error'}, git.warnFailedToSetGitConfig],
-          git.log,
-        );
+        setupPinoLoggingCallsTest('error', [{key: 'invalid.key', error}, git.errorFailedToSetGitConfig], git.log);
         expect(result).toBe(false);
       });
 
@@ -136,7 +132,7 @@ describe('git.js module', () => {
 
         const result = await git.config.set({
           'user.name': 'Test User',
-          'user.email': 'test@example.com'
+          'user.email': 'test@example.com',
         });
 
         expect(execa).toHaveBeenCalledWith('git', ['config', '--global', 'user.name', 'Test User']);
@@ -145,12 +141,13 @@ describe('git.js module', () => {
       });
 
       it('stops at first failure and returns false when setting multiple configs', async () => {
-        execa.mockResolvedValueOnce({}) // First call succeeds
+        execa
+          .mockResolvedValueOnce({}) // First call succeeds
           .mockRejectedValueOnce(new Error('Second config fails')); // Second call fails
 
         const result = await git.config.set({
           'user.name': 'Test User',
-          'user.email': 'test@example.com'
+          'user.email': 'test@example.com',
         });
 
         expect(execa).toHaveBeenCalledWith('git', ['config', '--global', 'user.name', 'Test User']);

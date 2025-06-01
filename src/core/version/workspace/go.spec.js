@@ -7,7 +7,7 @@ import {
   unMockReadFile,
   newVersion,
 } from '../../../vitest/setup.detect-update.tests.js';
-import { mockPino, unMockPino } from '../../../vitest/setup.logging.tests.js';
+import {mockPino, unMockPino} from '../../../vitest/setup.logging.tests.js';
 
 describe('detect/go.js module', () => {
   beforeEach(() => {

@@ -9,7 +9,7 @@ import {
   mockWriteFile,
   unMockWriteFile,
 } from '../../../vitest/setup.detect-update.tests.js';
-import { mockPino, unMockPino } from '../../../vitest/setup.logging.tests.js';
+import {mockPino, unMockPino} from '../../../vitest/setup.logging.tests.js';
 
 describe('detect/text.js module', () => {
   beforeEach(() => {

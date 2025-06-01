@@ -60,7 +60,7 @@ const LOG_MESSAGES = {
  */
 export async function updateVersionsForChangedWorkspaces(commitMessage, lastTag, options) {
   // Enrich workspaces with additional info
-  log.info({workspaces: options.workspaces.length}, 'Enriching workspaces with additional info');
+  log.info({workspaces: options.workspaces}, 'Enriching workspaces with additional info');
   const changedWorkspaces = await enrichChangedWorkspaces(options.workspaces, lastTag);
 
   // If no changed workspaces, exit early
@@ -122,16 +122,13 @@ export async function enrichChangedWorkspaces(workspaces, lastTag) {
   const enrichedWorkspaces = [];
 
   for (const workspace of workspaces) {
-    const changedFiles = await git.getChangedFiles(workspace.path, lastTag);
+    const changedFiles = await git.commits.getChangedFiles(workspace.path, lastTag);
     if (changedFiles.length > 0) {
       const enrichedWorkspace = await enrichWorkspace(workspace.path, workspace.type);
-      log.info(
-        {workspacePath: workspace.path, lastTag, changedFiles: changedFiles.length},
-        LOG_MESSAGES.WORKSPACE_CHANGED,
-      );
+      log.info({workspace, lastTag, changedFiles}, LOG_MESSAGES.WORKSPACE_CHANGED);
       enrichedWorkspaces.push(enrichedWorkspace);
     } else {
-      log.warn({workspacePath: workspace.path, lastTag}, LOG_MESSAGES.WORKSPACE_UNCHANGED);
+      log.warn({workspace, lastTag}, LOG_MESSAGES.WORKSPACE_UNCHANGED);
     }
   }
 

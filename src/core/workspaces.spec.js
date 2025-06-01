@@ -187,7 +187,7 @@ describe('workspace.js module', () => {
           },
         ]),
       };
-      vi.spyOn(git, 'getChangedFiles').mockImplementation((path) => {
+      vi.spyOn(git.commits, 'getChangedFiles').mockImplementation((path) => {
         if (path.includes('workspace1')) {
           return Promise.resolve(['file1.js', 'file2.js']);
         }
@@ -199,11 +199,13 @@ describe('workspace.js module', () => {
 
         expect(detectMocks.node).toHaveBeenCalledWith(expect.stringContaining('test'));
 
-        expect(result).toEqual([{path: expect.stringContaining('test'), type: 'node', name: 'node-project', version: '1.0.0'}]);
+        expect(result).toEqual([
+          {path: expect.stringContaining('test'), type: 'node', name: 'node-project', version: '1.0.0'},
+        ]);
       } finally {
         detectMocks.node.mockRestore();
         detectMocks.python.mockRestore();
-        git.getChangedFiles.mockRestore();
+        git.commits.getChangedFiles.mockRestore();
       }
     });
 
@@ -212,14 +214,14 @@ describe('workspace.js module', () => {
         {path: 'test/workspace1', type: 'node'},
         {path: 'test/workspace2', type: 'python'},
       ];
-      vi.spyOn(git, 'getChangedFiles').mockResolvedValue([]);
+      vi.spyOn(git.commits, 'getChangedFiles').mockResolvedValue([]);
 
       try {
         const result = await workspaces.enrichChangedWorkspaces(input, 'v1.0.0');
 
         expect(result).toEqual([]);
       } finally {
-        git.getChangedFiles.mockRestore();
+        git.commits.getChangedFiles.mockRestore();
       }
     });
   });
@@ -321,14 +323,8 @@ describe('workspace.js module', () => {
         const result = await workspaces.updateVersionsForWorkspaces(workspacesArray);
 
         // Verify update was called for each workspace
-        expect(updateMocks.node.update).toHaveBeenCalledWith(
-          expect.stringContaining('test/workspace1'),
-          '1.1.0',
-        );
-        expect(updateMocks.python.update).toHaveBeenCalledWith(
-          expect.stringContaining('test/workspace2'),
-          '0.5.0',
-        );
+        expect(updateMocks.node.update).toHaveBeenCalledWith(expect.stringContaining('test/workspace1'), '1.1.0');
+        expect(updateMocks.python.update).toHaveBeenCalledWith(expect.stringContaining('test/workspace2'), '0.5.0');
 
         // Verify the result contains the updated workspaces
         expect(result).toEqual(workspacesArray);
@@ -382,14 +378,8 @@ describe('workspace.js module', () => {
         };
 
         const result = await workspaces.updateVersionsForWorkspaces(input, {generateChangelog: true});
-        expect(updateMock.node.update).toHaveBeenCalledWith(
-          '/test/workspace1',
-          '1.0.0',
-        );
-        expect(updateMock.python.update).toHaveBeenCalledWith(
-          '/test/workspace2',
-          '2.0.0',
-        );
+        expect(updateMock.node.update).toHaveBeenCalledWith('/test/workspace1', '1.0.0');
+        expect(updateMock.python.update).toHaveBeenCalledWith('/test/workspace2', '2.0.0');
         expect(changelog.generateWorkspaceChangelog).toHaveBeenCalledTimes(2);
         expect(result).toEqual(input);
       });
@@ -402,10 +392,7 @@ describe('workspace.js module', () => {
 
         const changelog = await import('../utils/changelog.js');
         const result = await workspaces.updateVersionsForWorkspaces(input, {generateChangelog: false});
-        expect(nodeMock.update).toHaveBeenCalledWith(
-          '/test/workspace1',
-          '1.0.0',
-        );
+        expect(nodeMock.update).toHaveBeenCalledWith('/test/workspace1', '1.0.0');
         expect(changelog.generateWorkspaceChangelog).not.toHaveBeenCalled();
         expect(result).toEqual(input);
       });
