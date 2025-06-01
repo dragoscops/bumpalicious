@@ -123,14 +123,14 @@ export function configParser(
    * @returns {Promise<ProjectInfo|null>} - Project information or null if file can't be read
    */
   return async () => {
+    let version = null;
+    let name = null;
+    let parsedData = null;
+
     const data = await forMock.readFile(filePath);
     if (!data) {
       return {version: null, name: null}; // Return empty project info instead of null
     }
-
-    let version = null;
-    let name = null;
-    let parsedData = null;
 
     try {
       parsedData = mapper.parser(data);

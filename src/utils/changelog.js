@@ -55,7 +55,7 @@ export const forMock = {
    */
   readFile: async (filePath, encoding = 'utf8') => {
     try {
-      return await fs.readFile(filePath, encoding);
+      return fs.readFile(filePath, encoding);
     } catch (error) {
       log.warn({filePath, error}, warnFailedToRead);
       throw error;
