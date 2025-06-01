@@ -153,7 +153,7 @@ export async function pushChange(commitMessage, branch = 'main') {
   }
 }
 
-export const gitLog = {
+export const commits = {
   /**
    * Get the last commit message
    * @returns {Promise<string|null>} - Last commit message or null on error

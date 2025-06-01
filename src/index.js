@@ -36,15 +36,15 @@ const run = async () => {
     }
     log.info({lastTag}, 'Last created tag');
 
-  //   // Get the last commit message
-  //   const commitMessage = await git.log.lastMessage();
-  //   log.info(`Latest commit message: ${commitMessage}`);
-  //   if (!commitMessage) {
-  //     log.error('No commit message found');
-  //   }
-  //   core.endGroup();
+    // Get the last commit message
+    const commitMessage = await git.commits.lastMessage();
+    if (!commitMessage) {
+      core.error('No commit messages found in the repository. Please make a commit before running this action.');
+    }
+    log.info({commitMessage}, 'Last commit message');
+    core.endGroup();
 
-  //   //======================================================================
+    //======================================================================
 
   //   core.startGroup('Setting up Github');
   //   // Setup git user

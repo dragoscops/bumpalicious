@@ -19,7 +19,7 @@ describe('git.js module', () => {
       it('returns the latest commit message', async () => {
         execa.mockResolvedValueOnce({stdout: 'feat: add new feature\n'});
 
-        const message = await git.gitLog.lastMessage();
+        const message = await git.commits.lastMessage();
 
         expect(execa).toHaveBeenCalledWith('git', ['log', '-1', '--pretty=%B']);
         expect(message).toBe('feat: add new feature');
@@ -28,7 +28,7 @@ describe('git.js module', () => {
       it('logs error and returns undefined on failure', async () => {
         execa.mockRejectedValueOnce(new Error('Mocked error'));
 
-        const message = await git.gitLog.lastMessage();
+        const message = await git.commits.lastMessage();
 
         setupPinoLoggingCallsTest('warn', [{error: 'Mocked error'}, git.warnFailedToGetLatestCommitMessage], git.log);
         expect(message).toBeNull();
