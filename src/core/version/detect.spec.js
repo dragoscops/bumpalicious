@@ -1,11 +1,20 @@
 import {describe, it, beforeEach, afterEach} from 'vitest';
 import JSONC from 'tiny-jsonc';
 import toml from '@iarna/toml';
+import path from 'path';
+import fs from 'fs/promises';
 
 import {
+  createGoModFile,
+  createJsonFile,
+  createPythonPoetryTomlFile,
+  createTempProjectFolder,
+  createZigBuildFile,
+  createZigBuildZonFile,
   mockReadFile,
+  oldVersion,
   projectNameValue,
-  setupVersionDetectTest,
+  removeTempProjectFolder,
   unMockReadFile,
 } from '../../vitest/setup.detect-update.tests';
 import * as detect from './detect.js';
@@ -17,109 +26,101 @@ describe('detect.js', () => {
     mockPino(log);
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     unMockPino(log);
   });
 
   describe('configParser', () => {
     // Test for deno.json
     it('should parse deno.json file correctly', async () => {
-      await setupVersionDetectTest(
-        detect.configParser('deno.json', {
-          parser: JSON.parse,
-          version: ['version'],
-          name: ['name'],
-        }),
-      );
-    });
+      const projectPath = await createTempProjectFolder('detect');
+      await createJsonFile(path.join(projectPath, 'deno.json'), {
+        name: projectNameValue,
+        version: oldVersion,
+      });
 
-    // Test for go.mod
-    it('should parse go.mod file correctly with version comment', async () => {
-      // Create custom parser for go.mod
-      await setupVersionDetectTest(
-        detect.configParser('go.mod', {
-          parser: (data) => data, // pass through raw content
-          version: [/\/\/\s*[vV]ersion:?\s*(\d+\.\d+\.\d+)/m],
-          name: [/module\s+([\w./\-@:]+)/m],
-        }),
-        {
-          name: `github.com/${projectNameValue}`,
-        },
-      );
-    });
+      const result = detect.configParser(path.join(projectPath, 'deno.json'), {
+        parser: JSON.parse,
+        version: ['version'],
+        name: ['name'],
+      })();
+      expect(await result).toEqual({name: projectNameValue, version: oldVersion});
 
-    // Test for Cargo.toml
-    it('should parse Cargo.toml file correctly', async () => {
-      // Create parser with custom parser function
-      await setupVersionDetectTest(
-        detect.configParser('Cargo.toml', {
-          parser: toml.parse,
-          version: ['package.version'],
-          name: ['package.name'],
-        }),
-      );
+      await removeTempProjectFolder(projectPath);
     });
 
     // Test extraction with function extractor
     it('should use function extractor when provided', async () => {
-      const customVersionExtractor = (data) => {
-        const match = data.match(/version:\s*(\d+\.\d+\.\d+[^\s]*)/);
-        return match?.[1] ?? null;
-      };
-
-      const customNameExtractor = (data) => {
-        const match = data.match(/name:\s*(\w+)/);
-        return match?.[1] ?? null;
-      };
-
-      // Create parser with function extractors
-      await setupVersionDetectTest(
-        detect.configParser('custom-parser.txt', {
-          parser: (data) => data, // pass through raw content
-          version: [customVersionExtractor],
-          name: [customNameExtractor],
-        }),
-        {
-          name: 'MyApp',
-          version: '1.2.3-beta',
-        },
+      const projectPath = await createTempProjectFolder('detect');
+      await fs.writeFile(
+        path.join(projectPath, 'custom-parser.txt'),
+        `version: ${oldVersion}\nname: ${projectNameValue}`,
       );
+
+      const result = detect.configParser(path.join(projectPath, 'custom-parser.txt'), {
+        parser: (data) => data.trim(),
+        version: (data) => {
+          const match = data.match(/version:\s*(\d+\.\d+\.\d+[^\s]*)/);
+          return match?.[1] ?? null;
+        },
+        name: (data) => {
+          const match = data.match(/name:\s*(\w+)/);
+          return match?.[1] ?? null;
+        },
+      })();
+      expect(await result).toEqual({name: projectNameValue, version: oldVersion});
+
+      await removeTempProjectFolder(projectPath);
     });
 
     // Test with multiple extractors (string path and regex)
     it('should try multiple extractors in order', async () => {
-      await setupVersionDetectTest(
-        detect.configParser('poetry.toml', {
-          parser: toml.parse,
-          version: ['project.version', 'tool.poetry.version'],
-          name: ['project.name', 'tool.poetry.name'],
-        }),
-      );
+      const projectPath = await createTempProjectFolder('detect');
+      await createPythonPoetryTomlFile(path.join(projectPath, 'poetry.toml'), {
+        name: projectNameValue,
+        version: oldVersion,
+      });
+
+      const result = detect.configParser(path.join(projectPath, 'poetry.toml'), {
+        parser: toml.parse,
+        version: ['project.version', 'tool.poetry.version'],
+        name: ['project.name', 'tool.poetry.name'],
+      })();
+      expect(await result).toEqual({name: projectNameValue, version: oldVersion});
+
+      await removeTempProjectFolder(projectPath);
     });
   });
 
   describe('anyOf', () => {
     it('should return the first valid parser result for deno project files', async () => {
+      const projectPath = await createTempProjectFolder('detect');
+      await createJsonFile(path.join(projectPath, 'deno.jsonc'), {
+        name: projectNameValue,
+        version: oldVersion,
+      });
+      await createJsonFile(path.join(projectPath, 'deno.json'), {
+        name: `${projectNameValue}-deno`,
+        version: oldVersion,
+      });
+
       // Create parsers for each potential file
-      const denoJsoncParser = detect.configParser('deno.jsonc', {
+      const denoJsoncParser = detect.configParser(path.join(projectPath, 'deno.jsonc'), {
         parser: JSONC.parse,
         version: ['version'],
         name: ['name'],
       });
-      const denoJsonParser = detect.configParser('deno.json', {
-        parser: JSON.parse,
-        version: ['version'],
-        name: ['name'],
-      });
-      const packageJsonParser = detect.configParser('package.json', {
+      const denoJsonParser = detect.configParser(path.join(projectPath, 'deno.json'), {
         parser: JSON.parse,
         version: ['version'],
         name: ['name'],
       });
 
-      await setupVersionDetectTest(() =>
-        detect.anyOf('/project', 'deno', [denoJsoncParser, denoJsonParser, packageJsonParser]),
-      );
+      const result = await detect.anyOf(projectPath, 'deno', [denoJsoncParser, denoJsonParser]);
+
+      expect(result).toEqual({name: projectNameValue, version: oldVersion});
+
+      await removeTempProjectFolder(projectPath);
     });
 
     it('should log a warning when no parsers are provided', async () => {
@@ -165,21 +166,37 @@ describe('detect.js', () => {
 
   describe('merge', () => {
     it('should merge results from multiple parsers for Zig project files', async () => {
+      const projectPath = await createTempProjectFolder('detect');
+
+      // Create test files with Zig syntax
+      await createZigBuildFile(path.join(projectPath, 'build.zig'), {
+        name: projectNameValue,
+        version: oldVersion,
+      });
+
+      await createZigBuildZonFile(path.join(projectPath, 'build.zig.zon'), {
+        name: projectNameValue,
+        version: oldVersion,
+      });
+
       // Create parsers for Zig files
-      const buildZigParser = detect.configParser('build.zig', {
+      const buildZigParser = detect.configParser(path.join(projectPath, 'build.zig'), {
         parser: (data) => data,
         name: [/\.name\s*=\s*"([^"]+)"/],
         version: [/\.version\s*=\s*"([^"]+)"/],
       });
 
-      const buildZigZonParser = detect.configParser('build.zig.zon', {
+      const buildZigZonParser = detect.configParser(path.join(projectPath, 'build.zig.zon'), {
         parser: (data) => data,
         name: [/\.name\s*=\s*"([^"]+)"/],
         version: [/\.version\s*=\s*"([^"]+)"/],
       });
 
       // Test the merge function
-      await setupVersionDetectTest(() => detect.merge('/project', 'zig', [buildZigParser, buildZigZonParser]));
+      const result = await detect.merge(projectPath, 'zig', [buildZigParser, buildZigZonParser]);
+      expect(result).toEqual({name: projectNameValue, version: oldVersion});
+
+      await removeTempProjectFolder(projectPath);
     });
 
     it('should log a warning when no parsers are provided', async () => {

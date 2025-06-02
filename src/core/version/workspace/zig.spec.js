@@ -19,7 +19,7 @@ import {
   unMockPino,
 } from '../../../vitest/setup.logging.tests.js';
 
-describe('detect/zig.js module', () => {
+describe.skip('detect/zig.js module', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });

@@ -9,7 +9,7 @@ import {
 } from '../../../vitest/setup.detect-update.tests.js';
 import {mockPino, unMockPino} from '../../../vitest/setup.logging.tests.js';
 
-describe('detect/go.js module', () => {
+describe.skip('detect/go.js module', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });

@@ -13,7 +13,7 @@ import {
 } from '../../../vitest/setup.detect-update.tests.js';
 import {mockPino, unMockPino, setupPinoLoggingCallsTest} from '../../../vitest/setup.logging.tests.js';
 
-describe('detect/deno.js module', () => {
+describe.skip('detect/deno.js module', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });

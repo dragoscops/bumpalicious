@@ -190,6 +190,35 @@ export const createJsonFile = async (filePath, content = {version: oldVersion, n
   fs.writeFile(filePath, JSON.stringify(content, null, 2));
 
 /**
+ * Creates a go.mod file with the specified content.
+ * @param {string} filePath
+ * @param {Object} content
+ * @returns {Promise<void>}
+ */
+export const createGoModFile = async (filePath, content = {version: oldVersion, name: projectNameValue}) =>
+  fs.writeFile(filePath, [`module github.com/${content.name}`, `go 1.16`, `// Version: ${content.version}`].join('\n'));
+
+/**
+ * Creates a poetry.toml file with the specified content.
+ * @param {string} filePath
+ * @param {Object} content
+ * @returns {Promise<void>}
+ */
+export const createPythonPoetryTomlFile = async (filePath, content = {version: oldVersion, name: projectNameValue}) =>
+  fs.writeFile(filePath, [`[tool.poetry]`, `name = "${content.name}"`, `version = "${content.version}"`].join('\n'));
+
+/**
+ * Creates a pyproject.toml file with the specified content.
+ * @param {string} filePath
+ * @param {Object} content
+ * @returns {Promise<void>}
+ */
+export const createPythonPyProjectTomlFile = async (
+  filePath,
+  content = {version: oldVersion, name: projectNameValue},
+) => fs.writeFile(filePath, [`[project]`, `name = "${content.name}"`, `version = "${content.version}"`].join('\n'));
+
+/**
  * Creates a 'broken' file with invalid content.'
  * @param {string} filePath
  * @returns {Promise<void>}
@@ -197,6 +226,40 @@ export const createJsonFile = async (filePath, content = {version: oldVersion, n
 export const createBrokenFile = async (filePath) => {
   fs.writeFile(filePath, 'versions: 1.2.3-beta');
 };
+
+/**
+ * Creates a build.zig file with the specified content.
+ * @param {string} filePath
+ * @param {Object} content
+ * @returns {Promise<void>}
+ */
+export const createZigBuildFile = async (filePath, content = {version: oldVersion, name: projectNameValue}) =>
+  fs.writeFile(
+    filePath,
+    `const std = @import("std");
+
+pub fn build(b: *std.Build) void {
+    const exe = b.addExecutable(.{
+        .name = "${content.name}",
+        .version = "${content.version}",
+    });
+}`,
+  );
+
+/**
+ * Creates a build.zig.zon file with the specified content.
+ * @param {string} filePath
+ * @param {Object} content
+ * @returns {Promise<void>}
+ */
+export const createZigBuildZonFile = async (filePath, content = {version: oldVersion, name: projectNameValue}) =>
+  fs.writeFile(
+    filePath,
+    `.{
+    .name = "${content.name}",
+    .version = "${content.version}",
+}`,
+  );
 
 const configMocks = {
   'custom-parser.txt': 'version: 1.2.3-beta\nname: MyApp',

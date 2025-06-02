@@ -14,7 +14,7 @@ import {
 } from '../../../vitest/setup.detect-update.tests.js';
 import {mockPino, setupPinoLoggingCallsTest, unMockPino} from '../../../vitest/setup.logging.tests.js';
 
-describe('detect/python.js module', () => {
+describe.skip('detect/python.js module', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });

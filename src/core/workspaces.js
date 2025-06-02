@@ -127,7 +127,10 @@ export async function enrichChangedWorkspaces(workspaces, lastTag) {
     const changedFiles = await git.commits.getChangedFiles(workspace.path, lastTag);
     if (changedFiles.length > 0) {
       const enrichedWorkspace = await enrichWorkspace(workspace.path, workspace.type);
-      log.info({workspace: enrichedWorkspace, lastTag, changedFiles: changedFiles.length}, LOG_MESSAGES.WORKSPACE_CHANGED);
+      log.info(
+        {workspace: enrichedWorkspace, lastTag, changedFiles: changedFiles.length},
+        LOG_MESSAGES.WORKSPACE_CHANGED,
+      );
       enrichedWorkspaces.push(enrichedWorkspace);
     } else {
       log.warn({workspace, lastTag}, LOG_MESSAGES.WORKSPACE_UNCHANGED);
