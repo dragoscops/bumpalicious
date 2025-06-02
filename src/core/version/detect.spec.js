@@ -2,24 +2,100 @@ import {describe, it, beforeEach, afterEach} from 'vitest';
 import JSONC from 'tiny-jsonc';
 import toml from '@iarna/toml';
 import path from 'path';
-import fs from 'fs/promises';
 
 import {
-  createGoModFile,
   createJsonFile,
   createPythonPoetryTomlFile,
   createTempProjectFolder,
   createZigBuildFile,
   createZigBuildZonFile,
-  mockReadFile,
+  createCustomParserFile,
+  createMultipleJsonFiles,
   oldVersion,
   projectNameValue,
-  removeTempProjectFolder,
-  unMockReadFile,
+  setupVersionDetectTest2,
 } from '../../vitest/setup.detect-update.tests';
 import * as detect from './detect.js';
 import {warnNoProvidedParsersToAggregator, warnFailedToAggregateVersion, log} from './detect.js';
 import {mockPino, setupPinoLoggingCallsTest, unMockPino} from '../../vitest/setup.logging.tests.js';
+
+const generateCreator =
+  (files = ['deno.json'], wrapper = null) =>
+  async () => {
+    const projectPath = await createTempProjectFolder('detect');
+    let createFile = createJsonFile;
+    const customParser = [];
+
+    for (const file of files) {
+      switch (true) {
+        case file.endsWith('.json'):
+        case file.endsWith('.jsonc'):
+          createFile = createJsonFile;
+          customParser.push(
+            detect.configParser(path.join(projectPath, file), {
+              parser: file.endsWith('.json') ? JSON.parse : JSONC.parse,
+              version: ['version'],
+              name: ['name'],
+            }),
+          );
+          break;
+        case file.endsWith('.toml'):
+          createFile = createPythonPoetryTomlFile;
+          customParser.push(
+            detect.configParser(path.join(projectPath, file), {
+              parser: toml.parse,
+              version: ['project.version', 'tool.poetry.version'],
+              name: ['project.name', 'tool.poetry.name'],
+            }),
+          );
+          break;
+        case file.endsWith('.zig'):
+          createFile = createZigBuildFile;
+          customParser.push(
+            detect.configParser(path.join(projectPath, file), {
+              parser: (data) => data.trim(),
+              name: [/\.name\s*=\s*"([^"]+)"/],
+              version: [/\.version\s*=\s*"([^"]+)"/],
+            }),
+          );
+          break;
+        case file.endsWith('.zon'):
+          createFile = createZigBuildZonFile;
+          customParser.push(
+            detect.configParser(path.join(projectPath, file), {
+              parser: (data) => data.trim(),
+              name: [/\.name\s*=\s*"([^"]+)"/],
+              version: [/\.version\s*=\s*"([^"]+)"/],
+            }),
+          );
+          break;
+        default:
+          createFile = createCustomParserFile;
+          customParser.push(
+            detect.configParser(path.join(projectPath, 'custom-parser.txt'), {
+              parser: (data) => data.trim(),
+              version: (data) => {
+                const match = data.match(/version:\s*(\d+\.\d+\.\d+[^\s]*)/);
+                return match?.[1] ?? null;
+              },
+              name: (data) => {
+                const match = data.match(/name:\s*(\w+)/);
+                return match?.[1] ?? null;
+              },
+            }),
+          );
+      }
+      await createFile(path.join(projectPath, file), {
+        name: projectNameValue,
+        version: oldVersion,
+      });
+    }
+
+    return {
+      projectPath,
+      customParser: wrapper ? (projectPath) => wrapper(projectPath, 'project', customParser) : customParser[0],
+    };
+  };
 
 describe('detect.js', () => {
   beforeEach(() => {
@@ -33,94 +109,40 @@ describe('detect.js', () => {
   describe('configParser', () => {
     // Test for deno.json
     it('should parse deno.json file correctly', async () => {
-      const projectPath = await createTempProjectFolder('detect');
-      await createJsonFile(path.join(projectPath, 'deno.json'), {
-        name: projectNameValue,
-        version: oldVersion,
+      await setupVersionDetectTest2({
+        creator: generateCreator(),
+        parser: detect,
+        expected: {name: projectNameValue, version: oldVersion},
       });
-
-      const result = detect.configParser(path.join(projectPath, 'deno.json'), {
-        parser: JSON.parse,
-        version: ['version'],
-        name: ['name'],
-      })();
-      expect(await result).toEqual({name: projectNameValue, version: oldVersion});
-
-      await removeTempProjectFolder(projectPath);
     });
 
     // Test extraction with function extractor
     it('should use function extractor when provided', async () => {
-      const projectPath = await createTempProjectFolder('detect');
-      await fs.writeFile(
-        path.join(projectPath, 'custom-parser.txt'),
-        `version: ${oldVersion}\nname: ${projectNameValue}`,
-      );
-
-      const result = detect.configParser(path.join(projectPath, 'custom-parser.txt'), {
-        parser: (data) => data.trim(),
-        version: (data) => {
-          const match = data.match(/version:\s*(\d+\.\d+\.\d+[^\s]*)/);
-          return match?.[1] ?? null;
-        },
-        name: (data) => {
-          const match = data.match(/name:\s*(\w+)/);
-          return match?.[1] ?? null;
-        },
-      })();
-      expect(await result).toEqual({name: projectNameValue, version: oldVersion});
-
-      await removeTempProjectFolder(projectPath);
+      await setupVersionDetectTest2({
+        creator: generateCreator(['custom-parser.txt']),
+        parser: detect,
+        expected: {name: projectNameValue, version: oldVersion},
+      });
     });
 
     // Test with multiple extractors (string path and regex)
     it('should try multiple extractors in order', async () => {
-      const projectPath = await createTempProjectFolder('detect');
-      await createPythonPoetryTomlFile(path.join(projectPath, 'poetry.toml'), {
-        name: projectNameValue,
-        version: oldVersion,
+      await setupVersionDetectTest2({
+        creator: generateCreator(['poetry.toml']),
+        parser: detect,
+        expected: {name: projectNameValue, version: oldVersion},
       });
-
-      const result = detect.configParser(path.join(projectPath, 'poetry.toml'), {
-        parser: toml.parse,
-        version: ['project.version', 'tool.poetry.version'],
-        name: ['project.name', 'tool.poetry.name'],
-      })();
-      expect(await result).toEqual({name: projectNameValue, version: oldVersion});
-
-      await removeTempProjectFolder(projectPath);
     });
   });
 
   describe('anyOf', () => {
     it('should return the first valid parser result for deno project files', async () => {
-      const projectPath = await createTempProjectFolder('detect');
-      await createJsonFile(path.join(projectPath, 'deno.jsonc'), {
-        name: projectNameValue,
-        version: oldVersion,
+      await setupVersionDetectTest2({
+        // creator: generateDenoMultiFileCreator(),
+        creator: generateCreator(['deno.jsonc', 'deno.json'], detect.anyOf),
+        parser: detect,
+        expected: {name: projectNameValue, version: oldVersion},
       });
-      await createJsonFile(path.join(projectPath, 'deno.json'), {
-        name: `${projectNameValue}-deno`,
-        version: oldVersion,
-      });
-
-      // Create parsers for each potential file
-      const denoJsoncParser = detect.configParser(path.join(projectPath, 'deno.jsonc'), {
-        parser: JSONC.parse,
-        version: ['version'],
-        name: ['name'],
-      });
-      const denoJsonParser = detect.configParser(path.join(projectPath, 'deno.json'), {
-        parser: JSON.parse,
-        version: ['version'],
-        name: ['name'],
-      });
-
-      const result = await detect.anyOf(projectPath, 'deno', [denoJsoncParser, denoJsonParser]);
-
-      expect(result).toEqual({name: projectNameValue, version: oldVersion});
-
-      await removeTempProjectFolder(projectPath);
     });
 
     it('should log a warning when no parsers are provided', async () => {
@@ -139,8 +161,6 @@ describe('detect.js', () => {
     });
 
     it('should log a warning when no valid version is found', async () => {
-      mockReadFile();
-
       // Execute anyOf with a parser that won't find a version
       const result = await detect.anyOf('/project', 'deno', [
         detect.configParser('deno.json', {
@@ -159,44 +179,16 @@ describe('detect.js', () => {
         [{folderPath: '/project', projectType: 'deno', aggregator: 'anyOf'}, warnFailedToAggregateVersion],
         log,
       );
-
-      unMockReadFile();
     });
   });
 
   describe('merge', () => {
     it('should merge results from multiple parsers for Zig project files', async () => {
-      const projectPath = await createTempProjectFolder('detect');
-
-      // Create test files with Zig syntax
-      await createZigBuildFile(path.join(projectPath, 'build.zig'), {
-        name: projectNameValue,
-        version: oldVersion,
+      await setupVersionDetectTest2({
+        creator: generateCreator(['build.zig', 'build.zig.zon'], detect.merge),
+        parser: detect,
+        expected: {name: projectNameValue, version: oldVersion},
       });
-
-      await createZigBuildZonFile(path.join(projectPath, 'build.zig.zon'), {
-        name: projectNameValue,
-        version: oldVersion,
-      });
-
-      // Create parsers for Zig files
-      const buildZigParser = detect.configParser(path.join(projectPath, 'build.zig'), {
-        parser: (data) => data,
-        name: [/\.name\s*=\s*"([^"]+)"/],
-        version: [/\.version\s*=\s*"([^"]+)"/],
-      });
-
-      const buildZigZonParser = detect.configParser(path.join(projectPath, 'build.zig.zon'), {
-        parser: (data) => data,
-        name: [/\.name\s*=\s*"([^"]+)"/],
-        version: [/\.version\s*=\s*"([^"]+)"/],
-      });
-
-      // Test the merge function
-      const result = await detect.merge(projectPath, 'zig', [buildZigParser, buildZigZonParser]);
-      expect(result).toEqual({name: projectNameValue, version: oldVersion});
-
-      await removeTempProjectFolder(projectPath);
     });
 
     it('should log a warning when no parsers are provided', async () => {
@@ -215,11 +207,9 @@ describe('detect.js', () => {
     });
 
     it('should log a warning when merged result has no version or name', async () => {
-      mockReadFile();
-
       // Execute merge with a parser that won't find a version
       const result = await detect.merge('/project', 'deno', [
-        detect.configParser('build.zig', {
+        detect.configParser('non-existent-file.zig', {
           parser: (data) => data,
           version: [/test/i],
           name: [/test/i],
@@ -235,8 +225,6 @@ describe('detect.js', () => {
         [{folderPath: '/project', projectType: 'deno', aggregator: 'merge'}, warnFailedToAggregateVersion],
         log,
       );
-
-      unMockReadFile();
     });
   });
 });

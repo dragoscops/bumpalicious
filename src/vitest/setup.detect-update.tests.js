@@ -89,9 +89,11 @@ export const setupVersionDetectTest = async (
 
 /**
  *
- * @param {() => Promise<string>} creator
- * @param {() => Promise<ProjectInfo>} parser
- * @param {ProjectInfo} expected
+ * @param {() => Promise<string>} creator - Function that creates temp folder and returns path
+ * @param {(projectPath: string) => Promise<ProjectInfo>} parser - Function that parses the project
+ * @param {ProjectInfo} expected - Expected result
+ * @param {Object} testLogMessage - Expected log message
+ * @param {Object} options - Additional options
  */
 export const setupVersionDetectTest2 = async ({
   creator,
@@ -107,11 +109,22 @@ export const setupVersionDetectTest2 = async ({
 
   mockPino(logger);
   let projectPath = null;
+  let customParser = null;
 
   try {
-    projectPath = await creator();
-    // Execute
-    const result = await parser(projectPath);
+    const creatorResult = await creator();
+
+    // Handle both string return (simple path) and object return (with customParser)
+    if (typeof creatorResult === 'string') {
+      projectPath = creatorResult;
+    } else {
+      projectPath = creatorResult.projectPath;
+      customParser = creatorResult.customParser;
+    }
+
+    // Execute - use customParser if provided, otherwise use the passed parser
+    const parserToUse = customParser || parser;
+    const result = await parserToUse(projectPath);
 
     // Verify
     if (expected) {
@@ -125,8 +138,6 @@ export const setupVersionDetectTest2 = async ({
     if (testLogMessage) {
       setupPinoLoggingCallsTest(testLogMessage.method, ...testLogMessage.expected, logger);
     }
-  } catch (error) {
-    throw error;
   } finally {
     unMockPino(logger);
     await removeTempProjectFolder(projectPath);
@@ -260,6 +271,37 @@ export const createZigBuildZonFile = async (filePath, content = {version: oldVer
     .version = "${content.version}",
 }`,
   );
+
+/**
+ * Creates a custom parser file with version and name data.
+ * @param {string} filePath
+ * @param {Object} content
+ * @returns {Promise<void>}
+ */
+export const createCustomParserFile = async (filePath, content = {version: oldVersion, name: projectNameValue}) =>
+  fs.writeFile(filePath, `version: ${content.version}\nname: ${content.name}`);
+
+/**
+ * Creates multiple JSON files in a project directory.
+ * @param {string} projectPath
+ * @param {Array<string>} files
+ * @param {Object} content
+ * @returns {Promise<void>}
+ */
+export const createMultipleJsonFiles = async (
+  projectPath,
+  files,
+  content = {version: oldVersion, name: projectNameValue},
+) => {
+  await Promise.all(
+    files.map((file, index) =>
+      createJsonFile(path.join(projectPath, file), {
+        name: index === 0 ? content.name : `${content.name}-${file.split('.')[0]}`,
+        version: content.version,
+      }),
+    ),
+  );
+};
 
 const configMocks = {
   'custom-parser.txt': 'version: 1.2.3-beta\nname: MyApp',

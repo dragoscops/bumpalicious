@@ -23,16 +23,16 @@ import path from 'path';
 const generateCreator =
   (files = ['jsr.json'], createFile = createJsonFile) =>
   async () => {
-    const tempFolder = await createTempProjectFolder('node');
+    const projectPath = await createTempProjectFolder('node');
     await Promise.all(
       files.map((file, index) =>
-        createFile(path.join(tempFolder, file), {
+        createFile(path.join(projectPath, file), {
           name: `${projectNameValue}${index === 0 ? '' : index}`,
           version: oldVersion,
         }),
       ),
     );
-    return tempFolder;
+    return {projectPath, customParser: undefined};
   };
 
 describe('detect/node.js module', () => {
