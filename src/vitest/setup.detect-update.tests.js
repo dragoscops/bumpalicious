@@ -1,7 +1,7 @@
 import {execa} from 'execa';
 import * as changelog from '../utils/changelog.js';
 import {logger} from '../utils/logging.js';
-import {mockPino, unMockPino} from './setup.logging.tests.js';
+import {mockPino, setupPinoLoggingCallsTest, unMockPino} from './setup.logging.tests.js';
 import fs from 'fs/promises';
 import path from 'path';
 import {tmpdir} from 'os';
@@ -96,28 +96,39 @@ export const setupVersionDetectTest = async (
 export const setupVersionDetectTest2 = async ({
   creator,
   parser,
-  expected = {
-    name: projectNameValue,
-    version: oldVersion,
-  },
+  expected = null,
+  testLogMessage = null,
+  options = {},
 }) => {
-  // mockPino();
+  const {logger} = {
+    logger: log,
+    ...options,
+  };
+
+  mockPino(logger);
   let projectPath = null;
+
   try {
     projectPath = await creator();
     // Execute
     const result = await parser(projectPath);
 
     // Verify
-    expect(result).toEqual({
-      name: projectNameValue,
-      version: oldVersion,
-      ...expected,
-    });
+    if (expected) {
+      expect(result).toEqual({
+        name: projectNameValue,
+        version: oldVersion,
+        ...expected,
+      });
+    }
+
+    if (testLogMessage) {
+      setupPinoLoggingCallsTest(testLogMessage.method, ...testLogMessage.expected, logger);
+    }
   } catch (error) {
     throw error;
   } finally {
-    unMockPino();
+    unMockPino(logger);
     await removeTempProjectFolder(projectPath);
   }
 };
@@ -177,6 +188,15 @@ export const removeTempProjectFolder = async (folderPath) => {
  */
 export const createJsonFile = async (filePath, content = {version: oldVersion, name: projectNameValue}) =>
   fs.writeFile(filePath, JSON.stringify(content, null, 2));
+
+/**
+ * Creates a 'broken' file with invalid content.'
+ * @param {string} filePath
+ * @returns {Promise<void>}
+ */
+export const createBrokenFile = async (filePath) => {
+  fs.writeFile(filePath, 'versions: 1.2.3-beta');
+};
 
 const configMocks = {
   'custom-parser.txt': 'version: 1.2.3-beta\nname: MyApp',

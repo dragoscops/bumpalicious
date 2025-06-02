@@ -15,20 +15,23 @@ import {
   oldVersion,
   createTempProjectFolder,
   projectNameValue,
+  createBrokenFile,
 } from '../../../vitest/setup.detect-update.tests.js';
 import {mockPino, unMockPino, setupPinoLoggingCallsTest} from '../../../vitest/setup.logging.tests.js';
 import path from 'path';
 
 const generateCreator =
-  (files = ['jsr.json']) =>
+  (files = ['jsr.json'], createFile = createJsonFile) =>
   async () => {
     const tempFolder = await createTempProjectFolder('node');
-    await Promise.all(files.map((file, index) =>
-      createJsonFile(path.join(tempFolder, file), {
-        name: `${projectNameValue}${index === 0 ? '' : index}`,
-        version: oldVersion,
-      }),
-    ));
+    await Promise.all(
+      files.map((file, index) =>
+        createFile(path.join(tempFolder, file), {
+          name: `${projectNameValue}${index === 0 ? '' : index}`,
+          version: oldVersion,
+        }),
+      ),
+    );
     return tempFolder;
   };
 
@@ -70,28 +73,18 @@ describe('detect/node.js module', () => {
 
     // Test error handling when parsing fails
     it('should handle parsing errors gracefully', async () => {
-      mockPino(detectLog);
-      mockReadFile('package.json');
-      const parseSpy = vi.spyOn(JSON, 'parse').mockImplementation(() => {
-        throw new Error('Parsing error');
-      });
-
-      try {
-        await detect('/project');
-
-        setupPinoLoggingCallsTest(
-          'warn',
-          [
+      await setupVersionDetectTest2({
+        creator: generateCreator(['package.json'], createBrokenFile),
+        parser: detect,
+        expectedLogError: {
+          method: 'warn',
+          expected: [
             expect.objectContaining({filePath: expect.stringContaining('package.json'), error: expect.any(Error)}),
             'Failed to parse version file',
           ],
-          detectLog,
-        );
-      } finally {
-        parseSpy.mockRestore();
-        unMockReadFile();
-        unMockPino(detectLog);
-      }
+        },
+        options: {logger: detectLog},
+      });
     });
   });
 
