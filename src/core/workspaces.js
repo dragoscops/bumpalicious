@@ -62,6 +62,7 @@ export async function updateVersionsForChangedWorkspaces(commitMessage, lastTag,
   // Enrich workspaces with additional info
   log.info({workspaces: options.workspaces}, 'Enriching workspaces with additional info');
   const changedWorkspaces = await enrichChangedWorkspaces(options.workspaces, lastTag);
+  log.info({count: changedWorkspaces.length}, 'Found changed workspaces since last tag');
 
   // If no changed workspaces, exit early
   if (changedWorkspaces.length === 0) {
