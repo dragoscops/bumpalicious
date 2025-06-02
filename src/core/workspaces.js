@@ -62,17 +62,13 @@ export async function updateVersionsForChangedWorkspaces(commitMessage, lastTag,
   // Enrich workspaces with additional info
   log.info({workspaces: options.workspaces}, 'Enriching workspaces with additional info');
   const changedWorkspaces = await enrichChangedWorkspaces(options.workspaces, lastTag);
-  log.info({count: changedWorkspaces.length}, 'Found changed workspaces since last tag');
 
   // If no changed workspaces, exit early
   if (changedWorkspaces.length === 0) {
     return [];
   }
 
-  // TODO: remove next line
-  return [];
-
-  log.info({count: changedWorkspaces.length}, `Updating versions for ${changedWorkspaces.length} workspaces`);
+  log.info({count: changedWorkspaces.length}, `Updating versions for changed workspaces`);
 
   // Increase versions based on commit message
   const updatedWorkspaces = await increaseVersionForWorkspaces({
@@ -89,6 +85,8 @@ export async function updateVersionsForChangedWorkspaces(commitMessage, lastTag,
     {count: updatedWorkspaces.length, workspaces: updatedWorkspaces},
     `Updated versions for ${updatedWorkspaces.length} workspaces`,
   );
+
+  return []; // TODO: Uncomment this line to continue with the version update process
 
   // Update version files in workspaces and generate changelogs
   await updateVersionsForWorkspaces(updatedWorkspaces, {
