@@ -57,32 +57,6 @@ export const unMockWriteFile = () => {
   changelog.forMock.writeFile.mockRestore();
 };
 
-export const setupVersionDetectTest = async (
-  parser,
-  expectedResult = {
-    name: projectNameValue,
-    version: oldVersion,
-  },
-  testFile = null,
-) => {
-  mockReadFile(testFile);
-  mockPino();
-  try {
-    // Execute
-    const result = await parser();
-
-    // Verify
-    expect(result).toEqual({
-      name: projectNameValue,
-      version: oldVersion,
-      ...expectedResult,
-    });
-  } finally {
-    unMockReadFile();
-    unMockPino();
-  }
-};
-
 /**
  * @typedef {import('../detect.js').ProjectInfo} ProjectInfo
  */
@@ -95,7 +69,7 @@ export const setupVersionDetectTest = async (
  * @param {Object} testLogMessage - Expected log message
  * @param {Object} options - Additional options
  */
-export const setupVersionDetectTest2 = async ({
+export const setupVersionDetectTest = async ({
   creator,
   parser,
   expected = null,
@@ -173,6 +147,72 @@ export const setupVersionUpdateTest = async (updater, expectedResult = '') => {
 };
 
 /**
+ * Enhanced version update test setup following the same pattern as setupVersionDetectTest
+ * @param {Object} params - Test parameters
+ * @param {() => Promise<string|{projectPath: string, customUpdater?: Function}>} params.creator - Function that creates temp folder and returns path or object
+ * @param {(projectPath: string, newVersion: string) => Promise<any>} params.updater - Function that updates the project
+ * @param {string|string[]} params.expected - Expected content in written files
+ * @param {Object} params.expectedLogError - Expected log error message
+ * @param {Object} params.options - Additional options
+ */
+export const setupVersionUpdateTest2 = async ({
+  creator,
+  updater,
+  expected = null,
+  expectedLogError = null,
+  options = {},
+}) => {
+  const {logger} = {
+    logger: log,
+    ...options,
+  };
+
+  mockPino(logger);
+  let projectPath = null;
+  let customUpdater = null;
+
+  try {
+    const creatorResult = await creator();
+
+    // Handle both string return (simple path) and object return (with customUpdater)
+    if (typeof creatorResult === 'string') {
+      projectPath = creatorResult;
+    } else {
+      projectPath = creatorResult.projectPath;
+      customUpdater = creatorResult.customUpdater;
+    }
+
+    // Execute - use customUpdater if provided, otherwise use the passed updater
+    const updaterToUse = customUpdater || updater;
+    const result = await updaterToUse(projectPath, newVersion);
+
+    // Verify result is truthy (successful update)
+    expect(result).toBeTruthy();
+
+    // Verify expected content in written files
+    if (expected) {
+      if (typeof expected === 'string') {
+        expect(changelog.forMock.writeFile).toHaveBeenCalledWith(expect.any(String), expect.stringContaining(expected));
+      } else if (Array.isArray(expected)) {
+        for (const expectedContent of expected) {
+          expect(changelog.forMock.writeFile).toHaveBeenCalledWith(
+            expect.any(String),
+            expect.stringContaining(expectedContent),
+          );
+        }
+      }
+    }
+
+    if (expectedLogError) {
+      setupPinoLoggingCallsTest(expectedLogError.method, ...expectedLogError.expected, logger);
+    }
+  } finally {
+    await removeTempProjectFolder(projectPath);
+    unMockPino(logger);
+  }
+};
+
+/**
  * Creates a temporary folder for testing purposes.
  *
  * @param {string} prefix - Prefix for the temporary folder name, defaults to 'node'.
@@ -186,7 +226,7 @@ export const createTempProjectFolder = async (prefix = 'node') => {
 };
 
 export const removeTempProjectFolder = async (folderPath) => {
-  if (projectPath) {
+  if (folderPath) {
     return fs.rm(folderPath, {recursive: true});
   }
 };
@@ -208,6 +248,15 @@ export const createJsonFile = async (filePath, content = {version: oldVersion, n
  */
 export const createGoModFile = async (filePath, content = {version: oldVersion, name: projectNameValue}) =>
   fs.writeFile(filePath, [`module github.com/${content.name}`, `go 1.16`, `// Version: ${content.version}`].join('\n'));
+
+/**
+ * Creates a version.go file with the specified content.
+ * @param {string} filePath
+ * @param {Object} content
+ * @returns {Promise<void>}
+ */
+export const createGoVersionFile = async (filePath, content = {version: oldVersion, name: projectNameValue}) =>
+  fs.writeFile(filePath, [`package version`, ``, `const Version = "${content.version}"`].join('\n'));
 
 /**
  * Creates a poetry.toml file with the specified content.
@@ -247,14 +296,27 @@ export const createBrokenFile = async (filePath) => {
 export const createZigBuildFile = async (filePath, content = {version: oldVersion, name: projectNameValue}) =>
   fs.writeFile(
     filePath,
-    `const std = @import("std");
-
-pub fn build(b: *std.Build) void {
-    const exe = b.addExecutable(.{
-        .name = "${content.name}",
-        .version = "${content.version}",
-    });
-}`,
+    [
+      'const std = @import("std");',
+      '',
+      'pub fn build(b: *std.Build) void {',
+      '  const target = b.standardTargetOptions(.{});',
+      '  const optimize = b.standardOptimizeOption(.{});',
+      '',
+      ` const NAME = "${content.name}";`,
+      ` const VERSION = "${content.version}";`,
+      '',
+      '  const exe = b.addExecutable(.{',
+      '    .name = NAME,',
+      '    .root_source_file = .{ .path = "src/main.zig" },',
+      '    .target = target,',
+      '    .optimize = optimize,',
+      '  });',
+      '',
+      '  // Set metadata',
+      '  exe.version = VERSION;',
+      '}',
+    ].join('\n'),
   );
 
 /**
@@ -302,6 +364,45 @@ export const createMultipleJsonFiles = async (
     ),
   );
 };
+
+/**
+ * Creates a setup.py file with the specified content.
+ * @param {string} filePath
+ * @param {Object} content
+ * @returns {Promise<void>}
+ */
+export const createPythonSetupPyFile = async (filePath, content = {version: oldVersion, name: projectNameValue}) =>
+  fs.writeFile(filePath, ['setup(', `name="${content.name}",`, `version="${content.version}"`, ')'].join('\n'));
+
+/**
+ * Creates a setup.cfg file with the specified content.
+ * @param {string} filePath
+ * @param {Object} content
+ * @returns {Promise<void>}
+ */
+export const createPythonSetupCfgFile = async (filePath, content = {version: oldVersion, name: projectNameValue}) =>
+  fs.writeFile(filePath, [`[metadata]`, `name = ${content.name}`, `version = ${content.version}`].join('\n'));
+
+/**
+ * Creates a __init__.py file with the specified content.
+ * @param {string} filePath
+ * @param {Object} content
+ * @returns {Promise<void>}
+ */
+export const createPythonInitPyFile = async (filePath, content = {version: oldVersion, name: projectNameValue}) =>
+  fs.writeFile(
+    filePath,
+    ['"""Package initialization."""', `__version__ = "${content.version}"`, `__name__ = "${content.name}"`].join('\n'),
+  );
+
+/**
+ * Creates a Cargo.toml file with the specified content.
+ * @param {string} filePath
+ * @param {Object} content
+ * @returns {Promise<void>}
+ */
+export const createRustCargoTomlFile = async (filePath, content = {version: oldVersion, name: projectNameValue}) =>
+  fs.writeFile(filePath, ['[package]', `name = "${content.name}"`, `version = "${content.version}"`].join('\n'));
 
 const configMocks = {
   'custom-parser.txt': 'version: 1.2.3-beta\nname: MyApp',
@@ -379,4 +480,12 @@ const configMocks = {
     '}',
   ].join('\n'),
 };
-// console.log(configMocks)
+
+/**
+ * Creates a text version file with the specified content.
+ * @param {string} filePath
+ * @param {Object} content
+ * @returns {Promise<void>}
+ */
+export const createTextVersionFile = async (filePath, content = {version: oldVersion, name: projectNameValue}) =>
+  fs.writeFile(filePath, content.version);

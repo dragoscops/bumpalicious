@@ -3,7 +3,6 @@ import {detect, update} from './node.js';
 import {log as detectLog} from '../detect.js';
 import * as changelog from '../../../utils/changelog.js';
 import {
-  setupVersionDetectTest,
   mockReadFile,
   unMockReadFile,
   newVersion,
@@ -11,13 +10,12 @@ import {
   mockWriteFile,
   unMockWriteFile,
   createJsonFile,
-  setupVersionDetectTest2,
+  setupVersionDetectTest,
   oldVersion,
   createTempProjectFolder,
   projectNameValue,
   createBrokenFile,
 } from '../../../vitest/setup.detect-update.tests.js';
-import {mockPino, unMockPino, setupPinoLoggingCallsTest} from '../../../vitest/setup.logging.tests.js';
 import path from 'path';
 
 const generateCreator =
@@ -35,7 +33,7 @@ const generateCreator =
     return {projectPath, customParser: undefined};
   };
 
-describe('detect/node.js module', () => {
+describe('core/version/workspace/node.js module', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
   });
@@ -43,7 +41,7 @@ describe('detect/node.js module', () => {
   describe('detect()', () => {
     // Test detection with jsr.json
     it('should detect from jsr.json', async () => {
-      await setupVersionDetectTest2({
+      await setupVersionDetectTest({
         creator: generateCreator(),
         parser: detect,
         expected: {name: projectNameValue, version: oldVersion},
@@ -52,7 +50,7 @@ describe('detect/node.js module', () => {
 
     // Test detection with package.json
     it('should detect from package.json', async () => {
-      await setupVersionDetectTest2({
+      await setupVersionDetectTest({
         creator: generateCreator(['package.json']),
         parser: detect,
         expected: {name: projectNameValue, version: oldVersion},
@@ -61,7 +59,7 @@ describe('detect/node.js module', () => {
 
     // Test detection with jsr.json, package.json
     it('should detect from jsr.json, package.json', async () => {
-      await setupVersionDetectTest2({
+      await setupVersionDetectTest({
         creator: generateCreator(['jsr.json', 'package.json']),
         parser: detect,
         expected: {
@@ -73,7 +71,7 @@ describe('detect/node.js module', () => {
 
     // Test error handling when parsing fails
     it('should handle parsing errors gracefully', async () => {
-      await setupVersionDetectTest2({
+      await setupVersionDetectTest({
         creator: generateCreator(['package.json'], createBrokenFile),
         parser: detect,
         expectedLogError: {

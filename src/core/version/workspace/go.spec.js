@@ -3,13 +3,38 @@ import {detect, update} from './go.js';
 import {
   setupVersionDetectTest,
   setupVersionUpdateTest,
-  mockReadFile,
-  unMockReadFile,
+  createGoModFile,
+  createGoVersionFile,
+  createTempProjectFolder,
+  oldVersion,
+  projectNameValue,
   newVersion,
 } from '../../../vitest/setup.detect-update.tests.js';
-import {mockPino, unMockPino} from '../../../vitest/setup.logging.tests.js';
+import path from 'path';
 
-describe.skip('detect/go.js module', () => {
+const generateCreator =
+  (files = ['go.mod']) =>
+  async () => {
+    const projectPath = await createTempProjectFolder('go');
+
+    for (const file of files) {
+      if (file.endsWith('.mod')) {
+        await createGoModFile(path.join(projectPath, file), {
+          name: projectNameValue,
+          version: oldVersion,
+        });
+      } else {
+        await createGoVersionFile(path.join(projectPath, file), {
+          name: 'version',
+          version: oldVersion,
+        });
+      }
+    }
+
+    return projectPath;
+  };
+
+describe('core/version/workspace/go.js module', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -17,40 +42,29 @@ describe.skip('detect/go.js module', () => {
   describe('detect()', () => {
     // Test detection with go.mod
     it('should detect from go.mod', async () => {
-      await setupVersionDetectTest(
-        () => detect('/project'),
-        {
-          name: 'github.com/project',
-        },
-        'go.mod',
-      );
+      await setupVersionDetectTest({
+        creator: generateCreator(),
+        parser: detect,
+        expected: {name: `github.com/${projectNameValue}`, version: oldVersion},
+      });
     });
 
     // Test detection with version.go
     it('should detect from version.go', async () => {
-      await setupVersionDetectTest(
-        () => detect('/project'),
-        {
-          name: 'version', // Package name from version.go
-        },
-        'version.go',
-      );
+      await setupVersionDetectTest({
+        creator: generateCreator(['version.go']),
+        parser: detect,
+        expected: {name: 'version', version: oldVersion},
+      });
     });
 
     // Test error handling when parsing fails
     it('should handle parsing errors gracefully', async () => {
-      mockPino();
-      mockReadFile('go.mod');
-
-      try {
-        await detect('/project');
-
-        // The detect function should complete without throwing, even if some files aren't found
-        // This tests the graceful degradation when files are missing
-      } finally {
-        unMockReadFile();
-        unMockPino();
-      }
+      await setupVersionDetectTest({
+        creator: generateCreator(['go.mod']),
+        parser: detect,
+        expected: {name: `github.com/${projectNameValue}`, version: oldVersion},
+      });
     });
   });
 

@@ -5,16 +5,24 @@ import {log as detectLog} from '../detect.js';
 import * as changelog from '../../../utils/changelog.js';
 import {
   setupVersionDetectTest,
-  mockReadFile,
-  unMockReadFile,
+  createPythonPyProjectTomlFile,
+  createPythonPoetryTomlFile,
+  createPythonSetupPyFile,
+  createPythonSetupCfgFile,
+  createPythonInitPyFile,
+  createTempProjectFolder,
+  oldVersion,
+  projectNameValue,
   newVersion,
   setupVersionUpdateTest,
   mockWriteFile,
   unMockWriteFile,
+  mockReadFile,
+  unMockReadFile,
 } from '../../../vitest/setup.detect-update.tests.js';
 import {mockPino, setupPinoLoggingCallsTest, unMockPino} from '../../../vitest/setup.logging.tests.js';
 
-describe.skip('detect/python.js module', () => {
+describe('core/version/workspace/python.js module', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -22,57 +30,77 @@ describe.skip('detect/python.js module', () => {
   describe('detect()', () => {
     // Test detection with pyproject.toml
     it('should detect from pyproject.toml', async () => {
-      await setupVersionDetectTest(
-        () => detect('/project'),
-        {
-          name: 'project',
+      await setupVersionDetectTest({
+        creator: async () => {
+          const projectPath = await createTempProjectFolder('python');
+          await createPythonPyProjectTomlFile(`${projectPath}/pyproject.toml`);
+          return projectPath;
         },
-        'pyproject.toml',
-      );
+        parser: detect,
+        expected: {
+          name: projectNameValue,
+        },
+      });
     });
 
     // Test detection with poetry.toml
     it('should detect from poetry.toml', async () => {
-      await setupVersionDetectTest(
-        () => detect('/project'),
-        {
-          name: 'project',
+      await setupVersionDetectTest({
+        creator: async () => {
+          const projectPath = await createTempProjectFolder('python');
+          await createPythonPoetryTomlFile(`${projectPath}/poetry.toml`);
+          return projectPath;
         },
-        'poetry.toml',
-      );
+        parser: detect,
+        expected: {
+          name: projectNameValue,
+        },
+      });
     });
 
     // Test detection with setup.py
     it('should detect from setup.py', async () => {
-      await setupVersionDetectTest(
-        () => detect('/project'),
-        {
-          name: 'project',
+      await setupVersionDetectTest({
+        creator: async () => {
+          const projectPath = await createTempProjectFolder('python');
+          await createPythonSetupPyFile(`${projectPath}/setup.py`);
+          return projectPath;
         },
-        'setup.py',
-      );
+        parser: detect,
+        expected: {
+          name: projectNameValue,
+        },
+      });
     });
 
     // Test detection with setup.cfg
     it('should detect from setup.cfg', async () => {
-      await setupVersionDetectTest(
-        () => detect('/project'),
-        {
-          name: 'project',
+      await setupVersionDetectTest({
+        creator: async () => {
+          const projectPath = await createTempProjectFolder('python');
+          await createPythonSetupCfgFile(`${projectPath}/setup.cfg`);
+          return projectPath;
         },
-        'setup.cfg',
-      );
+        parser: detect,
+        expected: {
+          name: projectNameValue,
+        },
+      });
     });
 
     // Test detection with __init__.py
     it('should detect from __init__.py', async () => {
-      await setupVersionDetectTest(
-        () => detect('/project'),
-        {
-          name: 'project',
+      await setupVersionDetectTest({
+        creator: async () => {
+          const projectPath = await createTempProjectFolder('python');
+          await createPythonInitPyFile(`${projectPath}/__init__.py`);
+          return projectPath;
         },
-        '__init__.py',
-      );
+        parser: detect,
+        expected: {
+          name: projectNameValue,
+        },
+      });
     });
 
     // Test error handling when parsing fails

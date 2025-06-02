@@ -13,7 +13,7 @@ import {
   createMultipleJsonFiles,
   oldVersion,
   projectNameValue,
-  setupVersionDetectTest2,
+  setupVersionDetectTest,
 } from '../../vitest/setup.detect-update.tests';
 import * as detect from './detect.js';
 import {warnNoProvidedParsersToAggregator, warnFailedToAggregateVersion, log} from './detect.js';
@@ -109,7 +109,7 @@ describe('detect.js', () => {
   describe('configParser', () => {
     // Test for deno.json
     it('should parse deno.json file correctly', async () => {
-      await setupVersionDetectTest2({
+      await setupVersionDetectTest({
         creator: generateCreator(),
         parser: detect,
         expected: {name: projectNameValue, version: oldVersion},
@@ -118,7 +118,7 @@ describe('detect.js', () => {
 
     // Test extraction with function extractor
     it('should use function extractor when provided', async () => {
-      await setupVersionDetectTest2({
+      await setupVersionDetectTest({
         creator: generateCreator(['custom-parser.txt']),
         parser: detect,
         expected: {name: projectNameValue, version: oldVersion},
@@ -127,7 +127,7 @@ describe('detect.js', () => {
 
     // Test with multiple extractors (string path and regex)
     it('should try multiple extractors in order', async () => {
-      await setupVersionDetectTest2({
+      await setupVersionDetectTest({
         creator: generateCreator(['poetry.toml']),
         parser: detect,
         expected: {name: projectNameValue, version: oldVersion},
@@ -137,7 +137,7 @@ describe('detect.js', () => {
 
   describe('anyOf', () => {
     it('should return the first valid parser result for deno project files', async () => {
-      await setupVersionDetectTest2({
+      await setupVersionDetectTest({
         // creator: generateDenoMultiFileCreator(),
         creator: generateCreator(['deno.jsonc', 'deno.json'], detect.anyOf),
         parser: detect,
@@ -184,7 +184,7 @@ describe('detect.js', () => {
 
   describe('merge', () => {
     it('should merge results from multiple parsers for Zig project files', async () => {
-      await setupVersionDetectTest2({
+      await setupVersionDetectTest({
         creator: generateCreator(['build.zig', 'build.zig.zon'], detect.merge),
         parser: detect,
         expected: {name: projectNameValue, version: oldVersion},

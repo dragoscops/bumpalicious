@@ -1,60 +1,67 @@
 import {beforeEach, describe, it, vi} from 'vitest';
-import toml from '@iarna/toml';
 import {detect, update} from './rust.js';
 import {log as detectLog} from '../detect.js';
 import {forMock as changelogForMock} from '../../../utils/changelog.js';
 import {
-  setupVersionDetectTest,
   mockReadFile,
   unMockReadFile,
   newVersion,
   setupVersionUpdateTest,
   mockWriteFile,
   unMockWriteFile,
+  setupVersionDetectTest,
+  createRustCargoTomlFile,
+  createTempProjectFolder,
+  oldVersion,
+  projectNameValue,
+  createBrokenFile,
 } from '../../../vitest/setup.detect-update.tests.js';
-import {mockPino, unMockPino, setupPinoLoggingCallsTest} from '../../../vitest/setup.logging.tests.js';
+import path from 'path';
 
-describe.skip('detect/rust.js module', () => {
-  beforeEach(() => {
+const generateCreator =
+  (files = ['Cargo.toml'], createFile = createRustCargoTomlFile) =>
+  async () => {
+    const projectPath = await createTempProjectFolder('rust');
+    await Promise.all(
+      files.map((file, index) =>
+        createFile(path.join(projectPath, file), {
+          name: `${projectNameValue}${index === 0 ? '' : index}`,
+          version: oldVersion,
+        }),
+      ),
+    );
+    return {projectPath, customParser: undefined};
+  };
+
+describe('core/version/workspace/rust.js module', () => {
+  beforeEach(async () => {
     vi.clearAllMocks();
   });
 
   describe('detect()', () => {
     // Test detection with Cargo.toml
     it('should detect from Cargo.toml', async () => {
-      await setupVersionDetectTest(
-        () => detect('/project'),
-        {
-          name: 'project',
-        },
-        'Cargo.toml',
-      );
+      await setupVersionDetectTest({
+        creator: generateCreator(),
+        parser: detect,
+        expected: {name: projectNameValue, version: oldVersion},
+      });
     });
 
     // Test error handling when parsing fails
     it('should handle parsing errors gracefully', async () => {
-      mockPino(detectLog);
-      mockReadFile('Cargo.toml');
-      const parseSpy = vi.spyOn(toml, 'parse').mockImplementation(() => {
-        throw new Error('Parsing error');
-      });
-
-      try {
-        await detect('/project');
-
-        setupPinoLoggingCallsTest(
-          'warn',
-          [
+      await setupVersionDetectTest({
+        creator: generateCreator(['Cargo.toml'], createBrokenFile),
+        parser: detect,
+        expectedLogError: {
+          method: 'warn',
+          expected: [
             expect.objectContaining({filePath: expect.stringContaining('Cargo.toml'), error: expect.any(Error)}),
             'Failed to parse version file',
           ],
-          detectLog,
-        );
-      } finally {
-        parseSpy.mockRestore();
-        unMockReadFile();
-        unMockPino(detectLog);
-      }
+        },
+        options: {logger: detectLog},
+      });
     });
   });
 

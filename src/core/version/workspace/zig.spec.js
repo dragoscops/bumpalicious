@@ -3,64 +3,70 @@ import {detect, update} from './zig.js';
 import * as updateModule from '../update.js';
 import * as changelog from '../../../utils/changelog.js';
 import {
-  setupVersionDetectTest,
   mockReadFile,
   unMockReadFile,
   newVersion,
   mockWriteFile,
   unMockWriteFile,
+  setupVersionDetectTest,
+  createZigBuildFile,
+  createZigBuildZonFile,
+  createTempProjectFolder,
+  oldVersion,
+  projectNameValue,
+  createBrokenFile,
 } from '../../../vitest/setup.detect-update.tests.js';
-import {
-  mockConsole,
-  mockCConsole,
-  unMockConsole,
-  unMockCConsole,
-  mockPino,
-  unMockPino,
-} from '../../../vitest/setup.logging.tests.js';
+import {mockPino, unMockPino} from '../../../vitest/setup.logging.tests.js';
+import path from 'path';
 
-describe.skip('detect/zig.js module', () => {
-  beforeEach(() => {
+const generateCreator =
+  (files = ['build.zig'], createFile = createZigBuildFile) =>
+  async () => {
+    const projectPath = await createTempProjectFolder('zig');
+    await Promise.all(
+      files.map((file, index) => {
+        const fileCreateFn = file === 'build.zig.zon' ? createZigBuildZonFile : createZigBuildFile;
+        const actualCreateFn = createFile === createBrokenFile ? createFile : fileCreateFn;
+        return actualCreateFn(path.join(projectPath, file), {
+          name: `${projectNameValue}${index === 0 ? '' : index}`,
+          version: oldVersion,
+        });
+      }),
+    );
+    return {projectPath, customParser: undefined};
+  };
+
+describe('core/version/workspace/zig.js module', () => {
+  beforeEach(async () => {
     vi.clearAllMocks();
   });
 
   describe('detect()', () => {
     // Test detection with build.zig
     it('should detect from build.zig', async () => {
-      await setupVersionDetectTest(
-        () => detect('/project'),
-        {
-          name: 'project',
-        },
-        'build.zig',
-      );
+      await setupVersionDetectTest({
+        creator: generateCreator(),
+        parser: detect,
+        expected: {name: projectNameValue, version: oldVersion},
+      });
     });
 
     // Test detection with build.zig.zon
     it('should detect from build.zig.zon', async () => {
-      await setupVersionDetectTest(
-        () => detect('/project'),
-        {
-          name: 'project',
-        },
-        'build.zig.zon',
-      );
+      await setupVersionDetectTest({
+        creator: generateCreator(['build.zig.zon'], createZigBuildZonFile),
+        parser: detect,
+        expected: {name: projectNameValue, version: oldVersion},
+      });
     });
 
     // Test error handling when parsing fails
     it('should handle parsing errors gracefully', async () => {
-      mockPino();
-      mockReadFile('build.zig');
-
-      try {
-        await detect('/project');
-
-        // The detect function should complete without throwing, even if some files aren't found
-        // This tests the graceful degradation when files are missing
-      } finally {
-        unMockReadFile();
-        unMockPino();
-      }
+      await setupVersionDetectTest({
+        creator: generateCreator(['build.zig'], createBrokenFile),
+        parser: detect,
+        expected: {name: null, version: null},
+      });
     });
   });
 
