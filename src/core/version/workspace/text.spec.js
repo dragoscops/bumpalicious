@@ -1,13 +1,7 @@
 import {beforeEach, describe, it, vi} from 'vitest';
 import {detect, update} from './text.js';
-import * as changelog from '../../../utils/changelog.js';
 import {
-  mockReadFile,
-  unMockReadFile,
-  newVersion,
-  setupVersionUpdateTest,
-  mockWriteFile,
-  unMockWriteFile,
+  setupVersionUpdateTest2,
   setupVersionDetectTest,
   createTextVersionFile,
   createTempProjectFolder,
@@ -90,40 +84,43 @@ describe('core/version/workspace/text.js module', () => {
 
   describe('update()', () => {
     it('should update version in version when only version exists', async () => {
-      await setupVersionUpdateTest(() => update('/project', newVersion), newVersion, 'version');
+      await setupVersionUpdateTest2({
+        creator: generateCreator(['version']),
+        updater: update,
+        expected: '2.0.0',
+      });
     });
 
     it('should update version in version.txt when only version.txt exists', async () => {
-      await setupVersionUpdateTest(() => update('/project', newVersion), newVersion, 'version.txt');
+      await setupVersionUpdateTest2({
+        creator: generateCreator(['version.txt']),
+        updater: update,
+        expected: '2.0.0',
+      });
     });
 
     it('should update version in VERSION when only VERSION exists', async () => {
-      await setupVersionUpdateTest(() => update('/project', newVersion), newVersion, 'VERSION');
+      await setupVersionUpdateTest2({
+        creator: generateCreator(['VERSION']),
+        updater: update,
+        expected: '2.0.0',
+      });
     });
 
     it('should update version in VERSION.txt when only VERSION.txt exists', async () => {
-      await setupVersionUpdateTest(() => update('/project', newVersion), newVersion, 'VERSION.txt');
+      await setupVersionUpdateTest2({
+        creator: generateCreator(['VERSION.txt']),
+        updater: update,
+        expected: '2.0.0',
+      });
     });
 
     it('should update all text config files when multiple exist', async () => {
-      // Test that all text files are updated when they exist
-      mockReadFile(); // This will make all config files available
-      mockWriteFile();
-
-      try {
-        await update('/project', newVersion);
-
-        // Verify all files were written to with the new version
-        const expectedFiles = ['version', 'version.txt', 'VERSION', 'VERSION.txt'];
-        expect(changelog.forMock.writeFile).toHaveBeenCalledTimes(expectedFiles.length);
-
-        expectedFiles.forEach((file) => {
-          expect(changelog.forMock.writeFile).toHaveBeenCalledWith(expect.stringContaining(file), newVersion);
-        });
-      } finally {
-        unMockWriteFile();
-        unMockReadFile();
-      }
+      await setupVersionUpdateTest2({
+        creator: generateCreator(['version', 'version.txt', 'VERSION', 'VERSION.txt']),
+        updater: update,
+        expected: ['2.0.0'], // Should appear in all files
+      });
     });
   });
 });

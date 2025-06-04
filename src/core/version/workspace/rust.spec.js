@@ -1,14 +1,9 @@
 import {beforeEach, describe, it, vi} from 'vitest';
 import {detect, update} from './rust.js';
 import {log as detectLog} from '../detect.js';
-import {forMock as changelogForMock} from '../../../utils/changelog.js';
 import {
-  mockReadFile,
-  unMockReadFile,
   newVersion,
-  setupVersionUpdateTest,
-  mockWriteFile,
-  unMockWriteFile,
+  setupVersionUpdateTest2,
   setupVersionDetectTest,
   createRustCargoTomlFile,
   createTempProjectFolder,
@@ -67,31 +62,21 @@ describe('core/version/workspace/rust.js module', () => {
 
   describe('update()', () => {
     it('should update version in Cargo.toml when Cargo.toml exists', async () => {
-      await setupVersionUpdateTest(() => update('/project', newVersion), `version = "${newVersion}"`, 'Cargo.toml');
+      await setupVersionUpdateTest2({
+        creator: generateCreator(['Cargo.toml']),
+        updater: update,
+        expected: `version = "${newVersion}"`,
+      });
     });
 
     it('should update all rust config files when multiple exist', async () => {
-      // Test that all rust files are updated when they exist
-      mockReadFile(); // This will make all config files available
-      mockWriteFile();
-
-      try {
-        await update('/project', newVersion);
-
-        // Verify all files were written to with the new version
-        const expectedFiles = ['Cargo.toml'];
-        expect(changelogForMock.writeFile).toHaveBeenCalledTimes(expectedFiles.length);
-
-        expectedFiles.forEach((file) => {
-          expect(changelogForMock.writeFile).toHaveBeenCalledWith(
-            expect.stringContaining(file),
-            expect.stringContaining(`version = "${newVersion}"`),
-          );
-        });
-      } finally {
-        unMockWriteFile();
-        unMockReadFile();
-      }
+      // For rust, there's typically only Cargo.toml, but this test verifies
+      // the update function works correctly when called on a rust project
+      await setupVersionUpdateTest2({
+        creator: generateCreator(['Cargo.toml']),
+        updater: update,
+        expected: `version = "${newVersion}"`,
+      });
     });
   });
 });
