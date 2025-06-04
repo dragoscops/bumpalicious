@@ -7,10 +7,62 @@ import {
   mockWriteFile,
   newVersion,
   setupVersionUpdateTest,
+  setupVersionUpdateTest2,
   unMockReadFile,
   unMockWriteFile,
+  createTempProjectFolder,
+  createJsonFile,
+  createCustomParserFile,
 } from '../../vitest/setup.detect-update.tests.js';
 import {mockPino, setupPinoLoggingCallsTest, unMockPino} from '../../vitest/setup.logging.tests.js';
+
+// Generator functions for different test scenarios
+const generatePackageJsonCreator = async () => {
+  const projectPath = await createTempProjectFolder('update');
+  await createJsonFile(`${projectPath}/package.json`);
+  return {
+    projectPath,
+    customParser: update.configUpdater('package.json', {
+      parser: JSON.parse,
+      serializer: (data) => JSON.stringify(data, null, 2),
+      version: ['version'],
+    }),
+  };
+};
+
+const generateGoModCreator = async () => {
+  const projectPath = await createTempProjectFolder('update');
+  const fs = await import('fs/promises');
+  const customContent = `module test-project
+
+go 1.21
+
+// version: 1.0.0
+`;
+  await fs.writeFile(`${projectPath}/go.mod`, customContent);
+  return {
+    projectPath,
+    customParser: update.configUpdater('go.mod', {
+      parser: (data) => data, // pass through
+      serializer: (data) => data,
+      version: [[/\/\/\s*[vV]ersion:?\s*(\d+\.\d+\.\d+(?:[-+][\da-zA-Z.]+)*)/m, '// version: $VERSION']],
+    }),
+  };
+};
+
+const generateVersionFileCreator = async () => {
+  const projectPath = await createTempProjectFolder('update');
+  const fs = await import('fs/promises');
+  await fs.writeFile(`${projectPath}/version`, '1.0.0');
+  return {
+    projectPath,
+    customParser: update.configUpdater('version', {
+      parser: (data) => data, // pass through
+      serializer: (data) => data,
+      version: [(data) => newVersion],
+    }),
+  };
+};
 
 describe('update.js module', () => {
   beforeEach(() => {
@@ -24,36 +76,67 @@ describe('update.js module', () => {
 
   describe('configUpdater', () => {
     it('should create an updater function for JSON files', async () => {
-      setupVersionUpdateTest(
-        update.configUpdater('package.json', {
-          parser: JSON.parse,
-          serializer: (data) => JSON.stringify(data, null, 2),
-          version: ['version'],
-        }),
-        `"version": "${newVersion}"`,
-      );
+      await setupVersionUpdateTest2({
+        creator: generatePackageJsonCreator,
+        updater: async (projectPath, version) => {
+          // Change to the project directory to test relative paths
+          const originalCwd = process.cwd();
+          try {
+            process.chdir(projectPath);
+            const updaterFn = update.configUpdater('package.json', {
+              parser: JSON.parse,
+              serializer: (data) => JSON.stringify(data, null, 2),
+              version: ['version'],
+            });
+            return await updaterFn(version);
+          } finally {
+            process.chdir(originalCwd);
+          }
+        },
+        expected: `"version": "${newVersion}"`,
+      });
     });
 
     it('should create an updater function for regex-based updates', async () => {
-      setupVersionUpdateTest(
-        update.configUpdater('go.mod', {
-          parser: (data) => data, // pass through
-          serializer: (data) => data,
-          version: [[/\/\/\s*[vV]ersion:?\s*(\d+\.\d+\.\d+(?:[-+][\da-zA-Z.]+)*)/m, '// version: $VERSION']],
-        }),
-        `// version: ${newVersion}`,
-      );
+      await setupVersionUpdateTest2({
+        creator: generateGoModCreator,
+        updater: async (projectPath, version) => {
+          const originalCwd = process.cwd();
+          try {
+            process.chdir(projectPath);
+            const updaterFn = update.configUpdater('go.mod', {
+              parser: (data) => data, // pass through
+              serializer: (data) => data,
+              version: [[/\/\/\s*[vV]ersion:?\s*(\d+\.\d+\.\d+(?:[-+][\da-zA-Z.]+)*)/m, '// version: $VERSION']],
+            });
+            return await updaterFn(version);
+          } finally {
+            process.chdir(originalCwd);
+          }
+        },
+        expected: `// version: ${newVersion}`,
+      });
     });
 
     it('should create an updater function', async () => {
-      setupVersionUpdateTest(
-        update.configUpdater('version', {
-          parser: (data) => data, // pass through
-          serializer: (data) => data,
-          version: [(data) => newVersion],
-        }),
-        newVersion,
-      );
+      await setupVersionUpdateTest2({
+        creator: generateVersionFileCreator,
+        updater: async (projectPath, version) => {
+          const originalCwd = process.cwd();
+          try {
+            process.chdir(projectPath);
+            const updaterFn = update.configUpdater('version', {
+              parser: (data) => data, // pass through
+              serializer: (data) => data,
+              version: [(data) => version], // Use the passed version parameter
+            });
+            return await updaterFn(version);
+          } finally {
+            process.chdir(originalCwd);
+          }
+        },
+        expected: newVersion,
+      });
     });
 
     it('should handle file read errors gracefully', async () => {
