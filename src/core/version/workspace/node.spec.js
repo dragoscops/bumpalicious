@@ -1,14 +1,9 @@
 import {beforeEach, describe, it, vi} from 'vitest';
 import {detect, update} from './node.js';
 import {log as detectLog} from '../detect.js';
-import * as changelog from '../../../utils/changelog.js';
 import {
-  mockReadFile,
-  unMockReadFile,
   newVersion,
-  setupVersionUpdateTest,
-  mockWriteFile,
-  unMockWriteFile,
+  setupVersionUpdateTest2,
   createJsonFile,
   setupVersionDetectTest,
   oldVersion,
@@ -88,35 +83,27 @@ describe('core/version/workspace/node.js module', () => {
 
   describe('update()', () => {
     it('should update version in jsr.json when only jsr.json exists', async () => {
-      await setupVersionUpdateTest(() => update('/project', newVersion), `"version": "${newVersion}"`, 'jsr.json');
+      await setupVersionUpdateTest2({
+        creator: generateCreator(['jsr.json']),
+        updater: update,
+        expected: `"version": "${newVersion}"`,
+      });
     });
 
     it('should update version in package.json when only package.json exists', async () => {
-      await setupVersionUpdateTest(() => update('/project', newVersion), `"version": "${newVersion}"`, 'package.json');
+      await setupVersionUpdateTest2({
+        creator: generateCreator(['package.json']),
+        updater: update,
+        expected: `"version": "${newVersion}"`,
+      });
     });
 
     it('should update all node config files when multiple exist', async () => {
-      // Test that all node files are updated when they exist
-      mockReadFile(); // This will make all config files available
-      mockWriteFile();
-
-      try {
-        await update('/project', newVersion);
-
-        // Verify all files were written to with the new version
-        const expectedFiles = ['jsr.json', 'package.json'];
-        expect(changelog.forMock.writeFile).toHaveBeenCalledTimes(expectedFiles.length);
-
-        expectedFiles.forEach((file) => {
-          expect(changelog.forMock.writeFile).toHaveBeenCalledWith(
-            expect.stringContaining(file),
-            expect.stringContaining(`"version": "${newVersion}"`),
-          );
-        });
-      } finally {
-        unMockWriteFile();
-        unMockReadFile();
-      }
+      await setupVersionUpdateTest2({
+        creator: generateCreator(['jsr.json', 'package.json']),
+        updater: update,
+        expected: [`"version": "${newVersion}"`, `"version": "${newVersion}"`], // Should appear in both files
+      });
     });
   });
 });

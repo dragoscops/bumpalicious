@@ -147,6 +147,28 @@ export const setupVersionUpdateTest = async (updater, expectedResult = '') => {
 };
 
 /**
+ * Helper function to read all text files from a directory
+ * @param {string} dirPath - Directory path
+ * @returns {Promise<string[]>} Array of file contents
+ */
+const readAllTextFiles = async (dirPath) => {
+  const files = await fs.readdir(dirPath);
+  const fileContents = [];
+
+  for (const file of files) {
+    try {
+      const content = await fs.readFile(path.join(dirPath, file), 'utf8');
+      fileContents.push(content);
+    } catch {
+      // Skip files that can't be read as text (e.g., binary files)
+      continue;
+    }
+  }
+
+  return fileContents;
+};
+
+/**
  * Enhanced version update test setup following the same pattern as setupVersionDetectTest
  * @param {Object} params - Test parameters
  * @param {() => Promise<string|{projectPath: string, customUpdater?: Function}>} params.creator - Function that creates temp folder and returns path or object
@@ -189,16 +211,17 @@ export const setupVersionUpdateTest2 = async ({
     // Verify result is truthy (successful update)
     expect(result).toBeTruthy();
 
-    // Verify expected content in written files
+    // Verify expected content in written files by reading from disk
     if (expected) {
+      const fileContents = await readAllTextFiles(projectPath);
+
       if (typeof expected === 'string') {
-        expect(changelog.forMock.writeFile).toHaveBeenCalledWith(expect.any(String), expect.stringContaining(expected));
+        const foundExpectedContent = fileContents.some((content) => content.includes(expected));
+        expect(foundExpectedContent).toBe(true);
       } else if (Array.isArray(expected)) {
         for (const expectedContent of expected) {
-          expect(changelog.forMock.writeFile).toHaveBeenCalledWith(
-            expect.any(String),
-            expect.stringContaining(expectedContent),
-          );
+          const foundContent = fileContents.some((content) => content.includes(expectedContent));
+          expect(foundContent).toBe(true);
         }
       }
     }
@@ -207,8 +230,8 @@ export const setupVersionUpdateTest2 = async ({
       setupPinoLoggingCallsTest(expectedLogError.method, ...expectedLogError.expected, logger);
     }
   } finally {
-    await removeTempProjectFolder(projectPath);
     unMockPino(logger);
+    await removeTempProjectFolder(projectPath);
   }
 };
 
