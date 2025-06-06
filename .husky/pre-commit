@@ -1,5 +1,5 @@
 npm run prettify
 
-npm run cpd
+# npm run cpd
 
 git add .
