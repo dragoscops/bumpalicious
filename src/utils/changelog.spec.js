@@ -6,10 +6,10 @@ import {Readable} from 'stream';
 import {describe, it, expect, beforeEach, vi, afterEach, fail} from 'vitest';
 import path from 'path';
 import fs from 'node:fs/promises';
-import {tmpdir} from 'node:os';
 
 import * as changelog from './changelog.js';
 import {mockPino, unMockPino} from '../vitest/setup.logging.tests.js';
+import {createTempProjectFolder, removeTempProjectFolder} from '../vitest/setup.fs.test.js';
 
 vi.mock('conventional-changelog-core', () => ({
   default: vi.fn().mockImplementation(() => {
@@ -20,26 +20,6 @@ vi.mock('conventional-changelog-core', () => ({
     return stream;
   }),
 }));
-
-/**
- * Creates a temporary directory for changelog tests
- * @returns {Promise<string>} - Path to the temp directory
- */
-async function createTempDir() {
-  const tempDir = await fs.mkdtemp(path.join(tmpdir(), 'changelog-test-'));
-  return tempDir;
-}
-
-/**
- * Removes a temporary directory
- * @param {string} dirPath - Path to the directory to remove
- * @returns {Promise<void>}
- */
-async function removeTempDir(dirPath) {
-  if (dirPath) {
-    await fs.rm(dirPath, {recursive: true, force: true});
-  }
-}
 
 /**
  * Creates a workspace object with specified properties
@@ -83,14 +63,14 @@ describe('changelog.js module', () => {
     mockPino(changelog.log);
 
     // Create a fresh temp directory for each test
-    tempDir = await createTempDir();
+    tempDir = await createTempProjectFolder('changelog-test');
   });
 
   afterEach(async () => {
     unMockPino(changelog.log);
 
     // Clean up the temp directory after each test
-    await removeTempDir(tempDir);
+    await removeTempProjectFolder(tempDir);
   });
 
   describe('changelogExists()', () => {
