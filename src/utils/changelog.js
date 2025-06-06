@@ -4,12 +4,10 @@
  */
 
 import conventionalChangelog from 'conventional-changelog-core';
-import {constants, createWriteStream} from 'fs';
-import fs from 'fs/promises';
 import {join} from 'path';
-import {pipeline} from 'stream/promises';
 
 import {logger} from './logging.js';
+import * as fileUtils from './fs.js';
 
 export const log = logger.child({module: 'utils/changelog'});
 
@@ -23,71 +21,6 @@ export const infoChangelogUpdated = 'Updated changelog for workspace';
 export const errorChangelogGeneration = 'Failed to generate changelog for workspace';
 export const errorInitialChangelog = 'Failed to create initial changelog';
 export const errorMergeChangelog = 'Failed to merge changelog content';
-
-export const forMock = {
-  /**
-   * Check if a file exists and is accessible
-   * @param {string} filePath - File path to check
-   * @returns {Promise<boolean>} - True if file exists, false otherwise
-   */
-  fileExists: async (filePath) => {
-    try {
-      await fs.access(filePath, constants.F_OK);
-      return true;
-    } catch {
-      return false;
-    }
-  },
-
-  /**
-   * Create a pipeline from a stream to a file
-   * @param {stream.Readable} changelogStream - Source stream
-   * @param {string} outputPath - Output file path
-   * @returns {Promise<void>} - Resolves when pipeline completes
-   */
-  pipeline: async (changelogStream, outputPath) => pipeline(changelogStream, createWriteStream(outputPath)),
-
-  /**
-   * Read file content with error logging
-   * @param {string} filePath - Path to the file to read
-   * @param {string} [encoding='utf8'] - File encoding
-   * @returns {Promise<string|null>} - File content as string
-   * @throws {Error} - Throws error if file cannot be read
-   */
-  readFile: async (filePath, encoding = 'utf8') => {
-    try {
-      await fs.access(filePath, constants.R_OK);
-      return fs.readFile(filePath, encoding);
-    } catch (error) {
-      log.warn({filePath, error}, warnFailedToRead);
-    }
-    return null;
-  },
-
-  /**
-   * Write content to file with error logging
-   * @param {string} filePath - Path to the file to write
-   * @param {string} content - Content to write
-   * @param {string} [encoding='utf8'] - File encoding
-   * @returns {Promise<void>} - Resolves when write completes
-   * @throws {Error} - Throws error if file cannot be written
-   */
-  writeFile: async (filePath, content, encoding = 'utf8') => {
-    try {
-      return await fs.writeFile(filePath, content, encoding);
-    } catch (error) {
-      log.warn({filePath, error}, warnFailedToWrite);
-      throw error;
-    }
-  },
-
-  /**
-   * Delete a file
-   * @param {string} path - Path to the file to delete
-   * @returns {Promise<void>} - Resolves when file is deleted
-   */
-  unlink: async (...args) => fs.unlink(...args),
-};
 
 /**
  * @typedef {import('./workspace.js').Workspace} Workspace
@@ -159,7 +92,7 @@ export async function generateWorkspaceChangelog(workspace, lastTag, {preset = '
 
   try {
     // Check if changelog exists, create if it doesn't
-    const exists = await changelogExists(changelogPath);
+    const exists = await fileUtils.fileExists(changelogPath);
     if (!exists) {
       const created = await createInitialChangelog(changelogPath);
       if (!created) {
@@ -194,7 +127,7 @@ export async function generateWorkspaceChangelog(workspace, lastTag, {preset = '
     try {
       const tempExists = await changelogExists(tempPath);
       if (tempExists) {
-        await forMock.unlink(tempPath);
+        await fileUtils.unlink(tempPath);
       }
     } catch {
       // Ignore errors during cleanup
@@ -218,7 +151,7 @@ export async function generateWorkspaceChangelog(workspace, lastTag, {preset = '
  * @returns {Promise<boolean>} - Whether the changelog file exists
  */
 export async function changelogExists(changelogPath) {
-  return forMock.fileExists(changelogPath);
+  return fileUtils.fileExists(changelogPath);
 }
 
 /**
@@ -229,7 +162,7 @@ export async function changelogExists(changelogPath) {
  */
 export async function createInitialChangelog(changelogPath) {
   try {
-    await forMock.writeFile(changelogPath, DEFAULT_CHANGELOG_HEADER + '## [Unreleased]\n\n');
+    await fileUtils.writeFile(changelogPath, DEFAULT_CHANGELOG_HEADER + '## [Unreleased]\n\n');
     return true;
   } catch (error) {
     log.error({changelogPath, error}, errorInitialChangelog);
@@ -280,7 +213,7 @@ export function createChangelogStream(workspace, lastTag, preset) {
  */
 export async function writeChangelogStream(changelogStream, outputPath) {
   try {
-    await forMock.pipeline(changelogStream, outputPath);
+    await fileUtils.pipelineToFile(changelogStream, outputPath);
     return true;
   } catch (error) {
     log.error({outputPath, error}, warnFailedToWrite);
@@ -298,10 +231,10 @@ export async function writeChangelogStream(changelogStream, outputPath) {
 export async function mergeChangelogContent(changelogPath, newContentPath) {
   try {
     // Read new content
-    const newContent = await forMock.readFile(newContentPath);
+    const newContent = await fileUtils.readFile(newContentPath);
 
     // Read existing content
-    const existingContent = await forMock.readFile(changelogPath);
+    const existingContent = await fileUtils.readFile(changelogPath);
 
     // Extract the header (everything before the first ## section)
     const headerRegex = /^([\s\S]*?)(?=## |$)/;
@@ -312,10 +245,10 @@ export async function mergeChangelogContent(changelogPath, newContentPath) {
     const mergedContent = header + newContent + existingContent.substring(header.length);
 
     // Write merged content
-    await forMock.writeFile(changelogPath, mergedContent);
+    await fileUtils.writeFile(changelogPath, mergedContent);
 
     // Clean up temp file
-    await forMock.unlink(newContentPath);
+    await fileUtils.unlink(newContentPath);
 
     return true;
   } catch (error) {

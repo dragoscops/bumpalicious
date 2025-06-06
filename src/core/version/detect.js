@@ -1,6 +1,5 @@
-import fs from 'fs/promises';
 import {log as logger} from '../version.js';
-import * as changelog from '../../utils/changelog.js';
+import * as fileUtils from '../../utils/fs.js';
 
 export const log = logger.child({module: 'detect'});
 
@@ -117,7 +116,7 @@ export function configParser(
     let name = null;
     let parsedData = null;
 
-    const data = await changelog.forMock.readFile(filePath);
+    const data = await fileUtils.readFile(filePath);
     if (!data) {
       return {version: null, name: null}; // Return empty project info instead of null
     }

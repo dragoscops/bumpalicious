@@ -1,7 +1,6 @@
-import fs from 'fs/promises';
 import {log as logger} from '../version.js';
 import * as detect from './detect.js';
-import * as changelog from '../../utils/changelog.js';
+import * as fileUtils from '../../utils/fs.js';
 
 export const log = logger.child({module: 'update'});
 
@@ -19,17 +18,6 @@ export const warnUpdaterFunctionFailed = 'Updater function failed';
 export const infoUpdatedVersion = 'Updated version in file';
 export const infoUpdatedVersionInFiles = 'Updated version in files';
 export const infoUpdatedVersionForProject = 'Updated version for project';
-
-/**
- * Safely writes content to a file
- *
- * @param {string} filePath - Path to the file to write
- * @param {string} content - Content to write to the file
- */
-export const forMock = {
-  writeFile: async (...args) => changelog.forMock.writeFile(...args),
-  readFile: async (...args) => changelog.forMock.readFile(...args),
-};
 
 /**
  * @typedef {(string, string) => string|null} ValueUpdaterFunction
@@ -207,7 +195,7 @@ export function configUpdater(
       return false;
     }
 
-    const data = await forMock.readFile(filePath);
+    const data = await fileUtils.readFile(filePath);
     if (!data) {
       log.warn({filePath}, warnFileNotFoundOrCouldNotBeRead);
       return false;
@@ -234,7 +222,7 @@ export function configUpdater(
           newData = mapper.serializer(versionResult.newParsedData);
         }
 
-        await forMock.writeFile(filePath, newData);
+        await fileUtils.writeFile(filePath, newData);
         log.info({filePath, newVersion}, infoUpdatedVersion);
         return true;
       } else {
