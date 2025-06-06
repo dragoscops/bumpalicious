@@ -3,7 +3,7 @@ import {detect, update} from './deno.js';
 import {log as detectLog} from '../detect.js';
 import {
   newVersion,
-  setupVersionUpdateTest2,
+  setupVersionUpdateTest,
   createJsonFile,
   setupVersionDetectTest,
   oldVersion,
@@ -89,7 +89,7 @@ describe('core/version/workspace/deno.js module', () => {
 
   describe('update()', () => {
     it('should update version in deno.jsonc when only deno.jsonc exists', async () => {
-      await setupVersionUpdateTest2({
+      await setupVersionUpdateTest({
         creator: generateCreator(['deno.jsonc']),
         updater: update,
         expected: `"version": "${newVersion}"`,
@@ -97,7 +97,7 @@ describe('core/version/workspace/deno.js module', () => {
     });
 
     it('should update version in deno.json when only deno.json exists', async () => {
-      await setupVersionUpdateTest2({
+      await setupVersionUpdateTest({
         creator: generateCreator(['deno.json']),
         updater: update,
         expected: `"version": "${newVersion}"`,
@@ -105,7 +105,7 @@ describe('core/version/workspace/deno.js module', () => {
     });
 
     it('should update version in jsr.json when only jsr.json exists', async () => {
-      await setupVersionUpdateTest2({
+      await setupVersionUpdateTest({
         creator: generateCreator(['jsr.json']),
         updater: update,
         expected: `"version": "${newVersion}"`,
@@ -113,7 +113,7 @@ describe('core/version/workspace/deno.js module', () => {
     });
 
     it('should update version in package.json when only package.json exists', async () => {
-      await setupVersionUpdateTest2({
+      await setupVersionUpdateTest({
         creator: generateCreator(['package.json']),
         updater: update,
         expected: `"version": "${newVersion}"`,
@@ -121,7 +121,7 @@ describe('core/version/workspace/deno.js module', () => {
     });
 
     it('should update all deno config files when multiple exist', async () => {
-      await setupVersionUpdateTest2({
+      await setupVersionUpdateTest({
         creator: generateCreator(['deno.jsonc', 'deno.json', 'jsr.json', 'package.json']),
         updater: update,
         expected: [

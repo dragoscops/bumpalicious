@@ -3,7 +3,7 @@ import {detect, update} from './rust.js';
 import {log as detectLog} from '../detect.js';
 import {
   newVersion,
-  setupVersionUpdateTest2,
+  setupVersionUpdateTest,
   setupVersionDetectTest,
   createRustCargoTomlFile,
   createTempProjectFolder,
@@ -62,7 +62,7 @@ describe('core/version/workspace/rust.js module', () => {
 
   describe('update()', () => {
     it('should update version in Cargo.toml when Cargo.toml exists', async () => {
-      await setupVersionUpdateTest2({
+      await setupVersionUpdateTest({
         creator: generateCreator(['Cargo.toml']),
         updater: update,
         expected: `version = "${newVersion}"`,
@@ -72,7 +72,7 @@ describe('core/version/workspace/rust.js module', () => {
     it('should update all rust config files when multiple exist', async () => {
       // For rust, there's typically only Cargo.toml, but this test verifies
       // the update function works correctly when called on a rust project
-      await setupVersionUpdateTest2({
+      await setupVersionUpdateTest({
         creator: generateCreator(['Cargo.toml']),
         updater: update,
         expected: `version = "${newVersion}"`,

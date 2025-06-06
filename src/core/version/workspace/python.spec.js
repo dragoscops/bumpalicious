@@ -2,7 +2,7 @@ import {beforeEach, describe, it, vi} from 'vitest';
 import {detect, update} from './python.js';
 import {
   setupVersionDetectTest,
-  setupVersionUpdateTest2,
+  setupVersionUpdateTest,
   createPythonPyProjectTomlFile,
   createPythonPoetryTomlFile,
   createPythonSetupPyFile,
@@ -142,7 +142,7 @@ describe('core/version/workspace/python.js module', () => {
 
   describe('update()', () => {
     it('should update version in pyproject.toml when only pyproject.toml exists', async () => {
-      await setupVersionUpdateTest2({
+      await setupVersionUpdateTest({
         creator: generatePyProjectTomlCreator,
         updater: update,
         expected: 'version = "2.0.0"',
@@ -150,7 +150,7 @@ describe('core/version/workspace/python.js module', () => {
     });
 
     it('should update version in poetry.toml when only poetry.toml exists', async () => {
-      await setupVersionUpdateTest2({
+      await setupVersionUpdateTest({
         creator: generatePoetryTomlCreator,
         updater: update,
         expected: 'version = "2.0.0"',
@@ -158,7 +158,7 @@ describe('core/version/workspace/python.js module', () => {
     });
 
     it('should update version in setup.py when only setup.py exists', async () => {
-      await setupVersionUpdateTest2({
+      await setupVersionUpdateTest({
         creator: generateSetupPyCreator,
         updater: update,
         expected: 'version="2.0.0"',
@@ -166,7 +166,7 @@ describe('core/version/workspace/python.js module', () => {
     });
 
     it('should update version in setup.cfg when only setup.cfg exists', async () => {
-      await setupVersionUpdateTest2({
+      await setupVersionUpdateTest({
         creator: generateSetupCfgCreator,
         updater: update,
         expected: 'version = 2.0.0',
@@ -174,7 +174,7 @@ describe('core/version/workspace/python.js module', () => {
     });
 
     it('should update version in __init__.py when only __init__.py exists', async () => {
-      await setupVersionUpdateTest2({
+      await setupVersionUpdateTest({
         creator: generateInitPyCreator,
         updater: update,
         expected: '__version__ = "2.0.0"',
@@ -182,14 +182,14 @@ describe('core/version/workspace/python.js module', () => {
     });
 
     it('should update all python config files when multiple exist', async () => {
-      await setupVersionUpdateTest2({
+      await setupVersionUpdateTest({
         creator: generateAllPythonFilesCreator,
         updater: update,
         expected: [
           'version = "2.0.0"', // pyproject.toml and poetry.toml format
-          'version="2.0.0"',   // setup.py format
-          'version = 2.0.0',   // setup.cfg format
-          '__version__ = "2.0.0"' // __init__.py format
+          'version="2.0.0"', // setup.py format
+          'version = 2.0.0', // setup.cfg format
+          '__version__ = "2.0.0"', // __init__.py format
         ],
       });
     });

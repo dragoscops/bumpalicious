@@ -118,34 +118,6 @@ export const setupVersionDetectTest = async ({
   }
 };
 
-export const setupVersionUpdateTest = async (updater, expectedResult = '') => {
-  mockPino();
-  mockReadFile();
-  mockWriteFile();
-  try {
-    const result = await updater(newVersion);
-    expect(result).toBeTruthy();
-
-    if (typeof expectedResult === 'string') {
-      expect(changelog.forMock.writeFile).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.stringContaining(expectedResult),
-      );
-    } else {
-      for (const index in expectedResult) {
-        expect(changelog.forMock.writeFile).toHaveBeenCalledWith(
-          expect.any(String),
-          expect.stringContaining(expectedResult[index]),
-        );
-      }
-    }
-  } finally {
-    unMockWriteFile();
-    unMockReadFile();
-    unMockPino();
-  }
-};
-
 /**
  * Helper function to read all text files from a directory
  * @param {string} dirPath - Directory path
@@ -177,7 +149,7 @@ const readAllTextFiles = async (dirPath) => {
  * @param {Object} params.expectedLogError - Expected log error message
  * @param {Object} params.options - Additional options
  */
-export const setupVersionUpdateTest2 = async ({
+export const setupVersionUpdateTest = async ({
   creator,
   updater,
   expected = null,

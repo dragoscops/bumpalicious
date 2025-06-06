@@ -2,7 +2,7 @@ import {beforeEach, describe, it, vi} from 'vitest';
 import {detect, update} from './go.js';
 import {
   setupVersionDetectTest,
-  setupVersionUpdateTest2,
+  setupVersionUpdateTest,
   createGoModFile,
   createGoVersionFile,
   createTempProjectFolder,
@@ -70,7 +70,7 @@ describe('core/version/workspace/go.js module', () => {
   describe('update()', () => {
     // Test updating go.mod
     it('should update version in go.mod', async () => {
-      await setupVersionUpdateTest2({
+      await setupVersionUpdateTest({
         creator: generateCreator(['go.mod']),
         updater: update,
         expected: '// version: 2.0.0',
@@ -79,7 +79,7 @@ describe('core/version/workspace/go.js module', () => {
 
     // Test updating version.go
     it('should update version in version.go', async () => {
-      await setupVersionUpdateTest2({
+      await setupVersionUpdateTest({
         creator: generateCreator(['version.go']),
         updater: update,
         expected: 'const Version = "2.0.0"',

@@ -1,7 +1,7 @@
 import {beforeEach, describe, it, vi} from 'vitest';
 import {detect, update} from './text.js';
 import {
-  setupVersionUpdateTest2,
+  setupVersionUpdateTest,
   setupVersionDetectTest,
   createTextVersionFile,
   createTempProjectFolder,
@@ -84,7 +84,7 @@ describe('core/version/workspace/text.js module', () => {
 
   describe('update()', () => {
     it('should update version in version when only version exists', async () => {
-      await setupVersionUpdateTest2({
+      await setupVersionUpdateTest({
         creator: generateCreator(['version']),
         updater: update,
         expected: '2.0.0',
@@ -92,7 +92,7 @@ describe('core/version/workspace/text.js module', () => {
     });
 
     it('should update version in version.txt when only version.txt exists', async () => {
-      await setupVersionUpdateTest2({
+      await setupVersionUpdateTest({
         creator: generateCreator(['version.txt']),
         updater: update,
         expected: '2.0.0',
@@ -100,7 +100,7 @@ describe('core/version/workspace/text.js module', () => {
     });
 
     it('should update version in VERSION when only VERSION exists', async () => {
-      await setupVersionUpdateTest2({
+      await setupVersionUpdateTest({
         creator: generateCreator(['VERSION']),
         updater: update,
         expected: '2.0.0',
@@ -108,7 +108,7 @@ describe('core/version/workspace/text.js module', () => {
     });
 
     it('should update version in VERSION.txt when only VERSION.txt exists', async () => {
-      await setupVersionUpdateTest2({
+      await setupVersionUpdateTest({
         creator: generateCreator(['VERSION.txt']),
         updater: update,
         expected: '2.0.0',
@@ -116,7 +116,7 @@ describe('core/version/workspace/text.js module', () => {
     });
 
     it('should update all text config files when multiple exist', async () => {
-      await setupVersionUpdateTest2({
+      await setupVersionUpdateTest({
         creator: generateCreator(['version', 'version.txt', 'VERSION', 'VERSION.txt']),
         updater: update,
         expected: ['2.0.0'], // Should appear in all files

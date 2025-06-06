@@ -2,7 +2,7 @@ import {beforeEach, describe, it, vi} from 'vitest';
 import {detect, update} from './zig.js';
 import * as updateModule from '../update.js';
 import {
-  setupVersionUpdateTest2,
+  setupVersionUpdateTest,
   setupVersionDetectTest,
   createZigBuildFile,
   createZigBuildZonFile,
@@ -67,7 +67,7 @@ describe('core/version/workspace/zig.js module', () => {
   describe('update()', () => {
     // Test update with build.zig specifically
     it('should update build.zig when only build.zig is present', async () => {
-      await setupVersionUpdateTest2({
+      await setupVersionUpdateTest({
         creator: generateCreator(['build.zig']),
         updater: update,
         expected: 'const VERSION = "2.0.0"',
@@ -76,7 +76,7 @@ describe('core/version/workspace/zig.js module', () => {
 
     // Test update with build.zig.zon specifically
     it('should update build.zig.zon when only build.zig.zon is present', async () => {
-      await setupVersionUpdateTest2({
+      await setupVersionUpdateTest({
         creator: generateCreator(['build.zig.zon']),
         updater: update,
         expected: '.version = "2.0.0"',
@@ -92,7 +92,7 @@ describe('core/version/workspace/zig.js module', () => {
 
     // Test update with multiple files when both are present
     it('should update both build.zig and build.zig.zon when both are present', async () => {
-      await setupVersionUpdateTest2({
+      await setupVersionUpdateTest({
         creator: generateCreator(['build.zig', 'build.zig.zon']),
         updater: update,
         expected: ['const VERSION = "2.0.0"', '.version = "2.0.0"'],
