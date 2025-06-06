@@ -187,9 +187,9 @@ describe('core/version/workspace/python.js module', () => {
         updater: update,
         expected: [
           'version = "2.0.0"', // pyproject.toml and poetry.toml format
-          'version="2.0.0"',   // setup.py format
-          'version = 2.0.0',   // setup.cfg format
-          '__version__ = "2.0.0"' // __init__.py format
+          'version="2.0.0"', // setup.py format
+          'version = 2.0.0', // setup.cfg format
+          '__version__ = "2.0.0"', // __init__.py format
         ],
       });
     });
