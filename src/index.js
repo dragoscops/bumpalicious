@@ -103,24 +103,24 @@ const run = async () => {
     );
     core.endGroup();
 
-    //     //======================================================================
+    //======================================================================
 
-    //     if (options.pr) {
-    //       // If createPR is true, create a pull request with the version changes
-    //       /** @type {import('./utils/github.js').PRCreateResponse} */
-    //       const pr = await workspaces.createVersionPR(updatedWorkspacesTrees, options);
-    //       if (options.prAutoMerge) {
-    //         await github.pr.merge({pullNumber: pr.number}, options);
-    //         await git.branch.checkout(pr.base.ref);
-    //         await git.branch.pull(pr.base.ref);
-    //         await git.branch.remove(pr.head.ref);
-    //       }
-    //     } else {
-    //       // Otherwise, create a commit with the version changes and tags
-    //       workspaces.createVersionCommit(updatedWorkspaces, options);
-    //       workspaces.createVersionTags(updatedWorkspacesTrees[0].workspace.version, options);
-    //     }
-    //   }
+    if (options.pr) {
+      // If createPR is true, create a pull request with the version changes
+      /** @type {import('./utils/github.js').PRCreateResponse} */
+      const pr = await workspaces.createVersionPR(updatedWorkspacesTrees, options);
+      if (options.prAutoMerge) {
+        await github.pr.merge({pullNumber: pr.number}, options);
+        await git.branch.checkout(pr.base.ref);
+        await git.branch.pull(pr.base.ref);
+        await git.branch.remove(pr.head.ref);
+      }
+    } else {
+      // Otherwise, create a commit with the version changes and tags
+      workspaces.createVersionCommit(updatedWorkspaces, options);
+      workspaces.createVersionTags(updatedWorkspacesTrees[0].workspace.version, options);
+    }
+    // }
   } catch (error) {
     log.error({error}, 'Version bump failed');
   }
