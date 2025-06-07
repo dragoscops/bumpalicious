@@ -86,8 +86,6 @@ export async function updateVersionsForChangedWorkspaces(commitMessage, lastTag,
     `Updated versions for ${updatedWorkspaces.length} workspaces`,
   );
 
-  return []; // TODO: Uncomment this line to continue with the version update process
-
   // Update version files in workspaces and generate changelogs
   await updateVersionsForWorkspaces(updatedWorkspaces, {
     generateChangelog: options.generateChangelog !== false,
