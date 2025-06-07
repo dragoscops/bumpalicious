@@ -86,19 +86,22 @@ const run = async () => {
       log.info({updatedWorkspaces}, 'Changed workspaces found');
     }
 
-    //     //======================================================================
+    //======================================================================
 
-    //     core.startGroup('Updating workspaces tree');
-    //     // Organizes workspaces into a tree like structure to also determine the root workspace
-    //     const updatedWorkspacesTrees = workspace.buildUpdatedWorkspacesTrees(updatedWorkspaces);
-    //     if (updatedWorkspacesTrees.length > 1) {
-    //       log.error('Workspaces folder should only have a root workspace');
-    //     }
-    //     if (updatedWorkspacesTrees.length === 0) {
-    //       log.error('No workspaces found');
-    //     }
-    //     log.info(`Updated workspaces trees -> Found ${updatedWorkspacesTrees.length} main nodes`);
-    //     core.endGroup();
+    core.startGroup('Updating workspaces tree');
+    // Organizes workspaces into a tree like structure to also determine the root workspace
+    const updatedWorkspacesTrees = workspace.buildUpdatedWorkspacesTrees(updatedWorkspaces);
+    if (updatedWorkspacesTrees.length > 1) {
+      log.error('Workspaces folder should only have a root workspace');
+    }
+    if (updatedWorkspacesTrees.length === 0) {
+      log.error('No workspaces found');
+    }
+    log.info(
+      {workspaces: updatedWorkspacesTrees},
+      `Updated workspaces trees -> Found ${updatedWorkspacesTrees.length} main nodes`,
+    );
+    core.endGroup();
 
     //     //======================================================================
 
