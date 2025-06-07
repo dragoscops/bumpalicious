@@ -204,6 +204,9 @@ export async function increaseVersionForWorkspaces({workspaces, commitMessage}) 
           },
           LOG_MESSAGES.VERSION_INCREASE,
         );
+        core.notice(
+          `Version for workspace ${workspace.name} has been increased from ${workspace.version} to ${updatedVersion}`,
+        );
         return {...workspace, version: updatedVersion};
       }
 
