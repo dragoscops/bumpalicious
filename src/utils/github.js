@@ -144,6 +144,7 @@ export const pr = {
       });
 
       log.info(`Pull request created successfully: ${pullRequest.html_url}`);
+      core.notice(`Pull request created successfully: ${pullRequest.html_url}`);
       return pullRequest;
     } catch (error) {
       log.error('Failed to create pull request:', error);
