@@ -1,5 +1,3 @@
-import path from 'path';
-
 import {logger} from './logging.js';
 
 export const log = logger.child({module: 'utils/workspace'});
