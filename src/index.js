@@ -115,11 +115,13 @@ const run = async () => {
           await git.branch.checkout(pr.base.ref);
           await git.branch.pull(pr.base.ref);
           await git.branch.remove(pr.head.ref);
+
+          await workspaces.createVersionTags(updatedWorkspacesTrees[0].workspace.version, options);
         }
       } else {
         // Otherwise, create a commit with the version changes and tags
-        workspaces.createVersionCommit(updatedWorkspaces, options);
-        workspaces.createVersionTags(updatedWorkspacesTrees[0].workspace.version, options);
+        await workspaces.createVersionCommit(updatedWorkspaces, options);
+        await workspaces.createVersionTags(updatedWorkspacesTrees[0].workspace.version, options);
       }
     }
   } catch (error) {
