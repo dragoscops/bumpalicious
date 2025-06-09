@@ -310,6 +310,7 @@ export async function createVersionTags(version, options) {
   // Create the main version tag (e.g., v2.0.1)
   git.tag.createAndPush(`v${version}`, tagMessage);
   core.setOutput('tag', version);
+  core.notice(`Created/updated version tag: v${version}`);
 
   // Create a shorter tag (e.g., v2.0) if shortTag is set and the version doesn't have a pre-release suffix
   if (options.shortTag) {
@@ -320,6 +321,7 @@ export async function createVersionTags(version, options) {
       const shortVersion = `${parsedVersion.major}.${parsedVersion.minor}`;
       git.tag.createAndPush(`v${shortVersion}`, tagMessage);
       log.info({shortVersion}, LOG_MESSAGES.SHORT_TAG_CREATED);
+      core.notice(`Created/updated short version tag: v${shortVersion}`);
     } else {
       log.info({version}, LOG_MESSAGES.SHORT_TAG_SKIPPED);
     }
