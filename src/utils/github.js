@@ -216,4 +216,39 @@ export const pr = {
       return false;
     }
   },
+
+  /**
+   * Waits until a pull request is merged
+   *
+   * @param {PRMergeRequest} mergeOptions - Merge options
+   * @param {ActionOptions} options - Action options
+   * @returns {Promise<boolean>} - Whether the PR was merged successfully
+   */
+  hasMerged: async ({pullNumber, mergeMethod = 'merge'} = {}, options) => {
+    const octokit = getClient(options);
+    const repo = getRepository();
+
+    if (!octokit || !repo) {
+      return false;
+    }
+
+    return new Promise((resolve) => {
+      const checkMerged = async () => {
+        const {data: pullRequest} = await octokit.rest.pulls.get({
+          ...repo,
+          pull_number: pullNumber,
+        });
+
+        if (pullRequest.merged) {
+          log.info(`Pull request #${pullNumber} has been merged`);
+          resolve(true);
+        } else {
+          log.info(`Pull request #${pullNumber} is not merged yet`);
+          setTimeout(checkMerged, 5000);
+        }
+      };
+
+      checkMerged();
+    });
+  },
 };
