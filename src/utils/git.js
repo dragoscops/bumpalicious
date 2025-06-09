@@ -289,7 +289,7 @@ export const branch = {
   createVersion: async (version) => branch.create(`version_bump_v${version}`),
 
   /**
-   * Delete an existing branch from the repository.
+   * Delete an existing branch from the repository (both local and remote).
    *
    * @param {string} branchName
    * @returns {Promise<void>}
@@ -300,6 +300,14 @@ export const branch = {
       log.info({branchName}, infoBranchDeleted);
     } catch (error) {
       log.warn({branchName, error}, warnFailedToDeleteBranch);
+    }
+
+    // Also try to delete the branch from remote
+    try {
+      await execa('git', ['push', 'origin', '--delete', branchName]);
+      log.info({branchName}, `Remote ${infoBranchDeleted.toLowerCase()}`);
+    } catch (error) {
+      log.warn({branchName, error}, `Failed to delete remote branch`);
     }
   },
 
