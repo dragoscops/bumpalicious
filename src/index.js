@@ -66,6 +66,7 @@ const run = async () => {
     // and we only need to update the versions
     if (commitMessage.includes(options.prMessage)) {
       log.info(`Version PR was merged with message: ${commitMessage}`);
+      core.notice(`Version PR was merged with message: ${commitMessage}`);
       // enrich all workspaces
       const changedWorkspaces = await workspaces.enrichWorkspaces(options.workspaces, lastTag);
       const changedWorkspacesTrees = workspace.buildUpdatedWorkspacesTrees(changedWorkspaces);
