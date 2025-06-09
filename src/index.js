@@ -61,66 +61,66 @@ const run = async () => {
 
     //======================================================================
 
-    // // Check if the commit message contains the PR message
-    // // If it does, we assume the PR is already created
-    // // and we only need to update the versions
-    // if (commitMessage.includes(options.prMessage)) {
-    //   log.info(`Version PR was merged with message: ${commitMessage}`);
-    //   // enrich all workspaces
-    //   const changedWorkspaces = await workspaces.enrichWorkspaces(options.workspaces, lastTag);
-    //   const changedWorkspacesTrees = workspace.buildUpdatedWorkspacesTrees(changedWorkspaces);
-    //   // create tag
-    //   workspaces.createVersionTags(changedWorkspacesTrees[0].workspace.version, options);
-    // } else {
-    // If the PR message is not found, we assume the PR is not created
-    // and we need go through the entire version bumping process
-
-    // Check if the workspaces have changed since the last tag
-    // TODO: rename to changedWorkspaces
-    const updatedWorkspaces = await workspaces.updateVersionsForChangedWorkspaces(commitMessage, lastTag, options);
-    if (updatedWorkspaces.length === 0) {
-      log.warn(warnNoChangedWorkspacesFound);
-      core.notice(warnNoChangedWorkspacesFound);
-      return;
+    // Check if the commit message contains the PR message
+    // If it does, we assume the PR is already created
+    // and we only need to update the versions
+    if (commitMessage.includes(options.prMessage)) {
+      log.info(`Version PR was merged with message: ${commitMessage}`);
+      // enrich all workspaces
+      const changedWorkspaces = await workspaces.enrichWorkspaces(options.workspaces, lastTag);
+      const changedWorkspacesTrees = workspace.buildUpdatedWorkspacesTrees(changedWorkspaces);
+      // create tag
+      workspaces.createVersionTags(changedWorkspacesTrees[0].workspace.version, options);
     } else {
-      log.info({updatedWorkspaces}, 'Changed workspaces found');
-    }
+      // If the PR message is not found, we assume the PR is not created
+      // and we need go through the entire version bumping process
 
-    //======================================================================
-
-    core.startGroup('Updating workspaces tree');
-    // Organizes workspaces into a tree like structure to also determine the root workspace
-    const updatedWorkspacesTrees = workspace.buildUpdatedWorkspacesTrees(updatedWorkspaces);
-    if (updatedWorkspacesTrees.length > 1) {
-      log.error('Workspaces folder should only have a root workspace');
-    }
-    if (updatedWorkspacesTrees.length === 0) {
-      log.error('No workspaces found');
-    }
-    log.info(
-      {workspaces: updatedWorkspacesTrees},
-      `Updated workspaces trees -> Found ${updatedWorkspacesTrees.length} main nodes`,
-    );
-    core.endGroup();
-
-    //======================================================================
-
-    if (options.pr) {
-      // If createPR is true, create a pull request with the version changes
-      /** @type {import('./utils/github.js').PRCreateResponse} */
-      const pr = await workspaces.createVersionPR(updatedWorkspacesTrees, options);
-      if (options.prAutoMerge) {
-        await github.pr.merge({pullNumber: pr.number}, options);
-        await git.branch.checkout(pr.base.ref);
-        await git.branch.pull(pr.base.ref);
-        await git.branch.remove(pr.head.ref);
+      // Check if the workspaces have changed since the last tag
+      // TODO: rename to changedWorkspaces
+      const updatedWorkspaces = await workspaces.updateVersionsForChangedWorkspaces(commitMessage, lastTag, options);
+      if (updatedWorkspaces.length === 0) {
+        log.warn(warnNoChangedWorkspacesFound);
+        core.notice(warnNoChangedWorkspacesFound);
+        return;
+      } else {
+        log.info({updatedWorkspaces}, 'Changed workspaces found');
       }
-    } else {
-      // Otherwise, create a commit with the version changes and tags
-      workspaces.createVersionCommit(updatedWorkspaces, options);
-      workspaces.createVersionTags(updatedWorkspacesTrees[0].workspace.version, options);
+
+      //======================================================================
+
+      core.startGroup('Updating workspaces tree');
+      // Organizes workspaces into a tree like structure to also determine the root workspace
+      const updatedWorkspacesTrees = workspace.buildUpdatedWorkspacesTrees(updatedWorkspaces);
+      if (updatedWorkspacesTrees.length > 1) {
+        log.error('Workspaces folder should only have a root workspace');
+      }
+      if (updatedWorkspacesTrees.length === 0) {
+        log.error('No workspaces found');
+      }
+      log.info(
+        {workspaces: updatedWorkspacesTrees},
+        `Updated workspaces trees -> Found ${updatedWorkspacesTrees.length} main nodes`,
+      );
+      core.endGroup();
+
+      //======================================================================
+
+      if (options.pr) {
+        // If createPR is true, create a pull request with the version changes
+        /** @type {import('./utils/github.js').PRCreateResponse} */
+        const pr = await workspaces.createVersionPR(updatedWorkspacesTrees, options);
+        if (options.prAutoMerge) {
+          await github.pr.merge({pullNumber: pr.number}, options);
+          await git.branch.checkout(pr.base.ref);
+          await git.branch.pull(pr.base.ref);
+          await git.branch.remove(pr.head.ref);
+        }
+      } else {
+        // Otherwise, create a commit with the version changes and tags
+        workspaces.createVersionCommit(updatedWorkspaces, options);
+        workspaces.createVersionTags(updatedWorkspacesTrees[0].workspace.version, options);
+      }
     }
-    // }
   } catch (error) {
     log.error({error}, 'Version bump failed');
   }
