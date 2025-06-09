@@ -127,10 +127,12 @@ export const pr = {
 
     if (!octokit) {
       log.error('Failed to create pull request: Octokit client not found');
+      core.error('Failed to create pull request: Octokit client not found');
       return null;
     }
     if (!repo) {
       log.error('Failed to create pull request: repository not found');
+      core.error('Failed to create pull request: repository not found');
       return null;
     }
 
@@ -147,7 +149,8 @@ export const pr = {
       core.notice(`Pull request created successfully: ${pullRequest.html_url}`);
       return pullRequest;
     } catch (error) {
-      log.error('Failed to create pull request:', error);
+      log.error({error}, 'Failed to create pull request');
+      core.error(`Failed to create pull request: ${error.message}`);
       return null;
     }
   },

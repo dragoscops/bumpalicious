@@ -53,7 +53,7 @@ jobs:
           workspaces: .:node
           branch: ${{ github.ref }}
           pr: true
-          pr_auto_merge: true
+          # pr_auto_merge: true
           short_tag: true
 
       - name: Output Results
