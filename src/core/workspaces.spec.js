@@ -21,7 +21,7 @@ describe('workspaces.js module', () => {
 
   afterEach(async () => {
     unMockPino(workspaces.log);
-    // await removeTempProjectFolder(projectFolder);
+    await removeTempProjectFolder(projectFolder);
 
     projectFolder = '';
     projectName = '';
