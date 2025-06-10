@@ -8,7 +8,7 @@ import {createTempProjectFolder} from './setup.fs.test';
 
 import path from 'path';
 import fs from 'fs/promises';
-import {execa} from 'execa';
+import {exec} from '../utils/exec.js';
 
 /**
  *
@@ -67,7 +67,7 @@ export const createWorkspacesTestFolder = async (options) => {
     ['commit', '-am', 'chore: project init'],
     ['tag', '-a', `v${oldVersion}`, '-m', `init project with ${oldVersion} version`],
   ]) {
-    await execa('git', command, projectFolder);
+    await exec('git', command, {cwd: projectFolder});
   }
   return {
     ...options,
@@ -75,4 +75,16 @@ export const createWorkspacesTestFolder = async (options) => {
     projectName,
     created,
   };
+};
+
+export const updateAndCommit = async (paths = []) => {
+  for (const p of paths) {
+    await fs.writeFile(path.join(p, 'update.md'), Date.now().toString());
+    for (const command of [
+      ['add', '.'],
+      ['commit', '-am', `updated ${Date.now()}`],
+    ]) {
+      await exec('git', command, {cwd: p});
+    }
+  }
 };

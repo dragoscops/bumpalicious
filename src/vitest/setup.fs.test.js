@@ -1,7 +1,7 @@
-import {execa} from 'execa';
 import fs from 'fs/promises';
 import path from 'path';
 import {tmpdir} from 'os';
+import {exec} from '../utils/exec';
 
 /**
  * Creates a temporary folder for testing purposes.
@@ -11,8 +11,11 @@ import {tmpdir} from 'os';
  */
 export const createTempProjectFolder = async (prefix = 'node') => {
   const tempDir = await fs.mkdtemp(path.join(tmpdir(), `${prefix}-`));
-  await execa(['git', 'init'], {cwd: tempDir});
+
+  await exec('git', ['init'], {cwd: tempDir});
+
   await fs.writeFile(path.join(tempDir, 'README.md'), '# Test Project\nThis is a test project.');
+
   return tempDir;
 };
 
