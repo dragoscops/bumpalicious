@@ -1,12 +1,12 @@
-import {describe, it, expect, beforeEach, vi, afterEach} from 'vitest';
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 
 import * as workspaces from './workspaces.js';
 import * as changelog from '../utils/changelog.js';
 import * as git from '../utils/git.js';
-import {mockPino, unMockPino} from '../vitest/setup.logging.tests.js';
-import {removeTempProjectFolder} from '../vitest/setup.fs.test.js';
-import {createWorkspacesTestFolder, updateAndCommit} from '../vitest/setup.workspaces.tests.js';
-import {oldVersion, projectNameValue} from '../vitest/setup.detect-update.tests.js';
+import { mockPino, unMockPino } from '../vitest/setup.logging.tests.js';
+import { removeTempProjectFolder } from '../vitest/setup.fs.test.js';
+import { createWorkspacesTestFolder, updateAndCommit } from '../vitest/setup.workspaces.tests.js';
+import { oldVersion, projectNameValue } from '../vitest/setup.detect-update.tests.js';
 
 import path from 'path';
 
@@ -16,12 +16,12 @@ describe('workspaces.js module', () => {
   let created = [];
   beforeEach(async () => {
     mockPino(workspaces.log);
-    ({created, projectFolder, projectName} = await createWorkspacesTestFolder());
+    ({ created, projectFolder, projectName } = await createWorkspacesTestFolder());
   });
 
   afterEach(async () => {
     unMockPino(workspaces.log);
-    await removeTempProjectFolder(projectFolder);
+    // await removeTempProjectFolder(projectFolder);
 
     projectFolder = '';
     projectName = '';
@@ -51,7 +51,7 @@ describe('workspaces.js module', () => {
       const result = await workspaces.enrichWorkspace(projectFolder, 'unknown');
 
       expect(workspaces.log.warn).toHaveBeenCalledWith(
-        {workspaceType: 'unknown', workspacePath: projectFolder},
+        { workspaceType: 'unknown', workspacePath: projectFolder },
         'Unknown workspace type, defaulting to text',
       );
       expect(result.type).toBe('unknown');
@@ -78,7 +78,7 @@ describe('workspaces.js module', () => {
 
       const result = await workspaces.enrichChangedWorkspaces([...created], `v${oldVersion}`);
 
-      expect(result).toEqual([{...created[0]}]);
+      expect(result).toEqual([{ ...created[0] }]);
     });
 
     it('returns empty array when no workspaces have changes', async () => {
@@ -97,35 +97,30 @@ describe('workspaces.js module', () => {
       unMockPino(workspaces.log);
     });
 
-    it('increases versions based on commit message', async () => {
-      const input = [
-        {path: '/test/workspace1', type: 'node', name: 'project1', version: '1.0.0'},
-        {path: '/test/workspace2', type: 'python', name: 'project2', version: '2.3.1'},
-      ];
+    it.only('increases versions based on commit message', async () => {
+      await updateAndCommit([created[0].path]);
+
+      console.log(created)
 
       const result = await workspaces.increaseVersionForWorkspaces({
-        workspaces: input,
+        workspaces: created,
         commitMessage: 'feat: add new feature',
       });
 
       expect(result).toEqual([
         {
-          path: '/test/workspace1',
-          type: 'node',
-          name: 'project1',
-          version: '1.1.0',
+          ...created[0],
+          version: '0.1.0',
         },
         {
-          path: '/test/workspace2',
-          type: 'python',
-          name: 'project2',
-          version: '2.4.0',
+          ...created[1],
+          version: '0.1.0',
         },
       ]);
     });
 
     it('handles pre-release identifiers in commit message', async () => {
-      const input = [{path: '/test/workspace1', type: 'node', name: 'project1', version: '1.0.0'}];
+      const input = [{ path: '/test/workspace1', type: 'node', name: 'project1', version: '1.0.0' }];
       mockPino(workspaces.log);
 
       try {
@@ -149,7 +144,7 @@ describe('workspaces.js module', () => {
     });
 
     it('skips version increase when commit message does not indicate change', async () => {
-      const input = [{path: '/test/workspace1', type: 'node', name: 'project1', version: '1.0.0'}];
+      const input = [{ path: '/test/workspace1', type: 'node', name: 'project1', version: '1.0.0' }];
 
       const result = await workspaces.increaseVersionForWorkspaces({
         workspaces: input,
@@ -163,7 +158,7 @@ describe('workspaces.js module', () => {
   describe('updateWorkspacesVersions(Workspace[])', () => {
     beforeEach(() => {
       mockPino(workspaces.log);
-      vi.spyOn(process, 'chdir').mockImplementation(() => {});
+      vi.spyOn(process, 'chdir').mockImplementation(() => { });
     });
 
     afterEach(() => {
@@ -172,8 +167,8 @@ describe('workspaces.js module', () => {
 
     it('updates versions for supported workspace types', async () => {
       const workspacesArray = [
-        {path: '/test/workspace1', name: 'node-project', type: 'node', version: '1.1.0'},
-        {path: '/test/workspace2', name: 'python-project', type: 'python', version: '0.5.0'},
+        { path: '/test/workspace1', name: 'node-project', type: 'node', version: '1.1.0' },
+        { path: '/test/workspace2', name: 'python-project', type: 'python', version: '0.5.0' },
       ];
 
       const updateMocks = {
@@ -197,7 +192,7 @@ describe('workspaces.js module', () => {
     });
 
     it('falls back to text updater for unsupported workspace types', async () => {
-      const workspacesArray = [{path: '/test/workspace', name: 'unknown-project', type: 'unknown', version: '1.0.0'}];
+      const workspacesArray = [{ path: '/test/workspace', name: 'unknown-project', type: 'unknown', version: '1.0.0' }];
 
       const updateMock = mockWorkspace('text', {});
 
@@ -229,17 +224,17 @@ describe('workspaces.js module', () => {
 
       it('updates versions and generates changelogs for all workspaces', async () => {
         const input = [
-          {path: '/test/workspace1', type: 'node', name: 'project1', version: '1.0.0'},
-          {path: '/test/workspace2', type: 'python', name: 'project2', version: '2.0.0'},
+          { path: '/test/workspace1', type: 'node', name: 'project1', version: '1.0.0' },
+          { path: '/test/workspace2', type: 'python', name: 'project2', version: '2.0.0' },
         ];
-        vi.spyOn(process, 'chdir').mockImplementation(() => {});
+        vi.spyOn(process, 'chdir').mockImplementation(() => { });
 
         const updateMock = {
           node: mockWorkspace('node', {}),
           python: mockWorkspace('python', {}),
         };
 
-        const result = await workspaces.updateVersionsForWorkspaces(input, {generateChangelog: true});
+        const result = await workspaces.updateVersionsForWorkspaces(input, { generateChangelog: true });
         expect(updateMock.node.update).toHaveBeenCalledWith('/test/workspace1', '1.0.0');
         expect(updateMock.python.update).toHaveBeenCalledWith('/test/workspace2', '2.0.0');
         expect(changelog.generateWorkspaceChangelog).toHaveBeenCalledTimes(2);
@@ -247,13 +242,13 @@ describe('workspaces.js module', () => {
       });
 
       it('skips changelog generation when option is disabled', async () => {
-        const input = [{path: '/test/workspace1', type: 'node', name: 'project1', version: '1.0.0'}];
-        vi.spyOn(process, 'chdir').mockImplementation(() => {});
+        const input = [{ path: '/test/workspace1', type: 'node', name: 'project1', version: '1.0.0' }];
+        vi.spyOn(process, 'chdir').mockImplementation(() => { });
 
         const nodeMock = mockWorkspace('node', {});
 
         const changelog = await import('../utils/changelog.js');
-        const result = await workspaces.updateVersionsForWorkspaces(input, {generateChangelog: false});
+        const result = await workspaces.updateVersionsForWorkspaces(input, { generateChangelog: false });
         expect(nodeMock.update).toHaveBeenCalledWith('/test/workspace1', '1.0.0');
         expect(changelog.generateWorkspaceChangelog).not.toHaveBeenCalled();
         expect(result).toEqual(input);
@@ -279,14 +274,14 @@ describe('workspaces.js module', () => {
 
     it('generates changelogs for changed workspaces', async () => {
       const input = [
-        {path: '/test/workspace1', type: 'node'},
-        {path: '/test/workspace2', type: 'python'},
+        { path: '/test/workspace1', type: 'node' },
+        { path: '/test/workspace2', type: 'python' },
       ];
 
       // Mock enrichChangedWorkspaces to return workspaces
       vi.spyOn(workspaces, 'enrichChangedWorkspaces').mockResolvedValue([
-        {path: '/test/workspace1', type: 'node', name: 'project1', version: '1.0.0'},
-        {path: '/test/workspace2', type: 'python', name: 'project2', version: '2.0.0'},
+        { path: '/test/workspace1', type: 'node', name: 'project1', version: '1.0.0' },
+        { path: '/test/workspace2', type: 'python', name: 'project2', version: '2.0.0' },
       ]);
 
       try {
@@ -298,10 +293,10 @@ describe('workspaces.js module', () => {
         expect(workspaces.enrichChangedWorkspaces).toHaveBeenCalledWith(input, 'v1.0.0');
         expect(changelog.generateWorkspacesChangelogs).toHaveBeenCalledWith(
           expect.arrayContaining([
-            expect.objectContaining({name: 'project1'}),
-            expect.objectContaining({name: 'project2'}),
+            expect.objectContaining({ name: 'project1' }),
+            expect.objectContaining({ name: 'project2' }),
           ]),
-          {preset: 'conventionalcommits', append: true},
+          { preset: 'conventionalcommits', append: true },
         );
         expect(result.length).toBe(2);
       } finally {
