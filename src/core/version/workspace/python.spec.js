@@ -11,6 +11,7 @@ import {
   createTempProjectFolder,
   projectNameValue,
 } from '../../../vitest/setup.detect-update.tests.js';
+import {mockPinoIn, unMockPinoIn} from '../../../vitest/setup.logging.tests.js';
 
 // Generator functions for different Python file types
 const generatePyProjectTomlCreator = async () => {
@@ -54,8 +55,13 @@ const generateAllPythonFilesCreator = async () => {
 };
 
 describe('core/version/workspace/python.js module', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+  let logMocks = [];
+  beforeEach(async () => {
+    logMocks = await mockPinoIn(['core/version/detect', 'core/version/update']);
+  });
+
+  afterEach(() => {
+    unMockPinoIn(logMocks);
   });
 
   describe('detect()', () => {

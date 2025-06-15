@@ -10,6 +10,7 @@ import {
   projectNameValue,
 } from '../../../vitest/setup.detect-update.tests.js';
 import path from 'path';
+import {mockPinoIn, unMockPinoIn} from '../../../vitest/setup.logging.tests.js';
 
 const generateCreator =
   (files = ['go.mod']) =>
@@ -34,8 +35,13 @@ const generateCreator =
   };
 
 describe('core/version/workspace/go.js module', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+  let logMocks = [];
+  beforeEach(async () => {
+    logMocks = await mockPinoIn(['core/version/detect', 'core/version/update']);
+  });
+
+  afterEach(() => {
+    unMockPinoIn(logMocks);
   });
 
   describe('detect()', () => {

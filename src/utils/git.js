@@ -3,11 +3,11 @@
  * @module utils/git
  */
 
-import { logger } from './logging.js';
-import { projectName } from '../constants.js';
-import { exec } from './exec.js';
+import {logger} from './logging.js';
+import {projectName} from '../constants.js';
+import {exec} from './exec.js';
 
-export const log = logger.child({ module: `${projectName}/utils/git` });
+export const log = logger.child({module: `${projectName}/utils/git`});
 
 // Log message constants
 export const infoGitConfigSet = 'Git config set successfully';
@@ -60,9 +60,9 @@ export const config = {
         }
         args.push(key, value);
         await exec('git', args);
-        log.info({ key, value }, infoGitConfigSet);
+        log.info({key, value}, infoGitConfigSet);
       } catch (error) {
-        log.error({ key, error: error }, errorFailedToSetGitConfig);
+        log.error({key, error: error}, errorFailedToSetGitConfig);
         result = false;
         break;
       }
@@ -83,9 +83,9 @@ export async function pushChange(commitMessage, branch = 'main') {
     await exec('git', ['add', '.']);
     await exec('git', ['commit', '-am', commitMessage]);
     await exec('git', ['push', 'origin', branch]);
-    log.info({ commitMessage }, infoChangesCommitted);
+    log.info({commitMessage}, infoChangesCommitted);
   } catch (error) {
-    log.error({ error }, warnFailedToCommitChanges);
+    log.error({error}, warnFailedToCommitChanges);
     return;
   }
 }
@@ -97,10 +97,10 @@ export const commits = {
    */
   lastMessage: async () => {
     try {
-      const { stdout } = await exec('git', ['log', '-1', '--pretty=%B']);
+      const {stdout} = await exec('git', ['log', '-1', '--pretty=%B']);
       return stdout.trim();
     } catch (error) {
-      log.warn({ error: error.message }, warnFailedToGetLatestCommitMessage);
+      log.warn({error: error.message}, warnFailedToGetLatestCommitMessage);
       return null;
     }
   },
@@ -116,15 +116,15 @@ export const commits = {
     try {
       // If no tag is provided, return all tracked files as changed
       if (!lastTag) {
-        const { stdout } = await exec('git', ['ls-files'], { cwd: repoPath });
+        const {stdout} = await exec('git', ['ls-files'], {cwd: repoPath});
         return stdout.trim().split('\n').filter(Boolean);
       }
 
       // Retrieve changed files in the repository since the last tag
-      const { stdout } = await exec('git', ['diff', lastTag, '--name-only', '--', repoPath], { cwd: repoPath });
+      const {stdout} = await exec('git', ['diff', lastTag, '--name-only', '--', repoPath], {cwd: repoPath});
       return stdout.trim().split('\n').filter(Boolean);
     } catch (error) {
-      log.error({ repoPath, error }, errorRetrievingChangedFiles);
+      log.error({repoPath, error}, errorRetrievingChangedFiles);
       return [];
     }
   },
@@ -144,9 +144,9 @@ export const tag = {
   create: async (tagName, message) => {
     try {
       await exec('git', ['tag', '-a', tagName, '-m', message]);
-      log.info({ tagName }, infoTagCreated);
+      log.info({tagName}, infoTagCreated);
     } catch (error) {
-      log.warn({ tagName, error }, warnFailedToCreateTag);
+      log.warn({tagName, error}, warnFailedToCreateTag);
     }
   },
 
@@ -160,7 +160,7 @@ export const tag = {
   createAndPush: async (tagName, message) => {
     const exists = await tag.exists(tagName);
     if (exists) {
-      log.info({ tagName }, infoTagAlreadyExists);
+      log.info({tagName}, infoTagAlreadyExists);
       // First delete the tag locally
       await tag.remove(tagName);
     }
@@ -176,10 +176,10 @@ export const tag = {
    */
   exists: async (tagName) => {
     try {
-      const { stdout } = await exec('git', ['tag', '-l', tagName]);
+      const {stdout} = await exec('git', ['tag', '-l', tagName]);
       return stdout.trim() === tagName;
     } catch (error) {
-      log.warn({ tagName, error }, warnFailedToCheckTagExists);
+      log.warn({tagName, error}, warnFailedToCheckTagExists);
       return false;
     }
   },
@@ -192,19 +192,19 @@ export const tag = {
    */
   lastCreated: async () => {
     try {
-      const { stdout: lastTag } = await exec('git', ['describe', '--tags', '--abbrev=0']);
+      const {stdout: lastTag} = await exec('git', ['describe', '--tags', '--abbrev=0']);
       if (lastTag.trim()) {
         return lastTag.trim();
       }
     } catch (error) {
-      log.warn({ error: error.message }, warnFailedToGetLastCreatedTag);
+      log.warn({error: error.message}, warnFailedToGetLastCreatedTag);
     }
     try {
       // If no tag is found, get the first commit hash
-      const { stdout: firstCommitHash } = await exec('git', ['rev-list', '--max-parents=0', 'HEAD']);
+      const {stdout: firstCommitHash} = await exec('git', ['rev-list', '--max-parents=0', 'HEAD']);
       return firstCommitHash.trim();
     } catch (error) {
-      log.warn({ error }, warnNoTagsFound);
+      log.warn({error}, warnNoTagsFound);
       return null;
     }
   },
@@ -218,9 +218,9 @@ export const tag = {
   push: async (tagName) => {
     try {
       await exec('git', ['push', 'origin', tagName]);
-      log.info({ tagName }, infoTagPushed);
+      log.info({tagName}, infoTagPushed);
     } catch (error) {
-      log.warn({ tagName, error }, warnFailedToPushTag);
+      log.warn({tagName, error}, warnFailedToPushTag);
     }
   },
 
@@ -233,9 +233,9 @@ export const tag = {
   remove: async (tagName) => {
     try {
       await exec('git', ['tag', '-d', tagName]);
-      log.info({ tagName }, infoTagDeleted);
+      log.info({tagName}, infoTagDeleted);
     } catch (error) {
-      log.warn({ tagName, error }, warnFailedToDeleteTag);
+      log.warn({tagName, error}, warnFailedToDeleteTag);
     }
 
     // Remote tag deletion is optional and might not be necessary
@@ -259,9 +259,9 @@ export const branch = {
   checkout: async (branchName) => {
     try {
       await exec('git', ['checkout', branchName]);
-      log.info({ branchName }, infoBranchCheckedOut);
+      log.info({branchName}, infoBranchCheckedOut);
     } catch (error) {
-      log.warn({ branchName, error }, warnFailedToCheckoutBranch);
+      log.warn({branchName, error}, warnFailedToCheckoutBranch);
     }
   },
 
@@ -273,10 +273,10 @@ export const branch = {
   create: async (branchName) => {
     try {
       await exec('git', ['checkout', '-b', branchName]);
-      log.info({ branchName }, infoBranchCreated);
+      log.info({branchName}, infoBranchCreated);
       return branchName;
     } catch (error) {
-      log.warn({ branchName, error }, warnFailedToCreateBranch);
+      log.warn({branchName, error}, warnFailedToCreateBranch);
       return null;
     }
   },
@@ -297,17 +297,17 @@ export const branch = {
   remove: async (branchName) => {
     try {
       await exec('git', ['branch', '-d', branchName]);
-      log.info({ branchName }, infoBranchDeleted);
+      log.info({branchName}, infoBranchDeleted);
     } catch (error) {
-      log.warn({ branchName, error }, warnFailedToDeleteBranch);
+      log.warn({branchName, error}, warnFailedToDeleteBranch);
     }
 
     // Also try to delete the branch from remote
     try {
       await exec('git', ['push', 'origin', '--delete', branchName]);
-      log.info({ branchName }, `Remote ${infoBranchDeleted.toLowerCase()}`);
+      log.info({branchName}, `Remote ${infoBranchDeleted.toLowerCase()}`);
     } catch (error) {
-      log.warn({ branchName, error }, `Failed to delete remote branch`);
+      log.warn({branchName, error}, `Failed to delete remote branch`);
     }
   },
 
@@ -320,9 +320,9 @@ export const branch = {
   pull: async (branchName) => {
     try {
       await exec('git', ['pull', 'origin', branchName]);
-      log.info({ branchName }, infoBranchPulled);
+      log.info({branchName}, infoBranchPulled);
     } catch (error) {
-      log.warn({ branchName, error }, warnFailedToPullBranch);
+      log.warn({branchName, error}, warnFailedToPullBranch);
     }
   },
 
@@ -335,9 +335,9 @@ export const branch = {
   push: async (branchName) => {
     try {
       await exec('git', ['push', 'origin', branchName]);
-      log.info({ branchName }, infoBranchPushed);
+      log.info({branchName}, infoBranchPushed);
     } catch (error) {
-      log.warn({ branchName, error }, warnFailedToPushBranch);
+      log.warn({branchName, error}, warnFailedToPushBranch);
     }
   },
 };

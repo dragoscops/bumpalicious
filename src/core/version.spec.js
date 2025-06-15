@@ -15,15 +15,16 @@ import {
   warnNoCommitMessageProvided,
   warnNoVersionProvided,
 } from './version.js';
-import {mockPino, setupPinoLoggingCallsTest, unMockPino} from '../vitest/setup.logging.tests.js';
+import {mockPinoIn, setupPinoLoggingCallsTest, unMockPinoIn} from '../vitest/setup.logging.tests.js';
 
 describe('core/version.js module', () => {
-  beforeEach(() => {
-    mockPino(log);
+  let logMocks = [];
+  beforeEach(async () => {
+    logMocks = await mockPinoIn(['core/version']);
   });
 
-  afterEach(() => {
-    unMockPino(log);
+  afterEach(async () => {
+    unMockPinoIn(logMocks);
   });
 
   describe('determineVersionIncreaseType(currentVersion, string)', () => {

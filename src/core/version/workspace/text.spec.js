@@ -1,4 +1,4 @@
-import {beforeEach, describe, it, vi} from 'vitest';
+import {afterEach, beforeEach, describe, it, vi} from 'vitest';
 import {detect, update} from './text.js';
 import {
   setupVersionUpdateTest,
@@ -9,6 +9,7 @@ import {
   projectNameValue,
 } from '../../../vitest/setup.detect-update.tests.js';
 import path from 'path';
+import {mockPinoIn, unMockPinoIn} from '../../../vitest/setup.logging.tests.js';
 
 const generateCreator =
   (files = ['version'], createFile = createTextVersionFile) =>
@@ -26,8 +27,13 @@ const generateCreator =
   };
 
 describe('core/version/workspace/text.js module', () => {
+  let logMocks = [];
   beforeEach(async () => {
-    vi.clearAllMocks();
+    logMocks = await mockPinoIn(['core/version/detect', 'core/version/update']);
+  });
+
+  afterEach(() => {
+    unMockPinoIn(logMocks);
   });
 
   describe('detect()', () => {

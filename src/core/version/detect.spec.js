@@ -17,7 +17,7 @@ import {
 } from '../../vitest/setup.detect-update.tests';
 import * as detect from './detect.js';
 import {warnNoProvidedParsersToAggregator, warnFailedToAggregateVersion, log} from './detect.js';
-import {mockPino, setupPinoLoggingCallsTest, unMockPino} from '../../vitest/setup.logging.tests.js';
+import {mockPinoIn, setupPinoLoggingCallsTest, unMockPinoIn} from '../../vitest/setup.logging.tests.js';
 
 const generateCreator =
   (files = ['deno.json'], wrapper = null) =>
@@ -97,13 +97,14 @@ const generateCreator =
     };
   };
 
-describe('detect.js', () => {
-  beforeEach(() => {
-    mockPino(log);
+describe('core/version/detect.js', () => {
+  let logMocks = [];
+  beforeEach(async () => {
+    logMocks = await mockPinoIn(['core/version/detect', 'core/version/update']);
   });
 
   afterEach(async () => {
-    unMockPino(log);
+    unMockPinoIn(logMocks);
   });
 
   describe('configParser', () => {

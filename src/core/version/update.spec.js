@@ -7,7 +7,7 @@ import {
   createTempProjectFolder,
   createJsonFile,
 } from '../../vitest/setup.detect-update.tests.js';
-import {mockPino, setupPinoLoggingCallsTest, unMockPino} from '../../vitest/setup.logging.tests.js';
+import {mockPinoIn, setupPinoLoggingCallsTest, unMockPinoIn} from '../../vitest/setup.logging.tests.js';
 
 // Generator functions for different test scenarios
 const generatePackageJsonCreator = async () => {
@@ -68,14 +68,14 @@ const generateMultiFileCreator = async () => {
   };
 };
 
-describe('update.js module', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockPino(log);
+describe('core/version/update.js', () => {
+  let logMocks = [];
+  beforeEach(async () => {
+    logMocks = await mockPinoIn(['core/version/detect', 'core/version/update']);
   });
 
-  afterEach(() => {
-    unMockPino(log);
+  afterEach(async () => {
+    unMockPinoIn(logMocks);
   });
 
   describe('configUpdater', () => {

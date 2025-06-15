@@ -12,6 +12,7 @@ import {
   createBrokenFile,
 } from '../../../vitest/setup.detect-update.tests.js';
 import path from 'path';
+import {mockPinoIn, unMockPinoIn} from '../../../vitest/setup.logging.tests.js';
 
 const generateCreator =
   (files = ['deno.jsonc'], createFile = createJsonFile) =>
@@ -29,8 +30,13 @@ const generateCreator =
   };
 
 describe('core/version/workspace/deno.js module', () => {
+  let logMocks = [];
   beforeEach(async () => {
-    vi.clearAllMocks();
+    logMocks = await mockPinoIn(['core/version/detect', 'core/version/update']);
+  });
+
+  afterEach(() => {
+    unMockPinoIn(logMocks);
   });
 
   describe('detect()', () => {
