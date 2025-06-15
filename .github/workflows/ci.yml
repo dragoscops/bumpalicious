@@ -35,9 +35,9 @@ jobs:
         with:
           node-version: 20
       - name: Run Tests
-        env:
-          DEBUG: log:exec
-          NODE_ENV: test
+        # env:
+        #   DEBUG: log:exec
+        #   NODE_ENV: test
         run: |
           git config --global user.email actions@github.com
           git config --global user.name "Github Actions"
