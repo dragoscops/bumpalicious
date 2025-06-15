@@ -4,12 +4,12 @@
  */
 
 import conventionalChangelog from 'conventional-changelog-core';
-import {join} from 'path';
+import { join } from 'path';
 
-import {logger} from './logging.js';
+import { logger } from './logging.js';
 import * as fileUtils from './fs.js';
 
-export const log = logger.child({module: 'utils/changelog'});
+export const log = logger.child({ module: 'utils/changelog' });
 
 // Log message constants
 export const warnFailedToRead = 'Failed to read file';
@@ -54,22 +54,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * @param {string} lastTag - The last tag to compare against (if no tag, a commit hash is used)
  * @param {Object} options - Options for changelog generation
  * @param {ChangelogPreset} [options.preset='conventionalcommits'] - The conventional-changelog preset to use
- * @returns {Promise<boolean>} - Results of changelog generation
+ * @returns {Promise<Workspaces[]>} - Results of changelog generation
  */
 export async function generateWorkspacesChangelogs(workspaces, lastTag, options = {}) {
+  const changedWorkspaces = [];
+
   if (!workspaces || !Array.isArray(workspaces) || workspaces.length === 0) {
-    log.error({workspaces, lastTag}, errorNoWorkspacesProvided);
-    return false;
+    log.error({ workspaces, lastTag }, errorNoWorkspacesProvided);
+    return changedWorkspaces;
   }
 
   for (const workspace of workspaces) {
-    const result = await generateWorkspaceChangelog(workspace, lastTag, options);
-    if (!result) {
-      return false;
-    }
+    await generateWorkspaceChangelog(workspace, lastTag, options).then((result) => {
+      if (result) {
+        changedWorkspaces.push(workspace);
+      }
+    });
   }
 
-  return true;
+  return changedWorkspaces;
 }
 
 /**
@@ -81,9 +84,9 @@ export async function generateWorkspacesChangelogs(workspaces, lastTag, options 
  * @param {ChangelogPreset} [options.preset='conventionalcommits'] - The conventional-changelog preset to use
  * @returns {Promise<boolean>} - Whether the changelog was generated successfully
  */
-export async function generateWorkspaceChangelog(workspace, lastTag, {preset = 'conventionalcommits'} = {}) {
+export async function generateWorkspaceChangelog(workspace, lastTag, { preset = 'conventionalcommits' } = {}) {
   if (!workspace?.path) {
-    log.error({workspace, lastTag}, errorInvalidWorkspace);
+    log.error({ workspace, lastTag }, errorInvalidWorkspace);
     return false;
   }
 
@@ -98,7 +101,7 @@ export async function generateWorkspaceChangelog(workspace, lastTag, {preset = '
       if (!created) {
         return false;
       }
-      log.info({workspaceName: workspace.name, workspacePath: workspace.path}, infoChangelogCreated);
+      log.info({ workspaceName: workspace.name, workspacePath: workspace.path }, infoChangelogCreated);
     }
 
     // Write new changelog content to temp file
@@ -165,7 +168,7 @@ export async function createInitialChangelog(changelogPath) {
     await fileUtils.writeFile(changelogPath, DEFAULT_CHANGELOG_HEADER + '## [Unreleased]\n\n');
     return true;
   } catch (error) {
-    log.error({changelogPath, error}, errorInitialChangelog);
+    log.error({ changelogPath, error }, errorInitialChangelog);
     return false;
   }
 }
@@ -190,7 +193,7 @@ export function createChangelogStream(workspace, lastTag, preset) {
     {
       preset,
       releaseCount: 0,
-      pkg: {path: workspace.path},
+      pkg: { path: workspace.path },
       cwd: workspace.path,
       // Use lastTag if provided
       from: lastTag || undefined,
@@ -216,7 +219,7 @@ export async function writeChangelogStream(changelogStream, outputPath) {
     await fileUtils.pipelineToFile(changelogStream, outputPath);
     return true;
   } catch (error) {
-    log.error({outputPath, error}, warnFailedToWrite);
+    log.error({ outputPath, error }, warnFailedToWrite);
     return false;
   }
 }
@@ -252,7 +255,7 @@ export async function mergeChangelogContent(changelogPath, newContentPath) {
 
     return true;
   } catch (error) {
-    log.error({changelogPath, newContentPath, error}, errorMergeChangelog);
+    log.error({ changelogPath, newContentPath, error }, errorMergeChangelog);
     return false;
   }
 }

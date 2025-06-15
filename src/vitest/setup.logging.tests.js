@@ -1,12 +1,12 @@
 import * as logging from '../utils/logging.js';
-import {vi} from 'vitest';
+import { vi } from 'vitest';
 
 const pinoMethods = ['debug', 'info', 'warn', 'error', 'fatal', 'trace'];
 
 export const mockPino = (logger = logging.logger) => {
   pinoMethods.forEach((key) => {
     if (typeof logger[key] === 'function') {
-      vi.spyOn(logger, key).mockImplementation((...args) => {});
+      vi.spyOn(logger, key).mockImplementation((...args) => { });
     }
   });
 };
@@ -16,6 +16,18 @@ export const unMockPino = (logger = logging.logger) => {
     if (typeof logger[key] === 'function' && typeof logger[key].mockRestore === 'function') {
       logger[key].mockRestore();
     }
+  });
+};
+
+export const mockPinoIn = (modules = []) => {
+  modules.forEach((mod) => {
+    mockPino(mod.log);
+  });
+};
+
+export const unMockPinoIn = (modules = []) => {
+  modules.forEach((mod) => {
+    unMockPino(mod.log);
   });
 };
 
