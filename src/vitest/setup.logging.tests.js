@@ -9,7 +9,6 @@ export const mockPino = (logger = logging.logger, filter = '*') => {
     if (typeof logger[key] === 'function') {
       const mocked = vi.spyOn(logger, key);
       if (!process.env.DEBUG?.includes(`log:${filter}`) && !process.env.DEBUG?.includes(`log:*`)) {
-        console.log(process.env.DEBUG);
         mocked.mockImplementation((...args) => {});
       }
     }
