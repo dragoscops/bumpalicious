@@ -86,7 +86,7 @@ describe('workspaces.js module', () => {
   });
 
   describe('enrichChangedWorkspaces', () => {
-    it.only('only enriches workspaces with changed files', async () => {
+    it('only enriches workspaces with changed files', async () => {
       await updateAndCommit([created[0].path]);
 
       const result = await workspaces.enrichChangedWorkspaces(created, `v${oldVersion}`);
