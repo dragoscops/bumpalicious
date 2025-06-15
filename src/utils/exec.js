@@ -1,5 +1,5 @@
 import cp from 'child_process';
-import {logger} from './logging';
+import {logger} from './logging.js';
 
 export const log = logger.child({module: 'utils/exec'});
 
