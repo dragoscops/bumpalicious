@@ -6,7 +6,10 @@ const pinoMethods = ['debug', 'info', 'warn', 'error', 'fatal', 'trace'];
 export const mockPino = (logger = logging.logger) => {
   pinoMethods.forEach((key) => {
     if (typeof logger[key] === 'function') {
-      vi.spyOn(logger, key).mockImplementation((...args) => { });
+      const mocked = vi.spyOn(logger, key);
+      if (!process.env.DEBUG?.includes('log') && !process.env.DEBUG?.includes('*')) {
+        mocked.mockImplementation((...args) => { });
+      }
     }
   });
 };

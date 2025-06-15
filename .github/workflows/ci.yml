@@ -35,10 +35,11 @@ jobs:
         with:
           node-version: 20
       - name: Run Tests
+        env:
+          DEBUG: logs
         run: |
           npm i
-          GITHUB_ACTIONS=false npm run test
-          GITHUB_ACTIONS=true npm run test
+          npm run test
 
       # Only run version increase on push to main, not on pull requests
       - name: Increase Version
