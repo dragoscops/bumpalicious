@@ -5,6 +5,7 @@ import path from 'path';
 const pinoMethods = ['debug', 'info', 'warn', 'error', 'fatal', 'trace'];
 
 export const mockPino = (logger = logging.logger, filter = '*') => {
+  console.log(process.env);
   pinoMethods.forEach((key) => {
     if (typeof logger[key] === 'function') {
       const mocked = vi.spyOn(logger, key);
