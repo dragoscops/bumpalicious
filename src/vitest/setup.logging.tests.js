@@ -5,11 +5,11 @@ import path from 'path';
 const pinoMethods = ['debug', 'info', 'warn', 'error', 'fatal', 'trace'];
 
 export const mockPino = (logger = logging.logger, filter = '*') => {
-  console.log(process.env);
   pinoMethods.forEach((key) => {
     if (typeof logger[key] === 'function') {
       const mocked = vi.spyOn(logger, key);
       if (!process.env.DEBUG?.includes(`log:${filter}`) && !process.env.DEBUG?.includes(`log:*`)) {
+        console.log(process.env.DEBUG);
         mocked.mockImplementation((...args) => {});
       }
     }
