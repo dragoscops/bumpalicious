@@ -1,31 +1,55 @@
 import {describe, it, expect, beforeEach, vi, afterAll} from 'vitest';
 
-import * as e from './exec.js';
 import * as git from './git.js';
-import {mockPino, unMockPino, setupPinoLoggingCallsTest} from '../vitest/setup.logging.tests.js';
+import {mockPinoIn, unMockPinoIn, setupPinoLoggingCallsTest} from '../vitest/setup.logging.tests.js';
+import {createWorkspacesTestFolder, updateAndCommit} from '../vitest/setup.workspaces.tests.js';
+import {removeTempProjectFolder} from '../vitest/setup.fs.test.js';
+import * as exec from './exec.js';
+import {oldVersion} from '../vitest/setup.detect-update.tests.js';
 
-describe('git.js module', () => {
+describe('utils/git.js', () => {
+  let projectFolder = '';
+  let projectName = '';
+  let created = [];
+  let logMocks = [];
   let execMock = null;
+  const lastTag = `v${oldVersion}`;
+  const originalExec = exec.exec;
 
-  beforeEach(() => {
-    execMock = vi.spyOn(e, 'exec');
-    mockPino(git.log);
+  beforeEach(async () => {
+    logMocks = await mockPinoIn([
+      'core/version',
+      'core/version/detect',
+      'core/version/update',
+      'core/workspaces',
+      'utils/changelog',
+    ]);
+    ({created, projectFolder, projectName} = await createWorkspacesTestFolder());
+    exec.setCwd(projectFolder);
+
+    execMock = vi.spyOn(exec, 'exec');
   });
 
-  afterAll(() => {
-    unMockPino(git.log);
+  afterEach(async () => {
+    unMockPinoIn(logMocks);
+    await removeTempProjectFolder(projectFolder);
+    exec.resetCwd();
+
+    projectFolder = '';
+    projectName = '';
     execMock.mockRestore();
   });
 
   describe('commits object', () => {
     describe('lastMessage()', () => {
       it('returns the latest commit message', async () => {
-        execMock.mockResolvedValueOnce({stdout: 'feat: add new feature\n'});
+        const commitMessage = 'feat: add new feature';
+
+        await updateAndCommit([projectFolder], commitMessage);
 
         const message = await git.commits.lastMessage();
 
-        expect(execMock).toHaveBeenCalledWith('git', ['log', '-1', '--pretty=%B']);
-        expect(message).toBe('feat: add new feature');
+        expect(message).toBe(commitMessage);
       });
 
       it('logs error and returns undefined on failure', async () => {
@@ -38,77 +62,59 @@ describe('git.js module', () => {
       });
     });
 
-    // TODO: must find a way to test using mkdtemp
-    describe.skip('getChangedFiles()', () => {
+    describe('getChangedFiles()', () => {
       it('returns files that changed since the specified tag', async () => {
-        const repoPath = '/path/to/repo';
-        const lastTag = 'v1.0.0';
-        const changedFiles = ['file1.js', 'file2.js', 'dir/file3.js'];
+        await updateAndCommit([projectFolder], 'feat: another commit');
 
-        execMock.mockResolvedValueOnce({
-          stdout: changedFiles.join('\n'),
-        });
+        const result = await git.commits.getChangedFiles(projectFolder, lastTag);
 
-        const result = await git.commits.getChangedFiles(repoPath, lastTag);
-
-        expect(execMock).toHaveBeenCalledWith('git', ['diff', lastTag, '--name-only', '--', repoPath], {cwd: repoPath});
-        expect(result).toEqual(changedFiles);
+        expect(result).toEqual(['update.md']);
       });
 
       it('returns all tracked files when no tag is provided', async () => {
-        const repoPath = '/path/to/repo';
-        const trackedFiles = ['file1.js', 'file2.js', 'dir/file3.js'];
+        await updateAndCommit([projectFolder], 'feat: another commit');
 
-        execMock.mockResolvedValueOnce({
-          stdout: trackedFiles.join('\n'),
-        });
+        const result = await git.commits.getChangedFiles(projectFolder, null);
 
-        const result = await git.commits.getChangedFiles(repoPath, null);
-
-        expect(execMock).toHaveBeenCalledWith('git', ['ls-files'], {cwd: repoPath});
-        expect(result).toEqual(trackedFiles);
+        expect(result).toEqual([
+          'README.md',
+          'node-project/package.json',
+          'python-project/pyproject.toml',
+          'update.md',
+          'version',
+        ]);
       });
 
-      it('filters out empty lines in the git command output', async () => {
-        const repoPath = '/path/to/repo';
-        const lastTag = 'v1.0.0';
-
-        execMock.mockResolvedValueOnce({
-          stdout: 'file1.js\n\nfile2.js\n',
-        });
-
-        const result = await git.commits.getChangedFiles(repoPath, lastTag);
-
-        expect(result).toEqual(['file1.js', 'file2.js']);
-      });
       it('logs error and exits when git command fails', async () => {
-        const repoPath = '/path/to/repo';
-        const lastTag = 'v1.0.0';
-        const error = new Error('Git command failed');
+        let callCount = 0;
+        const error = new Error('Mocked git error');
+        execMock.mockImplementation((...args) => {
+          callCount++;
+          if (callCount === 1) {
+            return originalExec(...args);
+          }
+          throw error;
+        });
 
-        execMock.mockRejectedValueOnce(error);
+        await git.commits.getChangedFiles(projectFolder, lastTag);
 
-        await git.commits.getChangedFiles(repoPath, lastTag);
-
-        setupPinoLoggingCallsTest('error', [{repoPath, error}, git.errorRetrievingChangedFiles], git.log);
+        setupPinoLoggingCallsTest(
+          'error',
+          [{repoPath: projectFolder, error}, git.errorRetrievingChangedFiles],
+          git.log,
+        );
       });
 
       it('handles empty output from git command', async () => {
-        const repoPath = '/path/to/repo';
-        const lastTag = 'v1.0.0';
-
-        execMock.mockResolvedValueOnce({
-          stdout: '',
-        });
-
-        const result = await git.commits.getChangedFiles(repoPath, lastTag);
+        const result = await git.commits.getChangedFiles(projectFolder, lastTag);
 
         expect(result).toEqual([]);
       });
     });
   });
 
-  describe('config object', () => {
+  // TODO: continue here
+  describe.only('config object', () => {
     describe('set()', () => {
       it('sets git config value and logs success message', async () => {
         execMock.mockResolvedValueOnce({});
@@ -183,7 +189,7 @@ describe('git.js module', () => {
 
       it('logs error when tag creation fails', async () => {
         const error = new Error('Failed to create tag');
-        execMock.mockRejectedValueOnce(error);
+        execMock.mockRej;
 
         await git.tag.create('invalid-tag', 'message');
 

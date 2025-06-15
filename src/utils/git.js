@@ -100,6 +100,7 @@ export async function pushChange(commitMessage, branch = 'main') {
 export async function rootPath(cwd) {
   try {
     const {stdout} = await exec('git', ['rev-parse', '--show-toplevel'], {cwd});
+    console.log('root path', stdout.trim());
     return stdout.trim();
   } catch (error) {
     log.error({cwd, error}, warnFailedToGetGitConfig);
@@ -131,6 +132,7 @@ export const commits = {
    */
   getChangedFiles: async (repoPath, lastTag) => {
     const rootRepoPath = await rootPath(repoPath);
+    console.log('root repo path', rootRepoPath);
     const relativeRepoPath = path.relative(rootRepoPath, repoPath).replace(/\.[\\\/]/, '') || '.';
 
     try {
@@ -148,6 +150,8 @@ export const commits = {
       return [];
     }
   },
+
+  // TODO: move pushChange to createAndPush here
 };
 
 /**

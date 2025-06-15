@@ -77,12 +77,12 @@ export const createWorkspacesTestFolder = async (options) => {
   };
 };
 
-export const updateAndCommit = async (paths = []) => {
+export const updateAndCommit = async (paths = [], message = '') => {
   for (const p of paths) {
     await fs.writeFile(path.join(p, 'update.md'), Date.now().toString());
     for (const command of [
       ['add', '.'],
-      ['commit', '-am', `updated ${Date.now()}`],
+      ['commit', '-am', message || `updated ${Date.now()}`],
     ]) {
       await exec('git', command, {cwd: p});
     }
