@@ -131,7 +131,7 @@ export const commits = {
    */
   getChangedFiles: async (repoPath, lastTag) => {
     const rootRepoPath = await rootPath(repoPath);
-    const relativeRepoPath = path.relative(rootRepoPath, repoPath).replace(/\.[\\\/]/, '');
+    const relativeRepoPath = path.relative(rootRepoPath, repoPath).replace(/\.[\\\/]/, '') || '.';
 
     try {
       // If no tag is provided, return all tracked files as changed
