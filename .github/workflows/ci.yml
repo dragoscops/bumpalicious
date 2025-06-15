@@ -36,7 +36,7 @@ jobs:
           node-version: 20
       - name: Run Tests
         env:
-          DEBUG: logs:exec
+          DEBUG: log:exec
         run: |
           npm i
           npm run test
