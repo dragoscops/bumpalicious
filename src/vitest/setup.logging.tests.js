@@ -32,8 +32,13 @@ export const mockPinoIn = async (modules = []) => {
     ['utils/exec', 'utils/git', ...modules].map(async (mod) => {
       // - HACKy - should be `../${mod}.js`
       // For some reason, vitest import behaves differently
-      console.log(`../${mod}`);
-      const imod = await import(`../${mod}`);
+      // console.log(`../${mod}`);
+      let imod = null;
+      try {
+        imod = await import(`../${mod}.js`);
+      } catch (e) {
+        imod = await import(`../${mod}`);
+      }
       // console.log(mod, imod);
       // HACKy end
       mockPino(imod.log, path.basename(mod));
