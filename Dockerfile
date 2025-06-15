@@ -20,7 +20,9 @@ RUN cd \
   \
   && apk add --no-cache zig \
   \
-  && mkdir /app
+  && mkdir /app \
+  \
+  && npm i -g pino-pretty
 
 VOLUME ["/app"]
 
