@@ -21,12 +21,12 @@ describe('workspaces.js module', () => {
   let projectName = '';
   let created = [];
   beforeEach(async () => {
-    mockPinoIn(logs);
+    // mockPinoIn(logs);
     ({ created, projectFolder, projectName } = await createWorkspacesTestFolder());
   });
 
   afterEach(async () => {
-    unMockPinoIn(logs);
+    // unMockPinoIn(logs);
     await removeTempProjectFolder(projectFolder);
 
     projectFolder = '';
