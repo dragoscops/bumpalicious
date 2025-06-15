@@ -37,6 +37,7 @@ jobs:
       - name: Run Tests
         env:
           DEBUG: log:exec
+          NODE_ENV: test
         run: |
           npm i
           DEBUG=log:exec npm run test -- workspaces
