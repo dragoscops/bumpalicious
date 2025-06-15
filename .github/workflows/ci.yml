@@ -39,7 +39,7 @@ jobs:
           DEBUG: log:exec
         run: |
           npm i
-          npm run test -- workspaces
+          DEBUG=log:exec npm run test -- workspaces
           # npm run test
 
       # Only run version increase on push to main, not on pull requests
