@@ -10,7 +10,7 @@ import {exec} from '../utils/exec';
  * @returns {Promise<string>} - A promise that resolves to the path of the created temporary folder.
  */
 export const createTempProjectFolder = async (prefix = 'node') => {
-  const tempDir = await fs.mkdtemp(path.join(tmpdir(), `${prefix}-`));
+  const tempDir = await fs.mkdtemp(path.join(tmpdir(), `${prefix}-`)).then((dir) => fs.realpath(dir));
 
   for (const args of [['config', '--global', 'init.defaultBranch', 'main'], ['init']]) {
     await exec('git', args, {cwd: tempDir});

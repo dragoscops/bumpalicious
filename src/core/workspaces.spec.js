@@ -89,13 +89,13 @@ describe('workspaces.js module', () => {
     it.only('only enriches workspaces with changed files', async () => {
       await updateAndCommit([created[0].path]);
 
-      const result = await workspaces.enrichChangedWorkspaces([...created], `v${oldVersion}`);
+      const result = await workspaces.enrichChangedWorkspaces(created, `v${oldVersion}`);
 
       expect(result).toEqual([{...created[0]}]);
     });
 
     it('returns empty array when no workspaces have changes', async () => {
-      const result = await workspaces.enrichChangedWorkspaces([...created], `v${oldVersion}`);
+      const result = await workspaces.enrichChangedWorkspaces(created, `v${oldVersion}`);
 
       expect(result).toEqual([]);
     });

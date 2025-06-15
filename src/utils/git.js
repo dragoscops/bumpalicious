@@ -6,6 +6,7 @@
 import {logger} from './logging.js';
 import {projectName} from '../constants.js';
 import {exec} from './exec.js';
+import path from 'path';
 
 export const log = logger.child({module: `${projectName}/utils/git`});
 
@@ -90,6 +91,22 @@ export async function pushChange(commitMessage, branch = 'main') {
   }
 }
 
+/**
+ * Get the root path of the Git repository
+ *
+ * @param {string} cwd - Current working directory
+ * @returns {Promise<string|null>} - Root path of the Git repository or null on error
+ */
+export async function rootPath(cwd) {
+  try {
+    const {stdout} = await exec('git', ['rev-parse', '--show-toplevel'], {cwd});
+    return stdout.trim();
+  } catch (error) {
+    log.error({cwd, error}, warnFailedToGetGitConfig);
+  }
+  return null;
+}
+
 export const commits = {
   /**
    * Get the last commit message
@@ -113,6 +130,9 @@ export const commits = {
    * @returns {Promise<string[]>} - Array of file paths that changed, empty array on error
    */
   getChangedFiles: async (repoPath, lastTag) => {
+    const rootRepoPath = await rootPath(repoPath);
+    const relativeRepoPath = path.relative(rootRepoPath, repoPath).replace(/\.[\\\/]/, '');
+
     try {
       // If no tag is provided, return all tracked files as changed
       if (!lastTag) {
@@ -121,7 +141,7 @@ export const commits = {
       }
 
       // Retrieve changed files in the repository since the last tag
-      const {stdout} = await exec('git', ['diff', lastTag, '--name-only', '--', repoPath], {cwd: repoPath});
+      const {stdout} = await exec('git', ['diff', lastTag, '--name-only', '--', relativeRepoPath], {cwd: rootRepoPath});
       return stdout.trim().split('\n').filter(Boolean);
     } catch (error) {
       log.error({repoPath, error}, errorRetrievingChangedFiles);
