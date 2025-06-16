@@ -354,45 +354,51 @@ export async function createVersionPR(workspacesTree, options) {
   for (const node of workspacesTree) {
     const workspace = node.workspace;
     prBody += `## ${workspace.name} (${workspace.version})\n\n`;
-    workspacesPrBody(node.children);
-
-    // // Try to read changelog content if it exists
-    // try {
-    //   const changelogPath = path.join(workspace.path, 'CHANGELOG.md');
-    //   const changelogExists = await fs
-    //     .access(changelogPath)
-    //     .then(() => true)
-    //     .catch(() => false);
-
-    //   if (changelogExists) {
-    //     // Read just the latest entry (between the first and second heading)
-    //     const changelogContent = await fs.readFile(changelogPath, 'utf8');
-    //     const latestEntry = changelogContent.split(/^## /m)[1];
-
-    //     if (latestEntry) {
-    //       prBody += `## ${latestEntry}\n`;
-    //     } else {
-    //       prBody += `No changelog entries found for ${workspace.name}.\n\n`;
-    //     }
-    //   } else {
-    //     prBody += `No changelog found for ${workspace.name}.\n\n`;
-    //   }
-    // } catch (error) {
-    //   log.warn({workspaceName: workspace.name, error: error.message}, LOG_MESSAGES.CHANGELOG_READ_ERROR);
-    //   prBody += `Failed to include changelog for ${workspace.name}.\n\n`;
-    // }
+    if (workspace.children && workspace.children.length > 0) {
+      workspaceChildrenVersionsPrBody(node.children);
+    } else {
+      await workspaceChangesPrBody(workspace);
+    }
   }
 
   /**
    * @param {WorkspaceNode[]} nodes - List of workspace nodes
    */
-  function workspacesPrBody(nodes) {
+  function workspaceChildrenVersionsPrBody(nodes) {
     nodes.forEach((node) => {
       prBody += `* ${node.workspace.name} bumped to ${node.workspace.version}\n\n`;
       if (node.children && node.children.length > 0) {
-        workspacesPrBody(node.children);
+        workspaceChildrenVersionsPrBody(node.children);
       }
     });
+  }
+
+  async function workspaceChangesPrBody(workspace) {
+    // Try to read changelog content if it exists
+    try {
+      const changelogPath = path.join(workspace.path, 'CHANGELOG.md');
+      const changelogExists = await fs
+        .access(changelogPath)
+        .then(() => true)
+        .catch(() => false);
+
+      if (changelogExists) {
+        // Read just the latest entry (between the first and second heading)
+        const changelogContent = await fs.readFile(changelogPath, 'utf8');
+        const latestEntry = changelogContent.split(/^## /m)[1];
+
+        if (latestEntry) {
+          prBody += `## ${latestEntry}\n`;
+        } else {
+          prBody += `No changelog entries found for ${workspace.name}.\n\n`;
+        }
+      } else {
+        prBody += `No changelog found for ${workspace.name}.\n\n`;
+      }
+    } catch (error) {
+      log.warn({workspaceName: workspace.name, error: error.message}, LOG_MESSAGES.CHANGELOG_READ_ERROR);
+      prBody += `Failed to include changelog for ${workspace.name}.\n\n`;
+    }
   }
 
   await git.pushChange(prTitle, prBranch);
