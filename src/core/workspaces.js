@@ -336,7 +336,8 @@ export async function createVersionTags(version, options) {
  * @returns {Promise<void>}
  */
 export async function createVersionPR(workspacesTree, options) {
-  const rootWorkspace = workspacesTree[0].workspace;
+  const rootNode = workspacesTree[0];
+  const rootWorkspace = rootNode.workspace;
 
   // Create a version branch
   const prBranch = await git.branch.createVersion(rootWorkspace.version);
@@ -347,14 +348,14 @@ export async function createVersionPR(workspacesTree, options) {
   // Create PR body with changelog information
   let prBody = [`# Version Update: ${rootWorkspace.name} ${rootWorkspace.version}`, ''];
 
-  if (rootWorkspace.children?.length ?? 0 > 0) {
+  if (rootNode.children?.length ?? 0 > 0) {
     // // Include changes for each workspace
     // for (const node of rootWorkspace.children) {
     //   const workspace = node.workspace;
     //   prBody += `## ${workspace.name} (${workspace.version})\n\n`;
     //   await generateChangelogForWorkspace(workspace);
     // }
-    prBody = [...prBody, ...listWorkspacesVersions(rootWorkspace)];
+    prBody = [...prBody, ...listWorkspacesVersions(rootNode)];
   } else {
     await generateChangelogForWorkspace(rootWorkspace);
   }
