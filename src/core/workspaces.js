@@ -350,11 +350,18 @@ export async function createVersionPR(workspacesTree, options) {
   // Create PR body with changelog information
   let prBody = `# Version Update: ${rootWorkspace.name} ${rootWorkspace.version}\n\n`;
 
-  // Include changes for each workspace
-  for (const node of rootWorkspace.children) {
-    const workspace = node.workspace;
-    prBody += `## ${workspace.name} (${workspace.version})\n\n`;
+  if (rootWorkspace.children?.length ?? 0 > 0) {
+    // Include changes for each workspace
+    for (const node of rootWorkspace.children) {
+      const workspace = node.workspace;
+      prBody += `## ${workspace.name} (${workspace.version})\n\n`;
+      await generateChangelogForWorkspace(workspace);
+    }
+  } else {
+    await generaeChangelogForWorkspace(rootWorkspace);
+  }
 
+  async function generateChangelogForWorkspace(workspace) {
     // Try to read changelog content if it exists
     try {
       const changelogPath = path.join(workspace.path, 'CHANGELOG.md');
@@ -383,6 +390,8 @@ export async function createVersionPR(workspacesTree, options) {
   }
 
   await git.pushChange(prTitle, prBranch);
+
+  log.info({workspacesTree, prBranch, prTitle, prBody}, `Creating PR for version bump: ${prTitle}`);
 
   // Create PR with the specified title and body
   return github.pr.create(
