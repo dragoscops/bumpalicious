@@ -355,10 +355,9 @@ export async function createVersionPR(workspacesTree, options) {
     //   await generateChangelogForWorkspace(workspace);
     // }
     prBody = [...prBody, ...listWorkspacesVersions(rootWorkspace)];
+  } else {
+    await generateChangelogForWorkspace(rootWorkspace);
   }
-  // } else {
-  //   await generaeChangelogForWorkspace(rootWorkspace);
-  // }
 
   /**
    * List versions of all workspaces in the workspacesTree
@@ -367,9 +366,9 @@ export async function createVersionPR(workspacesTree, options) {
    * @return {string[]} - List of workspaces and their versions in markdown for
    */
   function listWorkspacesVersions(node) {
-    return node.children.flatMap((child) => [
+    return (node?.children ?? []).map((child) => [
       `* ${child.workspace.name}: ${child.workspace.version}`,
-      ...((child.children?.length ?? 0) > 0 ? listWorkspacesVersions(child).map((line) => `  ${line}`) : []),
+      ...listWorkspacesVersions(child),
     ]);
   }
 
