@@ -348,10 +348,10 @@ export async function createVersionPR(workspacesTree, options) {
   const path = await import('path');
 
   // Create PR body with changelog information
-  let prBody = `# Version Update: ${rootWorkspace.version}\n\n`;
+  let prBody = `# Version Update: ${rootWorkspace.name} ${rootWorkspace.version}\n\n`;
 
   // Include changes for each workspace
-  for (const node of workspacesTree) {
+  for (const node of rootWorkspace.children) {
     const workspace = node.workspace;
     prBody += `## ${workspace.name} (${workspace.version})\n\n`;
 
