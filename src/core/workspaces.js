@@ -3,6 +3,7 @@
  * @module core/workspaces
  */
 import path from 'path';
+import * as fs from 'fs/promises';
 import semver from 'semver';
 import * as core from '@actions/core';
 
@@ -343,24 +344,20 @@ export async function createVersionPR(workspacesTree, options) {
 
   const prTitle = `${options.prMessage} ${rootWorkspace.version}`;
 
-  // Generate changelogs before creating the PR body
-  const fs = await import('fs/promises');
-  const path = await import('path');
-
   // Create PR body with changelog information
   let prBody = `# Version Update: ${rootWorkspace.name} ${rootWorkspace.version}\n\n`;
 
-  if (rootWorkspace.children?.length ?? 0 > 0) {
-    // // Include changes for each workspace
-    // for (const node of rootWorkspace.children) {
-    //   const workspace = node.workspace;
-    //   prBody += `## ${workspace.name} (${workspace.version})\n\n`;
-    //   await generateChangelogForWorkspace(workspace);
-    // }
-    prBody += listWorkspacesVersions(rootWorkspace);
-  } else {
-    await generaeChangelogForWorkspace(rootWorkspace);
-  }
+  // if (rootWorkspace.children?.length ?? 0 > 0) {
+  //   // // Include changes for each workspace
+  //   // for (const node of rootWorkspace.children) {
+  //   //   const workspace = node.workspace;
+  //   //   prBody += `## ${workspace.name} (${workspace.version})\n\n`;
+  //   //   await generateChangelogForWorkspace(workspace);
+  //   // }
+  //   prBody += listWorkspacesVersions(rootWorkspace);
+  // } else {
+  //   await generaeChangelogForWorkspace(rootWorkspace);
+  // }
 
   /**
    * List versions of all workspaces in the workspacesTree
