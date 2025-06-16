@@ -345,16 +345,17 @@ export async function createVersionPR(workspacesTree, options) {
   const prTitle = `${options.prMessage} ${rootWorkspace.version}`;
 
   // Create PR body with changelog information
-  let prBody = `# Version Update: ${rootWorkspace.name} ${rootWorkspace.version}\n\n`;
+  let prBody = [`# Version Update: ${rootWorkspace.name} ${rootWorkspace.version}`, ''];
 
-  // if (rootWorkspace.children?.length ?? 0 > 0) {
-  //   // // Include changes for each workspace
-  //   // for (const node of rootWorkspace.children) {
-  //   //   const workspace = node.workspace;
-  //   //   prBody += `## ${workspace.name} (${workspace.version})\n\n`;
-  //   //   await generateChangelogForWorkspace(workspace);
-  //   // }
-  //   prBody += listWorkspacesVersions(rootWorkspace);
+  if (rootWorkspace.children?.length ?? 0 > 0) {
+    // // Include changes for each workspace
+    // for (const node of rootWorkspace.children) {
+    //   const workspace = node.workspace;
+    //   prBody += `## ${workspace.name} (${workspace.version})\n\n`;
+    //   await generateChangelogForWorkspace(workspace);
+    // }
+    prBody = [...prBody, ...listWorkspacesVersions(rootWorkspace)];
+  }
   // } else {
   //   await generaeChangelogForWorkspace(rootWorkspace);
   // }
@@ -363,15 +364,13 @@ export async function createVersionPR(workspacesTree, options) {
    * List versions of all workspaces in the workspacesTree
    *
    * @param {WorkspaceNode} node - Workspace node containing children workspaces
-   * @return {string} - List of workspaces and their versions in markdown for
+   * @return {string[]} - List of workspaces and their versions in markdown for
    */
   function listWorkspacesVersions(node) {
-    return node.children
-      .map((child) => [
-        `* ${child.workspace.name}: ${child.workspace.version}`,
-        ...((child.children?.length ?? 0 > 0) ? listWorkspacesVersions(child) : []),
-      ])
-      .join('\n');
+    return node.children.flatMap((child) => [
+      `* ${child.workspace.name}: ${child.workspace.version}`,
+      ...((child.children?.length ?? 0) > 0 ? listWorkspacesVersions(child).map((line) => `  ${line}`) : []),
+    ]);
   }
 
   /**
@@ -417,7 +416,7 @@ export async function createVersionPR(workspacesTree, options) {
   return github.pr.create(
     {
       title: prTitle,
-      body: prBody,
+      body: prBody.join('\n'),
       base: options.branch,
       head: prBranch,
     },
