@@ -100,7 +100,6 @@ export async function pushChange(commitMessage, branch = 'main') {
 export async function rootPath(cwd) {
   try {
     const {stdout} = await exec('git', ['rev-parse', '--show-toplevel'], {cwd});
-    console.log('root path', stdout.trim());
     return stdout.trim();
   } catch (error) {
     log.error({cwd, error}, warnFailedToGetGitConfig);
@@ -131,10 +130,6 @@ export const commits = {
    * @returns {Promise<string[]>} - Array of file paths that changed, empty array on error
    */
   getChangedFiles: async (repoPath, lastTag) => {
-    const rootRepoPath = await rootPath(repoPath);
-    console.log('root repo path', rootRepoPath);
-    const relativeRepoPath = path.relative(rootRepoPath, repoPath).replace(/\.[\\\/]/, '') || '.';
-
     try {
       // If no tag is provided, return all tracked files as changed
       if (!lastTag) {
@@ -142,6 +137,8 @@ export const commits = {
         return stdout.trim().split('\n').filter(Boolean);
       }
 
+      const rootRepoPath = await rootPath(repoPath);
+      const relativeRepoPath = path.relative(rootRepoPath, repoPath).replace(/\.[\\\/]/, '') || '.';
       // Retrieve changed files in the repository since the last tag
       const {stdout} = await exec('git', ['diff', lastTag, '--name-only', '--', relativeRepoPath], {cwd: rootRepoPath});
       return stdout.trim().split('\n').filter(Boolean);

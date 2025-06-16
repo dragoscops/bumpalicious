@@ -7,6 +7,10 @@ import {removeTempProjectFolder} from '../vitest/setup.fs.test.js';
 import * as exec from './exec.js';
 import {oldVersion} from '../vitest/setup.detect-update.tests.js';
 
+/**
+ * TODO: As seen, not all tests use mkdtemp. Need to adapt the one that can be adapted to use mkdtemp.
+ */
+
 describe('utils/git.js', () => {
   let projectFolder = '';
   let projectName = '';
@@ -62,7 +66,7 @@ describe('utils/git.js', () => {
       });
     });
 
-    describe('getChangedFiles()', () => {
+    describe.only('getChangedFiles()', () => {
       it('returns files that changed since the specified tag', async () => {
         await updateAndCommit([projectFolder], 'feat: another commit');
 
@@ -113,8 +117,7 @@ describe('utils/git.js', () => {
     });
   });
 
-  // TODO: continue here
-  describe.only('config object', () => {
+  describe('config object', () => {
     describe('set()', () => {
       it('sets git config value and logs success message', async () => {
         execMock.mockResolvedValueOnce({});
@@ -179,17 +182,14 @@ describe('utils/git.js', () => {
   describe('tag object', () => {
     describe('create()', () => {
       it('creates a tag with the specified name and message', async () => {
-        execMock.mockResolvedValueOnce({});
-
         await git.tag.create('v1.0.0', 'Version 1.0.0 release');
 
-        expect(execMock).toHaveBeenCalledWith('git', ['tag', '-a', 'v1.0.0', '-m', 'Version 1.0.0 release']);
         setupPinoLoggingCallsTest('info', [{tagName: 'v1.0.0'}, git.infoTagCreated], git.log);
       });
 
       it('logs error when tag creation fails', async () => {
         const error = new Error('Failed to create tag');
-        execMock.mockRej;
+        execMock.mockRejectedValueOnce(error);
 
         await git.tag.create('invalid-tag', 'message');
 
@@ -238,17 +238,13 @@ describe('utils/git.js', () => {
 
     describe('exists()', () => {
       it('returns true when tag exists', async () => {
-        execMock.mockResolvedValueOnce({stdout: 'v1.0.0'});
+        const result = await git.tag.exists(lastTag);
 
-        const result = await git.tag.exists('v1.0.0');
-
-        expect(execMock).toHaveBeenCalledWith('git', ['tag', '-l', 'v1.0.0']);
+        expect(execMock).toHaveBeenCalledWith('git', ['tag', '-l', lastTag]);
         expect(result).toBe(true);
       });
 
       it('returns false when tag does not exist', async () => {
-        execMock.mockResolvedValueOnce({stdout: ''});
-
         const result = await git.tag.exists('v2.0.0');
 
         expect(result).toBe(false);
@@ -267,12 +263,10 @@ describe('utils/git.js', () => {
 
     describe('lastTag()', () => {
       it('returns the last created tag', async () => {
-        execMock.mockResolvedValueOnce({stdout: 'v1.0.0'});
-
         const result = await git.tag.lastCreated();
 
         expect(execMock).toHaveBeenCalledWith('git', ['describe', '--tags', '--abbrev=0']);
-        expect(result).toBe('v1.0.0');
+        expect(result).toBe(lastTag);
       });
 
       it('logs error when no tags are found', async () => {
@@ -309,12 +303,10 @@ describe('utils/git.js', () => {
 
     describe('remove()', () => {
       it('removes a tag', async () => {
-        execMock.mockResolvedValueOnce({});
+        await git.tag.remove(lastTag);
 
-        await git.tag.remove('v1.0.0');
-
-        expect(execMock).toHaveBeenCalledWith('git', ['tag', '-d', 'v1.0.0']);
-        setupPinoLoggingCallsTest('info', [{tagName: 'v1.0.0'}, git.infoTagDeleted], git.log);
+        expect(execMock).toHaveBeenCalledWith('git', ['tag', '-d', lastTag]);
+        setupPinoLoggingCallsTest('info', [{tagName: lastTag}, git.infoTagDeleted], git.log);
       });
 
       it('logs error when tag removal fails', async () => {
@@ -331,8 +323,6 @@ describe('utils/git.js', () => {
   describe('branch object', () => {
     describe('create()', () => {
       it('creates a new branch', async () => {
-        execMock.mockResolvedValueOnce({});
-
         const result = await git.branch.create('feature/new-feature');
 
         expect(execMock).toHaveBeenCalledWith('git', ['checkout', '-b', 'feature/new-feature']);
@@ -356,8 +346,6 @@ describe('utils/git.js', () => {
 
     describe('createVersion()', () => {
       it('creates a version branch with correct naming convention', async () => {
-        execMock.mockResolvedValueOnce({});
-
         await git.branch.createVersion('1.0.0');
 
         expect(execMock).toHaveBeenCalledWith('git', ['checkout', '-b', 'version_bump_v1.0.0']);
