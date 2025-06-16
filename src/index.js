@@ -68,8 +68,8 @@ const run = async () => {
       log.info(`Version PR was merged with message: ${commitMessage}`);
       core.notice(`Version PR was merged with message: ${commitMessage}`);
       // enrich all workspaces
-      const changedWorkspaces = await workspaces.enrichWorkspaces(options.workspaces, lastTag);
-      const changedWorkspacesTrees = workspace.buildUpdatedWorkspacesTrees(changedWorkspaces);
+      options.workspaces = await workspaces.enrichWorkspaces(options.workspaces, lastTag);
+      const changedWorkspacesTrees = workspace.buildUpdatedWorkspacesTrees(options.workspaces);
       // create tag
       workspaces.createVersionTags(changedWorkspacesTrees[0].workspace.version, options);
     } else {
