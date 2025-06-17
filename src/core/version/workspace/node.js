@@ -1,8 +1,3 @@
-/**
- * Node.js project version and name detection
- * @module detect/node
- */
-
 import path from 'path';
 import * as d from '../detect.js';
 import * as u from '../update.js';

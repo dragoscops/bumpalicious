@@ -1,18 +1,17 @@
-/**
- * Go project version and name detection
- * @module detect/go
- */
-
 import path from 'path';
 import * as d from '../detect.js';
 import * as u from '../update.js';
+
+/**
+ * @typedef {import('../detect.js').ProjectInfo} ProjectInfo
+ */
 
 /**
  * Detect version from a Go project
  * Looking for go.mod file or various version declaration files
  *
  * @param {string} projectPath - Project to read details from
- * @returns {Promise<GoConfig>} - Detected version
+ * @returns {Promise<ProjectInfo>} - Detected version
  */
 export const detect = async (projectPath) =>
   d.anyOf(projectPath, 'go', [

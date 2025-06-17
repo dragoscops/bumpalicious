@@ -1,18 +1,17 @@
-/**
- * Zig project version and name detection
- * @module detect/zig
- */
-
 import path from 'path';
 import * as d from '../detect.js';
 import * as u from '../update.js';
+
+/**
+ * @typedef {import('../detect.js').ProjectInfo} ProjectInfo
+ */
 
 /**
  * Detect version from a Zig project
  * Looking for build.zig and build.zig.zon files
  *
  * @param {string} projectPath - Project to read details from
- * @returns {Promise<ZigConfig>} - Detected version
+ * @returns {Promise<ProjectInfo>} - Detected version
  */
 export const detect = async (projectPath) =>
   d.merge(projectPath, 'zig', [

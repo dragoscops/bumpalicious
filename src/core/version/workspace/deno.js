@@ -1,8 +1,3 @@
-/**
- * Deno project version and name detection
- * @module detect/deno
- */
-
 import path from 'path';
 import JSONC from 'tiny-jsonc';
 
@@ -10,11 +5,15 @@ import * as d from '../detect.js';
 import * as u from '../update.js';
 
 /**
+ * @typedef {import('../detect.js').ProjectInfo} ProjectInfo
+ */
+
+/**
  * Detect version from a Deno project
  * Looking for deno.json, deno.jsonc, jsr.json, or package.json files
  *
  * @param {string} projectPath - Project to read details from
- * @returns {Promise<DenoConfig>} - Detected version
+ * @returns {Promise<ProjectInfo>} - Detected version
  */
 export const detect = async (projectPath) =>
   d.anyOf(projectPath, 'deno', [

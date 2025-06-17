@@ -1,19 +1,18 @@
-/**
- * Rust project version and name detection
- * @module detect/rust
- */
-
 import toml from '@iarna/toml';
 import path from 'path';
 import * as d from '../detect.js';
 import * as u from '../update.js';
 
 /**
+ * @typedef {import('../detect.js').ProjectInfo} ProjectInfo
+ */
+
+/**
  * Detect version from a Rust project
  * Looking for Cargo.toml file
  *
  * @param {string} projectPath - Project to read details from
- * @returns {Promise<RustConfig>} - Detected version
+ * @returns {Promise<ProjectInfo>} - Detected version
  */
 export const detect = async (projectPath) =>
   d.anyOf(projectPath, 'rust', [

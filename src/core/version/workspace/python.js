@@ -1,19 +1,18 @@
-/**
- * Python project version and name detection
- * @module detect/python
- */
-
 import toml from '@iarna/toml';
 import path from 'path';
 import * as d from '../detect.js';
 import * as u from '../update.js';
 
 /**
+ * @typedef {import('../detect.js').ProjectInfo} ProjectInfo
+ */
+
+/**
  * Detect version from a Python project
  * Looking for pyproject.toml, poetry.toml, setup.py, setup.cfg, and __init__.py
  *
  * @param {string} projectPath - Project to read details from
- * @returns {Promise<PythonConfig>} - Detected version
+ * @returns {Promise<ProjectInfo>} - Detected version
  */
 export const detect = async (projectPath) =>
   d.anyOf(projectPath, 'python', [

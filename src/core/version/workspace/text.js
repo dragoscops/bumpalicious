@@ -1,18 +1,17 @@
-/**
- * Text-based project version and name detection
- * @module detect/text
- */
-
 import path from 'path';
 import * as d from '../detect.js';
 import * as u from '../update.js';
+
+/**
+ * @typedef {import('../detect.js').ProjectInfo} ProjectInfo
+ */
 
 /**
  * Detect version from a text-based project
  * Looking for version or VERSION files
  *
  * @param {string} projectPath - Project to read details from
- * @returns {Promise<TextConfig>} - Detected version
+ * @returns {Promise<ProjectInfo>} - Detected version
  */
 export const detect = async (projectPath) =>
   d.anyOf(projectPath, 'text', [
