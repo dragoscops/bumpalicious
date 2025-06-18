@@ -57,8 +57,8 @@ jobs:
           branch: ${{ github.ref }}
           pr: true
           # pr_auto_merge: true
+          pr_version_prefix: bump_version
           short_tag: true
-          version_bump_prefix: bump_version
 
       - name: Create GitHub Release
         if: steps.version_step.outputs.tag != '' && github.event_name == 'push' && github.ref == 'refs/heads/main'
