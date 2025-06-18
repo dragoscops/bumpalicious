@@ -3,3 +3,5 @@
 
 .vite
 .jscpd/html
+
+/node_modules/.vite
