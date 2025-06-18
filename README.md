@@ -7,7 +7,7 @@
 <!-- [![Downloads](https://img.shields.io/github/downloads/dragoscops/bumpalicious/total.svg?style=flat-square)](https://github.com/dragoscops/bumpalicious/releases) -->
 <!-- [![Used by](https://img.shields.io/github/workflow/status/search?query=uses%3Adragoscops%2Fbumpalicious&style=flat-square&label=used%20by)](https://github.com/search?q=uses%3Adragoscops%2Fbumpalicious&type=code) -->
 
-![Jscpd](https://raw.githubusercontent.com/dragoscops/bumpalicious/main/.jscpd/jscpd-badge.svg?sanitize=true)
+![Jscpd](https://raw.githubusercontent.com/dragoscops/bumpalicious/v2/.jscpd/jscpd-badge.svg?sanitize=true)
 [![Test Bumpalicious Action](https://github.com/dragoscops/bumpalicious/actions/workflows/ci.yml/badge.svg)](https://github.com/dragoscops/bumpalicious/actions/workflows/ci.yml)
 ![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/dragoscops/version-update?labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit%20Reviews)
 
@@ -18,18 +18,49 @@
 [![Donate to this project using Patreon](https://img.shields.io/badge/patreon-donate-yellow.svg)](https://patreon.com/dragoscirjan)
 [![Donate to this project using Paypal](https://img.shields.io/badge/paypal-donate-yellow.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=QBP6DEBJDEMV2&source=url)
 
+## Table of Contents
+
+- [Features](#features)
+- [Usage](#usage)
+- [Inputs](#inputs)
+  - [Workspace Types](#workspace-types)
+- [Outputs](#outputs)
+- [Examples](#examples)
+  - [Basic Usage](#basic-usage-single-project)
+  - [Language-Specific Examples](#language-specific-examples)
+    - [Node.js Project](#nodejs-project)
+    - [Python Project](#python-project)
+    - [Deno Project](#deno-project)
+    - [Go Project](#go-project)
+    - [Rust Project](#rust-project)
+    - [Zig Project](#zig-project)
+    - [Text-based Version Files](#text-based-version-files)
+  - [Monorepo Examples](#monorepo-examples)
+    - [Multi-language Monorepo](#multi-language-monorepo)
+    - [Microservices Architecture](#microservices-architecture)
+    - [Full-stack Application](#full-stack-application)
+  - [Advanced Examples](#advanced-examples)
+    - [With Custom Branch and Auto-merge](#with-custom-branch-and-auto-merge)
+    - [Pre-release Workflow](#pre-release-workflow)
+    - [Production Release Workflow](#production-release-workflow)
+- [Version Bump Rules](#version-bump-rules)
+  - [Pre-release Version Handling](#pre-release-version-handling)
+- [Changelog Generation](#changelog-generation)
+  - [How it works](#how-it-works)
+  - [Conventional Commits](#conventional-commits)
+  - [Example CHANGELOG.md](#example-changelogmd)
 
 ## Features
 
 - Automatically detects version files in projects
 - Supports multiple languages and project types:
-  - Deno (deno.json, deno.jsonc, jsr.json)
-  - Go (version.txt, version.go)
-  - Node.js (package.json, jsr.json)
-  - Python (pyproject.toml, setup.py, setup.cfg)
-  - Rust (Cargo.toml)
-  - Zig (build.zig)
-  - Generic text-based versioning (version, VERSION, etc.)
+  - **Deno**: `deno.json`, `deno.jsonc`, `jsr.json`, `package.json`
+  - **Go**: `go.mod` (with version comments), `version.go`, `version.txt`, `VERSION.txt`
+  - **Node.js**: `package.json`, `jsr.json`
+  - **Python**: `pyproject.toml`, `poetry.toml`, `setup.py`, `setup.cfg`, `__init__.py`
+  - **Rust**: `Cargo.toml`
+  - **Zig**: `build.zig`, `build.zig.zon`
+  - **Text-based**: `version`, `version.txt`, `VERSION`, `VERSION.txt`
 - Smart pre-release version handling that understands semantic versioning
 - Updates version numbers according to conventional commits
 - Supports monorepos with multiple project types
@@ -59,7 +90,7 @@ jobs:
           fetch-depth: 0
 
       - name: Update Version
-        uses: dragoscops/bumpalicious@v2.0
+        uses: dragoscops/bumpalicious@v2
         with:
           workspaces: ".:node"
           pr: "true"
@@ -87,13 +118,13 @@ jobs:
 
 The following workspace types are supported:
 
-- `deno`: Deno projects using deno.json, deno.jsonc, or jsr.json
-- `go`: Go projects (creates a version.txt or updates version.go)
-- `node`: Node.js projects using package.json or jsr.json
-- `python`: Python projects using pyproject.toml, setup.py, or setup.cfg
-- `rust`: Rust projects using Cargo.toml
-- `text`: Generic text-based version files
-- `zig`: Zig projects using build.zig
+- **`deno`**: Deno projects using `deno.json`, `deno.jsonc`, `jsr.json`, or `package.json`
+- **`go`**: Go projects using `go.mod` (with version comments), `version.go`, `version.txt`, or `VERSION.txt`
+- **`node`**: Node.js projects using `package.json` or `jsr.json`
+- **`python`**: Python projects using `pyproject.toml`, `poetry.toml`, `setup.py`, `setup.cfg`, or `__init__.py`
+- **`rust`**: Rust projects using `Cargo.toml`
+- **`text`**: Generic text-based version files (`version`, `version.txt`, `VERSION`, `VERSION.txt`)
+- **`zig`**: Zig projects using `build.zig` or `build.zig.zon`
 
 ## Outputs
 
@@ -110,27 +141,182 @@ The following workspace types are supported:
 ### Basic Usage (Single Project)
 
 ```yaml
-uses: dragoscops/bumpalicious@v2.0
+uses: dragoscops/bumpalicious@v2
 with:
   workspaces: ".:node"
 ```
 
-### Monorepo with Multiple Project Types
+### Language-Specific Examples
+
+#### Node.js Project
 
 ```yaml
-uses: dragoscops/bumpalicious@v2.0
+uses: dragoscops/bumpalicious@v2
 with:
-  workspaces: ".:node,packages/api:python,packages/ui:node"
+  workspaces: ".:node"
+  pr: "true"
+  changelog_preset: "conventionalcommits"
+```
+
+#### Python Project
+
+```yaml
+uses: dragoscops/bumpalicious@v2
+with:
+  workspaces: ".:python"
+  pr: "true"
+  pr_message: "chore: bump Python package version"
+```
+
+#### Deno Project
+
+```yaml
+uses: dragoscops/bumpalicious@v2
+with:
+  workspaces: ".:deno"
+  pr: "true"
+  short_tag: "true"
+```
+
+#### Go Project
+
+```yaml
+uses: dragoscops/bumpalicious@v2
+with:
+  workspaces: ".:go"
+  pr: "true"
+  pr_auto_merge: "true"
+```
+
+#### Rust Project
+
+```yaml
+uses: dragoscops/bumpalicious@v2
+with:
+  workspaces: ".:rust"
+  pr: "true"
+  branch: "develop"
+```
+
+#### Zig Project
+
+```yaml
+uses: dragoscops/bumpalicious@v2
+with:
+  workspaces: ".:zig"
+  pr: "true"
+  changelog_preset: "conventionalcommits"
+```
+
+#### Text-based Version Files
+
+```yaml
+uses: dragoscops/bumpalicious@v2
+with:
+  workspaces: ".:text"
   pr: "true"
 ```
 
-### Create both PR and Tags
+### Monorepo Examples
+
+#### Multi-language Monorepo
 
 ```yaml
-uses: dragoscops/bumpalicious@v2.0
+uses: dragoscops/bumpalicious@v2
 with:
+  workspaces: ".:node,packages/api:python,packages/ui:node,tools/cli:go,libs/core:rust"
   pr: "true"
+  changelog_preset: "conventionalcommits"
+```
+
+#### Microservices Architecture
+
+```yaml
+uses: dragoscops/bumpalicious@v2
+with:
+  workspaces: "services/auth:node,services/payment:python,services/notification:go,services/analytics:rust"
+  pr: "true"
+  pr_auto_merge: "true"
   short_tag: "true"
+```
+
+#### Full-stack Application
+
+```yaml
+uses: dragoscops/bumpalicious@v2
+with:
+  workspaces: "frontend:node,backend:python,mobile:text,docs:text"
+  pr: "true"
+  pr_message: "chore: version bump across all components"
+```
+
+### Advanced Examples
+
+#### With Custom Branch and Auto-merge
+
+```yaml
+uses: dragoscops/bumpalicious@v2
+with:
+  workspaces: ".:node"
+  pr: "true"
+  pr_auto_merge: "true"
+  branch: "develop"
+  short_tag: "true"
+```
+
+#### Pre-release Workflow
+
+```yaml
+name: Pre-release Version Update
+on:
+  push:
+    branches: [develop]
+
+jobs:
+  version-update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Update Pre-release Version
+        uses: dragoscops/bumpalicious@v2
+        with:
+          workspaces: ".:node"
+          pr: "true"
+          pr_message: "chore: pre-release version update"
+          branch: "develop"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
+#### Production Release Workflow
+
+```yaml
+name: Production Release
+on:
+  push:
+    branches: [main]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Update Version and Create Release
+        uses: dragoscops/bumpalicious@v2
+        with:
+          workspaces: ".:node,packages/lib:python,tools:go"
+          pr: "true"
+          pr_auto_merge: "true"
+          short_tag: "true"
+          changelog_preset: "conventionalcommits"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ## Version Bump Rules
