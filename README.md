@@ -4,14 +4,13 @@
 
 [![MIT License](https://img.shields.io/github/license/dragoscops/bumpalicious.svg?style=flat-square)](https://github.com/dragoscops/bumpalicious/blob/master/LICENSE)
 [![Marketplace](https://img.shields.io/badge/GitHub%20Actions-Marketplace-blue.svg?style=flat-square)](https://github.com/marketplace/actions/bumpalicious)
+
 <!-- [![Downloads](https://img.shields.io/github/downloads/dragoscops/bumpalicious/total.svg?style=flat-square)](https://github.com/dragoscops/bumpalicious/releases) -->
 <!-- [![Used by](https://img.shields.io/github/workflow/status/search?query=uses%3Adragoscops%2Fbumpalicious&style=flat-square&label=used%20by)](https://github.com/search?q=uses%3Adragoscops%2Fbumpalicious&type=code) -->
 
 ![Jscpd](https://raw.githubusercontent.com/dragoscops/bumpalicious/v2/.jscpd/jscpd-badge.svg?sanitize=true)
 [![Test Bumpalicious Action](https://github.com/dragoscops/bumpalicious/actions/workflows/ci.yml/badge.svg)](https://github.com/dragoscops/bumpalicious/actions/workflows/ci.yml)
 ![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/dragoscops/version-update?labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit%20Reviews)
-
-
 
 <!-- Donation Badges -->
 
@@ -102,17 +101,17 @@ jobs:
 
 ## Inputs
 
-| Name                | Description                                                    | Required | Default               |
-| ------------------- | -------------------------------------------------------------- | -------- | --------------------- |
-| `workspaces`        | Comma-separated workspace definitions with format "path:type"  | No       | `.:text`              |
-| `token`             | GitHub token for actions like creating pull requests           | No       | `${{ github.token }}` |
-| `github_token`      | Alternative to token (for backward compatibility)              | No       | -                     |
-| `pr`                | Whether to create a pull request with version changes          | No       | `false`               |
-| `pr_auto_merge`     | Whether to automatically merge the PR if all checks pass       | No       | `false`               |
-| `pr_message`        | Message to use for the pull request                            | No       | `chore: version update` |
-| `branch`            | Target branch for pull requests                                | No       | `main`                |
-| `changelog_preset`  | The conventional-changelog preset to use                       | No       | `conventionalcommits` |
-| `short_tag`         | Create short version tags (e.g., v1.2 for v1.2.3)              | No       | `false`               |
+| Name               | Description                                                   | Required | Default                 |
+| ------------------ | ------------------------------------------------------------- | -------- | ----------------------- |
+| `workspaces`       | Comma-separated workspace definitions with format "path:type" | No       | `.:text`                |
+| `token`            | GitHub token for actions like creating pull requests          | No       | `${{ github.token }}`   |
+| `github_token`     | Alternative to token (for backward compatibility)             | No       | -                       |
+| `pr`               | Whether to create a pull request with version changes         | No       | `false`                 |
+| `pr_auto_merge`    | Whether to automatically merge the PR if all checks pass      | No       | `false`                 |
+| `pr_message`       | Message to use for the pull request                           | No       | `chore: version update` |
+| `branch`           | Target branch for pull requests                               | No       | `main`                  |
+| `changelog_preset` | The conventional-changelog preset to use                      | No       | `conventionalcommits`   |
+| `short_tag`        | Create short version tags (e.g., v1.2 for v1.2.3)             | No       | `false`                 |
 
 ### Workspace Types
 
@@ -142,8 +141,10 @@ The following workspace types are supported:
 
 ```yaml
 uses: dragoscops/bumpalicious@v2
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 with:
-  workspaces: ".:node"
+  workspaces: ".:version"
 ```
 
 ### Language-Specific Examples
@@ -152,69 +153,70 @@ with:
 
 ```yaml
 uses: dragoscops/bumpalicious@v2
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 with:
   workspaces: ".:node"
-  pr: "true"
-  changelog_preset: "conventionalcommits"
 ```
 
 #### Python Project
 
 ```yaml
 uses: dragoscops/bumpalicious@v2
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 with:
   workspaces: ".:python"
-  pr: "true"
-  pr_message: "chore: bump Python package version"
 ```
 
 #### Deno Project
 
 ```yaml
 uses: dragoscops/bumpalicious@v2
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 with:
   workspaces: ".:deno"
-  pr: "true"
-  short_tag: "true"
 ```
 
 #### Go Project
 
 ```yaml
 uses: dragoscops/bumpalicious@v2
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 with:
   workspaces: ".:go"
-  pr: "true"
-  pr_auto_merge: "true"
 ```
 
 #### Rust Project
 
 ```yaml
 uses: dragoscops/bumpalicious@v2
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 with:
   workspaces: ".:rust"
-  pr: "true"
-  branch: "develop"
 ```
 
 #### Zig Project
 
 ```yaml
 uses: dragoscops/bumpalicious@v2
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 with:
   workspaces: ".:zig"
-  pr: "true"
-  changelog_preset: "conventionalcommits"
 ```
 
 #### Text-based Version Files
 
 ```yaml
 uses: dragoscops/bumpalicious@v2
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 with:
   workspaces: ".:text"
-  pr: "true"
 ```
 
 ### Monorepo Examples
@@ -279,7 +281,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      
+
       - name: Update Pre-release Version
         uses: dragoscops/bumpalicious@v2
         with:
@@ -306,7 +308,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      
+
       - name: Update Version and Create Release
         uses: dragoscops/bumpalicious@v2
         with:
@@ -348,7 +350,7 @@ This action can automatically generate CHANGELOG.md files for each workspace bas
    - Identify workspaces that have changed since the last tag
    - Update the version numbers according to conventional commit messages
    - Intelligently handle pre-release versions (alpha, beta, etc.)
-   - Generate or update CHANGELOG.md files in each workspace 
+   - Generate or update CHANGELOG.md files in each workspace
    - Create a PR with changelog content (if `pr: true`)
    - Create Git tags for the new version (if `short_tag: true`, will also create shorter tags like v1.2)
 
@@ -365,6 +367,7 @@ For optimal version management and changelog generation, your commits must follo
 ```
 
 Common types include:
+
 - `feat`: A new feature (triggers minor version bump)
 - `fix`: A bug fix (triggers patch version bump)
 - `docs`: Documentation changes
@@ -389,11 +392,12 @@ The generated changelog will look similar to:
 
 ### Features
 
-* **api:** add new endpoint for user preferences ([a1b2c3d](https://github.com/user/repo/commit/a1b2c3d))
-* add support for configuration files ([e4f5g6h](https://github.com/user/repo/commit/e4f5g6h))
+- **api:** add new endpoint for user preferences ([a1b2c3d](https://github.com/user/repo/commit/a1b2c3d))
+- add support for configuration files ([e4f5g6h](https://github.com/user/repo/commit/e4f5g6h))
 
 ### Bug Fixes
 
-* correct validation logic in form handler ([i7j8k9l](https://github.com/user/repo/commit/i7j8k9l))
-* **ui:** fix button alignment in mobile view ([m1n2o3p](https://github.com/user/repo/commit/m1n2o3p))
+- correct validation logic in form handler ([i7j8k9l](https://github.com/user/repo/commit/i7j8k9l))
+- **ui:** fix button alignment in mobile view ([m1n2o3p](https://github.com/user/repo/commit/m1n2o3p))
 ```
+
