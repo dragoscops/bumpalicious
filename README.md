@@ -40,6 +40,7 @@
     - [Full-stack Application](#full-stack-application)
   - [Advanced Examples](#advanced-examples)
     - [With Custom Branch and Auto-merge](#with-custom-branch-and-auto-merge)
+    - [With Custom PR Branch Prefix](#with-custom-pr-branch-prefix)
     - [Pre-release Workflow](#pre-release-workflow)
     - [Production Release Workflow](#production-release-workflow)
 - [Version Bump Rules](#version-bump-rules)
@@ -111,6 +112,7 @@ jobs:
 | `branch`           | Target branch for pull requests                               | No       | `main`                  |
 | `changelog_preset` | The conventional-changelog preset to use                      | No       | `conventionalcommits`   |
 | `short_tag`        | Create short version tags (e.g., v1.2 for v1.2.3)             | No       | `false`                 |
+| `pr_version_prefix` | Prefix for version PR branch names (e.g., "feature/" creates "feature/version-1.2.3") | No       | `""`                    |
 
 ### Workspace Types
 
@@ -264,6 +266,18 @@ with:
   workspaces: ".:node"
   pr: "true"
   pr_auto_merge: "true" # only if you want to enable auto-merge
+```
+
+#### With Custom PR Branch Prefix
+
+```yaml
+uses: dragoscops/bumpalicious@v2
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+with:
+  workspaces: ".:node"
+  pr: "true"
+  pr_version_prefix: "release/" # Creates PR branches like "release/version-1.2.3"
 ```
 
 #### Pre-release Workflow

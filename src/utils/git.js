@@ -303,7 +303,7 @@ export const branch = {
    * @param {string} version
    * @returns {Promise<string|null>} - Branch name on success, null on error
    */
-  createVersion: async (version) => branch.create(`${getOptions().version_bump_prefix}_v${version}`),
+  createVersion: async (version) => branch.create(`${getOptions().prVersionPrefix}_v${version}`),
 
   /**
    * Delete an existing branch from the repository (both local and remote).
