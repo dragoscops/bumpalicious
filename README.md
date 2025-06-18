@@ -109,10 +109,11 @@ jobs:
 | `pr`               | Whether to create a pull request with version changes         | No       | `false`                 |
 | `pr_auto_merge`    | Whether to automatically merge the PR if all checks pass      | No       | `false`                 |
 | `pr_message`       | Message to use for the pull request                           | No       | `chore: version update` |
+| `pr_version_prefix` | Prefix for version PR branch names (e.g., "feature/" creates "feature/version-1.2.3") | `version_bump` |
 | `branch`           | Target branch for pull requests                               | No       | `main`                  |
 | `changelog_preset` | The conventional-changelog preset to use                      | No       | `conventionalcommits`   |
 | `short_tag`        | Create short version tags (e.g., v1.2 for v1.2.3)             | No       | `false`                 |
-| `pr_version_prefix` | Prefix for version PR branch names (e.g., "feature/" creates "feature/version-1.2.3") | No       | `""`                    |
+
 
 ### Workspace Types
 
@@ -277,7 +278,20 @@ env:
 with:
   workspaces: ".:node"
   pr: "true"
-  pr_version_prefix: "release/" # Creates PR branches like "release/version-1.2.3"
+  pr_version_prefix: "bump_version"
+  cahangelog_preset: "angular" # or any other conventional-changelog preset
+```
+
+#### With Pull Request (with Auto-merge)
+
+```yaml
+uses: dragoscops/bumpalicious@v2
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+with:
+  workspaces: ".:node"
+  pr: "true"
+  pr_auto_merge: "true" # only if you want to enable auto-merge
 ```
 
 #### Pre-release Workflow
