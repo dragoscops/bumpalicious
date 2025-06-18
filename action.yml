@@ -26,6 +26,10 @@ inputs:
     description: "This message will be used for the pull request"
     required: false
     default: "chore: version update"
+  pr_version_prefix:
+    description: "The prefix of the branch to create the version bump on, defaults to the current branch"
+    required: false
+    default: version_bump
   short_tag:
     description: "Use short tags for versioning"
     required: false
@@ -38,18 +42,6 @@ inputs:
     description: 'Comma-separated workspace definitions with format "path:type", e.g., ".:text,packages/node:node"'
     required: false
     default: ".:text"
-
-# outputs:
-#   changed_workspaces_info:
-#     description: 'Comma-separated list of changed workspaces with format "path:type:name:version"'
-#   updated_workspaces_info:
-#     description: 'Comma-separated list of updated workspaces with format "path:type:name:version"'
-#   version:
-#     description: "The new version after update"
-#   pr_number:
-#     description: "Pull request number if one was created"
-#   pr_url:
-#     description: "Pull request URL if one was created"
 
 runs:
   using: "node20"

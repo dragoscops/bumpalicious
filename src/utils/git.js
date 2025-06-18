@@ -1,12 +1,8 @@
-/**
- * Git operations utility
- * @module utils/git
- */
-
 import {logger} from './logging.js';
 import {projectName} from '../constants.js';
 import {exec} from './exec.js';
 import path from 'path';
+import {getOptions} from './github.js';
 
 export const log = logger.child({module: `${projectName}/utils/git`});
 
@@ -307,7 +303,7 @@ export const branch = {
    * @param {string} version
    * @returns {Promise<string|null>} - Branch name on success, null on error
    */
-  createVersion: async (version) => branch.create(`version_bump_v${version}`),
+  createVersion: async (version) => branch.create(`${getOptions().prVersionPrefix}_v${version}`),
 
   /**
    * Delete an existing branch from the repository (both local and remote).

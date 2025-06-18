@@ -1,8 +1,3 @@
-/**
- * GitHub API utilities
- * @module utils/github
- */
-
 import * as core from '@actions/core';
 import {getOctokit} from '@actions/github';
 import {logger} from './logging.js';
@@ -19,6 +14,7 @@ const log = logger.child({module: 'utils/github'});
  *
  * @typedef {Object} ActionOptions
  * @property {string} branch - Target branch for pull requests
+ * @property {string} prVersionPrefix - Branch to use for version bumps
  * @property {boolean} pr - Whether to create a pull request with version changes
  * @property {string} prMessage - Message to use for the pull request
  * @property {string} prAutoMerge - Whether to automatically merge the pull request
@@ -39,6 +35,7 @@ export function getOptions() {
     pr: core.getInput('pr') === 'true',
     prAutoMerge: core.getInput('pr_auto_merge') === 'true',
     prMessage: core.getInput('pr_message'),
+    prVersionPrefix: core.getInput('pr_version_prefix') || 'version_bump',
     shortTag: core.getInput('short_tag') === 'true',
     token: process.env.GITHUB_TOKEN ?? core.getInput('github_token', {required: true}),
     workspaces: core.getInput('workspaces')
