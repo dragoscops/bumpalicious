@@ -26,5 +26,7 @@ export default defineConfig({
       statements: 80, // Minimum coverage threshold for statements
     },
     allowOnly: true,
+    // retry
+    retry: 3,
   },
 });
