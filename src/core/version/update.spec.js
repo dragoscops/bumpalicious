@@ -8,6 +8,7 @@ import {
   createJsonFile,
 } from '../../vitest/setup.detect-update.tests.js';
 import {mockPinoIn, setupPinoLoggingCallsTest, unMockPinoIn} from '../../vitest/setup.logging.tests.js';
+import path from 'path';
 
 // Generator functions for different test scenarios
 const generatePackageJsonCreator = async () => {
@@ -83,19 +84,12 @@ describe('core/version/update.js', () => {
       await setupVersionUpdateTest({
         creator: generatePackageJsonCreator,
         updater: async (projectPath, version) => {
-          // Change to the project directory to test relative paths
-          const originalCwd = process.cwd();
-          try {
-            process.chdir(projectPath);
-            const updaterFn = update.configUpdater('package.json', {
-              parser: JSON.parse,
-              serializer: (data) => JSON.stringify(data, null, 2),
-              version: ['version'],
-            });
-            return await updaterFn(version);
-          } finally {
-            process.chdir(originalCwd);
-          }
+          const updaterFn = update.configUpdater(path.join(projectPath, 'package.json'), {
+            parser: JSON.parse,
+            serializer: (data) => JSON.stringify(data, null, 2),
+            version: ['version'],
+          });
+          return await updaterFn(version);
         },
         expected: `"version": "${newVersion}"`,
       });
@@ -105,18 +99,12 @@ describe('core/version/update.js', () => {
       await setupVersionUpdateTest({
         creator: generateGoModCreator,
         updater: async (projectPath, version) => {
-          const originalCwd = process.cwd();
-          try {
-            process.chdir(projectPath);
-            const updaterFn = update.configUpdater('go.mod', {
-              parser: (data) => data, // pass through
-              serializer: (data) => data,
-              version: [[/\/\/\s*[vV]ersion:?\s*(\d+\.\d+\.\d+(?:[-+][\da-zA-Z.]+)*)/m, '// version: $VERSION']],
-            });
-            return await updaterFn(version);
-          } finally {
-            process.chdir(originalCwd);
-          }
+          const updaterFn = update.configUpdater(path.join(projectPath, 'go.mod'), {
+            parser: (data) => data, // pass through
+            serializer: (data) => data,
+            version: [[/\/\/\s*[vV]ersion:?\s*(\d+\.\d+\.\d+(?:[-+][\da-zA-Z.]+)*)/m, '// version: $VERSION']],
+          });
+          return await updaterFn(version);
         },
         expected: `// version: ${newVersion}`,
       });
@@ -126,18 +114,12 @@ describe('core/version/update.js', () => {
       await setupVersionUpdateTest({
         creator: generateVersionFileCreator,
         updater: async (projectPath, version) => {
-          const originalCwd = process.cwd();
-          try {
-            process.chdir(projectPath);
-            const updaterFn = update.configUpdater('version', {
-              parser: (data) => data, // pass through
-              serializer: (data) => data,
-              version: [(data) => version], // Use the passed version parameter
-            });
-            return await updaterFn(version);
-          } finally {
-            process.chdir(originalCwd);
-          }
+          const updaterFn = update.configUpdater(path.join(projectPath, 'version'), {
+            parser: (data) => data, // pass through
+            serializer: (data) => data,
+            version: [(data) => version], // Use the passed version parameter
+          });
+          return await updaterFn(version);
         },
         expected: newVersion,
       });
@@ -151,15 +133,9 @@ describe('core/version/update.js', () => {
           return projectPath;
         },
         updater: async (projectPath, version) => {
-          const originalCwd = process.cwd();
-          try {
-            process.chdir(projectPath);
-            const result = await update.configUpdater('missing.json')(version);
-            // For this test, we expect the result to be false, but we need to return truthy for the test framework
-            return result === false ? true : result;
-          } finally {
-            process.chdir(originalCwd);
-          }
+          const result = await update.configUpdater(path.join(projectPath, 'missing.json'))(version);
+          // For this test, we expect the result to be false, but we need to return truthy for the test framework
+          return result === false ? true : result;
         },
         expected: undefined, // No content should be written
         validator: async () => {
@@ -175,24 +151,18 @@ describe('core/version/update.js', () => {
       await setupVersionUpdateTest({
         creator: generateMultiFileCreator,
         updater: async (projectPath, version) => {
-          const originalCwd = process.cwd();
-          try {
-            process.chdir(projectPath);
-            return await update.updateAll(projectPath, 'test', version, [
-              update.configUpdater('package.json', {
-                parser: JSON.parse,
-                serializer: (data) => JSON.stringify(data, null, 2),
-                version: ['version'],
-              }),
-              update.configUpdater('version', {
-                parser: (data) => data, // pass through
-                serializer: (data) => data,
-                version: [(data) => version], // Function that returns the version
-              }),
-            ]);
-          } finally {
-            process.chdir(originalCwd);
-          }
+          return await update.updateAll(projectPath, 'test', version, [
+            update.configUpdater(path.join(projectPath, 'package.json'), {
+              parser: JSON.parse,
+              serializer: (data) => JSON.stringify(data, null, 2),
+              version: ['version'],
+            }),
+            update.configUpdater(path.join(projectPath, 'version'), {
+              parser: (data) => data, // pass through
+              serializer: (data) => data,
+              version: [(data) => version], // Function that returns the version
+            }),
+          ]);
         },
         expected: [`"version": "${newVersion}"`, newVersion],
       });
@@ -218,24 +188,18 @@ go 1.21
           return projectPath;
         },
         updater: async (projectPath, version) => {
-          const originalCwd = process.cwd();
-          try {
-            process.chdir(projectPath);
-            return await update.updateFirst(projectPath, 'test', version, [
-              update.configUpdater('go.mod', {
-                parser: (data) => data, // pass through
-                serializer: (data) => data,
-                version: [[/\/\/\s*[vV]ersion:?\s*(\d+\.\d+\.\d+(?:[-+][\da-zA-Z.]+)*)/m, '// version: $VERSION']],
-              }),
-              update.configUpdater('version', {
-                parser: (data) => data, // pass through
-                serializer: (data) => data,
-                version: [(data) => version],
-              }),
-            ]);
-          } finally {
-            process.chdir(originalCwd);
-          }
+          return await update.updateFirst(projectPath, 'test', version, [
+            update.configUpdater(path.join(projectPath, 'go.mod'), {
+              parser: (data) => data, // pass through
+              serializer: (data) => data,
+              version: [[/\/\/\s*[vV]ersion:?\s*(\d+\.\d+\.\d+(?:[-+][\da-zA-Z.]+)*)/m, '// version: $VERSION']],
+            }),
+            update.configUpdater(path.join(projectPath, 'version'), {
+              parser: (data) => data, // pass through
+              serializer: (data) => data,
+              version: [(data) => version],
+            }),
+          ]);
         },
         expected: `// version: ${newVersion}`, // Only go.mod should be updated (first match)
         validator: async (projectPath) => {

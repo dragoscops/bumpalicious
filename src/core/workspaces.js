@@ -147,40 +147,30 @@ export async function enrichChangedWorkspaces(workspaces, lastTag) {
  * @returns {Promise<Workspace>}
  */
 export async function enrichWorkspace(workspacePath, workspaceType) {
-  // Change directory to workspace path
-  const originalDir = process.env.GITHUB_WORKSPACE ?? process.cwd();
-  process.chdir(originalDir);
-
   workspacePath = path.resolve(workspacePath).replace(/\\/g, '/'); // Normalize path for consistency
-  process.chdir(workspacePath);
 
-  try {
-    let name = '';
-    let version = '';
+  let name = '';
+  let version = '';
 
-    if (workspaceDetect[workspaceType]) {
-      ({name, version} = await workspaceDetect[workspaceType].detect(workspacePath));
-    } else {
-      // Default to text version if type is unknown
-      ({name, version} = await workspaceDetect.text.detect(workspacePath));
-      log.warn({workspaceType, workspacePath}, LOG_MESSAGES.UNKNOWN_WORKSPACE_TYPE);
-    }
-
-    // Use directory name as fallback for project name
-    if (!name) {
-      name = path.basename(workspacePath);
-    }
-
-    return {
-      path: workspacePath,
-      type: workspaceType.toLowerCase(),
-      name,
-      version,
-    };
-  } finally {
-    // Restore original directory
-    process.chdir(originalDir);
+  if (workspaceDetect[workspaceType]) {
+    ({name, version} = await workspaceDetect[workspaceType].detect(workspacePath));
+  } else {
+    // Default to text version if type is unknown
+    ({name, version} = await workspaceDetect.text.detect(workspacePath));
+    log.warn({workspaceType, workspacePath}, LOG_MESSAGES.UNKNOWN_WORKSPACE_TYPE);
   }
+
+  // Use directory name as fallback for project name
+  if (!name) {
+    name = path.basename(workspacePath);
+  }
+
+  return {
+    path: workspacePath,
+    type: workspaceType.toLowerCase(),
+    name,
+    version,
+  };
 }
 
 /**
@@ -235,9 +225,6 @@ export async function updateVersionsForWorkspaces(workspaces, {generateChangelog
     }
 
     try {
-      // // Change to workspace directory
-      // process.chdir(originalDir);
-      // process.chdir(path.resolve(workspace.path));
       log.info(
         {workspaceName: workspace.name, workspacePath: workspace.path, version: workspace.version},
         LOG_MESSAGES.VERSION_UPDATE_START,
@@ -278,9 +265,6 @@ export async function updateVersionsForWorkspaces(workspaces, {generateChangelog
         },
         LOG_MESSAGES.VERSION_UPDATE_ERROR,
       );
-    } finally {
-      // Restore original directory
-      process.chdir(originalDir);
     }
   }
 

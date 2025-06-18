@@ -3,16 +3,6 @@ import {describe, it, expect, beforeEach, vi, afterEach} from 'vitest';
 import * as workspace from './workspace.js';
 
 describe('utils/workspace.js module', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-
-    vi.spyOn(process, 'chdir').mockImplementation(() => {});
-  });
-
-  afterEach(() => {
-    vi.clearAllMocks();
-  });
-
   describe('stringToWorkspace', () => {
     it('will parse path and type', async () => {
       const result = workspace.stringToWorkspace('.:text');

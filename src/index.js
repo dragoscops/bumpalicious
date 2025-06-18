@@ -1,11 +1,3 @@
-/**
- * GitHub Action for automated version management
- * Detects changed workspaces, bumps versions according to semantic versioning rules,
- * and optionally creates pull requests and/or tags
- *
- * @module index
- */
-
 import core from '@actions/core';
 import * as workspaces from './core/workspaces.js';
 import * as git from './utils/git.js';
@@ -13,6 +5,7 @@ import * as github from './utils/github.js';
 import {logger} from './utils/logging.js';
 import * as workspace from './utils/workspace.js';
 import {projectName} from './constants.js';
+import * as exec from './utils/exec.js';
 
 const log = logger.child({module: projectName});
 
@@ -25,6 +18,7 @@ const run = async () => {
   try {
     // Get input parameters as a single options object
     const options = github.getOptions();
+    exec.setCwd(process.env.GITHUB_WORKSPACE || process.cwd());
 
     //======================================================================
 
@@ -50,14 +44,20 @@ const run = async () => {
 
     //======================================================================
 
-    core.startGroup('Setting up Github');
-    // Setup git user
-    await git.config.set({
-      'user.name': 'GitHub Actions',
-      'user.email': 'actions@github.com',
-      'safe.directory': process.env.GITHUB_WORKSPACE || process.cwd(),
-    });
-    core.endGroup();
+    {
+      core.startGroup('Setting up Github');
+      // Setup git user
+      const result = await git.config.set({
+        'user.name': 'GitHub Actions',
+        'user.email': 'actions@github.com',
+        'safe.directory': process.env.GITHUB_WORKSPACE || process.cwd(),
+      });
+      core.endGroup();
+      if (!result) {
+        core.error('Failed to set up git user configuration');
+        return;
+      }
+    }
 
     //======================================================================
 
