@@ -58,12 +58,7 @@ jobs:
           pr: true
           # pr_auto_merge: true
           short_tag: true
-
-      - name: Output Results
-        # if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: |
-          echo "Version Tag: ${{ steps.version_step.outputs.tag }}"
-          echo "Version Status: ${{ steps.version_step.outcome }}"
+          version_bump_prefix: bump_version
 
       - name: Create GitHub Release
         if: steps.version_step.outputs.tag != '' && github.event_name == 'push' && github.ref == 'refs/heads/main'

@@ -1,8 +1,3 @@
-/**
- * GitHub API utilities
- * @module utils/github
- */
-
 import * as core from '@actions/core';
 import {getOctokit} from '@actions/github';
 import {logger} from './logging.js';
@@ -24,6 +19,7 @@ const log = logger.child({module: 'utils/github'});
  * @property {string} prAutoMerge - Whether to automatically merge the pull request
  * @property {string} shortTag - Whether to use short tags (e.g. v1.0.0) instead of full commit hashes
  * @property {string} token - GitHub token for actions like creating pull requests
+ * @property {string} version_bump_prefix - Branch to use for version bumps
  * @property {Workspace[]} workspaces - Comma-separated workspace definitions with format "path:type"
  * @property {ChangelogPreset} changelogPreset - The conventional-changelog preset to use (default: conventionalcommits)
  */
@@ -41,6 +37,7 @@ export function getOptions() {
     prMessage: core.getInput('pr_message'),
     shortTag: core.getInput('short_tag') === 'true',
     token: process.env.GITHUB_TOKEN ?? core.getInput('github_token', {required: true}),
+    version_bump_prefix: core.getInput('version_bump_prefix') || 'version_bump',
     workspaces: core.getInput('workspaces')
       ? core.getInput('workspaces').split(',').map(workspace.stringToWorkspace)
       : [],
