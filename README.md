@@ -105,7 +105,6 @@ jobs:
 | ------------------ | ------------------------------------------------------------- | -------- | ----------------------- |
 | `workspaces`       | Comma-separated workspace definitions with format "path:type" | No       | `.:text`                |
 | `token`            | GitHub token for actions like creating pull requests          | No       | `${{ github.token }}`   |
-| `github_token`     | Alternative to token (for backward compatibility)             | No       | -                       |
 | `pr`               | Whether to create a pull request with version changes         | No       | `false`                 |
 | `pr_auto_merge`    | Whether to automatically merge the PR if all checks pass      | No       | `false`                 |
 | `pr_message`       | Message to use for the pull request                           | No       | `chore: version update` |
@@ -225,45 +224,46 @@ with:
 
 ```yaml
 uses: dragoscops/bumpalicious@v2
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 with:
   workspaces: ".:node,packages/api:python,packages/ui:node,tools/cli:go,libs/core:rust"
-  pr: "true"
-  changelog_preset: "conventionalcommits"
-```
-
-#### Microservices Architecture
-
-```yaml
-uses: dragoscops/bumpalicious@v2
-with:
-  workspaces: "services/auth:node,services/payment:python,services/notification:go,services/analytics:rust"
-  pr: "true"
-  pr_auto_merge: "true"
-  short_tag: "true"
-```
-
-#### Full-stack Application
-
-```yaml
-uses: dragoscops/bumpalicious@v2
-with:
-  workspaces: "frontend:node,backend:python,mobile:text,docs:text"
-  pr: "true"
-  pr_message: "chore: version bump across all components"
 ```
 
 ### Advanced Examples
 
-#### With Custom Branch and Auto-merge
+#### With Custom Branch
 
 ```yaml
 uses: dragoscops/bumpalicious@v2
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+with:
+  workspaces: ".:node"
+  branch: "develop"
+```
+
+#### With Custom Changelog Preset
+
+```yaml
+uses: dragoscops/bumpalicious@v2
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+with:
+  workspaces: ".:node"
+  cahangelog_preset: "angular" # or any other conventional-changelog preset
+```
+
+#### With Pull Request (with Auto-merge)
+
+```yaml
+uses: dragoscops/bumpalicious@v2
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 with:
   workspaces: ".:node"
   pr: "true"
-  pr_auto_merge: "true"
-  branch: "develop"
-  short_tag: "true"
+  pr_auto_merge: "true" # only if you want to enable auto-merge
 ```
 
 #### Pre-release Workflow
