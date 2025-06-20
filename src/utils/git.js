@@ -77,9 +77,14 @@ export const config = {
  */
 export async function pushChange(commitMessage, branch = 'main') {
   try {
-    await exec('git', ['add', '.']);
-    await exec('git', ['commit', '-am', commitMessage]);
-    await exec('git', ['push', 'origin', branch]);
+    for (const args in [
+      ['add', '-A'],
+      ['commit', '-am', commitMessage],
+      ['pull', 'origin', branch, '--ff-only'],
+      ['push', 'origin', branch],
+    ]) {
+      await exec('git', args);
+    }
     log.info({commitMessage}, infoChangesCommitted);
   } catch (error) {
     log.error({error}, warnFailedToCommitChanges);

@@ -71,7 +71,7 @@ const run = async () => {
       options.workspaces = await workspaces.enrichWorkspaces(options.workspaces, lastTag);
       const changedWorkspacesTrees = workspace.buildUpdatedWorkspacesTrees(options.workspaces);
       // create tag
-      workspaces.createVersionTags(changedWorkspacesTrees[0].workspace.version, options);
+      await workspaces.createVersionTags(changedWorkspacesTrees[0].workspace.version, options);
     } else {
       // If the PR message is not found, we assume the PR is not created
       // and we need go through the entire version bumping process
