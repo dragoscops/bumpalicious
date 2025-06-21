@@ -36,7 +36,7 @@ export const exec = async (command, args, options) =>
         'exec command finished',
       );
       if (exitCode !== 0) {
-        core.error(`Failed to run command: '${[command, ...args].join("', '")}'`);
+        core.error(`Failed to run command: ${command} '${args.join("', '")}'`);
       }
       resolve({stdout, stderr, exitCode});
     });

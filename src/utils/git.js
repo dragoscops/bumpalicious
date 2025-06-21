@@ -115,7 +115,7 @@ export const commits = {
    */
   createAndPush: async (commitMessage, branch = 'main') => {
     for (const args in [
-      ['add', '.'],
+      ['add', '-A'],
       ['commit', '-am', commitMessage],
       ['pull', 'origin', branch, '--ff-only'],
       ['push', 'origin', branch],
