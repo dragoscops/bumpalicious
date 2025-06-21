@@ -1,5 +1,6 @@
 import cp from 'child_process';
 import {logger} from './logging.js';
+import core from '@actions/core';
 
 export const log = logger.child({module: 'utils/exec'});
 
@@ -28,9 +29,15 @@ export const exec = async (command, args, options) =>
     ps.stderr.on('data', (data) => {
       stderr += data;
     });
-    ps.on('close', (code) => {
-      log.info({command: `${command} ${args.join(' ')}`, stdout, stderr, code, options}, 'exec command finished');
-      resolve({stdout, stderr, exitCode: code});
+    ps.on('close', (exitCode) => {
+      log.info(
+        {command: `${command} ${args.join(' ')}`, stdout, stderr, code: exitCode, options},
+        'exec command finished',
+      );
+      if (command === 'git' && exitCode !== 0) {
+        core.error('Failed to run git command');
+      }
+      resolve({stdout, stderr, exitCode});
     });
   });
 
