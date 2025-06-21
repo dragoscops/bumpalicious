@@ -66,7 +66,7 @@ describe('utils/git.js', () => {
       });
     });
 
-    describe.only('getChangedFiles()', () => {
+    describe('getChangedFiles()', () => {
       it('returns files that changed since the specified tag', async () => {
         await updateAndCommit([projectFolder], 'feat: another commit');
 
@@ -207,7 +207,8 @@ describe('utils/git.js', () => {
         await git.tag.createAndPush('v1.0.0', 'Version 1.0.0');
 
         expect(execMock).toHaveBeenNthCalledWith(2, 'git', ['tag', '-a', 'v1.0.0', '-m', 'Version 1.0.0']);
-        expect(execMock).toHaveBeenNthCalledWith(3, 'git', ['push', 'origin', 'v1.0.0']);
+        expect(execMock).toHaveBeenNthCalledWith(3, 'git', ['fetch']);
+        expect(execMock).toHaveBeenNthCalledWith(4, 'git', ['push', 'origin', 'v1.0.0']);
       });
 
       it('removes existing tag before recreating it', async () => {
@@ -221,7 +222,8 @@ describe('utils/git.js', () => {
 
         expect(execMock).toHaveBeenNthCalledWith(2, 'git', ['tag', '-d', 'v1.0.0']);
         expect(execMock).toHaveBeenNthCalledWith(3, 'git', ['tag', '-a', 'v1.0.0', '-m', 'Version 1.0.0']);
-        expect(execMock).toHaveBeenNthCalledWith(4, 'git', ['push', 'origin', 'v1.0.0']);
+        expect(execMock).toHaveBeenNthCalledWith(4, 'git', ['fetch']);
+        expect(execMock).toHaveBeenNthCalledWith(5, 'git', ['push', 'origin', 'v1.0.0']);
 
         setupPinoLoggingCallsTest('info', [{tagName: 'v1.0.0'}, git.infoTagAlreadyExists], git.log);
       });

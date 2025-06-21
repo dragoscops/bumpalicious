@@ -239,7 +239,9 @@ export const tag = {
    */
   push: async (tagName) => {
     try {
-      await exec('git', ['push', 'origin', tagName]);
+      for (const args of [['fetch'], ['push', 'origin', tagName]]) {
+        await exec('git', args);
+      }
       log.info({tagName}, infoTagPushed);
     } catch (error) {
       log.warn({tagName, error}, warnFailedToPushTag);
@@ -305,6 +307,7 @@ export const branch = {
 
   /**
    * Create a version branch
+   * TODO:  create version should not be aware of getOptions(); this is a higher functionality responsability
    * @param {string} version
    * @returns {Promise<string|null>} - Branch name on success, null on error
    */
@@ -326,7 +329,9 @@ export const branch = {
 
     // Also try to delete the branch from remote
     try {
-      await exec('git', ['push', 'origin', '--delete', branchName]);
+      for (const args of [['fetch'], ['push', 'origin', '--delete', branchName]]) {
+        await exec('git', args);
+      }
       log.info({branchName}, `Remote ${infoBranchDeleted.toLowerCase()}`);
     } catch (error) {
       log.warn({branchName, error}, `Failed to delete remote branch`);

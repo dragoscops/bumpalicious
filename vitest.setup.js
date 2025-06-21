@@ -8,6 +8,12 @@ vi.mock('@actions/core', () => {
 
   const def = {
     ...actual,
+    getInput: vi.fn((name, _options) => {
+      if (name === 'pr_version_prefix') {
+        return 'version_bump';
+      }
+      return 'value';
+    }),
     debug: vi.fn(),
     error: vi.fn(),
     info: vi.fn(),
