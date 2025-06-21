@@ -1,8 +1,9 @@
 import cp from 'child_process';
 import {logger} from './logging.js';
 import core from '@actions/core';
+import {projectName} from '../constants.js';
 
-export const log = logger.child({module: 'utils/exec'});
+export const log = logger.child({module: `${projectName}/utils/exec`});
 
 /**
  * @typedef {import('child_process').SpawnOptions} ExecOptions

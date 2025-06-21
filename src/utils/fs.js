@@ -6,8 +6,9 @@ import fs from 'fs/promises';
 import {constants, createWriteStream} from 'fs';
 import {pipeline} from 'stream/promises';
 import {logger} from './logging.js';
+import {projectName} from '../constants.js';
 
-export const log = logger.child('src/utils/fs');
+export const log = logger.child({module: `${projectName}/utils/fs`});
 
 /**
  * @typedef {string | Buffer | URL} PathLike
