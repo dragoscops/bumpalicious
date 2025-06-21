@@ -280,7 +280,7 @@ export async function updateVersionsForWorkspaces(workspaces, {generateChangelog
 export async function createVersionCommit(workspaces, options) {
   const commitMessage = `chore: version bump for workspaces: ${workspaces.map((node) => node.name).join(', ')}`;
 
-  await git.pushChange(commitMessage, options.branch);
+  await git.commits.createAndPush(commitMessage, options.branch);
 }
 
 /**
@@ -392,7 +392,7 @@ export async function createVersionPR(workspacesTree, options) {
     }
   }
 
-  await git.pushChange(prTitle, prBranch);
+  await git.commits.createAndPush(prTitle, prBranch);
 
   log.info({workspacesTree, prBranch, prTitle, prBody}, `Creating PR for version bump: ${prTitle}`);
 
