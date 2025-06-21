@@ -34,8 +34,8 @@ export const exec = async (command, args, options) =>
         {command: `${command} ${args.join(' ')}`, stdout, stderr, code: exitCode, options},
         'exec command finished',
       );
-      if (command === 'git' && exitCode !== 0) {
-        core.error(`Failed to run git command: git '${args.join("', '")}'`);
+      if (exitCode !== 0) {
+        core.error(`Failed to run command: '${[command, ...args].join("', '")}'`);
       }
       resolve({stdout, stderr, exitCode});
     });
