@@ -61,15 +61,16 @@ export const getClient = (options) => {
   try {
     return getOctokit(token);
   } catch (error) {
-    log.error('Failed to create GitHub API client', error);
+    log.error({error, options}, 'Failed to create GitHub API client');
     return null;
   }
 };
 
 /**
  * @typedef {Object} Repository
- * @property {string} owner - Repository owner
- * @property {string} repo - Repository name
+ * @property {string} ownerName - Repository owner
+ * @property {string} repoName - Repository name
+ * @property {string} repo - Repository (contains ownerName/repoName)
  */
 
 /**
@@ -78,21 +79,21 @@ export const getClient = (options) => {
  * @returns {Repository|null} - Repository object with owner and name properties or null
  */
 export const getRepository = () => {
-  const repoEnv = process.env.GITHUB_REPOSITORY;
+  const repo = process.env.GITHUB_REPOSITORY;
 
-  if (!repoEnv) {
+  if (!repo) {
     log.error('GITHUB_REPOSITORY environment variable not found');
     return null;
   }
 
-  const [owner, repo] = repoEnv.split('/');
+  const [ownerName, repoName] = repo.split('/');
 
-  if (!owner || !repo) {
-    log.error(`Invalid repository format: ${repoEnv}`);
+  if (!ownerName || !repoName) {
+    log.error(`Invalid repository format: ${repo}`);
     return null;
   }
 
-  return {owner, repo};
+  return {ownerName, repoName, repo};
 };
 
 /**
@@ -140,9 +141,10 @@ export const pr = {
         head,
         title,
         body,
+        options,
       });
 
-      log.info(`Pull request created successfully: ${pullRequest.html_url}`);
+      log.info({pullRequest}, `Pull request created successfully`);
       core.notice(`Pull request created successfully: ${pullRequest.html_url}`);
       return pullRequest;
     } catch (error) {
@@ -173,13 +175,13 @@ export const pr = {
       const {data: pullRequests} = await octokit.rest.pulls.list({
         ...repo,
         base,
-        head: `${repo.owner}:${head}`,
+        head: `${repo.ownerName}:${head}`,
         state: 'open',
       });
 
       return pullRequests.length > 0 ? pullRequests[0] : null;
     } catch (error) {
-      log.error('Failed to check for existing pull request:', error);
+      log.error({error, repo, base, head, state}, 'Failed to check for existing pull request');
       return null;
     }
   },
@@ -206,10 +208,10 @@ export const pr = {
         merge_method: mergeMethod,
       });
 
-      log.info(`Pull request #${pullNumber} merged successfully`);
+      log.info({pullNumber, mergeMethod, options}, `Pull request merged successfully`);
       return true;
     } catch (error) {
-      log.error(`Failed to merge pull request #${pullNumber}:`, error);
+      log.error({error, pullNumber, mergeMethod, options}, `Failed to merge pull request`);
       return false;
     }
   },
@@ -237,10 +239,10 @@ export const pr = {
         });
 
         if (pullRequest.merged) {
-          log.info(`Pull request #${pullNumber} has been merged`);
+          log.info({pullRequest, mergeMethod, options}, `Pull request has been merged`);
           resolve(true);
         } else {
-          log.info(`Pull request #${pullNumber} is not merged yet`);
+          log.info({pullRequest, mergeMethod, options}, `Pull request is not merged yet`);
           setTimeout(checkMerged, 5000);
         }
       };
