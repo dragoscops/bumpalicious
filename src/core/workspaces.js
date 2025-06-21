@@ -324,7 +324,7 @@ export async function createVersionPR(workspacesTree, options) {
   const rootWorkspace = rootNode.workspace;
 
   // Create a version branch
-  const prBranch = await git.branch.createVersion(rootWorkspace.version);
+  const prBranch = await git.branch.createAndPushVersion(rootWorkspace.version);
   await git.branch.push(prBranch);
 
   const prTitle = `${options.prMessage} ${rootWorkspace.version}`;
