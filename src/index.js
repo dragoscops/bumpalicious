@@ -53,10 +53,6 @@ const run = async () => {
         'safe.directory': process.env.GITHUB_WORKSPACE || process.cwd(),
       });
       core.endGroup();
-      if (!result) {
-        core.error('Failed to set up git user configuration');
-        return;
-      }
     }
 
     //======================================================================
