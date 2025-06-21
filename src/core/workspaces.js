@@ -379,16 +379,19 @@ export async function createVersionPR(workspacesTree, options) {
         const latestEntry = changelogContent.split(/^## /m)[1];
 
         if (latestEntry) {
-          prBody += `## ${latestEntry}\n`;
+          prBody.push(`## ${latestEntry}`);
         } else {
-          prBody += `No changelog entries found for ${workspace.name}.\n\n`;
+          prBody.push(`No changelog entries found for ${workspace.name}.`);
+          prBody.push('');
         }
       } else {
-        prBody += `No changelog found for ${workspace.name}.\n\n`;
+        prBody.push(`No changelog found for ${workspace.name}.`);
+        prBody.push('');
       }
     } catch (error) {
       log.warn({workspaceName: workspace.name, error: error.message}, LOG_MESSAGES.CHANGELOG_READ_ERROR);
-      prBody += `Failed to include changelog for ${workspace.name}.\n\n`;
+      prBody.push(`Failed to include changelog for ${workspace.name}.`);
+      prBody.push('');
     }
   }
 
