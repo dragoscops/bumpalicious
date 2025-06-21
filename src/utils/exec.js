@@ -31,10 +31,7 @@ export const exec = async (command, args, options) =>
       stderr += data;
     });
     ps.on('close', (exitCode) => {
-      log.info(
-        {command: `${command} ${args.join(' ')}`, stdout, stderr, code: exitCode, options},
-        'exec command finished',
-      );
+      log.info({command: `${command} ${args.join(' ')}`, stdout, stderr, exitCode, options}, 'exec command finished');
       if (exitCode !== 0) {
         core.error(`Failed to run command: ${command} '${args.join("', '")}'`);
       }
