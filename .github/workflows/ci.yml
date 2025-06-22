@@ -46,7 +46,7 @@ jobs:
     needs: unit-tests
     uses: dragoscops/bumpalicious-test/.github/workflows/versions.yml@main
     with:
-      branch: "${{ github.ref_name }}"
+      version: "${{ github.ref_name }}"
 
   version-bump:
     needs: [unit-tests, integration-tests]
