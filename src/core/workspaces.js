@@ -391,9 +391,8 @@ export async function createVersionPR(workspacesTree, options) {
 
   await git.commits.createAndPush(prTitle, prBranch);
 
-  log.info({workspacesTree, prBranch, prTitle, prBody}, `Creating PR for version bump: ${prTitle}`);
+  log.info({workspacesTree, prBranch, prTitle, prBody}, `Creating PR for version bump`);
 
-  // Create PR with the specified title and body
   return github.pr.create(
     {
       title: prTitle,
