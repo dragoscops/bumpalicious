@@ -69,9 +69,9 @@ export const getClient = (options) => {
 
 /**
  * @typedef {Object} Repository
- * @property {string} ownerName - Repository owner
- * @property {string} repoName - Repository name
- * @property {string} repo - Repository (contains ownerName/repoName)
+ * @property {string} owner - Repository owner
+ * @property {string} repo - Repository name
+ * @property {string} joined - Repository (contains ownerName/repoName)
  */
 
 /**
@@ -80,21 +80,21 @@ export const getClient = (options) => {
  * @returns {Repository|null} - Repository object with owner and name properties or null
  */
 export const getRepository = () => {
-  const repo = process.env.GITHUB_REPOSITORY;
+  const joined = process.env.GITHUB_REPOSITORY;
 
-  if (!repo) {
+  if (!joined) {
     log.error('GITHUB_REPOSITORY environment variable not found');
     return null;
   }
 
-  const [ownerName, repoName] = repo.split('/');
+  const [owner, repo] = joined.split('/');
 
-  if (!ownerName || !repoName) {
-    log.error(`Invalid repository format: ${repo}`);
+  if (!owner || !repo) {
+    log.error(`Invalid repository format: ${joined}`);
     return null;
   }
 
-  return {ownerName, repoName, repo};
+  return {owner, repo, joined};
 };
 
 /**
@@ -176,7 +176,7 @@ export const pr = {
       const {data: pullRequests} = await octokit.rest.pulls.list({
         ...repo,
         base,
-        head: `${repo.ownerName}:${head}`,
+        head: `${repo.owner}:${head}`,
         state: 'open',
       });
 
