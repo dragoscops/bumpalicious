@@ -18,20 +18,12 @@ permissions:
   pull-requests: write
 
 jobs:
-  ci:
+  unit-tests:
     runs-on: ubuntu-latest
     steps:
-      - name: Github App Token
-        id: app-token-push
-        uses: actions/create-github-app-token@v2
-        with:
-          app-id: ${{ vars.GH_APP_PUSH_ID }}
-          private-key: ${{ secrets.GH_APP_PUSH_KEY }}
-
       - name: Checkout repo (using token)
         uses: actions/checkout@v4
         with:
-          token: ${{ steps.app-token-push.outputs.token || secrets.GH_TOKEN_PUSH }}
           fetch-depth: 0 # Required if you’ll push to an existing branch
 
       - name: Install Task
@@ -47,16 +39,31 @@ jobs:
 
       - name: Run Tests
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
           npm i
           npm run test
 
-      - name: Run Integration Tests
-        uses: dragoscops/bumpalicious-test/.github/workflows/versions.yml@main
+  integration-tests:
+    needs: unit-tests
+    uses: dragoscops/bumpalicious-test/.github/workflows/versions.yml@main
+    with:
+      branch: ${{ github.ref_name }}
+
+  version-bump:
+    needs: [unit-tests, integration-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Github App Token
+        id: app-token-push
+        uses: actions/create-github-app-token@v2
         with:
-          branch: ${{ github.ref_name }}
+          app-id: ${{ vars.GH_APP_PUSH_ID }}
+          private-key: ${{ secrets.GH_APP_PUSH_KEY }}
+
+      - name: Checkout repo (using token)
+        uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app-token-push.outputs.token || secrets.GH_TOKEN_PUSH }}
+          fetch-depth: 0 # Required if you’ll push to an existing branch
 
       # Only run version increase on push to main, not on pull requests
       - name: Increase Version
