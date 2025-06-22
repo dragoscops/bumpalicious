@@ -2,6 +2,7 @@ import {logger} from './logging.js';
 import {projectName} from '../constants.js';
 import {exec} from './exec.js';
 import path from 'path';
+import {writeFile} from './fs.js';
 
 export const log = logger.child({module: `${projectName}/utils/git`});
 
@@ -249,6 +250,7 @@ export const branch = {
   createAndPushVersion: async (version, prefix = 'version_bump') => {
     const branchName = await branch.create(`${prefix ? prefix + '_' : ''}v${version}`);
     await branch.push(branchName);
+    return branchName;
   },
 
   /**
