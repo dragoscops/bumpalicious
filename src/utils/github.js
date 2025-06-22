@@ -2,8 +2,9 @@ import * as core from '@actions/core';
 import {getOctokit} from '@actions/github';
 import {logger} from './logging.js';
 import * as workspace from './workspace.js';
+import {projectName} from '../constants.js';
 
-const log = logger.child({module: 'utils/github'});
+export const log = logger.child({module: `${projectName}/utils/github`});
 
 /**
  * @typedef {import('./workspace.js').Workspace} Workspace

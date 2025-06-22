@@ -126,7 +126,6 @@ const run = async () => {
     }
   } catch (error) {
     log.error({error}, 'Version bump failed');
-    throw error;
     core.error('Version bump failed');
   }
 };

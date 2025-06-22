@@ -2,7 +2,6 @@ import {logger} from './logging.js';
 import {projectName} from '../constants.js';
 import {exec} from './exec.js';
 import path from 'path';
-import {getOptions} from './github.js';
 
 export const log = logger.child({module: `${projectName}/utils/git`});
 
