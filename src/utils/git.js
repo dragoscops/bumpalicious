@@ -2,7 +2,7 @@ import {logger} from './logging.js';
 import {projectName} from '../constants.js';
 import {exec} from './exec.js';
 import path from 'path';
-import {getOptions} from './github.js';
+import {writeFile} from './fs.js';
 
 export const log = logger.child({module: `${projectName}/utils/git`});
 
@@ -39,54 +39,6 @@ export const warnFailedToPullBranch = 'Failed to pull branch';
 
 export const errorRetrievingChangedFiles = 'Error retrieving changed files in repository';
 
-export const config = {
-  /**
-   * Set git configuration options
-   *
-   * @param {Object.<string, string>} options - Key-value pairs of git configuration options to set
-   * @param {boolean} [global=true] - Whether to set globally or locally
-   * @returns {Promise<boolean>} - Returns true if all options were set successfully, false if any failed
-   */
-  set: async (options, global = true) => {
-    let result = true;
-    for (const [key, value] of Object.entries(options)) {
-      try {
-        const args = ['config'];
-        if (global) {
-          args.push('--global');
-        }
-        args.push(key, value);
-        await exec('git', args);
-        log.info({key, value}, infoGitConfigSet);
-      } catch (error) {
-        log.error({key, error: error}, errorFailedToSetGitConfig);
-        result = false;
-        break;
-      }
-    }
-    return result;
-  },
-};
-
-/**
- * Commit and push changes to remote repository
- *
- * @param {string} commitMessage - Commit message for the changes
- * @param {string} [branch='main'] - Branch to push to
- * @returns {Promise<void>}
- */
-export async function pushChange(commitMessage, branch = 'main') {
-  try {
-    await exec('git', ['add', '.']);
-    await exec('git', ['commit', '-am', commitMessage]);
-    await exec('git', ['push', 'origin', branch]);
-    log.info({commitMessage}, infoChangesCommitted);
-  } catch (error) {
-    log.error({error}, warnFailedToCommitChanges);
-    return;
-  }
-}
-
 /**
  * Get the root path of the Git repository
  *
@@ -94,28 +46,42 @@ export async function pushChange(commitMessage, branch = 'main') {
  * @returns {Promise<string|null>} - Root path of the Git repository or null on error
  */
 export async function rootPath(cwd) {
-  try {
-    const {stdout} = await exec('git', ['rev-parse', '--show-toplevel'], {cwd});
-    return stdout.trim();
-  } catch (error) {
-    log.error({cwd, error}, warnFailedToGetGitConfig);
-  }
-  return null;
+  const {stdout} = await exec('git', ['rev-parse', '--show-toplevel'], {cwd});
+  return stdout.trim();
 }
 
+export const config = {
+  /**
+   * Set git configuration options
+   *
+   * @param {Object.<string, string>} options - Key-value pairs of git configuration options to set
+   * @param {boolean} [global=true] - Whether to set globally or locally
+   * @returns {Promise<void>} - Will be killed by `exec` if it failes
+   */
+  set: async (options, global = true) => {
+    for (const [key, value] of Object.entries(options)) {
+      const args = ['config'];
+      if (global) {
+        args.push('--global');
+      }
+      args.push(key, value);
+      await exec('git', args);
+      log.info({key, value}, infoGitConfigSet);
+    }
+  },
+};
+
+/**
+ * Commits Collection
+ */
 export const commits = {
   /**
    * Get the last commit message
    * @returns {Promise<string|null>} - Last commit message or null on error
    */
   lastMessage: async () => {
-    try {
-      const {stdout} = await exec('git', ['log', '-1', '--pretty=%B']);
-      return stdout.trim();
-    } catch (error) {
-      log.warn({error: error.message}, warnFailedToGetLatestCommitMessage);
-      return null;
-    }
+    const {stdout} = await exec('git', ['log', '-1', '--pretty=%B']);
+    return stdout.trim();
   },
 
   /**
@@ -126,25 +92,38 @@ export const commits = {
    * @returns {Promise<string[]>} - Array of file paths that changed, empty array on error
    */
   getChangedFiles: async (repoPath, lastTag) => {
-    try {
-      // If no tag is provided, return all tracked files as changed
-      if (!lastTag) {
-        const {stdout} = await exec('git', ['ls-files'], {cwd: repoPath});
-        return stdout.trim().split('\n').filter(Boolean);
-      }
-
-      const rootRepoPath = await rootPath(repoPath);
-      const relativeRepoPath = path.relative(rootRepoPath, repoPath).replace(/\.[\\\/]/, '') || '.';
-      // Retrieve changed files in the repository since the last tag
-      const {stdout} = await exec('git', ['diff', lastTag, '--name-only', '--', relativeRepoPath], {cwd: rootRepoPath});
+    // If no tag is provided, return all tracked files as changed
+    if (!lastTag) {
+      const {stdout} = await exec('git', ['ls-files'], {cwd: repoPath});
       return stdout.trim().split('\n').filter(Boolean);
-    } catch (error) {
-      log.error({repoPath, error}, errorRetrievingChangedFiles);
-      return [];
     }
+
+    const rootRepoPath = await rootPath(repoPath);
+    const relativeRepoPath = path.relative(rootRepoPath, repoPath).replace(/\.[\\\/]/, '') || '.';
+
+    // Otherwise, retrieve changed files in the repository since the last tag
+    const {stdout} = await exec('git', ['diff', lastTag, '--name-only', '--', relativeRepoPath], {cwd: rootRepoPath});
+    return stdout.trim().split('\n').filter(Boolean);
   },
 
-  // TODO: move pushChange to createAndPush here
+  /**
+   * Commit and push changes to remote repository
+   *
+   * @param {string} commitMessage - Commit message for the changes
+   * @param {string} [branch='main'] - Branch to push to
+   * @returns {Promise<void>}
+   */
+  createAndPush: async (commitMessage, branch = 'main') => {
+    for (const args of [
+      ['add', '-A'],
+      ['commit', '-am', commitMessage],
+      ['pull', 'origin', branch, '--ff-only'],
+      ['push', 'origin', branch],
+    ]) {
+      await exec('git', args);
+    }
+    log.info({commitMessage}, infoChangesCommitted);
+  },
 };
 
 /**
@@ -159,12 +138,8 @@ export const tag = {
    * @returns {Promise<void>} - Resolves when the tag is created
    */
   create: async (tagName, message) => {
-    try {
-      await exec('git', ['tag', '-a', tagName, '-m', message]);
-      log.info({tagName}, infoTagCreated);
-    } catch (error) {
-      log.warn({tagName, error}, warnFailedToCreateTag);
-    }
+    await exec('git', ['tag', '-a', tagName, '-m', message]);
+    log.info({tagName}, infoTagCreated);
   },
 
   /**
@@ -192,13 +167,8 @@ export const tag = {
    * @returns {Promise<boolean>}
    */
   exists: async (tagName) => {
-    try {
-      const {stdout} = await exec('git', ['tag', '-l', tagName]);
-      return stdout.trim() === tagName;
-    } catch (error) {
-      log.warn({tagName, error}, warnFailedToCheckTagExists);
-      return false;
-    }
+    const {stdout} = await exec('git', ['tag', '-l', tagName]);
+    return stdout.trim() === tagName;
   },
 
   /**
@@ -208,22 +178,15 @@ export const tag = {
    * @returns {Promise<string|null>} - Tag name, commit hash, or null on error
    */
   lastCreated: async () => {
-    try {
-      const {stdout: lastTag} = await exec('git', ['describe', '--tags', '--abbrev=0']);
-      if (lastTag.trim()) {
-        return lastTag.trim();
-      }
-    } catch (error) {
-      log.warn({error: error.message}, warnFailedToGetLastCreatedTag);
+    // Try to detect last created tag
+    const {stdout: lastTag} = await exec('git', ['describe', '--tags', '--abbrev=0']);
+    if (lastTag.trim()) {
+      return lastTag.trim();
     }
-    try {
-      // If no tag is found, get the first commit hash
-      const {stdout: firstCommitHash} = await exec('git', ['rev-list', '--max-parents=0', 'HEAD']);
-      return firstCommitHash.trim();
-    } catch (error) {
-      log.warn({error}, warnNoTagsFound);
-      return null;
-    }
+
+    // If no tag is found, get the first commit hash
+    const {stdout: firstCommitHash} = await exec('git', ['rev-list', '--max-parents=0', 'HEAD']);
+    return firstCommitHash.trim();
   },
 
   /**
@@ -233,12 +196,10 @@ export const tag = {
    * @returns {Promise<void>}
    */
   push: async (tagName) => {
-    try {
-      await exec('git', ['push', 'origin', tagName]);
-      log.info({tagName}, infoTagPushed);
-    } catch (error) {
-      log.warn({tagName, error}, warnFailedToPushTag);
+    for (const args of [['fetch'], ['push', 'origin', tagName]]) {
+      await exec('git', args);
     }
+    log.info({tagName}, infoTagPushed);
   },
 
   /**
@@ -248,21 +209,13 @@ export const tag = {
    * @returns {Promise<void>}
    */
   remove: async (tagName) => {
-    try {
-      await exec('git', ['tag', '-d', tagName]);
-      log.info({tagName}, infoTagDeleted);
-    } catch (error) {
-      log.warn({tagName, error}, warnFailedToDeleteTag);
-    }
+    await exec('git', ['tag', '-d', tagName]);
+    log.info({tagName}, infoTagDeleted);
 
-    // Remote tag deletion is optional and might not be necessary
+    // TODO: Remote tag deletion is optional and might not be necessary
     // // Also try to delete it from remote
-    // try {
     //   await exec('git', ['push', 'origin', `:refs/tags/${tagName}`]);
     //   log.info({tagName}, infoRemoteTagDeleted);
-    // } catch (error) {
-    //   log.warn({tagName, error: error.message}, warnCouldNotRemoveRemoteTag);
-    // }
   },
 };
 
@@ -274,12 +227,8 @@ export const branch = {
    * @returns {Promise<void>}
    */
   checkout: async (branchName) => {
-    try {
-      await exec('git', ['checkout', branchName]);
-      log.info({branchName}, infoBranchCheckedOut);
-    } catch (error) {
-      log.warn({branchName, error}, warnFailedToCheckoutBranch);
-    }
+    await exec('git', ['checkout', branchName]);
+    log.info({branchName}, infoBranchCheckedOut);
   },
 
   /**
@@ -288,14 +237,9 @@ export const branch = {
    * @returns {Promise<string|null>} - Branch name on success, null on error
    */
   create: async (branchName) => {
-    try {
-      await exec('git', ['checkout', '-b', branchName]);
-      log.info({branchName}, infoBranchCreated);
-      return branchName;
-    } catch (error) {
-      log.warn({branchName, error}, warnFailedToCreateBranch);
-      return null;
-    }
+    await exec('git', ['checkout', '-b', branchName]);
+    log.info({branchName}, infoBranchCreated);
+    return branchName;
   },
 
   /**
@@ -303,7 +247,11 @@ export const branch = {
    * @param {string} version
    * @returns {Promise<string|null>} - Branch name on success, null on error
    */
-  createVersion: async (version) => branch.create(`${getOptions().prVersionPrefix}_v${version}`),
+  createAndPushVersion: async (version, prefix = 'version_bump') => {
+    const branchName = await branch.create(`${prefix ? prefix + '_' : ''}v${version}`);
+    await branch.push(branchName);
+    return branchName;
+  },
 
   /**
    * Delete an existing branch from the repository (both local and remote).
@@ -312,20 +260,14 @@ export const branch = {
    * @returns {Promise<void>}
    */
   remove: async (branchName) => {
-    try {
-      await exec('git', ['branch', '-d', branchName]);
-      log.info({branchName}, infoBranchDeleted);
-    } catch (error) {
-      log.warn({branchName, error}, warnFailedToDeleteBranch);
-    }
+    await exec('git', ['branch', '-d', branchName]);
+    log.info({branchName}, infoBranchDeleted);
 
     // Also try to delete the branch from remote
-    try {
-      await exec('git', ['push', 'origin', '--delete', branchName]);
-      log.info({branchName}, `Remote ${infoBranchDeleted.toLowerCase()}`);
-    } catch (error) {
-      log.warn({branchName, error}, `Failed to delete remote branch`);
+    for (const args of [['fetch'], ['push', 'origin', '--delete', branchName]]) {
+      await exec('git', args);
     }
+    log.info({branchName}, `Remote ${infoBranchDeleted.toLowerCase()}`);
   },
 
   /**
@@ -335,12 +277,8 @@ export const branch = {
    * @returns {Promise<void>}
    */
   pull: async (branchName) => {
-    try {
-      await exec('git', ['pull', 'origin', branchName]);
-      log.info({branchName}, infoBranchPulled);
-    } catch (error) {
-      log.warn({branchName, error}, warnFailedToPullBranch);
-    }
+    await exec('git', ['pull', 'origin', branchName]);
+    log.info({branchName}, infoBranchPulled);
   },
 
   /**
@@ -350,11 +288,7 @@ export const branch = {
    * @returns {Promise<void>}
    */
   push: async (branchName) => {
-    try {
-      await exec('git', ['push', 'origin', branchName]);
-      log.info({branchName}, infoBranchPushed);
-    } catch (error) {
-      log.warn({branchName, error}, warnFailedToPushBranch);
-    }
+    await exec('git', ['push', 'origin', branchName]);
+    log.info({branchName}, infoBranchPushed);
   },
 };

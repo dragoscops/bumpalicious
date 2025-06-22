@@ -53,10 +53,6 @@ const run = async () => {
         'safe.directory': process.env.GITHUB_WORKSPACE || process.cwd(),
       });
       core.endGroup();
-      if (!result) {
-        core.error('Failed to set up git user configuration');
-        return;
-      }
     }
 
     //======================================================================
@@ -71,36 +67,35 @@ const run = async () => {
       options.workspaces = await workspaces.enrichWorkspaces(options.workspaces, lastTag);
       const changedWorkspacesTrees = workspace.buildUpdatedWorkspacesTrees(options.workspaces);
       // create tag
-      workspaces.createVersionTags(changedWorkspacesTrees[0].workspace.version, options);
+      await workspaces.createVersionTags(changedWorkspacesTrees[0].workspace.version, options);
     } else {
       // If the PR message is not found, we assume the PR is not created
       // and we need go through the entire version bumping process
 
       // Check if the workspaces have changed since the last tag
-      // TODO: rename to changedWorkspaces
-      const updatedWorkspaces = await workspaces.updateVersionsForChangedWorkspaces(commitMessage, lastTag, options);
-      if (updatedWorkspaces.length === 0) {
+      const changedWorkspaces = await workspaces.updateVersionsForChangedWorkspaces(commitMessage, lastTag, options);
+      if (changedWorkspaces.length === 0) {
         log.warn(warnNoChangedWorkspacesFound);
         core.notice(warnNoChangedWorkspacesFound);
         return;
       } else {
-        log.info({updatedWorkspaces}, 'Changed workspaces found');
+        log.info({updatedWorkspaces: changedWorkspaces}, 'Changed workspaces found');
       }
 
       //======================================================================
 
       core.startGroup('Updating workspaces tree');
       // Organizes workspaces into a tree like structure to also determine the root workspace
-      const updatedWorkspacesTrees = workspace.buildUpdatedWorkspacesTrees(updatedWorkspaces);
-      if (updatedWorkspacesTrees.length > 1) {
+      const changedWorkspacesTrees = workspace.buildUpdatedWorkspacesTrees(changedWorkspaces);
+      if (changedWorkspacesTrees.length > 1) {
         log.error('Workspaces folder should only have a root workspace');
       }
-      if (updatedWorkspacesTrees.length === 0) {
+      if (changedWorkspacesTrees.length === 0) {
         log.error('No workspaces found');
       }
       log.info(
-        {workspaces: updatedWorkspacesTrees},
-        `Updated workspaces trees -> Found ${updatedWorkspacesTrees.length} main nodes`,
+        {workspaces: changedWorkspacesTrees},
+        `Updated workspaces trees -> Found ${changedWorkspacesTrees.length} main nodes`,
       );
       core.endGroup();
 
@@ -109,7 +104,11 @@ const run = async () => {
       if (options.pr) {
         // If createPR is true, create a pull request with the version changes
         /** @type {import('./utils/github.js').PRCreateResponse} */
-        const pr = await workspaces.createVersionPR(updatedWorkspacesTrees, options);
+        const pr = await workspaces.createVersionPR(changedWorkspacesTrees, options);
+        log.info({pr}, 'Pull request created?');
+        if (!pr) {
+          return;
+        }
         if (options.prAutoMerge) {
           await github.pr.merge({pullNumber: pr.number}, options);
           await github.pr.hasMerged({pullNumber: pr.number}, options);
@@ -118,14 +117,14 @@ const run = async () => {
           await git.branch.pull(pr.base.ref);
           await git.branch.remove(pr.head.ref);
 
-          await workspaces.createVersionTags(updatedWorkspacesTrees[0].workspace.version, options);
+          await workspaces.createVersionTags(changedWorkspacesTrees[0].workspace.version, options);
         }
       } else {
         // Otherwise, create a commit with the version changes and tags
-        await workspaces.createVersionCommit(updatedWorkspaces, options);
-        await workspaces.createVersionTags(updatedWorkspacesTrees[0].workspace.version, {
+        await workspaces.createVersionCommit(changedWorkspaces, options);
+        await workspaces.createVersionTags(changedWorkspacesTrees[0].workspace.version, {
           ...options,
-          workspaces: updatedWorkspaces,
+          workspaces: changedWorkspaces,
         });
       }
     }

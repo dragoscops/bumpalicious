@@ -280,7 +280,7 @@ export async function updateVersionsForWorkspaces(workspaces, {generateChangelog
 export async function createVersionCommit(workspaces, options) {
   const commitMessage = `chore: version bump for workspaces: ${workspaces.map((node) => node.name).join(', ')}`;
 
-  await git.pushChange(commitMessage, options.branch);
+  await git.commits.createAndPush(commitMessage, options.branch);
 }
 
 /**
@@ -324,8 +324,7 @@ export async function createVersionPR(workspacesTree, options) {
   const rootWorkspace = rootNode.workspace;
 
   // Create a version branch
-  const prBranch = await git.branch.createVersion(rootWorkspace.version);
-  await git.branch.push(prBranch);
+  const prBranch = await git.branch.createAndPushVersion(rootWorkspace.version, options.prVersionPrefix);
 
   const prTitle = `${options.prMessage} ${rootWorkspace.version}`;
 
@@ -333,12 +332,6 @@ export async function createVersionPR(workspacesTree, options) {
   let prBody = [`# Version Update: ${rootWorkspace.name} ${rootWorkspace.version}`, ''];
 
   if (rootNode.children?.length ?? 0 > 0) {
-    // // Include changes for each workspace
-    // for (const node of rootWorkspace.children) {
-    //   const workspace = node.workspace;
-    //   prBody += `## ${workspace.name} (${workspace.version})\n\n`;
-    //   await generateChangelogForWorkspace(workspace);
-    // }
     prBody = [...prBody, ...listWorkspacesVersions(rootNode)];
   } else {
     await generateChangelogForWorkspace(rootWorkspace);
@@ -379,24 +372,26 @@ export async function createVersionPR(workspacesTree, options) {
         const latestEntry = changelogContent.split(/^## /m)[1];
 
         if (latestEntry) {
-          prBody += `## ${latestEntry}\n`;
+          prBody.push(`## ${latestEntry}`);
         } else {
-          prBody += `No changelog entries found for ${workspace.name}.\n\n`;
+          prBody.push(`No changelog entries found for ${workspace.name}.`);
+          prBody.push('');
         }
       } else {
-        prBody += `No changelog found for ${workspace.name}.\n\n`;
+        prBody.push(`No changelog found for ${workspace.name}.`);
+        prBody.push('');
       }
     } catch (error) {
       log.warn({workspaceName: workspace.name, error: error.message}, LOG_MESSAGES.CHANGELOG_READ_ERROR);
-      prBody += `Failed to include changelog for ${workspace.name}.\n\n`;
+      prBody.push(`Failed to include changelog for ${workspace.name}.`);
+      prBody.push('');
     }
   }
 
-  await git.pushChange(prTitle, prBranch);
+  await git.commits.createAndPush(prTitle, prBranch);
 
-  log.info({workspacesTree, prBranch, prTitle, prBody}, `Creating PR for version bump: ${prTitle}`);
+  log.info({workspacesTree, prBranch, prTitle, prBody}, `Creating PR for version bump`);
 
-  // Create PR with the specified title and body
   return github.pr.create(
     {
       title: prTitle,

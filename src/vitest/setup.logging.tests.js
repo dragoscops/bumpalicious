@@ -29,7 +29,7 @@ export const unMockPino = (logger = logging.logger) => {
  */
 export const mockPinoIn = async (modules = []) => {
   return Promise.all(
-    ['utils/exec', 'utils/git', ...modules].map(async (mod) => {
+    ['utils/exec', 'utils/git', 'utils/fs', ...modules].map(async (mod) => {
       // - HACKy - should be `../${mod}.js`
       // For some reason, vitest import behaves differently
       // console.log(`../${mod}`);
