@@ -21,7 +21,7 @@ jobs:
   unit-tests:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repo (using token)
+      - name: Checkout repo
         uses: actions/checkout@v4
         with:
           fetch-depth: 0 # Required if you’ll push to an existing branch
@@ -65,6 +65,7 @@ jobs:
         with:
           app-id: ${{ vars.GH_APP_PUSH_ID }}
           private-key: ${{ secrets.GH_APP_PUSH_KEY }}
+          owner: ${{ github.repository_owner }}
 
       - name: Checkout repo (using token)
         uses: actions/checkout@v4
