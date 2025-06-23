@@ -55,7 +55,7 @@ jobs:
         env:
           GH_APP_PRIVATE_KEY: |
             ${{ secrets.GH_APP_WF_TRIGGER_KEY }}
-        uses: dragoscops/workflow-trigger-wait
+        uses: dragoscops/workflow-trigger-wait@v3
         with:
           credentials: |
             {
