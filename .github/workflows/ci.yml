@@ -20,7 +20,7 @@ permissions:
   pull-requests: write
 
 jobs:
-  unit-tests:
+  tests:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
@@ -60,13 +60,14 @@ jobs:
           credentials: |
             {
               "appId": "${{ vars.GH_APP_WF_TRIGGER_ID }}",
+              "privateKey": "as-env",
               "owner": "${{ github.repository_owner }}"
             }
           repo: ${{ github.repository }}-test
           workflow_id: versions.yml
 
   version-bump:
-    needs: unit-tests
+    needs: tests
     runs-on: ubuntu-latest
     steps:
       - name: Github App Token
