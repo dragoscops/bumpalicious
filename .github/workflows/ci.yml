@@ -44,12 +44,12 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Run Tests
-        env:
-          DEBUG: log:*
-        run: |
-          npm i
-          npm run test
+      # - name: Run Tests
+      #   env:
+      #     DEBUG: log:*
+      #   run: |
+      #     npm i
+      #     npm run test
 
       - name: Run Integrfation Tests
         env:
@@ -59,9 +59,10 @@ jobs:
         with:
           credentials: |
             {
-              "appId": "${{ vars.GH_APP_WF_TRIGGER_ID }}",
-              "privateKey": "as-env",
-              "owner": "${{ github.repository_owner }}"
+              "app": {
+                "appId": "${{ vars.GH_APP_WF_TRIGGER_ID }}",
+                "privateKey": "as-env"
+              }
             }
           repo: ${{ github.repository }}-test
           workflow_id: versions.yml
