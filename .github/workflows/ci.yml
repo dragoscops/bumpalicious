@@ -55,7 +55,10 @@ jobs:
     needs: unit-tests
     uses: dragoscops/bumpalicious-test/.github/workflows/versions.yml@main
     with:
-      version: "${{ github.ref_name }}"
+      version: ${{ github.ref_name }}
+      app_id: ${{ vars.GH_APP_PUSH_ID }}
+    secrets:
+      GH_APP_PUSH_KEY: ${{ secrets.GH_APP_PUSH_KEY }}
 
   version-bump:
     needs: [unit-tests, integration-tests]
