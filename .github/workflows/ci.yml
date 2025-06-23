@@ -61,7 +61,8 @@ jobs:
             {
               "app": {
                 "appId": "${{ vars.GH_APP_WF_TRIGGER_ID }}",
-                "privateKey": "as-env"
+                "privateKey": "as-env",
+                "owner": "${{ github.repository_owner }}"
               }
             }
           repo: ${{ github.repository }}-test
