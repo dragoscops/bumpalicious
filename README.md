@@ -85,8 +85,17 @@ jobs:
   version-update:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      # If you wish to use Github App, generate Token before checkout
+      - name: Github App Token
+        id: app-token-push
+        uses: actions/create-github-app-token@v2
+        with: ...
+
+      # Checkout repo (using PAT or App Token)
+      - name: Checkout repo (using token)
+        uses: actions/checkout@v4
         with:
+          token: ${{ steps.app-token-push.outputs.token || secrets.GITHUB_TOKEN }}
           fetch-depth: 0
 
       - name: Update Version
@@ -102,18 +111,17 @@ jobs:
 
 ## Inputs
 
-| Name               | Description                                                   | Required | Default                 |
-| ------------------ | ------------------------------------------------------------- | -------- | ----------------------- |
-| `workspaces`       | Comma-separated workspace definitions with format "path:type" | No       | `.:text`                |
-| `token`            | GitHub token for actions like creating pull requests          | No       | `${{ github.token }}`   |
-| `pr`               | Whether to create a pull request with version changes         | No       | `false`                 |
-| `pr_auto_merge`    | Whether to automatically merge the PR if all checks pass      | No       | `false`                 |
-| `pr_message`       | Message to use for the pull request                           | No       | `chore: version update` |
+| Name                | Description                                                                           | Required       | Default                 |
+| ------------------- | ------------------------------------------------------------------------------------- | -------------- | ----------------------- |
+| `workspaces`        | Comma-separated workspace definitions with format "path:type"                         | No             | `.:text`                |
+| `token`             | GitHub token for actions like creating pull requests                                  | No             | `${{ github.token }}`   |
+| `pr`                | Whether to create a pull request with version changes                                 | No             | `false`                 |
+| `pr_auto_merge`     | Whether to automatically merge the PR if all checks pass                              | No             | `false`                 |
+| `pr_message`        | Message to use for the pull request                                                   | No             | `chore: version update` |
 | `pr_version_prefix` | Prefix for version PR branch names (e.g., "feature/" creates "feature/version-1.2.3") | `version_bump` |
-| `branch`           | Target branch for pull requests                               | No       | `main`                  |
-| `changelog_preset` | The conventional-changelog preset to use                      | No       | `conventionalcommits`   |
-| `short_tag`        | Create short version tags (e.g., v1.2 for v1.2.3)             | No       | `false`                 |
-
+| `branch`            | Target branch for pull requests                                                       | No             | `main`                  |
+| `changelog_preset`  | The conventional-changelog preset to use                                              | No             | `conventionalcommits`   |
+| `short_tag`         | Create short version tags (e.g., v1.2 for v1.2.3)                                     | No             | `false`                 |
 
 ### Workspace Types
 
@@ -428,4 +436,3 @@ The generated changelog will look similar to:
 - correct validation logic in form handler ([i7j8k9l](https://github.com/user/repo/commit/i7j8k9l))
 - **ui:** fix button alignment in mobile view ([m1n2o3p](https://github.com/user/repo/commit/m1n2o3p))
 ```
-
