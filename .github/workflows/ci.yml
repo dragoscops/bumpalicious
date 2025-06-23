@@ -51,13 +51,19 @@ jobs:
           npm i
           npm run test
 
-  integration-tests:
-    needs: unit-tests
-    uses: dragoscops/bumpalicious-test/.github/workflows/versions.yml@main
-    with:
-      version: ${{ github.ref_name }}
-    secrets:
-      GH_APP_PUSH_KEY: ${{ secrets.GH_APP_PUSH_KEY }}
+      - name: Run Integrfation Tests
+        env:
+          GH_APP_PRIVATE_KEY: |
+            ${{ secrets.GH_APP_WF_TRIGGER_KEY }}
+        use: dragoscops/workflow-trigger-wait
+        with:
+          credentials: |
+            {
+              "appId": "${{ vars.GH_APP_WF_TRIGGER_ID }}",
+              "owner": "${{ github.repository_owner }}"
+            }
+          repo: ${{ github.repository }}-test
+          workflow_id: versions.yml
 
   version-bump:
     needs: [unit-tests, integration-tests]
