@@ -19,36 +19,39 @@
 
 ## Table of Contents
 
-- [Features](#features)
-- [Usage](#usage)
-- [Inputs](#inputs)
-  - [Workspace Types](#workspace-types)
-- [Outputs](#outputs)
-- [Examples](#examples)
-  - [Basic Usage](#basic-usage-single-project)
-  - [Language-Specific Examples](#language-specific-examples)
-    - [Node.js Project](#nodejs-project)
-    - [Python Project](#python-project)
-    - [Deno Project](#deno-project)
-    - [Go Project](#go-project)
-    - [Rust Project](#rust-project)
-    - [Zig Project](#zig-project)
-    - [Text-based Version Files](#text-based-version-files)
-  - [Monorepo Examples](#monorepo-examples)
-    - [Multi-language Monorepo](#multi-language-monorepo)
-    - [Microservices Architecture](#microservices-architecture)
-    - [Full-stack Application](#full-stack-application)
-  - [Advanced Examples](#advanced-examples)
-    - [With Custom Branch and Auto-merge](#with-custom-branch-and-auto-merge)
-    - [With Custom PR Branch Prefix](#with-custom-pr-branch-prefix)
-    - [Pre-release Workflow](#pre-release-workflow)
-    - [Production Release Workflow](#production-release-workflow)
-- [Version Bump Rules](#version-bump-rules)
-  - [Pre-release Version Handling](#pre-release-version-handling)
-- [Changelog Generation](#changelog-generation)
-  - [How it works](#how-it-works)
-  - [Conventional Commits](#conventional-commits)
-  - [Example CHANGELOG.md](#example-changelogmd)
+- [Bumpalicious](#bumpalicious)
+  - [Table of Contents](#table-of-contents)
+  - [Features](#features)
+  - [Usage](#usage)
+  - [Inputs](#inputs)
+    - [Workspace Types](#workspace-types)
+  - [Outputs](#outputs)
+  - [Examples](#examples)
+    - [Basic Usage (Single Project)](#basic-usage-single-project)
+    - [Language-Specific Examples](#language-specific-examples)
+      - [Node.js Project](#nodejs-project)
+      - [Python Project](#python-project)
+      - [Deno Project](#deno-project)
+      - [Go Project](#go-project)
+      - [Rust Project](#rust-project)
+      - [Zig Project](#zig-project)
+      - [Text-based Version Files](#text-based-version-files)
+    - [Monorepo Examples](#monorepo-examples)
+      - [Multi-language Monorepo](#multi-language-monorepo)
+    - [Advanced Examples](#advanced-examples)
+      - [With Custom Branch](#with-custom-branch)
+      - [With Custom Changelog Preset](#with-custom-changelog-preset)
+      - [With Pull Request (with Auto-merge)](#with-pull-request-with-auto-merge)
+      - [With Custom PR Branch Prefix](#with-custom-pr-branch-prefix)
+      - [With Pull Request (with Auto-merge)](#with-pull-request-with-auto-merge-1)
+      - [Pre-release Workflow](#pre-release-workflow)
+      - [Production Release Workflow](#production-release-workflow)
+  - [Version Bump Rules](#version-bump-rules)
+    - [Pre-release Version Handling](#pre-release-version-handling)
+  - [Changelog Generation](#changelog-generation)
+    - [How it works](#how-it-works)
+    - [Conventional Commits](#conventional-commits)
+    - [Example CHANGELOG.md](#example-changelogmd)
 
 ## Features
 
@@ -103,7 +106,6 @@ jobs:
         with:
           workspaces: ".:node"
           pr: "true"
-          create_tags: "true"
           changelog_preset: "conventionalcommits"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -114,11 +116,12 @@ jobs:
 | Name                | Description                                                                           | Required       | Default                 |
 | ------------------- | ------------------------------------------------------------------------------------- | -------------- | ----------------------- |
 | `workspaces`        | Comma-separated workspace definitions with format "path:type"                         | No             | `.:text`                |
+| `github_token`      | GitHub token for authentication                                                       | No             | -                       |
 | `token`             | GitHub token for actions like creating pull requests                                  | No             | `${{ github.token }}`   |
 | `pr`                | Whether to create a pull request with version changes                                 | No             | `false`                 |
 | `pr_auto_merge`     | Whether to automatically merge the PR if all checks pass                              | No             | `false`                 |
 | `pr_message`        | Message to use for the pull request                                                   | No             | `chore: version update` |
-| `pr_version_prefix` | Prefix for version PR branch names (e.g., "feature/" creates "feature/version-1.2.3") | `version_bump` |
+| `pr_version_prefix` | Prefix for version PR branch names (e.g., "feature/" creates "feature/version-1.2.3") | No             | `version_bump`          |
 | `branch`            | Target branch for pull requests                                                       | No             | `main`                  |
 | `changelog_preset`  | The conventional-changelog preset to use                                              | No             | `conventionalcommits`   |
 | `short_tag`         | Create short version tags (e.g., v1.2 for v1.2.3)                                     | No             | `false`                 |
@@ -137,13 +140,9 @@ The following workspace types are supported:
 
 ## Outputs
 
-| Name                      | Description                                                                     |
-| ------------------------- | ------------------------------------------------------------------------------- |
-| `changed_workspaces_info` | Comma-separated list of changed workspaces with format "path:type:name:version" |
-| `updated_workspaces_info` | Comma-separated list of updated workspaces with format "path:type:name:version" |
-| `version`                 | The new version after update                                                    |
-| `pr_number`               | Pull request number if one was created                                          |
-| `pr_url`                  | Pull request URL if one was created                                             |
+| Name  | Description                      |
+| ----- | -------------------------------- |
+| `tag` | The version tag that was created |
 
 ## Examples
 
@@ -262,7 +261,7 @@ env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 with:
   workspaces: ".:node"
-  cahangelog_preset: "angular" # or any other conventional-changelog preset
+  changelog_preset: "angular" # or any other conventional-changelog preset
 ```
 
 #### With Pull Request (with Auto-merge)
@@ -287,7 +286,7 @@ with:
   workspaces: ".:node"
   pr: "true"
   pr_version_prefix: "bump_version"
-  cahangelog_preset: "angular" # or any other conventional-changelog preset
+  changelog_preset: "angular" # or any other conventional-changelog preset
 ```
 
 #### With Pull Request (with Auto-merge)
