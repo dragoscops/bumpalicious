@@ -2,7 +2,7 @@ import core from '@actions/core';
 import * as workspaces from './core/workspaces.js';
 import * as git from './utils/git.js';
 import * as github from './utils/github.js';
-import {logger} from './utils/logging.js';
+import {logger, pinoErrorPrettier} from './utils/logging.js';
 import * as workspace from './utils/workspace.js';
 import {projectName} from './constants.js';
 import * as exec from './utils/exec.js';
@@ -129,7 +129,7 @@ const run = async () => {
       }
     }
   } catch (error) {
-    log.error({error: {...error}}, 'Version bump failed');
+    log.error({...pinoErrorPrettier(error)}, 'Version bump failed');
     core.error('Version bump failed');
   }
 };
