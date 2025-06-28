@@ -84,24 +84,6 @@ jobs:
           git diff-index --quiet HEAD || git commit -m "chore: auto-update ${{ steps.prereqs.outputs.skip_message }}" --no-verify
           git push origin ${{ steps.prereqs.outputs.branch }} --no-verify
 
-          tags=$(git tag -l 'v99*')
-          if [ -n "$tags" ]; then
-            git tag -d $tags \
-              && git push --delete origin $tags;
-          fi
-
-          git pull origin ${{ steps.prereqs.outputs.branch }} --ff-only
-          git fetch
-
-          # Delete all local branches starting with bump_version_to_
-          if git branch | grep -q '^  bump_version_to_'; then
-            git branch | grep '^  bump_version_to_' | xargs -n 1 git branch -D
-          fi
-          # Delete all remote branches starting with bump_version_to_
-          if git branch -r | grep -q 'origin/bump_version_to_'; then
-            git branch -r | grep 'origin/bump_version_to_' | sed 's/origin\///' | xargs -n 1 git push origin --delete
-          fi
-
           #
           # Set the Ground for a New Test Attempot
           #
@@ -124,60 +106,74 @@ jobs:
           git tag v99.0.1
           git push origin v99.0.1
 
-      # - name: Providion Git Version
-      #   run: |
-      #     set -ex
-      #
-      #     git config user.name "github-actions[bot]"
-      #     git config user.email "github-actions[bot]@users.noreply.github.com"
-      #
-      #     date > README.md
-      #     date > workspaces1/README.md
-      #
-      #     git status
-      #     git diff
-      #
-      #     git add -A
-      #     git commit -am "fix: patch commit test"
-      #     git pull origin ${{ github.ref_name }} --ff-only
-      #     git push origin ${{ github.ref_name }}
-      #
-      # # TODO: hot implmenented properly, nor tested
-      # - name: Update Version (V1)
-      #   uses: dragoscops/bumpalicious@v1
-      #   if: ${{ inputs.version == 'v1' }}
-      #   with:
-      #     github_token: ${{ steps.app-token-push.outputs.token || secrets.GH_TOKEN_PUSH }}
-      #     pr: ${{ matrix.pr }}
-      #     pr_auto_merge: true
-      #     workspaces: ${{ matrix.workspaces }}
-      #
-      # - name: Update Version (V2)
-      #   uses: dragoscops/bumpalicious@v2
-      #   if: ${{ inputs.version == 'v2' }}
-      #   with:
-      #     github_token: ${{ steps.app-token-push.outputs.token || secrets.GH_TOKEN_PUSH }}
-      #     pr: ${{ matrix.pr }}
-      #     pr_auto_merge: true
-      #     workspaces: ${{ matrix.workspaces }}
-      #
-      # - name: Update Version (Builder)
-      #   uses: dragoscops/bumpalicious@v2
-      #   if: ${{ inputs.version == 'builder' }}
-      #   with:
-      #     github_token: ${{ steps.app-token-push.outputs.token || secrets.GH_TOKEN_PUSH }}
-      #     pr: ${{ matrix.pr }}
-      #     pr_auto_merge: true
-      #     workspaces: ${{ matrix.workspaces }}
-      #
-      # - name: Validate Version Bump
-      #   run: |
-      #     set -ex
-      #
-      #     git fetch
-      #
-      #     git tag -l
-      #     git branch -a
-      #
+      - name: Providion Git Version
+        run: |
+          set -ex
 
-#     git tag -l | grep v0.0.2
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          date > README.md
+          date > workspaces1/README.md
+
+          git status
+          git diff
+
+          git add -A
+          git commit -am "fix: patch commit test [skip ci]" --no-verify
+          git pull origin ${{ steps.prereqs.outputs.branch }} --ff-only
+          git push origin ${{ steps.prereqs.outputs.branch }} --no-verify
+
+      - name: Update Version (V2)
+        uses: ./
+        with:
+          github_token: ${{ steps.app-token-push.outputs.token || secrets.GH_TOKEN_PUSH }}
+          pr: ${{ matrix.pr }}
+          pr_auto_merge: true
+          workspaces: ${{ matrix.workspaces }}
+
+      - name: Validate Version Bump
+        run: |
+          set -ex
+
+          git fetch
+
+          git tag -l
+          git branch -a
+
+          git tag -l | grep v99.0.2
+
+      - name: Cleanpup
+        run: |
+          set -ex
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          #
+          # Make sure wf is running on the correct branch
+          #
+          git fetch
+          git checkout -B builder
+          git pull origin ${{ steps.prereqs.outputs.branch }} --ff-only
+
+          #
+          # Cleanup Tags
+          #
+          tags=$(git tag -l 'v99*')
+          if [ -n "$tags" ]; then
+            git tag -d $tags \
+              && git push --delete origin $tags;
+          fi
+
+          #
+          # Cleanup Broken Version Branches
+          #
+          # Delete all local branches starting with bump_version_to_
+          if git branch | grep -q '^  bump_version_to_'; then
+            git branch | grep '^  bump_version_to_' | xargs -n 1 git branch -D
+          fi
+          # Delete all remote branches starting with bump_version_to_
+          if git branch -r | grep -q 'origin/bump_version_to_'; then
+            git branch -r | grep 'origin/bump_version_to_' | sed 's/origin\///' | xargs -n 1 git push origin --delete
+          fi
