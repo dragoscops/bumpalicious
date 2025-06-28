@@ -1,4 +1,4 @@
-import path from 'path';
+import path from 'node:path';
 import * as d from '../detect.js';
 import * as u from '../update.js';
 
