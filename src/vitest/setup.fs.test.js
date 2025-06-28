@@ -1,6 +1,6 @@
-import fs from 'fs/promises';
-import path from 'path';
-import {tmpdir} from 'os';
+import fs from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import path from 'node:path';
 import {exec} from '../utils/exec';
 
 /**
