@@ -21,7 +21,8 @@ vi.mock('@actions/core', () => {
     notice: vi.fn(),
     startGroup: vi.fn(),
     endGroup: vi.fn(),
+    setFailed: vi.fn(),
   };
 
-  return {...def, default: def};
+  return { ...def, default: def };
 });

@@ -1,8 +1,9 @@
-import {log as logger} from '../version.js';
+import { log as logger } from '../version.js';
 import * as detect from './detect.js';
 import * as fileUtils from '../../utils/fs.js';
+import { pinoErrorPrettier } from '../../utils/logging.js';
 
-export const log = logger.child({module: 'update'});
+export const log = logger.child({ module: 'update' });
 
 // Log message constants
 export const warnNoVersionDetected = 'No version detected in file, skipping update';
@@ -128,7 +129,7 @@ export function configUpdater(
       const [pattern, replacement] = updater;
       if (pattern instanceof RegExp) {
         const newData = data.replace(pattern, replacement.replace('$VERSION', newValue));
-        return {success: pattern.test(data), newData};
+        return { success: pattern.test(data), newData };
       }
     }
 
@@ -137,20 +138,20 @@ export function configUpdater(
       if (parsedData && typeof parsedData === 'object') {
         const newParsedData = JSON.parse(JSON.stringify(parsedData)); // Deep clone
         const success = setNestedValue(newParsedData, updater, newValue);
-        return {success, newParsedData};
+        return { success, newParsedData };
       }
     }
 
     if (typeof updater === 'function') {
       try {
         const result = updater(data, newValue);
-        return {success: result !== null && result !== undefined, newData: result};
+        return { success: result !== null && result !== undefined, newData: result };
       } catch (error) {
-        log.warn({error}, warnUpdaterFunctionFailed);
+        log.warn({ ...pinoErrorPrettier(error) }, warnUpdaterFunctionFailed);
       }
     }
 
-    return {success: false};
+    return { success: false };
   };
 
   /**
@@ -172,7 +173,7 @@ export function configUpdater(
       }
     }
 
-    return {success: false};
+    return { success: false };
   };
 
   /**
@@ -191,13 +192,13 @@ export function configUpdater(
 
     const detectedInfo = await detector();
     if (!detectedInfo.version) {
-      log.warn({filePath}, warnNoVersionDetected);
+      log.warn({ filePath }, warnNoVersionDetected);
       return false;
     }
 
     const data = await fileUtils.readFile(filePath);
     if (!data) {
-      log.warn({filePath}, warnFileNotFoundOrCouldNotBeRead);
+      log.warn({ filePath }, warnFileNotFoundOrCouldNotBeRead);
       return false;
     }
 
@@ -206,8 +207,8 @@ export function configUpdater(
 
     try {
       parsedData = mapper.parser(data);
-    } catch (e) {
-      log.warn({filePath, error: e}, warnFailedToParseWithProvidedParser);
+    } catch (error) {
+      log.warn({ filePath, ...pinoErrorPrettier(error) }, warnFailedToParseWithProvidedParser);
       return false;
     }
 
@@ -223,14 +224,14 @@ export function configUpdater(
         }
 
         await fileUtils.writeFile(filePath, newData);
-        log.info({filePath, newVersion}, infoUpdatedVersion);
+        log.info({ filePath, newVersion }, infoUpdatedVersion);
         return true;
       } else {
-        log.warn({filePath}, warnNoMatchingVersionPatternFound);
+        log.warn({ filePath }, warnNoMatchingVersionPatternFound);
         return false;
       }
     } catch (error) {
-      log.warn({filePath, error}, warnFailedToUpdate);
+      log.warn({ filePath, ...pinoErrorPrettier(error) }, warnFailedToUpdate);
       return false;
     }
   };
@@ -247,7 +248,7 @@ export function configUpdater(
  */
 export async function updateAll(folderPath, projectType, newVersion, updaters = []) {
   if (updaters.length === 0) {
-    log.warn({folderPath, projectType}, warnNoUpdatersProvidedToUpdateAll);
+    log.warn({ folderPath, projectType }, warnNoUpdatersProvidedToUpdateAll);
     return false;
   }
 
@@ -260,11 +261,11 @@ export async function updateAll(folderPath, projectType, newVersion, updaters = 
   }
 
   if (successCount === 0) {
-    log.warn({folderPath, projectType}, warnNoFilesUpdated);
+    log.warn({ folderPath, projectType }, warnNoFilesUpdated);
     return false;
   }
 
-  log.info({newVersion, successCount, totalFiles: updaters.length, projectType}, infoUpdatedVersionInFiles);
+  log.info({ newVersion, successCount, totalFiles: updaters.length, projectType }, infoUpdatedVersionInFiles);
   return true;
 }
 
@@ -279,15 +280,15 @@ export async function updateAll(folderPath, projectType, newVersion, updaters = 
  */
 export async function updateFirst(folderPath, projectType, newVersion, updaters = []) {
   if (updaters.length === 0) {
-    log.warn({folderPath, projectType}, warnNoUpdatersProvidedToUpdateFirst);
+    log.warn({ folderPath, projectType }, warnNoUpdatersProvidedToUpdateFirst);
     return false;
   }
 
   const success = await updaters[0](newVersion);
   if (success) {
-    log.info({newVersion, projectType}, infoUpdatedVersionForProject);
+    log.info({ newVersion, projectType }, infoUpdatedVersionForProject);
   } else {
-    log.warn({projectType}, warnFailedToUpdateVersion);
+    log.warn({ projectType }, warnFailedToUpdateVersion);
   }
   return success;
 }

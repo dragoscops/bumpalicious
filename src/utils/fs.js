@@ -3,12 +3,12 @@
  */
 
 import fs from 'fs/promises';
-import {constants, createWriteStream} from 'fs';
-import {pipeline} from 'stream/promises';
-import {logger} from './logging.js';
-import {projectName} from '../constants.js';
+import { constants, createWriteStream } from 'fs';
+import { pipeline } from 'stream/promises';
+import { logger, pinoErrorPrettier } from './logging.js';
+import { projectName } from '../constants.js';
 
-export const log = logger.child({module: `${projectName}/utils/fs`});
+export const log = logger.child({ module: `${projectName}/utils/fs` });
 
 /**
  * @typedef {string | Buffer | URL} PathLike
@@ -23,8 +23,8 @@ export const fileExists = async (filePath) => {
   try {
     await fs.access(filePath, constants.F_OK);
     return true;
-  } catch {
-    log.warn({filePath}, 'File does not exist or is not accessible');
+  } catch (error) {
+    log.warn({ filePath, ...pinoErrorPrettier(error) }, 'File does not exist or is not accessible');
     return false;
   }
 };
@@ -49,7 +49,7 @@ export const readFile = async (filePath, encoding = 'utf8') => {
     await fs.access(filePath, constants.R_OK);
     return await fs.readFile(filePath, encoding);
   } catch (error) {
-    log.warn({error, filePath, encoding}, `Failed to read file`);
+    log.warn({ filePath, encoding, ...pinoErrorPrettier(error) }, `Failed to read file`);
   }
   return null;
 };
@@ -65,7 +65,7 @@ export const writeFile = async (filePath, content, encoding = 'utf8') => {
   try {
     await fs.writeFile(filePath, content, encoding);
   } catch {
-    log.warn({error, filePath, content, encoding}, `Failed to write file`);
+    log.warn({ filePath, content, encoding, ...pinoErrorPrettier(error) }, `Failed to write file`);
     return false;
   }
   return true;
@@ -80,7 +80,7 @@ export const unlink = async (...args) => {
   try {
     await fs.unlink(...args);
   } catch (error) {
-    log.warn({error, ...args}, 'Failed to remove file/folder');
+    log.warn({ error, ...args }, 'Failed to remove file/folder');
     return false;
   }
   return true;

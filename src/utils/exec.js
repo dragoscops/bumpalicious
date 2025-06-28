@@ -33,7 +33,7 @@ export const exec = async (command, args, options) =>
     ps.on('close', (exitCode) => {
       log.info({command: `${command} ${args.join(' ')}`, stdout, stderr, exitCode, options}, 'exec command finished');
       if (exitCode !== 0) {
-        core.error(`Failed to run command: ${command} '${args.join("', '")}'`);
+        core.setFailed(`Failed to run command: ${command} '${args.join("', '")}'`);
       }
       resolve({stdout, stderr, exitCode});
     });

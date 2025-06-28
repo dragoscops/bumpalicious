@@ -1,10 +1,10 @@
-import { logger } from './logging.js';
-import { projectName } from '../constants.js';
-import { exec } from './exec.js';
+import {logger} from './logging.js';
+import {projectName} from '../constants.js';
+import {exec} from './exec.js';
 import path from 'path';
-import { writeFile } from './fs.js';
+import {writeFile} from './fs.js';
 
-export const log = logger.child({ module: `${projectName}/utils/git` });
+export const log = logger.child({module: `${projectName}/utils/git`});
 
 // Log message constants
 export const infoGitConfigSet = 'Git config set successfully';
@@ -46,7 +46,7 @@ export const errorRetrievingChangedFiles = 'Error retrieving changed files in re
  * @returns {Promise<string|null>} - Root path of the Git repository or null on error
  */
 export async function rootPath(cwd) {
-  const { stdout } = await exec('git', ['rev-parse', '--show-toplevel'], { cwd });
+  const {stdout} = await exec('git', ['rev-parse', '--show-toplevel'], {cwd});
   return stdout.trim();
 }
 
@@ -66,7 +66,7 @@ export const config = {
       }
       args.push(key, value);
       await exec('git', args);
-      log.info({ key, value }, infoGitConfigSet);
+      log.info({key, value}, infoGitConfigSet);
     }
   },
 };
@@ -80,7 +80,7 @@ export const commits = {
    * @returns {Promise<string|null>} - Last commit message or null on error
    */
   lastMessage: async () => {
-    const { stdout } = await exec('git', ['log', '-1', '--pretty=%B']);
+    const {stdout} = await exec('git', ['log', '-1', '--pretty=%B']);
     return stdout.trim();
   },
 
@@ -94,7 +94,7 @@ export const commits = {
   getChangedFiles: async (repoPath, lastTag) => {
     // If no tag is provided, return all tracked files as changed
     if (!lastTag) {
-      const { stdout } = await exec('git', ['ls-files'], { cwd: repoPath });
+      const {stdout} = await exec('git', ['ls-files'], {cwd: repoPath});
       return stdout.trim().split('\n').filter(Boolean);
     }
 
@@ -102,7 +102,7 @@ export const commits = {
     const relativeRepoPath = path.relative(rootRepoPath, repoPath).replace(/\.[\\\/]/, '') || '.';
 
     // Otherwise, retrieve changed files in the repository since the last tag
-    const { stdout } = await exec('git', ['diff', lastTag, '--name-only', '--', relativeRepoPath], { cwd: rootRepoPath });
+    const {stdout} = await exec('git', ['diff', lastTag, '--name-only', '--', relativeRepoPath], {cwd: rootRepoPath});
     return stdout.trim().split('\n').filter(Boolean);
   },
 
@@ -122,7 +122,7 @@ export const commits = {
     ]) {
       await exec('git', args);
     }
-    log.info({ commitMessage }, infoChangesCommitted);
+    log.info({commitMessage}, infoChangesCommitted);
   },
 };
 
@@ -139,7 +139,7 @@ export const tag = {
    */
   create: async (tagName, message) => {
     await exec('git', ['tag', '-a', tagName, '-m', message]);
-    log.info({ tagName }, infoTagCreated);
+    log.info({tagName}, infoTagCreated);
   },
 
   /**
@@ -152,7 +152,7 @@ export const tag = {
   createAndPush: async (tagName, message) => {
     const exists = await tag.exists(tagName);
     if (exists) {
-      log.info({ tagName }, infoTagAlreadyExists);
+      log.info({tagName}, infoTagAlreadyExists);
       // First delete the tag locally
       await tag.remove(tagName);
     }
@@ -167,7 +167,7 @@ export const tag = {
    * @returns {Promise<boolean>}
    */
   exists: async (tagName) => {
-    const { stdout } = await exec('git', ['tag', '-l', tagName]);
+    const {stdout} = await exec('git', ['tag', '-l', tagName]);
     return stdout.trim() === tagName;
   },
 
@@ -179,13 +179,13 @@ export const tag = {
    */
   lastCreated: async () => {
     // Try to detect last created tag
-    const { stdout: lastTag } = await exec('git', ['describe', '--tags', '--abbrev=0']);
+    const {stdout: lastTag} = await exec('git', ['describe', '--tags', '--abbrev=0']);
     if (lastTag.trim()) {
       return lastTag.trim();
     }
 
     // If no tag is found, get the first commit hash
-    const { stdout: firstCommitHash } = await exec('git', ['rev-list', '--max-parents=0', 'HEAD']);
+    const {stdout: firstCommitHash} = await exec('git', ['rev-list', '--max-parents=0', 'HEAD']);
     return firstCommitHash.trim();
   },
 
@@ -199,7 +199,7 @@ export const tag = {
     for (const args of [['fetch'], ['push', 'origin', tagName]]) {
       await exec('git', args);
     }
-    log.info({ tagName }, infoTagPushed);
+    log.info({tagName}, infoTagPushed);
   },
 
   /**
@@ -210,7 +210,7 @@ export const tag = {
    */
   remove: async (tagName) => {
     await exec('git', ['tag', '-d', tagName]);
-    log.info({ tagName }, infoTagDeleted);
+    log.info({tagName}, infoTagDeleted);
 
     // TODO: Remote tag deletion is optional and might not be necessary
     // // Also try to delete it from remote
@@ -228,7 +228,7 @@ export const branch = {
    */
   checkout: async (branchName) => {
     await exec('git', ['checkout', branchName]);
-    log.info({ branchName }, infoBranchCheckedOut);
+    log.info({branchName}, infoBranchCheckedOut);
   },
 
   /**
@@ -238,7 +238,7 @@ export const branch = {
    */
   create: async (branchName) => {
     await exec('git', ['checkout', '-b', branchName]);
-    log.info({ branchName }, infoBranchCreated);
+    log.info({branchName}, infoBranchCreated);
     return branchName;
   },
 
@@ -261,13 +261,13 @@ export const branch = {
    */
   remove: async (branchName) => {
     await exec('git', ['branch', '-d', branchName]);
-    log.info({ branchName }, infoBranchDeleted);
+    log.info({branchName}, infoBranchDeleted);
 
     // Also try to delete the branch from remote
     for (const args of [['fetch'], ['push', 'origin', '--delete', branchName]]) {
       await exec('git', args);
     }
-    log.info({ branchName }, `Remote ${infoBranchDeleted.toLowerCase()}`);
+    log.info({branchName}, `Remote ${infoBranchDeleted.toLowerCase()}`);
   },
 
   /**
@@ -278,7 +278,7 @@ export const branch = {
    */
   pull: async (branchName) => {
     await exec('git', ['pull', 'origin', branchName]);
-    log.info({ branchName }, infoBranchPulled);
+    log.info({branchName}, infoBranchPulled);
   },
 
   /**
@@ -289,6 +289,6 @@ export const branch = {
    */
   push: async (branchName) => {
     await exec('git', ['push', 'origin', branchName]);
-    log.info({ branchName }, infoBranchPushed);
+    log.info({branchName}, infoBranchPushed);
   },
 };

@@ -28,7 +28,7 @@ const run = async () => {
     // Get last created tag or 1st commit message
     const lastTag = await git.tag.lastCreated();
     if (!lastTag) {
-      core.error('No tags found in the repository. Please create a tag before running this action.');
+      core.setFailed('No tags found in the repository. Please create a tag before running this action.');
     }
     log.info({lastTag}, 'Last created tag');
     core.notice(`Last created tag: ${lastTag}`);
@@ -130,7 +130,7 @@ const run = async () => {
     }
   } catch (error) {
     log.error({...pinoErrorPrettier(error)}, 'Version bump failed');
-    core.error('Version bump failed');
+    core.setFailed('Version bump failed');
   }
 };
 
