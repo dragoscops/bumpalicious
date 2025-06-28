@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "--build": "ncc build",
-    "build": "esbuild src/index.js --bundle --outdir=dist --out-extension:.js=.cjs --platform=node --target=node20.0.0 --packages=bundle --format=cjs",
+    "build": "esbuild src/index.js --bundle --outdir=dist --out-extension:.js=.js --platform=node --target=node20.0.0 --packages=bundle --format=cjs",
     "cpd": "jscpd ./src",
     "prebuild": "rimraf ./dist",
     "prettify": "npx prettier --write \"./**/*.{js,json}\"",
