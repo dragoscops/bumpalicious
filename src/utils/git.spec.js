@@ -159,7 +159,7 @@ describe('utils/git.js', () => {
 
           expect(execMock).toHaveBeenNthCalledWith(2, 'git', ['tag', '-a', 'v1.0.0', '-m', 'Version 1.0.0']);
           expect(execMock).toHaveBeenNthCalledWith(3, 'git', ['fetch']);
-          expect(execMock).toHaveBeenNthCalledWith(4, 'git', ['push', 'origin', 'v1.0.0']);
+          expect(execMock).toHaveBeenNthCalledWith(4, 'git', ['push', 'origin', 'v1.0.0', '--no-verify']);
         });
 
         it('removes existing tag before recreating it', async () => {
@@ -174,7 +174,7 @@ describe('utils/git.js', () => {
           expect(execMock).toHaveBeenNthCalledWith(2, 'git', ['tag', '-d', 'v1.0.0']);
           expect(execMock).toHaveBeenNthCalledWith(3, 'git', ['tag', '-a', 'v1.0.0', '-m', 'Version 1.0.0']);
           expect(execMock).toHaveBeenNthCalledWith(4, 'git', ['fetch']);
-          expect(execMock).toHaveBeenNthCalledWith(5, 'git', ['push', 'origin', 'v1.0.0']);
+          expect(execMock).toHaveBeenNthCalledWith(5, 'git', ['push', 'origin', 'v1.0.0', '--no-verify']);
 
           setupPinoLoggingCallsTest('info', [{tagName: 'v1.0.0'}, git.infoTagAlreadyExists], git.log);
         });
@@ -206,7 +206,7 @@ describe('utils/git.js', () => {
           execMock.mockResolvedValueOnce({});
 
           await git.tag.push('v1.0.0');
-          expect(execMock).toHaveBeenCalledWith('git', ['push', 'origin', 'v1.0.0']);
+          expect(execMock).toHaveBeenCalledWith('git', ['push', 'origin', 'v1.0.0', '--no-verify']);
           setupPinoLoggingCallsTest('info', [{tagName: 'v1.0.0'}, git.infoTagPushed], git.log);
         });
       });
@@ -252,7 +252,7 @@ describe('utils/git.js', () => {
           execMock.mockResolvedValueOnce({});
 
           await git.branch.push('feature/branch');
-          expect(execMock).toHaveBeenCalledWith('git', ['push', 'origin', 'feature/branch']);
+          expect(execMock).toHaveBeenCalledWith('git', ['push', 'origin', 'feature/branch', '--no-verify']);
           setupPinoLoggingCallsTest('info', [{branchName: 'feature/branch'}, git.infoBranchPushed], git.log);
         });
       });
