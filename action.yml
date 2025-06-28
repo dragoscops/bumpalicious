@@ -1,53 +1,52 @@
-name: "Version Update"
-description: "GitHub Action for automated version management based on conventional commits"
-author: "dragoscops"
+name: 'Version Update'
+description: 'GitHub Action for automated version management based on conventional commits'
+author: 'dragoscops'
 
 inputs:
   branch:
     description: "The branch to commit/merge into (useful when you're maintaining multiple version branches)"
     required: false
-    default: "main"
+    default: 'main'
   changelog_preset:
-    description: "The changelog preset to use for generating the changelog"
+    description: 'The changelog preset to use for generating the changelog'
     required: false
-    default: "conventionalcommits"
+    default: 'conventionalcommits'
   github_token:
-    description: "GitHub token for authentication"
+    description: 'GitHub token for authentication'
     required: false
   pr:
-    description: "Perform version update by creating a pull request"
+    description: 'Perform version update by creating a pull request'
     required: false
-    default: "false"
+    default: 'false'
   pr_auto_merge:
-    description: "Automatically merge the pull request if it passes checks"
+    description: 'Automatically merge the pull request if it passes checks'
     required: false
-    default: "false"
+    default: 'false'
   pr_message:
-    description: "This message will be used for the pull request"
+    description: 'This message will be used for the pull request'
     required: false
-    default: "chore: version update"
+    default: 'chore: version update'
   pr_version_prefix:
-    description: "The prefix of the branch to create the version bump on, defaults to the current branch"
+    description: 'The prefix of the branch to create the version bump on, defaults to the current branch'
     required: false
     default: version_bump
   short_tag:
-    description: "Use short tags for versioning"
+    description: 'Use short tags for versioning'
     required: false
-    default: "false"
+    default: 'false'
   token:
-    description: "GitHub token for actions like creating pull requests"
+    description: 'GitHub token for actions like creating pull requests'
     required: false
     default: ${{ github.token }}
   workspaces:
     description: 'Comma-separated workspace definitions with format "path:type", e.g., ".:text,packages/node:node"'
     required: false
-    default: ".:text"
+    default: '.:text'
 
 runs:
-  using: "node20"
-  # main: 'dist/index.js'
-  main: "src/index.js"
+  using: 'node20'
+  main: 'dist/index.js'
 
 branding:
-  icon: "tag"
-  color: "blue"
+  icon: 'tag'
+  color: 'blue'
