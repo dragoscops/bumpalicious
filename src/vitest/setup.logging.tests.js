@@ -1,6 +1,6 @@
+import path from 'node:path';
+import { expect, vi } from 'vitest';
 import * as logging from '../utils/logging.js';
-import {vi} from 'vitest';
-import path from 'path';
 
 const pinoMethods = ['debug', 'info', 'warn', 'error', 'fatal', 'trace'];
 
@@ -9,7 +9,7 @@ export const mockPino = (logger = logging.logger, filter = '*') => {
     if (typeof logger[key] === 'function') {
       const mocked = vi.spyOn(logger, key);
       if (!process.env.DEBUG?.includes(`log:${filter}`) && !process.env.DEBUG?.includes(`log:*`)) {
-        mocked.mockImplementation((...args) => {});
+        mocked.mockImplementation(() => {});
       }
     }
   });
@@ -36,7 +36,7 @@ export const mockPinoIn = async (modules = []) => {
       let imod = null;
       try {
         imod = await import(`../${mod}.js`);
-      } catch (e) {
+      } catch {
         imod = await import(`../${mod}`);
       }
       // console.log(mod, imod);

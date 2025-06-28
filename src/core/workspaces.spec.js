@@ -1,20 +1,12 @@
-import {describe, it, expect, beforeEach, vi, afterEach} from 'vitest';
+import path from 'node:path';
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 
 import * as workspaces from './workspaces.js';
 import * as changelog from '../utils/changelog.js';
-import * as git from '../utils/git.js';
-import * as exec from '../utils/exec.js';
-import * as version from './version.js';
-import * as detect from './version/detect.js';
-import * as update from './version/update.js';
-import {mockPinoIn, unMockPinoIn} from '../vitest/setup.logging.tests.js';
-import {removeTempProjectFolder} from '../vitest/setup.fs.test.js';
-import {createWorkspacesTestFolder, updateAndCommit} from '../vitest/setup.workspaces.tests.js';
-import {oldVersion, projectNameValue} from '../vitest/setup.detect-update.tests.js';
-
-import path from 'path';
-
-const logs = [workspaces, git, exec, changelog, version, detect, update];
+import { oldVersion } from '../vitest/setup.detect-update.tests.js';
+import { removeTempProjectFolder } from '../vitest/setup.fs.test.js';
+import { mockPinoIn, unMockPinoIn } from '../vitest/setup.logging.tests.js';
+import { createWorkspacesTestFolder, updateAndCommit } from '../vitest/setup.workspaces.tests.js';
 
 describe('workspaces.js module', () => {
   let projectFolder = '';
@@ -29,7 +21,7 @@ describe('workspaces.js module', () => {
       'core/workspaces',
       'utils/changelog',
     ]);
-    ({created, projectFolder, projectName} = await createWorkspacesTestFolder());
+    ({ created, projectFolder, projectName } = await createWorkspacesTestFolder());
   });
 
   afterEach(async () => {
@@ -64,7 +56,7 @@ describe('workspaces.js module', () => {
       const result = await workspaces.enrichWorkspace(projectFolder, 'unknown');
 
       expect(workspaces.log.warn).toHaveBeenCalledWith(
-        {workspaceType: 'unknown', workspacePath: projectFolder},
+        { workspaceType: 'unknown', workspacePath: projectFolder },
         'Unknown workspace type, defaulting to text',
       );
       expect(result.type).toBe('unknown');
@@ -91,7 +83,7 @@ describe('workspaces.js module', () => {
 
       const result = await workspaces.enrichChangedWorkspaces(created, `v${oldVersion}`);
 
-      expect(result).toEqual([{...created[0]}]);
+      expect(result).toEqual([{ ...created[0] }]);
     });
 
     it('returns empty array when no workspaces have changes', async () => {
@@ -162,8 +154,8 @@ describe('workspaces.js module', () => {
       const result = await workspaces.updateVersionsForWorkspaces(created);
 
       expect(result).toEqual([
-        {...created[0], version: '0.1.0'},
-        {...created[1], version: '0.1.0'},
+        { ...created[0], version: '0.1.0' },
+        { ...created[1], version: '0.1.0' },
       ]);
     });
 
@@ -187,7 +179,7 @@ describe('workspaces.js module', () => {
       vi.spyOn(changelog, 'generateWorkspaceChangelog').mockResolvedValue();
 
       try {
-        const result = await workspaces.updateVersionsForWorkspaces(created, {generateChangelog: true});
+        const result = await workspaces.updateVersionsForWorkspaces(created, { generateChangelog: true });
 
         expect(changelog.generateWorkspaceChangelog).toHaveBeenCalledTimes(2);
         expect(result).toEqual(created);
@@ -200,7 +192,7 @@ describe('workspaces.js module', () => {
       vi.spyOn(changelog, 'generateWorkspaceChangelog').mockResolvedValue();
 
       try {
-        const result = await workspaces.updateVersionsForWorkspaces(created, {generateChangelog: false});
+        const result = await workspaces.updateVersionsForWorkspaces(created, { generateChangelog: false });
 
         expect(changelog.generateWorkspaceChangelog).not.toHaveBeenCalled();
         expect(result).toEqual(created);

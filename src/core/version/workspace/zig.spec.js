@@ -1,6 +1,6 @@
-import {beforeEach, describe, it, vi} from 'vitest';
-import {detect, update} from './zig.js';
-import * as updateModule from '../update.js';
+import path from 'node:path';
+import { beforeEach, describe, it } from 'vitest';
+import { detect, update } from './zig.js';
 import {
   setupVersionUpdateTest,
   setupVersionDetectTest,
@@ -11,8 +11,7 @@ import {
   projectNameValue,
   createBrokenFile,
 } from '../../../vitest/setup.detect-update.tests.js';
-import path from 'path';
-import {mockPinoIn, unMockPinoIn} from '../../../vitest/setup.logging.tests.js';
+import { mockPinoIn, unMockPinoIn } from '../../../vitest/setup.logging.tests.js';
 
 const generateCreator =
   (files = ['build.zig'], createFile = createZigBuildFile) =>
@@ -28,7 +27,7 @@ const generateCreator =
         });
       }),
     );
-    return {projectPath, customParser: undefined};
+    return { projectPath, customParser: undefined };
   };
 
 describe('core/version/workspace/zig.js module', () => {
@@ -42,36 +41,36 @@ describe('core/version/workspace/zig.js module', () => {
   });
 
   describe('detect()', () => {
-    // Test detection with build.zig
+    // eslint-disable-next-line vitest/expect-expect
     it('should detect from build.zig', async () => {
       await setupVersionDetectTest({
         creator: generateCreator(),
         parser: detect,
-        expected: {name: projectNameValue, version: oldVersion},
+        expected: { name: projectNameValue, version: oldVersion },
       });
     });
 
-    // Test detection with build.zig.zon
+    // eslint-disable-next-line vitest/expect-expect
     it('should detect from build.zig.zon', async () => {
       await setupVersionDetectTest({
         creator: generateCreator(['build.zig.zon'], createZigBuildZonFile),
         parser: detect,
-        expected: {name: projectNameValue, version: oldVersion},
+        expected: { name: projectNameValue, version: oldVersion },
       });
     });
 
-    // Test error handling when parsing fails
+    // eslint-disable-next-line vitest/expect-expect
     it('should handle parsing errors gracefully', async () => {
       await setupVersionDetectTest({
         creator: generateCreator(['build.zig'], createBrokenFile),
         parser: detect,
-        expected: {name: null, version: null},
+        expected: { name: null, version: null },
       });
     });
   });
 
   describe('update()', () => {
-    // Test update with build.zig specifically
+    // eslint-disable-next-line vitest/expect-expect
     it('should update build.zig when only build.zig is present', async () => {
       await setupVersionUpdateTest({
         creator: generateCreator(['build.zig']),
@@ -80,7 +79,7 @@ describe('core/version/workspace/zig.js module', () => {
       });
     });
 
-    // Test update with build.zig.zon specifically
+    // eslint-disable-next-line vitest/expect-expect
     it('should update build.zig.zon when only build.zig.zon is present', async () => {
       await setupVersionUpdateTest({
         creator: generateCreator(['build.zig.zon']),
@@ -96,7 +95,7 @@ describe('core/version/workspace/zig.js module', () => {
       // The error handling is already tested at the update module level.
     });
 
-    // Test update with multiple files when both are present
+    // eslint-disable-next-line vitest/expect-expect
     it('should update both build.zig and build.zig.zon when both are present', async () => {
       await setupVersionUpdateTest({
         creator: generateCreator(['build.zig', 'build.zig.zon']),

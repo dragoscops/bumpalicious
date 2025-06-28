@@ -1,7 +1,7 @@
-import fs from 'fs/promises';
-import path from 'path';
-import {tmpdir} from 'os';
-import {exec} from '../utils/exec';
+import fs from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { exec } from '../utils/exec';
 
 /**
  * Creates a temporary folder for testing purposes.
@@ -14,7 +14,7 @@ export const createTempProjectFolder = async (prefix = 'node') => {
   tempDir = await fs.realpath(tempDir);
 
   for (const args of [['config', '--global', 'init.defaultBranch', 'main'], ['init']]) {
-    await exec('git', args, {cwd: tempDir});
+    await exec('git', args, { cwd: tempDir });
   }
 
   await fs.writeFile(path.join(tempDir, 'README.md'), '# Test Project\nThis is a test project.');
@@ -24,6 +24,6 @@ export const createTempProjectFolder = async (prefix = 'node') => {
 
 export const removeTempProjectFolder = async (folderPath) => {
   if (folderPath) {
-    return fs.rm(folderPath, {recursive: true});
+    return fs.rm(folderPath, { recursive: true });
   }
 };

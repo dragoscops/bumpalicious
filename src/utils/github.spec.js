@@ -1,6 +1,4 @@
-import {describe, it, expect, beforeEach, vi, afterAll, beforeAll, afterEach} from 'vitest';
-
-import * as github from './github.js';
+import { describe } from 'vitest';
 
 describe.skip('github.js module', () => {
   describe('stringToWorkspace', () => {});

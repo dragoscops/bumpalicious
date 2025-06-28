@@ -1,5 +1,4 @@
-import core from '@actions/core';
-import fs from 'fs-extra';
+/* global vi */
 
 process.exit = vi.fn();
 
@@ -8,7 +7,7 @@ vi.mock('@actions/core', () => {
 
   const def = {
     ...actual,
-    getInput: vi.fn((name, _options) => {
+    getInput: vi.fn((name) => {
       if (name === 'pr_version_prefix') {
         return 'version_bump';
       }
@@ -24,5 +23,5 @@ vi.mock('@actions/core', () => {
     setFailed: vi.fn(),
   };
 
-  return {...def, default: def};
+  return { ...def, default: def };
 });

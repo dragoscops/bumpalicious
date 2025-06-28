@@ -1,5 +1,6 @@
-import {beforeEach, describe, it, vi} from 'vitest';
-import {detect, update} from './go.js';
+import path from 'node:path';
+import { beforeEach, describe, it } from 'vitest';
+import { detect, update } from './go.js';
 import {
   setupVersionDetectTest,
   setupVersionUpdateTest,
@@ -9,8 +10,7 @@ import {
   oldVersion,
   projectNameValue,
 } from '../../../vitest/setup.detect-update.tests.js';
-import path from 'path';
-import {mockPinoIn, unMockPinoIn} from '../../../vitest/setup.logging.tests.js';
+import { mockPinoIn, unMockPinoIn } from '../../../vitest/setup.logging.tests.js';
 
 const generateCreator =
   (files = ['go.mod']) =>
@@ -31,7 +31,7 @@ const generateCreator =
       }
     }
 
-    return {projectPath, customParser: undefined};
+    return { projectPath, customParser: undefined };
   };
 
 describe('core/version/workspace/go.js module', () => {
@@ -46,35 +46,39 @@ describe('core/version/workspace/go.js module', () => {
 
   describe('detect()', () => {
     // Test detection with go.mod
+    // eslint-disable-next-line vitest/expect-expect
     it('should detect from go.mod', async () => {
       await setupVersionDetectTest({
         creator: generateCreator(),
         parser: detect,
-        expected: {name: `github.com/${projectNameValue}`, version: oldVersion},
+        expected: { name: `github.com/${projectNameValue}`, version: oldVersion },
       });
     });
 
     // Test detection with version.go
+    // eslint-disable-next-line vitest/expect-expect
     it('should detect from version.go', async () => {
       await setupVersionDetectTest({
         creator: generateCreator(['version.go']),
         parser: detect,
-        expected: {name: 'version', version: oldVersion},
+        expected: { name: 'version', version: oldVersion },
       });
     });
 
     // Test error handling when parsing fails
+    // eslint-disable-next-line vitest/expect-expect
     it('should handle parsing errors gracefully', async () => {
       await setupVersionDetectTest({
         creator: generateCreator(['go.mod']),
         parser: detect,
-        expected: {name: `github.com/${projectNameValue}`, version: oldVersion},
+        expected: { name: `github.com/${projectNameValue}`, version: oldVersion },
       });
     });
   });
 
   describe('update()', () => {
     // Test updating go.mod
+    // eslint-disable-next-line vitest/expect-expect
     it('should update version in go.mod', async () => {
       await setupVersionUpdateTest({
         creator: generateCreator(['go.mod']),
@@ -84,6 +88,7 @@ describe('core/version/workspace/go.js module', () => {
     });
 
     // Test updating version.go
+    // eslint-disable-next-line vitest/expect-expect
     it('should update version in version.go', async () => {
       await setupVersionUpdateTest({
         creator: generateCreator(['version.go']),

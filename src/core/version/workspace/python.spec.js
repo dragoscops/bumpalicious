@@ -1,5 +1,5 @@
-import {beforeEach, describe, it, vi} from 'vitest';
-import {detect, update} from './python.js';
+import { beforeEach, describe, it } from 'vitest';
+import { detect, update } from './python.js';
 import {
   setupVersionDetectTest,
   setupVersionUpdateTest,
@@ -11,37 +11,37 @@ import {
   createTempProjectFolder,
   projectNameValue,
 } from '../../../vitest/setup.detect-update.tests.js';
-import {mockPinoIn, unMockPinoIn} from '../../../vitest/setup.logging.tests.js';
+import { mockPinoIn, unMockPinoIn } from '../../../vitest/setup.logging.tests.js';
 
 // Generator functions for different Python file types
 const generatePyProjectTomlCreator = async () => {
   const projectPath = await createTempProjectFolder('python');
   await createPythonPyProjectTomlFile(`${projectPath}/pyproject.toml`);
-  return {projectPath, customParser: undefined};
+  return { projectPath, customParser: undefined };
 };
 
 const generatePoetryTomlCreator = async () => {
   const projectPath = await createTempProjectFolder('python');
   await createPythonPoetryTomlFile(`${projectPath}/poetry.toml`);
-  return {projectPath, customParser: undefined};
+  return { projectPath, customParser: undefined };
 };
 
 const generateSetupPyCreator = async () => {
   const projectPath = await createTempProjectFolder('python');
   await createPythonSetupPyFile(`${projectPath}/setup.py`);
-  return {projectPath, customParser: undefined};
+  return { projectPath, customParser: undefined };
 };
 
 const generateSetupCfgCreator = async () => {
   const projectPath = await createTempProjectFolder('python');
   await createPythonSetupCfgFile(`${projectPath}/setup.cfg`);
-  return {projectPath, customParser: undefined};
+  return { projectPath, customParser: undefined };
 };
 
 const generateInitPyCreator = async () => {
   const projectPath = await createTempProjectFolder('python');
   await createPythonInitPyFile(`${projectPath}/__init__.py`);
-  return {projectPath, customParser: undefined};
+  return { projectPath, customParser: undefined };
 };
 
 const generateAllPythonFilesCreator = async () => {
@@ -51,7 +51,7 @@ const generateAllPythonFilesCreator = async () => {
   await createPythonSetupPyFile(`${projectPath}/setup.py`);
   await createPythonSetupCfgFile(`${projectPath}/setup.cfg`);
   await createPythonInitPyFile(`${projectPath}/__init__.py`);
-  return {projectPath, customParser: undefined};
+  return { projectPath, customParser: undefined };
 };
 
 describe('core/version/workspace/python.js module', () => {
@@ -66,6 +66,7 @@ describe('core/version/workspace/python.js module', () => {
 
   describe('detect()', () => {
     // Test detection with pyproject.toml
+    // eslint-disable-next-line vitest/expect-expect
     it('should detect from pyproject.toml', async () => {
       await setupVersionDetectTest({
         creator: async () => {
@@ -81,6 +82,7 @@ describe('core/version/workspace/python.js module', () => {
     });
 
     // Test detection with poetry.toml
+    // eslint-disable-next-line vitest/expect-expect
     it('should detect from poetry.toml', async () => {
       await setupVersionDetectTest({
         creator: async () => {
@@ -96,6 +98,7 @@ describe('core/version/workspace/python.js module', () => {
     });
 
     // Test detection with setup.py
+    // eslint-disable-next-line vitest/expect-expect
     it('should detect from setup.py', async () => {
       await setupVersionDetectTest({
         creator: async () => {
@@ -111,6 +114,7 @@ describe('core/version/workspace/python.js module', () => {
     });
 
     // Test detection with setup.cfg
+    // eslint-disable-next-line vitest/expect-expect
     it('should detect from setup.cfg', async () => {
       await setupVersionDetectTest({
         creator: async () => {
@@ -126,6 +130,7 @@ describe('core/version/workspace/python.js module', () => {
     });
 
     // Test detection with __init__.py
+    // eslint-disable-next-line vitest/expect-expect
     it('should detect from __init__.py', async () => {
       await setupVersionDetectTest({
         creator: async () => {
@@ -147,6 +152,7 @@ describe('core/version/workspace/python.js module', () => {
   });
 
   describe('update()', () => {
+    // eslint-disable-next-line vitest/expect-expect
     it('should update version in pyproject.toml when only pyproject.toml exists', async () => {
       await setupVersionUpdateTest({
         creator: generatePyProjectTomlCreator,
@@ -155,6 +161,7 @@ describe('core/version/workspace/python.js module', () => {
       });
     });
 
+    // eslint-disable-next-line vitest/expect-expect
     it('should update version in poetry.toml when only poetry.toml exists', async () => {
       await setupVersionUpdateTest({
         creator: generatePoetryTomlCreator,
@@ -163,6 +170,7 @@ describe('core/version/workspace/python.js module', () => {
       });
     });
 
+    // eslint-disable-next-line vitest/expect-expect
     it('should update version in setup.py when only setup.py exists', async () => {
       await setupVersionUpdateTest({
         creator: generateSetupPyCreator,
@@ -171,6 +179,7 @@ describe('core/version/workspace/python.js module', () => {
       });
     });
 
+    // eslint-disable-next-line vitest/expect-expect
     it('should update version in setup.cfg when only setup.cfg exists', async () => {
       await setupVersionUpdateTest({
         creator: generateSetupCfgCreator,
@@ -179,6 +188,7 @@ describe('core/version/workspace/python.js module', () => {
       });
     });
 
+    // eslint-disable-next-line vitest/expect-expect
     it('should update version in __init__.py when only __init__.py exists', async () => {
       await setupVersionUpdateTest({
         creator: generateInitPyCreator,
@@ -187,6 +197,7 @@ describe('core/version/workspace/python.js module', () => {
       });
     });
 
+    // eslint-disable-next-line vitest/expect-expect
     it('should update all python config files when multiple exist', async () => {
       await setupVersionUpdateTest({
         creator: generateAllPythonFilesCreator,

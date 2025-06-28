@@ -3,7 +3,7 @@
  * @module core/version.spec
  */
 
-import {describe, expect, it, beforeEach, afterEach} from 'vitest';
+import { describe, expect, it, beforeEach, afterEach } from 'vitest';
 import {
   determineVersionIncreaseType,
   determineVersionPreReleaseIdentifier,
@@ -12,10 +12,8 @@ import {
   warnNoCommitMessageProvided,
   warnNoVersionProvided,
   warnInvalidVersionProvided,
-  warnNoCommitMessageProvided,
-  warnNoVersionProvided,
 } from './version.js';
-import {mockPinoIn, setupPinoLoggingCallsTest, unMockPinoIn} from '../vitest/setup.logging.tests.js';
+import { mockPinoIn, setupPinoLoggingCallsTest, unMockPinoIn } from '../vitest/setup.logging.tests.js';
 
 describe('core/version.js module', () => {
   let logMocks = [];
@@ -28,6 +26,7 @@ describe('core/version.js module', () => {
   });
 
   describe('determineVersionIncreaseType(currentVersion, string)', () => {
+    // eslint-disable-next-line vitest/expect-expect
     it('calls log.warn when commit message is empty or undefined', () => {
       determineVersionIncreaseType('1.0.0', '');
       setupPinoLoggingCallsTest('warn', [warnNoCommitMessageProvided], log);
@@ -39,6 +38,7 @@ describe('core/version.js module', () => {
       setupPinoLoggingCallsTest('warn', [warnNoCommitMessageProvided], log, 3);
     });
 
+    // eslint-disable-next-line vitest/expect-expect
     it('calls log.warn when version is empty or undefined', () => {
       determineVersionIncreaseType('', 'feat: new feature');
       setupPinoLoggingCallsTest('warn', [warnNoVersionProvided], log);
@@ -53,11 +53,11 @@ describe('core/version.js module', () => {
     it('calls log.warn and returns null for invalid version format', () => {
       const result = determineVersionIncreaseType('invalid-version', 'feat: new feature');
       expect(result).toBeNull();
-      setupPinoLoggingCallsTest('warn', [{currentVersion: 'invalid-version'}, warnInvalidVersionProvided], log);
+      setupPinoLoggingCallsTest('warn', [{ currentVersion: 'invalid-version' }, warnInvalidVersionProvided], log);
 
       const result2 = determineVersionIncreaseType('1.2', 'feat: new feature');
       expect(result2).toBeNull();
-      setupPinoLoggingCallsTest('warn', [{currentVersion: '1.2'}, warnInvalidVersionProvided], log, 2);
+      setupPinoLoggingCallsTest('warn', [{ currentVersion: '1.2' }, warnInvalidVersionProvided], log, 2);
     });
 
     it('returns "major" for breaking changes', () => {
@@ -102,6 +102,7 @@ describe('core/version.js module', () => {
   });
 
   describe('determineVersionPreReleaseIdentifier(currentVersion, string)', () => {
+    // eslint-disable-next-line vitest/expect-expect
     it('calls log.warn when commit message is empty or undefined', () => {
       determineVersionPreReleaseIdentifier('1.0.0', '');
       setupPinoLoggingCallsTest('warn', [warnNoCommitMessageProvided], log);
@@ -113,6 +114,7 @@ describe('core/version.js module', () => {
       setupPinoLoggingCallsTest('warn', [warnNoCommitMessageProvided], log, 3);
     });
 
+    // eslint-disable-next-line vitest/expect-expect
     it('calls log.warn when version is empty or undefined', () => {
       determineVersionPreReleaseIdentifier('', 'feat: new feature');
       setupPinoLoggingCallsTest('warn', [warnNoVersionProvided], log);
@@ -140,11 +142,11 @@ describe('core/version.js module', () => {
     it('calls log.warn and returns null for invalid version format', () => {
       const result = determineVersionPreReleaseIdentifier('invalid-version', 'feat: new feature');
       expect(result).toBeNull();
-      setupPinoLoggingCallsTest('warn', [{currentVersion: 'invalid-version'}, warnInvalidVersionProvided], log);
+      setupPinoLoggingCallsTest('warn', [{ currentVersion: 'invalid-version' }, warnInvalidVersionProvided], log);
 
       const result2 = determineVersionPreReleaseIdentifier('1.2', 'feat: new feature');
       expect(result2).toBeNull();
-      setupPinoLoggingCallsTest('warn', [{currentVersion: '1.2'}, warnInvalidVersionProvided], log, 2);
+      setupPinoLoggingCallsTest('warn', [{ currentVersion: '1.2' }, warnInvalidVersionProvided], log, 2);
     });
 
     it('returns null when no pre-release identifier is found', () => {
