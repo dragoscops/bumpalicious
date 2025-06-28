@@ -1,8 +1,9 @@
-import {logger} from '../utils/logging.js';
-import {mockPino, setupPinoLoggingCallsTest, unMockPino} from './setup.logging.tests.js';
-import fs from 'fs/promises';
-import path from 'path';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import {expect} from 'vitest';
 import {removeTempProjectFolder} from './setup.fs.test.js';
+import {mockPino, setupPinoLoggingCallsTest, unMockPino} from './setup.logging.tests.js';
+import {logger} from '../utils/logging.js';
 export {createTempProjectFolder} from './setup.fs.test.js';
 
 const log = logger.child({module: 'vitest/version-detect-update-tests'});
