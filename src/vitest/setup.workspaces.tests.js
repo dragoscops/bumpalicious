@@ -1,3 +1,5 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import {
   createJsonFile,
   createPythonPyProjectTomlFile,
@@ -6,8 +8,6 @@ import {
 } from './setup.detect-update.tests';
 import {createTempProjectFolder} from './setup.fs.test';
 
-import path from 'path';
-import fs from 'fs/promises';
 import {exec} from '../utils/exec.js';
 
 /**
