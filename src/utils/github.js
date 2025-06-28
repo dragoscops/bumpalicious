@@ -182,7 +182,7 @@ export const pr = {
 
       return pullRequests.length > 0 ? pullRequests[0] : null;
     } catch (error) {
-      log.error({...pinoErrorPrettier(error), repo, base, head, state}, 'Failed to check for existing pull request');
+      log.error({...pinoErrorPrettier(error), repo, base, head}, 'Failed to check for existing pull request');
       return null;
     }
   },
