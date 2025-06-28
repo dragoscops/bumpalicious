@@ -64,6 +64,7 @@ jobs:
           # Clean Branch of all Previous Push Attempts
           #
 
+          git checkout -B builder
           git pull origin ${{ steps.prereqs.outputs.branch }} --ff-only
           rm -rf workspaces* package.json README.md CHANGELOG.md
 
