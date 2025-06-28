@@ -3,7 +3,7 @@
   "version": "2.0.1",
   "description": "GitHub Action for automated version management based on conventional commits",
   "main": "dist/index.js",
-  "type": "module",
+  "--type": "module",
   "scripts": {
     "--build": "ncc build",
     "build": "esbuild src/index.js --bundle --outdir=dist --out-extension:.js=.js --platform=node --target=node20.0.0 --packages=bundle --format=cjs",

@@ -45185,23 +45185,23 @@ var require_toml = __commonJS({
 });
 
 // src/index.js
-var import_core2 = __toESM(require_core(), 1);
+var import_core2 = __toESM(require_core());
 
 // src/constants.js
 var projectName = "bumpalicious";
 
 // src/core/workspaces.js
-var fs3 = __toESM(require("node:fs/promises"), 1);
-var import_node_path11 = __toESM(require("node:path"), 1);
-var core3 = __toESM(require_core(), 1);
-var import_semver5 = __toESM(require_semver2(), 1);
+var fs3 = __toESM(require("node:fs/promises"));
+var import_node_path11 = __toESM(require("node:path"));
+var core3 = __toESM(require_core());
+var import_semver5 = __toESM(require_semver2());
 
 // src/core/version.js
-var import_semver = __toESM(require_semver2(), 1);
+var import_semver = __toESM(require_semver2());
 
 // src/utils/logging.js
-var import_pino = __toESM(require_pino(), 1);
-var import_pino_pretty = __toESM(require_pino_pretty(), 1);
+var import_pino = __toESM(require_pino());
+var import_pino_pretty = __toESM(require_pino_pretty());
 var stream = (0, import_pino_pretty.default)({ colorize: true });
 var logger = (0, import_pino.default)(stream);
 function pinoErrorPrettier(error2) {
@@ -46541,7 +46541,7 @@ function conventionalChangelog(options, context, gitRawCommitsOpts, parserOpts, 
 
 // src/utils/fs.js
 var import_node_fs2 = require("node:fs");
-var import_promises4 = __toESM(require("node:fs/promises"), 1);
+var import_promises4 = __toESM(require("node:fs/promises"));
 var import_promises5 = require("node:stream/promises");
 var log2 = logger.child({ module: `${projectName}/utils/fs` });
 var fileExists2 = async (filePath) => {
@@ -46713,11 +46713,11 @@ async function mergeChangelogContent(changelogPath, newContentPath) {
 }
 
 // src/utils/git.js
-var import_node_path3 = __toESM(require("node:path"), 1);
+var import_node_path3 = __toESM(require("node:path"));
 
 // src/utils/exec.js
-var import_node_child_process = __toESM(require("node:child_process"), 1);
-var import_core = __toESM(require_core(), 1);
+var import_node_child_process = __toESM(require("node:child_process"));
+var import_core = __toESM(require_core());
 var log4 = logger.child({ module: `${projectName}/utils/exec` });
 var exec2 = async (command, args, options) => new Promise((resolve3) => {
   const ps = import_node_child_process.default.spawn(command, args, {
@@ -46975,8 +46975,8 @@ var branch = {
 };
 
 // src/utils/github.js
-var core2 = __toESM(require_core(), 1);
-var import_github = __toESM(require_github(), 1);
+var core2 = __toESM(require_core());
+var import_github = __toESM(require_github());
 
 // src/utils/workspace.js
 var log6 = logger.child({ module: "utils/workspace" });
@@ -47214,7 +47214,7 @@ __export(deno_exports, {
   detect: () => detect,
   update: () => update
 });
-var import_node_path4 = __toESM(require("node:path"), 1);
+var import_node_path4 = __toESM(require("node:path"));
 
 // node_modules/tiny-jsonc/dist/index.js
 var stringOrCommentRe = /("(?:\\?[^])*?")|(\/\/.*)|(\/\*[^]*?\*\/)/g;
@@ -47519,7 +47519,7 @@ __export(go_exports, {
   detect: () => detect2,
   update: () => update2
 });
-var import_node_path5 = __toESM(require("node:path"), 1);
+var import_node_path5 = __toESM(require("node:path"));
 var detect2 = async (projectPath) => anyOf(projectPath, "go", [
   configParser(import_node_path5.default.join(projectPath, "go.mod"), {
     parser: (data) => data,
@@ -47560,7 +47560,7 @@ __export(node_exports, {
   detect: () => detect3,
   update: () => update3
 });
-var import_node_path6 = __toESM(require("node:path"), 1);
+var import_node_path6 = __toESM(require("node:path"));
 var detect3 = async (projectPath) => anyOf(projectPath, "node", [
   ...["jsr.json", "package.json"].map(
     (file) => configParser(import_node_path6.default.join(projectPath, file), {
@@ -47586,8 +47586,8 @@ __export(python_exports, {
   detect: () => detect4,
   update: () => update4
 });
-var import_node_path7 = __toESM(require("node:path"), 1);
-var import_toml = __toESM(require_toml(), 1);
+var import_node_path7 = __toESM(require("node:path"));
+var import_toml = __toESM(require_toml());
 var detect4 = async (projectPath) => anyOf(projectPath, "python", [
   configParser(import_node_path7.default.join(projectPath, "pyproject.toml"), {
     parser: import_toml.default.parse,
@@ -47652,8 +47652,8 @@ __export(rust_exports, {
   detect: () => detect5,
   update: () => update5
 });
-var import_node_path8 = __toESM(require("node:path"), 1);
-var import_toml2 = __toESM(require_toml(), 1);
+var import_node_path8 = __toESM(require("node:path"));
+var import_toml2 = __toESM(require_toml());
 var detect5 = async (projectPath) => anyOf(projectPath, "rust", [
   configParser(import_node_path8.default.join(projectPath, "Cargo.toml"), {
     parser: import_toml2.default.parse,
@@ -47675,7 +47675,7 @@ __export(text_exports, {
   detect: () => detect6,
   update: () => update6
 });
-var import_node_path9 = __toESM(require("node:path"), 1);
+var import_node_path9 = __toESM(require("node:path"));
 var detect6 = async (projectPath) => anyOf(projectPath, "text", [
   ...["version", "version.txt", "VERSION", "VERSION.txt"].map(
     (file) => configParser(import_node_path9.default.join(projectPath, file), {
@@ -47702,7 +47702,7 @@ __export(zig_exports, {
   detect: () => detect7,
   update: () => update7
 });
-var import_node_path10 = __toESM(require("node:path"), 1);
+var import_node_path10 = __toESM(require("node:path"));
 var detect7 = async (projectPath) => merge(projectPath, "zig", [
   configParser(import_node_path10.default.join(projectPath, "build.zig"), {
     parser: (data) => data,
