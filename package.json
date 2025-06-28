@@ -5,7 +5,8 @@
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
-    "build": "esbuild src/index.js --bundle --outdir=dist --out-extension:.js=.js --platform=node --target=node20.0.0 --packages=bundle --format=esm",
+    "build": "ncc build",
+    "--build": "esbuild src/index.js --bundle --outdir=dist --out-extension:.js=.js --platform=node --target=node20.0.0 --packages=bundle --format=esm",
     "cpd": "jscpd ./src",
     "prettify": "npx prettier --write \"./**/*.{js,json}\"",
     "-prepare": "npm run build",
@@ -15,7 +16,14 @@
     "type": "git",
     "url": "git+https://github.com/dragoscops/version-update.git"
   },
-  "keywords": ["github", "actions", "version", "semver", "release", "conventional-commits"],
+  "keywords": [
+    "github",
+    "actions",
+    "version",
+    "semver",
+    "release",
+    "conventional-commits"
+  ],
   "author": "dragoscops",
   "license": "MIT",
   "bugs": {

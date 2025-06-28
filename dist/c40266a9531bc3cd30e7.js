@@ -1,275 +1,3 @@
-import { createRequire as __WEBPACK_EXTERNAL_createRequire } from "module";
-/******/ var __webpack_modules__ = ({
-
-/***/ 626:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-module.exports = __nccwpck_require__.p + "41f39daeb1d629ff9d81.js";
-
-/***/ }),
-
-/***/ 339:
-/***/ ((module) => {
-
-module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("module");
-
-/***/ })
-
-/******/ });
-/************************************************************************/
-/******/ // The module cache
-/******/ var __webpack_module_cache__ = {};
-/******/ 
-/******/ // The require function
-/******/ function __nccwpck_require__(moduleId) {
-/******/ 	// Check if module is in cache
-/******/ 	var cachedModule = __webpack_module_cache__[moduleId];
-/******/ 	if (cachedModule !== undefined) {
-/******/ 		return cachedModule.exports;
-/******/ 	}
-/******/ 	// Create a new module (and put it into the cache)
-/******/ 	var module = __webpack_module_cache__[moduleId] = {
-/******/ 		// no module.id needed
-/******/ 		// no module.loaded needed
-/******/ 		exports: {}
-/******/ 	};
-/******/ 
-/******/ 	// Execute the module function
-/******/ 	var threw = true;
-/******/ 	try {
-/******/ 		__webpack_modules__[moduleId](module, module.exports, __nccwpck_require__);
-/******/ 		threw = false;
-/******/ 	} finally {
-/******/ 		if(threw) delete __webpack_module_cache__[moduleId];
-/******/ 	}
-/******/ 
-/******/ 	// Return the exports of the module
-/******/ 	return module.exports;
-/******/ }
-/******/ 
-/******/ // expose the modules object (__webpack_modules__)
-/******/ __nccwpck_require__.m = __webpack_modules__;
-/******/ 
-/************************************************************************/
-/******/ /* webpack/runtime/hasOwnProperty shorthand */
-/******/ (() => {
-/******/ 	__nccwpck_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
-/******/ })();
-/******/ 
-/******/ /* webpack/runtime/publicPath */
-/******/ (() => {
-/******/ 	var scriptUrl;
-/******/ 	if (typeof import.meta.url === "string") scriptUrl = import.meta.url
-/******/ 	// When supporting browsers where an automatic publicPath is not supported you must specify an output.publicPath manually via configuration
-/******/ 	// or pass an empty string ("") and set the __webpack_public_path__ variable from your code to use your own logic.
-/******/ 	if (!scriptUrl) throw new Error("Automatic publicPath is not supported in this browser");
-/******/ 	scriptUrl = scriptUrl.replace(/#.*$/, "").replace(/\?.*$/, "").replace(/\/[^\/]+$/, "/");
-/******/ 	__nccwpck_require__.p = scriptUrl;
-/******/ })();
-/******/ 
-/******/ /* webpack/runtime/compat */
-/******/ 
-/******/ if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = new URL('.', import.meta.url).pathname.slice(import.meta.url.match(/^file:\/\/\/\w:/) ? 1 : 0, -1) + "/";
-/******/ 
-/******/ /* webpack/runtime/import chunk loading */
-/******/ (() => {
-/******/ 	__nccwpck_require__.b = new URL("./", import.meta.url);
-/******/ 	
-/******/ 	// object to store loaded and loading chunks
-/******/ 	// undefined = chunk not loaded, null = chunk preloaded/prefetched
-/******/ 	// [resolve, Promise] = chunk loading, 0 = chunk loaded
-/******/ 	var installedChunks = {
-/******/ 		792: 0
-/******/ 	};
-/******/ 	
-/******/ 	// no install chunk
-/******/ 	
-/******/ 	// no chunk on demand loading
-/******/ 	
-/******/ 	// no prefetching
-/******/ 	
-/******/ 	// no preloaded
-/******/ 	
-/******/ 	// no external install chunk
-/******/ 	
-/******/ 	// no on chunks loaded
-/******/ })();
-/******/ 
-/************************************************************************/
-var __webpack_exports__ = {};
-/* harmony import */ var module__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(339);
-
-/******/ var __webpack_modules__ = ({
-
-/***/ 626:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require2_) => {
-
-module.exports = __nccwpck_require2_.p + "c40266a9531bc3cd30e7.js";
-
-/***/ }),
-
-/***/ 317:
-/***/ ((module) => {
-
-module.exports = (0,module__WEBPACK_IMPORTED_MODULE_0__.createRequire)(import.meta.url)("child_process");
-
-/***/ }),
-
-/***/ 943:
-/***/ ((module) => {
-
-module.exports = (0,module__WEBPACK_IMPORTED_MODULE_0__.createRequire)(import.meta.url)("fs/promises");
-
-/***/ }),
-
-/***/ 421:
-/***/ ((module) => {
-
-module.exports = (0,module__WEBPACK_IMPORTED_MODULE_0__.createRequire)(import.meta.url)("node:child_process");
-
-/***/ }),
-
-/***/ 24:
-/***/ ((module) => {
-
-module.exports = (0,module__WEBPACK_IMPORTED_MODULE_0__.createRequire)(import.meta.url)("node:fs");
-
-/***/ }),
-
-/***/ 455:
-/***/ ((module) => {
-
-module.exports = (0,module__WEBPACK_IMPORTED_MODULE_0__.createRequire)(import.meta.url)("node:fs/promises");
-
-/***/ }),
-
-/***/ 760:
-/***/ ((module) => {
-
-module.exports = (0,module__WEBPACK_IMPORTED_MODULE_0__.createRequire)(import.meta.url)("node:path");
-
-/***/ }),
-
-/***/ 466:
-/***/ ((module) => {
-
-module.exports = (0,module__WEBPACK_IMPORTED_MODULE_0__.createRequire)(import.meta.url)("node:stream/promises");
-
-/***/ }),
-
-/***/ 928:
-/***/ ((module) => {
-
-module.exports = (0,module__WEBPACK_IMPORTED_MODULE_0__.createRequire)(import.meta.url)("path");
-
-/***/ }),
-
-/***/ 203:
-/***/ ((module) => {
-
-module.exports = (0,module__WEBPACK_IMPORTED_MODULE_0__.createRequire)(import.meta.url)("stream");
-
-/***/ }),
-
-/***/ 16:
-/***/ ((module) => {
-
-module.exports = (0,module__WEBPACK_IMPORTED_MODULE_0__.createRequire)(import.meta.url)("url");
-
-/***/ })
-
-/******/ });
-/************************************************************************/
-/******/ // The module cache
-/******/ var __webpack_module_cache__ = {};
-/******/ 
-/******/ // The require function
-/******/ function __nccwpck_require2_(moduleId) {
-/******/ 	// Check if module is in cache
-/******/ 	var cachedModule = __webpack_module_cache__[moduleId];
-/******/ 	if (cachedModule !== undefined) {
-/******/ 		return cachedModule.exports;
-/******/ 	}
-/******/ 	// Create a new module (and put it into the cache)
-/******/ 	var module = __webpack_module_cache__[moduleId] = {
-/******/ 		// no module.id needed
-/******/ 		// no module.loaded needed
-/******/ 		exports: {}
-/******/ 	};
-/******/ 
-/******/ 	// Execute the module function
-/******/ 	var threw = true;
-/******/ 	try {
-/******/ 		__webpack_modules__[moduleId](module, module.exports, __nccwpck_require2_);
-/******/ 		threw = false;
-/******/ 	} finally {
-/******/ 		if(threw) delete __webpack_module_cache__[moduleId];
-/******/ 	}
-/******/ 
-/******/ 	// Return the exports of the module
-/******/ 	return module.exports;
-/******/ }
-/******/ 
-/******/ // expose the modules object (__webpack_modules__)
-/******/ __nccwpck_require2_.m = __webpack_modules__;
-/******/ 
-/************************************************************************/
-/******/ /* webpack/runtime/hasOwnProperty shorthand */
-/******/ (() => {
-/******/ 	__nccwpck_require2_.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
-/******/ })();
-/******/ 
-/******/ /* webpack/runtime/publicPath */
-/******/ (() => {
-/******/ 	var scriptUrl;
-/******/ 	if (typeof import.meta.url === "string") scriptUrl = import.meta.url
-/******/ 	// When supporting browsers where an automatic publicPath is not supported you must specify an output.publicPath manually via configuration
-/******/ 	// or pass an empty string ("") and set the __webpack_public_path__ variable from your code to use your own logic.
-/******/ 	if (!scriptUrl) throw new Error("Automatic publicPath is not supported in this browser");
-/******/ 	scriptUrl = scriptUrl.replace(/#.*$/, "").replace(/\?.*$/, "").replace(/\/[^\/]+$/, "/");
-/******/ 	__nccwpck_require2_.p = scriptUrl;
-/******/ })();
-/******/ 
-/******/ /* webpack/runtime/compat */
-/******/ 
-/******/ if (typeof __nccwpck_require2_ !== 'undefined') __nccwpck_require2_.ab = new URL(/* asset import */ __nccwpck_require__(626), __nccwpck_require__.b).pathname.slice(import.meta.url.match(/^file:\/\/\/\w:/) ? 1 : 0, -1) + "/";
-/******/ 
-/******/ /* webpack/runtime/import chunk loading */
-/******/ (() => {
-/******/ 	__nccwpck_require2_.b = new URL(/* asset import */ __nccwpck_require__(626), __nccwpck_require__.b);
-/******/ 	
-/******/ 	// object to store loaded and loading chunks
-/******/ 	// undefined = chunk not loaded, null = chunk preloaded/prefetched
-/******/ 	// [resolve, Promise] = chunk loading, 0 = chunk loaded
-/******/ 	var installedChunks = {
-/******/ 		792: 0
-/******/ 	};
-/******/ 	
-/******/ 	// no install chunk
-/******/ 	
-/******/ 	// no chunk on demand loading
-/******/ 	
-/******/ 	// no prefetching
-/******/ 	
-/******/ 	// no preloaded
-/******/ 	
-/******/ 	// no external install chunk
-/******/ 	
-/******/ 	// no on chunks loaded
-/******/ })();
-/******/ 
-/************************************************************************/
-var __webpack_exports__ = {};
-/* harmony import */ var stream__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require2_(203);
-/* harmony import */ var path__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require2_(928);
-/* harmony import */ var node_path__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require2_(760);
-/* harmony import */ var node_fs_promises__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require2_(455);
-/* harmony import */ var node_fs__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require2_(24);
-/* harmony import */ var child_process__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require2_(317);
-/* harmony import */ var url__WEBPACK_IMPORTED_MODULE_6__ = __nccwpck_require2_(16);
-/* harmony import */ var fs_promises__WEBPACK_IMPORTED_MODULE_7__ = __nccwpck_require2_(943);
-/* harmony import */ var node_stream_promises__WEBPACK_IMPORTED_MODULE_8__ = __nccwpck_require2_(466);
-/* harmony import */ var node_child_process__WEBPACK_IMPORTED_MODULE_9__ = __nccwpck_require2_(421);
 var __create = Object.create;
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -30143,7 +29871,7 @@ var init_CommitParser = __esm({
 });
 
 // node_modules/conventional-commits-parser/dist/stream.js
-
+import {Transform} from 'stream';
 function parseCommits(options = {}) {
   const warnOption = options.warn;
   const warn =
@@ -30167,7 +29895,7 @@ function parseCommits(options = {}) {
   };
 }
 function parseCommitsStream(options = {}) {
-  return stream__WEBPACK_IMPORTED_MODULE_0__.Transform.from(parseCommits(options));
+  return Transform.from(parseCommits(options));
 }
 var init_stream = __esm({
   'node_modules/conventional-commits-parser/dist/stream.js'() {
@@ -30278,7 +30006,7 @@ var init_RevertedCommitsFilter = __esm({
 });
 
 // node_modules/conventional-commits-filter/dist/filters.js
-
+import {Transform as Transform2} from 'stream';
 async function* filterRevertedCommits(commits2) {
   const filter = new RevertedCommitsFilter();
   for await (const commit of commits2) {
@@ -30294,7 +30022,7 @@ function* filterRevertedCommitsSync(commits2) {
   yield* filter.flush();
 }
 function filterRevertedCommitsStream() {
-  return stream__WEBPACK_IMPORTED_MODULE_0__.Transform.from(filterRevertedCommits);
+  return Transform2.from(filterRevertedCommits);
 }
 var init_filters = __esm({
   'node_modules/conventional-commits-filter/dist/filters.js'() {
@@ -42175,14 +41903,14 @@ var require_normalize = __commonJS({
 });
 
 // node_modules/walk-up-path/dist/mjs/index.js
-
+import {dirname as dirname2, resolve} from 'path';
 var walkUp;
 var init_mjs = __esm({
   'node_modules/walk-up-path/dist/mjs/index.js'() {
     walkUp = function* (path11) {
-      for (path11 = (0,path__WEBPACK_IMPORTED_MODULE_1__.resolve)(path11); path11; ) {
+      for (path11 = resolve(path11); path11; ) {
         yield path11;
-        const pp = (0,path__WEBPACK_IMPORTED_MODULE_1__.dirname)(path11);
+        const pp = dirname2(path11);
         if (pp === path11) {
           break;
         } else {
@@ -42201,12 +41929,12 @@ __export(main_exports, {
   findPackagePathSync: () => findPackagePathSync,
   findPackageSync: () => findPackageSync,
 });
-
-
-
+import {resolve as resolve2} from 'node:path';
+import {stat, readFile as readFile2} from 'node:fs/promises';
+import {statSync, readFileSync} from 'node:fs';
 async function fileExists(path11) {
   try {
-    const stats = await (0,node_fs_promises__WEBPACK_IMPORTED_MODULE_3__.stat)(path11);
+    const stats = await stat(path11);
     return stats.isFile();
   } catch (_err) {
     return false;
@@ -42214,7 +41942,7 @@ async function fileExists(path11) {
 }
 function fileExistsSync(path11) {
   try {
-    const stats = (0,node_fs__WEBPACK_IMPORTED_MODULE_4__.statSync)(path11);
+    const stats = statSync(path11);
     return stats.isFile();
   } catch (_err) {
     return false;
@@ -42222,7 +41950,7 @@ function fileExistsSync(path11) {
 }
 async function findPackagePath(cwd) {
   for (const path11 of walkUp(cwd)) {
-    const packagePath = (0,node_path__WEBPACK_IMPORTED_MODULE_2__.resolve)(path11, 'package.json');
+    const packagePath = resolve2(path11, 'package.json');
     const hasPackageJson = await fileExists(packagePath);
     if (hasPackageJson) {
       return packagePath;
@@ -42236,7 +41964,7 @@ async function findPackage(cwd) {
     return null;
   }
   try {
-    const source = await (0,node_fs_promises__WEBPACK_IMPORTED_MODULE_3__.readFile)(packagePath, {encoding: 'utf8'});
+    const source = await readFile2(packagePath, {encoding: 'utf8'});
     return JSON.parse(source);
   } catch (_err) {
     return null;
@@ -42244,7 +41972,7 @@ async function findPackage(cwd) {
 }
 function findPackagePathSync(cwd) {
   for (const path11 of walkUp(cwd)) {
-    const packagePath = (0,node_path__WEBPACK_IMPORTED_MODULE_2__.resolve)(path11, 'package.json');
+    const packagePath = resolve2(path11, 'package.json');
     const hasPackageJson = fileExistsSync(packagePath);
     if (hasPackageJson) {
       return packagePath;
@@ -42258,7 +41986,7 @@ function findPackageSync(cwd) {
     return null;
   }
   try {
-    const source = (0,node_fs__WEBPACK_IMPORTED_MODULE_4__.readFileSync)(packagePath, {encoding: 'utf8'});
+    const source = readFileSync(packagePath, {encoding: 'utf8'});
     return JSON.parse(source);
   } catch (_err) {
     return null;
@@ -47717,8 +47445,8 @@ var projectName = 'bumpalicious';
 // src/core/workspaces.js
 var core3 = __toESM(require_core(), 1);
 var import_semver5 = __toESM(require_semver2(), 1);
-
-
+import * as fs3 from 'node:fs/promises';
+import path10 from 'node:path';
 
 // src/core/version.js
 var import_semver = __toESM(require_semver2(), 1);
@@ -47833,18 +47561,18 @@ function determineVersionPreReleaseIdentifier(currentVersion, commitMessage) {
 }
 
 // src/utils/changelog.js
-
+import {join as join3} from 'node:path';
 
 // node_modules/conventional-changelog-core/index.js
 var import_add_stream = __toESM(require_add_stream(), 1);
-
-
+import {Readable as Readable2, Transform as Transform4} from 'stream';
+import {execFileSync} from 'child_process';
 
 // node_modules/git-raw-commits/src/index.js
-
+import {Readable} from 'stream';
 
 // node_modules/@conventional-changelog/git-client/dist/utils.js
-
+import {spawn as spawnChild} from 'child_process';
 function catchProcessError(child) {
   return new Promise((resolve3) => {
     let stderr = '';
@@ -47864,7 +47592,7 @@ function catchProcessError(child) {
   });
 }
 async function* stdoutSpawn(cmd, args, options) {
-  const child = (0,child_process__WEBPACK_IMPORTED_MODULE_5__.spawn)(cmd, args, options);
+  const child = spawnChild(cmd, args, options);
   const errorPromise = catchProcessError(child);
   yield* child.stdout;
   const error2 = await errorPromise;
@@ -48243,7 +47971,7 @@ async function* getRawCommits(options) {
   }
 }
 function getRawCommitsStream(options) {
-  return stream__WEBPACK_IMPORTED_MODULE_0__.Readable.from(getRawCommits(options));
+  return Readable.from(getRawCommits(options));
 }
 
 // node_modules/conventional-changelog-core/index.js
@@ -48390,14 +48118,14 @@ function getGenerateOnFunction(context, options) {
 }
 
 // node_modules/conventional-changelog-writer/dist/writers.js
-
+import {Transform as Transform3} from 'stream';
 
 // node_modules/conventional-changelog-writer/dist/template.js
 var import_handlebars = __toESM(require_lib2(), 1);
 init_dist2();
-
-
-
+import {join as join2} from 'path';
+import {fileURLToPath} from 'url';
+import {readFile} from 'fs/promises';
 
 // node_modules/conventional-changelog-writer/dist/context.js
 var import_semver4 = __toESM(require_semver2(), 1);
@@ -48500,13 +48228,13 @@ ${stringify(templateContext)}`);
 }
 
 // node_modules/conventional-changelog-writer/dist/template.js
-var dirname = (0,url__WEBPACK_IMPORTED_MODULE_6__.fileURLToPath)(new URL(/* asset import */ __nccwpck_require2_(626), __nccwpck_require2_.b));
+var dirname = fileURLToPath(new URL('.', import.meta.url));
 async function loadTemplates(options = {}) {
   const [mainTemplate, headerPartial, commitPartial, footerPartial] = await Promise.all([
-    options.mainTemplate || (0,fs_promises__WEBPACK_IMPORTED_MODULE_7__.readFile)((0,path__WEBPACK_IMPORTED_MODULE_1__.join)(dirname, '..', 'templates', 'template.hbs'), 'utf-8'),
-    options.headerPartial || (0,fs_promises__WEBPACK_IMPORTED_MODULE_7__.readFile)((0,path__WEBPACK_IMPORTED_MODULE_1__.join)(dirname, '..', 'templates', 'header.hbs'), 'utf-8'),
-    options.commitPartial || (0,fs_promises__WEBPACK_IMPORTED_MODULE_7__.readFile)((0,path__WEBPACK_IMPORTED_MODULE_1__.join)(dirname, '..', 'templates', 'commit.hbs'), 'utf-8'),
-    options.footerPartial || (0,fs_promises__WEBPACK_IMPORTED_MODULE_7__.readFile)((0,path__WEBPACK_IMPORTED_MODULE_1__.join)(dirname, '..', 'templates', 'footer.hbs'), 'utf-8'),
+    options.mainTemplate || readFile(join2(dirname, '..', 'templates', 'template.hbs'), 'utf-8'),
+    options.headerPartial || readFile(join2(dirname, '..', 'templates', 'header.hbs'), 'utf-8'),
+    options.commitPartial || readFile(join2(dirname, '..', 'templates', 'commit.hbs'), 'utf-8'),
+    options.footerPartial || readFile(join2(dirname, '..', 'templates', 'footer.hbs'), 'utf-8'),
   ]);
   return {
     mainTemplate,
@@ -48624,16 +48352,16 @@ function writeChangelog(context = {}, options = {}, includeDetails = false) {
   };
 }
 function writeChangelogStream(context, options, includeDetails = false) {
-  return stream__WEBPACK_IMPORTED_MODULE_0__.Transform.from(writeChangelog(context, options, includeDetails));
+  return Transform3.from(writeChangelog(context, options, includeDetails));
 }
 
 // node_modules/conventional-changelog-core/lib/merge-config.js
 var import_hosted_git_info = __toESM(require_lib3(), 1);
 var import_parse_repository_url = __toESM(require_src(), 1);
-
-
-
-
+import fs from 'fs/promises';
+import path from 'path';
+import {exec} from 'child_process';
+import {URL as URL2, fileURLToPath as fileURLToPath2} from 'url';
 
 // node_modules/git-semver-tags/src/index.js
 function getFinalOptions3(options = {}) {
@@ -48659,7 +48387,7 @@ async function getSemverTags(options = {}) {
 
 // node_modules/conventional-changelog-core/lib/merge-config.js
 var import_normalize_package_data = __toESM(require_normalize(), 1);
-var dirname3 = (0,url__WEBPACK_IMPORTED_MODULE_6__.fileURLToPath)(new url__WEBPACK_IMPORTED_MODULE_6__.URL('.', import.meta.url));
+var dirname3 = fileURLToPath2(new URL2('.', import.meta.url));
 var rhosts = /github|bitbucket|gitlab/i;
 var dateFormatter = Intl.DateTimeFormat('sv-SE', {
   timeZone: 'UTC',
@@ -48693,7 +48421,7 @@ function omitUndefinedValueProps(obj) {
 }
 function getRemoteOriginUrl(cwd) {
   return new Promise((resolve3, reject) => {
-    (0,child_process__WEBPACK_IMPORTED_MODULE_5__.exec)('git config --get remote.origin.url', {cwd}, (err, stdout) => {
+    exec('git config --get remote.origin.url', {cwd}, (err, stdout) => {
       if (err) {
         reject(err);
       } else {
@@ -48745,7 +48473,7 @@ async function mergeConfig(options, context, gitRawCommitsOpts, parserOpts, writ
   options.warn ||= options.debug;
   if (options.pkg) {
     if (options.pkg.path) {
-      pkgPromise = fs_promises__WEBPACK_IMPORTED_MODULE_7__.readFile(options.pkg.path, 'utf-8').then((file) => {
+      pkgPromise = fs.readFile(options.pkg.path, 'utf-8').then((file) => {
         const json = JSON.parse(file);
         (0, import_normalize_package_data.default)(json);
         return json;
@@ -48823,7 +48551,7 @@ async function mergeConfig(options, context, gitRawCommitsOpts, parserOpts, writ
       const browse = repo.browse();
       if (!context.host) {
         if (repo.domain) {
-          const parsedBrowse = new url__WEBPACK_IMPORTED_MODULE_6__.URL(browse);
+          const parsedBrowse = new URL2(browse);
           if (parsedBrowse.origin.indexOf('//') !== -1) {
             context.host = parsedBrowse.protocol + '//' + repo.domain;
           } else {
@@ -48870,7 +48598,7 @@ async function mergeConfig(options, context, gitRawCommitsOpts, parserOpts, writ
       type = repo.type;
     }
     if (type) {
-      hostOpts = JSON.parse(await fs_promises__WEBPACK_IMPORTED_MODULE_7__.readFile(path__WEBPACK_IMPORTED_MODULE_1__.join(dirname3, '..', 'hosts', `${type}.json`), 'utf8'));
+      hostOpts = JSON.parse(await fs.readFile(path.join(dirname3, '..', 'hosts', `${type}.json`), 'utf8'));
       context = {
         issue: hostOpts.issue,
         commit: hostOpts.commit,
@@ -48974,12 +48702,12 @@ async function mergeConfig(options, context, gitRawCommitsOpts, parserOpts, writ
 function conventionalChangelog(options, context, gitRawCommitsOpts, parserOpts, writerOpts, gitRawExecOpts) {
   const cwd = options?.cwd;
   writerOpts = writerOpts || {};
-  const readable = new stream__WEBPACK_IMPORTED_MODULE_0__.Readable({
+  const readable = new Readable2({
     objectMode: writerOpts.includeDetails,
   });
   readable._read = function () {};
   let commitsErrorThrown = false;
-  let commitsStream = new stream__WEBPACK_IMPORTED_MODULE_0__.Readable({
+  let commitsStream = new Readable2({
     objectMode: true,
   });
   commitsStream._read = function () {};
@@ -49005,7 +48733,7 @@ function conventionalChangelog(options, context, gitRawCommitsOpts, parserOpts, 
       writerOpts = data.writerOpts;
       gitRawExecOpts = data.gitRawExecOpts;
       try {
-        (0,child_process__WEBPACK_IMPORTED_MODULE_5__.execFileSync)('git', ['rev-parse', '--verify', 'HEAD'], {
+        execFileSync('git', ['rev-parse', '--verify', 'HEAD'], {
           cwd,
           stdio: 'ignore',
         });
@@ -49053,7 +48781,7 @@ function conventionalChangelog(options, context, gitRawCommitsOpts, parserOpts, 
           setImmediate(readable.emit.bind(readable), 'error', err);
         })
         .pipe(
-          new stream__WEBPACK_IMPORTED_MODULE_0__.Transform({
+          new Transform4({
             objectMode: true,
             highWaterMark: 16,
             transform(chunk, enc, cb) {
@@ -49075,7 +48803,7 @@ function conventionalChangelog(options, context, gitRawCommitsOpts, parserOpts, 
           setImmediate(readable.emit.bind(readable), 'error', err);
         })
         .pipe(
-          new stream__WEBPACK_IMPORTED_MODULE_0__.Transform({
+          new Transform4({
             objectMode: writerOpts.includeDetails,
             transform(chunk, enc, cb) {
               try {
@@ -49101,24 +48829,24 @@ function conventionalChangelog(options, context, gitRawCommitsOpts, parserOpts, 
 }
 
 // src/utils/fs.js
-
-
-
+import {constants, createWriteStream} from 'node:fs';
+import fs2 from 'node:fs/promises';
+import {pipeline} from 'node:stream/promises';
 var log2 = logger.child({module: `${projectName}/utils/fs`});
 var fileExists2 = async (filePath) => {
   try {
-    await node_fs_promises__WEBPACK_IMPORTED_MODULE_3__.access(filePath, node_fs__WEBPACK_IMPORTED_MODULE_4__.constants.F_OK);
+    await fs2.access(filePath, constants.F_OK);
     return true;
   } catch (error2) {
     log2.warn({filePath, ...pinoErrorPrettier(error2)}, 'File does not exist or is not accessible');
     return false;
   }
 };
-var pipelineToFile = async (changelogStream, outputPath) => (0,node_stream_promises__WEBPACK_IMPORTED_MODULE_8__.pipeline)(changelogStream, (0,node_fs__WEBPACK_IMPORTED_MODULE_4__.createWriteStream)(outputPath));
+var pipelineToFile = async (changelogStream, outputPath) => pipeline(changelogStream, createWriteStream(outputPath));
 var readFile3 = async (filePath, encoding = 'utf8') => {
   try {
-    await node_fs_promises__WEBPACK_IMPORTED_MODULE_3__.access(filePath, node_fs__WEBPACK_IMPORTED_MODULE_4__.constants.R_OK);
-    return await node_fs_promises__WEBPACK_IMPORTED_MODULE_3__.readFile(filePath, encoding);
+    await fs2.access(filePath, constants.R_OK);
+    return await fs2.readFile(filePath, encoding);
   } catch (error2) {
     log2.warn({filePath, encoding, ...pinoErrorPrettier(error2)}, `Failed to read file`);
   }
@@ -49126,7 +48854,7 @@ var readFile3 = async (filePath, encoding = 'utf8') => {
 };
 var writeFile = async (filePath, content, encoding = 'utf8') => {
   try {
-    await node_fs_promises__WEBPACK_IMPORTED_MODULE_3__.writeFile(filePath, content, encoding);
+    await fs2.writeFile(filePath, content, encoding);
   } catch (error2) {
     log2.warn({filePath, content, encoding, ...pinoErrorPrettier(error2)}, `Failed to write file`);
     return false;
@@ -49135,7 +48863,7 @@ var writeFile = async (filePath, content, encoding = 'utf8') => {
 };
 var unlink = async (...args) => {
   try {
-    await node_fs_promises__WEBPACK_IMPORTED_MODULE_3__.unlink(...args);
+    await fs2.unlink(...args);
   } catch (error2) {
     log2.warn({error: error2, ...args}, 'Failed to remove file/folder');
     return false;
@@ -49165,8 +48893,8 @@ async function generateWorkspaceChangelog(workspace, lastTag, {preset = 'convent
     log3.error({workspace, lastTag}, errorInvalidWorkspace);
     return false;
   }
-  const changelogPath = (0,node_path__WEBPACK_IMPORTED_MODULE_2__.join)(workspace.path, 'CHANGELOG.md');
-  const tempPath = (0,node_path__WEBPACK_IMPORTED_MODULE_2__.join)(workspace.path, 'CHANGELOG.new.md');
+  const changelogPath = join3(workspace.path, 'CHANGELOG.md');
+  const tempPath = join3(workspace.path, 'CHANGELOG.new.md');
   try {
     const exists = await fileExists2(changelogPath);
     if (!exists) {
@@ -49273,15 +49001,15 @@ async function mergeChangelogContent(changelogPath, newContentPath) {
 }
 
 // src/utils/git.js
-
+import path2 from 'node:path';
 
 // src/utils/exec.js
 var import_core = __toESM(require_core(), 1);
-
+import cp from 'node:child_process';
 var log4 = logger.child({module: `${projectName}/utils/exec`});
 var exec2 = async (command, args, options) =>
   new Promise((resolve3) => {
-    const ps = node_child_process__WEBPACK_IMPORTED_MODULE_9__.spawn(command, args, {
+    const ps = cp.spawn(command, args, {
       cwd: exec2.cwd,
       ...options,
     });
@@ -49368,7 +49096,7 @@ var commits = {
       return stdout2.trim().split('\n').filter(Boolean);
     }
     const rootRepoPath = await rootPath(repoPath);
-    const relativeRepoPath = node_path__WEBPACK_IMPORTED_MODULE_2__.relative(rootRepoPath, repoPath).replace(/\.[\\/]/, '') || '.';
+    const relativeRepoPath = path2.relative(rootRepoPath, repoPath).replace(/\.[\\/]/, '') || '.';
     const {stdout} = await exec2('git', ['diff', lastTag, '--name-only', '--', relativeRepoPath], {
       cwd: rootRepoPath,
     });
@@ -49775,7 +49503,7 @@ __export(deno_exports, {
   detect: () => detect,
   update: () => update,
 });
-
+import path3 from 'node:path';
 
 // node_modules/tiny-jsonc/dist/index.js
 var stringOrCommentRe = /("(?:\\?[^])*?")|(\/\/.*)|(\/\*[^]*?\*\/)/g;
@@ -50053,13 +49781,13 @@ async function updateAll(folderPath, projectType, newVersion, updaters = []) {
 // src/core/version/workspace/deno.js
 var detect = async (projectPath) =>
   anyOf(projectPath, 'deno', [
-    configParser(node_path__WEBPACK_IMPORTED_MODULE_2__.join(projectPath, 'deno.jsonc'), {
+    configParser(path3.join(projectPath, 'deno.jsonc'), {
       parser: dist_default.parse,
       version: ['version'],
       name: ['name'],
     }),
     ...['deno.json', 'jsr.json', 'package.json'].map((file) =>
-      configParser(node_path__WEBPACK_IMPORTED_MODULE_2__.join(projectPath, file), {
+      configParser(path3.join(projectPath, file), {
         parser: JSON.parse,
         version: ['version'],
         name: ['name'],
@@ -50068,13 +49796,13 @@ var detect = async (projectPath) =>
   ]);
 var update = async (projectPath, newVersion) =>
   updateAll(projectPath, 'deno', newVersion, [
-    configUpdater(node_path__WEBPACK_IMPORTED_MODULE_2__.join(projectPath, 'deno.jsonc'), {
+    configUpdater(path3.join(projectPath, 'deno.jsonc'), {
       parser: dist_default.parse,
       serializer: (data) => JSON.stringify(data, null, 2),
       version: ['version'],
     }),
     ...['deno.json', 'jsr.json', 'package.json'].map((file) =>
-      configUpdater(node_path__WEBPACK_IMPORTED_MODULE_2__.join(projectPath, file), {
+      configUpdater(path3.join(projectPath, file), {
         parser: JSON.parse,
         serializer: (data) => JSON.stringify(data, null, 2),
         version: ['version'],
@@ -50088,16 +49816,16 @@ __export(go_exports, {
   detect: () => detect2,
   update: () => update2,
 });
-
+import path4 from 'node:path';
 var detect2 = async (projectPath) =>
   anyOf(projectPath, 'go', [
-    configParser(node_path__WEBPACK_IMPORTED_MODULE_2__.join(projectPath, 'go.mod'), {
+    configParser(path4.join(projectPath, 'go.mod'), {
       parser: (data) => data,
       // pass through raw content
       version: [/\/\/\s*[vV]ersion:?\s*(\d+\.\d+\.\d+(?:[-+][\da-zA-Z.]+)*)/m],
       name: [/module\s+([\w\d./@:-]+)/m],
     }),
-    configParser(node_path__WEBPACK_IMPORTED_MODULE_2__.join(projectPath, 'version.go'), {
+    configParser(path4.join(projectPath, 'version.go'), {
       parser: (data) => data,
       // pass through raw content
       version: [/(?:const|var)\s+[vV]ersion\s*=\s*"([^"]*)"/m],
@@ -50111,13 +49839,13 @@ var detect2 = async (projectPath) =>
   ]);
 var update2 = async (projectPath, newVersion) =>
   updateAll(projectPath, 'go', newVersion, [
-    configUpdater(node_path__WEBPACK_IMPORTED_MODULE_2__.join(projectPath, 'go.mod'), {
+    configUpdater(path4.join(projectPath, 'go.mod'), {
       parser: (data) => data,
       // pass through raw content
       serializer: (data) => data,
       version: [[/\/\/\s*[vV]ersion:?\s*(\d+\.\d+\.\d+(?:[-+][\da-zA-Z.]+)*)/m, '// version: $VERSION']],
     }),
-    configUpdater(node_path__WEBPACK_IMPORTED_MODULE_2__.join(projectPath, 'version.go'), {
+    configUpdater(path4.join(projectPath, 'version.go'), {
       parser: (data) => data,
       // pass through raw content
       serializer: (data) => data,
@@ -50131,11 +49859,11 @@ __export(node_exports, {
   detect: () => detect3,
   update: () => update3,
 });
-
+import path5 from 'node:path';
 var detect3 = async (projectPath) =>
   anyOf(projectPath, 'node', [
     ...['jsr.json', 'package.json'].map((file) =>
-      configParser(node_path__WEBPACK_IMPORTED_MODULE_2__.join(projectPath, file), {
+      configParser(path5.join(projectPath, file), {
         parser: JSON.parse,
         version: ['version'],
         name: ['name'],
@@ -50145,7 +49873,7 @@ var detect3 = async (projectPath) =>
 var update3 = async (projectPath, newVersion) =>
   updateAll(projectPath, 'node', newVersion, [
     ...['jsr.json', 'package.json'].map((file) =>
-      configUpdater(node_path__WEBPACK_IMPORTED_MODULE_2__.join(projectPath, file), {
+      configUpdater(path5.join(projectPath, file), {
         parser: JSON.parse,
         serializer: (data) => JSON.stringify(data, null, 2),
         version: ['version'],
@@ -50160,32 +49888,32 @@ __export(python_exports, {
   update: () => update4,
 });
 var import_toml = __toESM(require_toml(), 1);
-
+import path6 from 'node:path';
 var detect4 = async (projectPath) =>
   anyOf(projectPath, 'python', [
-    configParser(node_path__WEBPACK_IMPORTED_MODULE_2__.join(projectPath, 'pyproject.toml'), {
+    configParser(path6.join(projectPath, 'pyproject.toml'), {
       parser: import_toml.default.parse,
       version: ['project.version'],
       name: ['project.name'],
     }),
-    configParser(node_path__WEBPACK_IMPORTED_MODULE_2__.join(projectPath, 'poetry.toml'), {
+    configParser(path6.join(projectPath, 'poetry.toml'), {
       parser: import_toml.default.parse,
       version: ['tool.poetry.version'],
       name: ['tool.poetry.name'],
     }),
-    configParser(node_path__WEBPACK_IMPORTED_MODULE_2__.join(projectPath, 'setup.py'), {
+    configParser(path6.join(projectPath, 'setup.py'), {
       parser: (data) => data,
       // pass through raw content
       version: [/version\s*=\s*["']([^"']+)["']/m],
       name: [/name\s*=\s*["']([^"']+)["']/m],
     }),
-    configParser(node_path__WEBPACK_IMPORTED_MODULE_2__.join(projectPath, 'setup.cfg'), {
+    configParser(path6.join(projectPath, 'setup.cfg'), {
       parser: (data) => data,
       // pass through raw content
       version: [/version\s*=\s*([^\s]+)/m],
       name: [/name\s*=\s*([^\s]+)/m],
     }),
-    configParser(node_path__WEBPACK_IMPORTED_MODULE_2__.join(projectPath, '__init__.py'), {
+    configParser(path6.join(projectPath, '__init__.py'), {
       parser: (data) => data,
       // pass through raw content
       version: [/__version__\s*=\s*["']([^"']+)["']/m],
@@ -50194,27 +49922,27 @@ var detect4 = async (projectPath) =>
   ]);
 var update4 = async (projectPath, newVersion) =>
   updateAll(projectPath, 'python', newVersion, [
-    configUpdater(node_path__WEBPACK_IMPORTED_MODULE_2__.join(projectPath, 'pyproject.toml'), {
+    configUpdater(path6.join(projectPath, 'pyproject.toml'), {
       parser: import_toml.default.parse,
       serializer: import_toml.default.stringify,
       version: ['project.version'],
     }),
-    configUpdater(node_path__WEBPACK_IMPORTED_MODULE_2__.join(projectPath, 'poetry.toml'), {
+    configUpdater(path6.join(projectPath, 'poetry.toml'), {
       parser: import_toml.default.parse,
       serializer: import_toml.default.stringify,
       version: ['tool.poetry.version'],
     }),
-    configUpdater(node_path__WEBPACK_IMPORTED_MODULE_2__.join(projectPath, 'setup.py'), {
+    configUpdater(path6.join(projectPath, 'setup.py'), {
       parser: (data) => data,
       serializer: (data) => data,
       version: [[/version\s*=\s*["']([^"']+)["']/m, `version="${newVersion}"`]],
     }),
-    configUpdater(node_path__WEBPACK_IMPORTED_MODULE_2__.join(projectPath, 'setup.cfg'), {
+    configUpdater(path6.join(projectPath, 'setup.cfg'), {
       parser: (data) => data,
       serializer: (data) => data,
       version: [[/version\s*=\s*([^\s]+)/m, `version = ${newVersion}`]],
     }),
-    configUpdater(node_path__WEBPACK_IMPORTED_MODULE_2__.join(projectPath, '__init__.py'), {
+    configUpdater(path6.join(projectPath, '__init__.py'), {
       parser: (data) => data,
       serializer: (data) => data,
       version: [[/__version__\s*=\s*["']([^"']+)["']/m, `__version__ = "${newVersion}"`]],
@@ -50228,10 +49956,10 @@ __export(rust_exports, {
   update: () => update5,
 });
 var import_toml2 = __toESM(require_toml(), 1);
-
+import path7 from 'node:path';
 var detect5 = async (projectPath) =>
   anyOf(projectPath, 'rust', [
-    configParser(node_path__WEBPACK_IMPORTED_MODULE_2__.join(projectPath, 'Cargo.toml'), {
+    configParser(path7.join(projectPath, 'Cargo.toml'), {
       parser: import_toml2.default.parse,
       version: ['package.version'],
       name: ['package.name'],
@@ -50239,7 +49967,7 @@ var detect5 = async (projectPath) =>
   ]);
 var update5 = async (projectPath, newVersion) =>
   updateAll(projectPath, 'rust', newVersion, [
-    configUpdater(node_path__WEBPACK_IMPORTED_MODULE_2__.join(projectPath, 'Cargo.toml'), {
+    configUpdater(path7.join(projectPath, 'Cargo.toml'), {
       parser: import_toml2.default.parse,
       serializer: import_toml2.default.stringify,
       version: ['package.version'],
@@ -50252,22 +49980,22 @@ __export(text_exports, {
   detect: () => detect6,
   update: () => update6,
 });
-
+import path8 from 'node:path';
 var detect6 = async (projectPath) =>
   anyOf(projectPath, 'text', [
     ...['version', 'version.txt', 'VERSION', 'VERSION.txt'].map((file) =>
-      configParser(node_path__WEBPACK_IMPORTED_MODULE_2__.join(projectPath, file), {
+      configParser(path8.join(projectPath, file), {
         parser: (data) => data.trim(),
         // pass through raw content and trim
         version: [(content) => content],
-        name: [() => node_path__WEBPACK_IMPORTED_MODULE_2__.basename(node_path__WEBPACK_IMPORTED_MODULE_2__.normalize(projectPath))],
+        name: [() => path8.basename(path8.normalize(projectPath))],
       }),
     ),
   ]);
 var update6 = async (projectPath, newVersion) =>
   updateAll(projectPath, 'text', newVersion, [
     ...['version', 'version.txt', 'VERSION', 'VERSION.txt'].map((file) =>
-      configUpdater(node_path__WEBPACK_IMPORTED_MODULE_2__.join(projectPath, file), {
+      configUpdater(path8.join(projectPath, file), {
         parser: (data) => data.trim(),
         serializer: (data) => data.trim(),
         version: [[/^(.*)$/m, newVersion]],
@@ -50281,16 +50009,16 @@ __export(zig_exports, {
   detect: () => detect7,
   update: () => update7,
 });
-
+import path9 from 'node:path';
 var detect7 = async (projectPath) =>
   merge(projectPath, 'zig', [
-    configParser(node_path__WEBPACK_IMPORTED_MODULE_2__.join(projectPath, 'build.zig'), {
+    configParser(path9.join(projectPath, 'build.zig'), {
       parser: (data) => data,
       // pass through raw content
       version: [/const\s+VERSION\s*=\s*"([^"]+)"/i],
       name: [/const\s+NAME\s*=\s*"([^"]+)"/i],
     }),
-    configParser(node_path__WEBPACK_IMPORTED_MODULE_2__.join(projectPath, 'build.zig.zon'), {
+    configParser(path9.join(projectPath, 'build.zig.zon'), {
       parser: (data) => data,
       // pass through raw content
       version: [/\.version\s*=\s*"([^"]+)"/m],
@@ -50299,12 +50027,12 @@ var detect7 = async (projectPath) =>
   ]);
 var update7 = async (projectPath, newVersion) =>
   updateAll(projectPath, 'zig', newVersion, [
-    configUpdater(node_path__WEBPACK_IMPORTED_MODULE_2__.join(projectPath, 'build.zig'), {
+    configUpdater(path9.join(projectPath, 'build.zig'), {
       parser: (data) => data,
       serializer: (data) => data,
       version: [[/const\s+VERSION\s*=\s*"([^"]+)"/i, `const VERSION = "${newVersion}"`]],
     }),
-    configUpdater(node_path__WEBPACK_IMPORTED_MODULE_2__.join(projectPath, 'build.zig.zon'), {
+    configUpdater(path9.join(projectPath, 'build.zig.zon'), {
       parser: (data) => data,
       serializer: (data) => data,
       version: [[/\.version\s*=\s*"([^"]+)"/m, `.version = "${newVersion}"`]],
@@ -50391,7 +50119,7 @@ async function enrichChangedWorkspaces(workspaces, lastTag) {
   return enrichedWorkspaces;
 }
 async function enrichWorkspace(workspacePath, workspaceType) {
-  workspacePath = node_path__WEBPACK_IMPORTED_MODULE_2__.resolve(workspacePath).replace(/\\/g, '/');
+  workspacePath = path10.resolve(workspacePath).replace(/\\/g, '/');
   let name = '';
   let version = '';
   if (workspace_exports2[workspaceType]) {
@@ -50401,7 +50129,7 @@ async function enrichWorkspace(workspacePath, workspaceType) {
     log10.warn({workspaceType, workspacePath}, LOG_MESSAGES.UNKNOWN_WORKSPACE_TYPE);
   }
   if (!name) {
-    name = node_path__WEBPACK_IMPORTED_MODULE_2__.basename(workspacePath);
+    name = path10.basename(workspacePath);
   }
   return {
     path: workspacePath,
@@ -50526,12 +50254,13 @@ async function createVersionPR(workspacesTree, options) {
   }
   async function generateChangelogForWorkspace(workspace) {
     try {
-      const changelogPath = node_path__WEBPACK_IMPORTED_MODULE_2__.join(workspace.path, 'CHANGELOG.md');
-      const changelogExists2 = await node_fs_promises__WEBPACK_IMPORTED_MODULE_3__.access(changelogPath)
+      const changelogPath = path10.join(workspace.path, 'CHANGELOG.md');
+      const changelogExists2 = await fs3
+        .access(changelogPath)
         .then(() => true)
         .catch(() => false);
       if (changelogExists2) {
-        const changelogContent = await node_fs_promises__WEBPACK_IMPORTED_MODULE_3__.readFile(changelogPath, 'utf8');
+        const changelogContent = await fs3.readFile(changelogPath, 'utf8');
         const latestEntry = changelogContent.split(/^## /m)[1];
         if (latestEntry) {
           prBody.push(`## ${latestEntry}`);
@@ -50661,5 +50390,3 @@ undici/lib/fetch/body.js:
 undici/lib/websocket/frame.js:
   (*! ws. MIT License. Einar Otto Stangvik <einaros@gmail.com> *)
 */
-
-
