@@ -54,7 +54,7 @@ jobs:
 
       - name: Stop Workflow if triggered by the pushes bellow
         run: |
-          if git log ${{ github.event.before }}..${{ github.sha }} --pretty=%B | grep -Ei '${{ steps.prereqs.outputs.skip_message }}'; then
+          if git log ${{ github.event.before }}..${{ github.sha }} --pretty=%B | grep -Eiq "${{ steps.prereqs.outputs.skip_message }}"; then
             echo "Triggered by a test run. Skipping workflow."
             exit 1
           fi
