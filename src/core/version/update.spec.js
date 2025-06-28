@@ -1,4 +1,5 @@
-import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
+import path from 'node:path';
+import {describe, it, expect, beforeEach, afterEach} from 'vitest';
 import * as update from './update.js';
 import {warnNoVersionDetected, log} from './update.js';
 import {
@@ -8,7 +9,6 @@ import {
   createJsonFile,
 } from '../../vitest/setup.detect-update.tests.js';
 import {mockPinoIn, setupPinoLoggingCallsTest, unMockPinoIn} from '../../vitest/setup.logging.tests.js';
-import path from 'path';
 
 // Generator functions for different test scenarios
 const generatePackageJsonCreator = async () => {
@@ -26,7 +26,7 @@ const generatePackageJsonCreator = async () => {
 
 const generateGoModCreator = async () => {
   const projectPath = await createTempProjectFolder('update');
-  const fs = await import('fs/promises');
+  const fs = await import('node:fs/promises');
   const customContent = `module test-project
 
 go 1.21
@@ -46,21 +46,21 @@ go 1.21
 
 const generateVersionFileCreator = async () => {
   const projectPath = await createTempProjectFolder('update');
-  const fs = await import('fs/promises');
+  const fs = await import('node:fs/promises');
   await fs.writeFile(`${projectPath}/version`, '1.0.0');
   return {
     projectPath,
     customParser: update.configUpdater('version', {
       parser: (data) => data, // pass through
       serializer: (data) => data,
-      version: [(data) => newVersion],
+      version: [() => newVersion],
     }),
   };
 };
 
 const generateMultiFileCreator = async () => {
   const projectPath = await createTempProjectFolder('update');
-  const fs = await import('fs/promises');
+  const fs = await import('node:fs/promises');
   await createJsonFile(`${projectPath}/package.json`);
   await fs.writeFile(`${projectPath}/version`, '1.0.0');
   return {
@@ -80,6 +80,7 @@ describe('core/version/update.js', () => {
   });
 
   describe('configUpdater', () => {
+    // eslint-disable-next-line vitest/expect-expect
     it('should create an updater function for JSON files', async () => {
       await setupVersionUpdateTest({
         creator: generatePackageJsonCreator,
@@ -95,6 +96,7 @@ describe('core/version/update.js', () => {
       });
     });
 
+    // eslint-disable-next-line vitest/expect-expect
     it('should create an updater function for regex-based updates', async () => {
       await setupVersionUpdateTest({
         creator: generateGoModCreator,
@@ -110,6 +112,7 @@ describe('core/version/update.js', () => {
       });
     });
 
+    // eslint-disable-next-line vitest/expect-expect
     it('should create an updater function', async () => {
       await setupVersionUpdateTest({
         creator: generateVersionFileCreator,
@@ -117,7 +120,7 @@ describe('core/version/update.js', () => {
           const updaterFn = update.configUpdater(path.join(projectPath, 'version'), {
             parser: (data) => data, // pass through
             serializer: (data) => data,
-            version: [(data) => version], // Use the passed version parameter
+            version: [() => version], // Use the passed version parameter
           });
           return await updaterFn(version);
         },
@@ -125,6 +128,7 @@ describe('core/version/update.js', () => {
       });
     });
 
+    // eslint-disable-next-line vitest/expect-expect
     it('should handle file read errors gracefully', async () => {
       await setupVersionUpdateTest({
         creator: async () => {
@@ -147,6 +151,7 @@ describe('core/version/update.js', () => {
   });
 
   describe('updateAll', () => {
+    // eslint-disable-next-line vitest/expect-expect
     it('should update all files with matching patterns', async () => {
       await setupVersionUpdateTest({
         creator: generateMultiFileCreator,
@@ -160,7 +165,7 @@ describe('core/version/update.js', () => {
             update.configUpdater(path.join(projectPath, 'version'), {
               parser: (data) => data, // pass through
               serializer: (data) => data,
-              version: [(data) => version], // Function that returns the version
+              version: [() => version], // Function that returns the version
             }),
           ]);
         },
@@ -174,7 +179,7 @@ describe('core/version/update.js', () => {
       await setupVersionUpdateTest({
         creator: async () => {
           const projectPath = await createTempProjectFolder('update');
-          const fs = await import('fs/promises');
+          const fs = await import('node:fs/promises');
 
           // Create both files that updateFirst can choose from
           const goModContent = `module test-project
@@ -197,13 +202,13 @@ go 1.21
             update.configUpdater(path.join(projectPath, 'version'), {
               parser: (data) => data, // pass through
               serializer: (data) => data,
-              version: [(data) => version],
+              version: [() => version],
             }),
           ]);
         },
         expected: `// version: ${newVersion}`, // Only go.mod should be updated (first match)
         validator: async (projectPath) => {
-          const fs = await import('fs/promises');
+          const fs = await import('node:fs/promises');
           const goModContent = await fs.readFile(`${projectPath}/go.mod`, 'utf8');
           const versionContent = await fs.readFile(`${projectPath}/version`, 'utf8');
 
@@ -215,6 +220,7 @@ go 1.21
       });
     });
 
+    // eslint-disable-next-line vitest/expect-expect
     it('should return null if no files can be updated', async () => {
       await setupVersionUpdateTest({
         creator: async () => {
