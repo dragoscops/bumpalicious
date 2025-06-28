@@ -1,6 +1,6 @@
-import {log as logger} from '../version.js';
 import * as fileUtils from '../../utils/fs.js';
 import {pinoErrorPrettier} from '../../utils/logging.js';
+import {log as logger} from '../version.js';
 
 export const log = logger.child({module: 'detect'});
 
