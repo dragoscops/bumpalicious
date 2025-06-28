@@ -12,8 +12,6 @@ import {
   warnNoCommitMessageProvided,
   warnNoVersionProvided,
   warnInvalidVersionProvided,
-  warnNoCommitMessageProvided,
-  warnNoVersionProvided,
 } from './version.js';
 import {mockPinoIn, setupPinoLoggingCallsTest, unMockPinoIn} from '../vitest/setup.logging.tests.js';
 
@@ -28,6 +26,7 @@ describe('core/version.js module', () => {
   });
 
   describe('determineVersionIncreaseType(currentVersion, string)', () => {
+    // eslint-disable-next-line vitest/expect-expect
     it('calls log.warn when commit message is empty or undefined', () => {
       determineVersionIncreaseType('1.0.0', '');
       setupPinoLoggingCallsTest('warn', [warnNoCommitMessageProvided], log);
@@ -39,6 +38,7 @@ describe('core/version.js module', () => {
       setupPinoLoggingCallsTest('warn', [warnNoCommitMessageProvided], log, 3);
     });
 
+    // eslint-disable-next-line vitest/expect-expect
     it('calls log.warn when version is empty or undefined', () => {
       determineVersionIncreaseType('', 'feat: new feature');
       setupPinoLoggingCallsTest('warn', [warnNoVersionProvided], log);
@@ -102,6 +102,7 @@ describe('core/version.js module', () => {
   });
 
   describe('determineVersionPreReleaseIdentifier(currentVersion, string)', () => {
+    // eslint-disable-next-line vitest/expect-expect
     it('calls log.warn when commit message is empty or undefined', () => {
       determineVersionPreReleaseIdentifier('1.0.0', '');
       setupPinoLoggingCallsTest('warn', [warnNoCommitMessageProvided], log);
@@ -113,6 +114,7 @@ describe('core/version.js module', () => {
       setupPinoLoggingCallsTest('warn', [warnNoCommitMessageProvided], log, 3);
     });
 
+    // eslint-disable-next-line vitest/expect-expect
     it('calls log.warn when version is empty or undefined', () => {
       determineVersionPreReleaseIdentifier('', 'feat: new feature');
       setupPinoLoggingCallsTest('warn', [warnNoVersionProvided], log);
