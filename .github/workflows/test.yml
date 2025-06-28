@@ -93,7 +93,6 @@ jobs:
           if git branch -r | grep -q 'origin/bump_version_to_'; then
             git branch -r | grep 'origin/bump_version_to_' | sed 's/origin\///' | xargs -n 1 git push origin --delete
           fi
-          fi
 
           #
           # Set the Ground for a New Test Attempot
