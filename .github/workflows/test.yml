@@ -26,7 +26,8 @@ jobs:
           set -ex
 
           {
-            echo "branch=${{ github.head_ref || github.ref }}"
+            echo "branch=${{ github.head_ref || github.ref }}";
+            echo "skip_message=[skip ci]";
           } | tee -a $GITHUB_OUTPUT
 
       - name: Github App Token
@@ -53,9 +54,7 @@ jobs:
 
       - name: Stop Workflow if triggered by the pushes bellow
         run: |
-          git fetch origin ${{ steps.prereqs.outputs.branch }} --no-tags --prune
-          COMMIT_MSG="$(git log -1 --pretty=%B)"
-          if echo "$COMMIT_MSG" | grep -Ei '[skip ci]'; then
+          if git log ${{ github.event.before }}..${{ github.sha }} --pretty=%B | grep -Ei '${{ steps.prereqs.outputs.skip_message }}'; then
             echo "Triggered by a test run. Skipping workflow."
             exit 1
           fi
@@ -82,7 +81,7 @@ jobs:
           rm -rf workspaces* package.json README.md CHANGELOG.md
 
           git add -A
-          git diff-index --quiet HEAD || git commit -m "chore: auto-update [skip ci]" --no-verify
+          git diff-index --quiet HEAD || git commit -m "chore: auto-update ${{ steps.prereqs.outputs.skip_message }}" --no-verify
           git push origin ${{ steps.prereqs.outputs.branch }} --no-verify
 
           tags=$(git tag -l 'v99*')
@@ -119,7 +118,7 @@ jobs:
           echo '{ "version": "99.0.3", "name": "@main-workspace/workspace2" }' > workspaces2/package.json
 
           git add -A
-          git diff-index --quiet HEAD || git commit -m "chore: auto-update [skip ci]" --no-verify
+          git diff-index --quiet HEAD || git commit -m "chore: auto-update ${{ steps.prereqs.outputs.skip_message }}" --no-verify
           git push origin ${{ steps.prereqs.outputs.branch }} --no-verify
 
           git tag v99.0.1
