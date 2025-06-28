@@ -55,7 +55,7 @@ jobs:
           # Clean Branch of all Previous Push Attempts
           #
 
-          git pull origin ${{ github.ref_name }}
+          git pull
           rm -rf workspaces* package.json README.md CHANGELOG.md
 
           git add -A
