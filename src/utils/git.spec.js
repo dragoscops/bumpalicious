@@ -1,11 +1,11 @@
-import {describe, it, expect, beforeEach, vi, afterAll} from 'vitest';
+import {describe, it, expect, beforeEach, vi} from 'vitest';
 
+import * as exec from './exec.js';
 import * as git from './git.js';
+import {oldVersion} from '../vitest/setup.detect-update.tests.js';
+import {removeTempProjectFolder} from '../vitest/setup.fs.test.js';
 import {mockPinoIn, unMockPinoIn, setupPinoLoggingCallsTest} from '../vitest/setup.logging.tests.js';
 import {createWorkspacesTestFolder, updateAndCommit} from '../vitest/setup.workspaces.tests.js';
-import {removeTempProjectFolder} from '../vitest/setup.fs.test.js';
-import * as exec from './exec.js';
-import {oldVersion} from '../vitest/setup.detect-update.tests.js';
 
 /**
  * TODO: As seen, not all tests use mkdtemp. Need to adapt the one that can be adapted to use mkdtemp.
@@ -13,11 +13,14 @@ import {oldVersion} from '../vitest/setup.detect-update.tests.js';
 
 describe('utils/git.js', () => {
   let projectFolder = '';
+  // eslint-disable-next-line no-unused-vars
   let projectName = '';
+  // eslint-disable-next-line no-unused-vars
   let created = [];
   let logMocks = [];
   let execMock = null;
   const lastTag = `v${oldVersion}`;
+  // eslint-disable-next-line no-unused-vars
   const originalExec = exec.exec;
 
   beforeEach(async () => {
@@ -142,6 +145,7 @@ describe('utils/git.js', () => {
 
     describe('tag', () => {
       describe('create()', () => {
+        // eslint-disable-next-line vitest/expect-expect
         it('creates a tag with the specified name and message', async () => {
           await git.tag.create('v1.0.0', 'Version 1.0.0 release');
           setupPinoLoggingCallsTest('info', [{tagName: 'v1.0.0'}, git.infoTagCreated], git.log);
