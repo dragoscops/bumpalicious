@@ -63,11 +63,11 @@ jobs:
           git diff-index --quiet HEAD || git commit -m "chore: auto-update [skip ci]"
           git push origin ${{ github.ref_name }}
 
-          # tags=$(git tag -l 'v*')
-          # if [ -n "$tags" ]; then
-          #   git tag -d $tags \
-          #     && git push --delete origin $tags;
-          # fi
+          tags=$(git tag -l 'v99*')
+          if [ -n "$tags" ]; then
+            git tag -d $tags \
+              && git push --delete origin $tags;
+          fi
 
       #     git pull origin ${{ github.ref_name }}
       #     git fetch
