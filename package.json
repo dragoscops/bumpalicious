@@ -5,9 +5,10 @@
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
-    "build": "ncc build",
-    "--build": "esbuild src/index.js --bundle --outdir=dist --out-extension:.js=.js --platform=node --target=node20.0.0 --packages=bundle --format=esm",
+    "--build": "ncc build",
+    "build": "esbuild src/index.js --bundle --outdir=dist --out-extension:.js=.cjs --platform=node --target=node20.0.0 --packages=bundle --format=cjs",
     "cpd": "jscpd ./src",
+    "prebuild": "rimraf ./dist",
     "prettify": "npx prettier --write \"./**/*.{js,json}\"",
     "-prepare": "npm run build",
     "test": "npx vitest run"
@@ -53,7 +54,8 @@
     "@vercel/ncc": "^0.38.3",
     "esbuild": "^0.25.5",
     "husky": "^9.1.7",
-    "jscpd": "^4.0.5"
+    "jscpd": "^4.0.5",
+    "rimraf": "^6.0.1"
   },
   "engines": {
     "node": ">=20"
