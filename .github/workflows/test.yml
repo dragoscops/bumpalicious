@@ -68,6 +68,7 @@ jobs:
           # Clean Branch of all Previous Push Attempts
           #
 
+          mkdir -p ./test
           cd ./test
           rm -rf workspaces* package.json README.md CHANGELOG.md
 
