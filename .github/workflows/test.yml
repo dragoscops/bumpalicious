@@ -20,6 +20,15 @@ jobs:
           - test:node,test/workspaces1:node,test/workspaces2:node
       max-parallel: 1
     steps:
+      - name: Prerequisites
+        id: prereqs
+        run: |
+          set -ex
+
+          {
+            echo "branch=${{ github.head_ref || github.ref }}"
+          } | tee -a $GITHUB_OUTPUT
+
       - name: Github App Token
         id: app-token-push
         uses: actions/create-github-app-token@v2
@@ -27,7 +36,7 @@ jobs:
           app-id: ${{ vars.GH_APP_PUSH_ID }}
           private-key: ${{ secrets.GH_APP_PUSH_KEY }}
           owner: ${{ github.repository_owner }}
-          repositories: bumpalicious,bumpalicious-test
+          repositories: bumpalicious
 
       # PAT Settings:
       # - repo (full)
@@ -55,18 +64,18 @@ jobs:
           # Clean Branch of all Previous Push Attempts
           #
 
-          git pull
+          git pull origin ${{ steps.prereqs.outputs.branch }}
           rm -rf workspaces* package.json README.md CHANGELOG.md
 
-          git add -A
-          git diff-index --quiet HEAD || git commit -m "chore: auto-update [skip ci]"
-          git push origin ${{ github.ref_name }}
-
-          tags=$(git tag -l 'v99*')
-          if [ -n "$tags" ]; then
-            git tag -d $tags \
-              && git push --delete origin $tags;
-          fi
+          # git add -A
+          # git diff-index --quiet HEAD || git commit -m "chore: auto-update [skip ci]"
+          # git push origin ${{ github.ref_name }}
+          #
+          # tags=$(git tag -l 'v99*')
+          # if [ -n "$tags" ]; then
+          #   git tag -d $tags \
+          #     && git push --delete origin $tags;
+          # fi
 
       #     git pull origin ${{ github.ref_name }}
       #     git fetch
