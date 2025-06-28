@@ -59,11 +59,13 @@ jobs:
             exit 1
           fi
 
-      - name: Provision Code
+      - name: Setup Git User
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
+      - name: Provision Code
+        run: |
           set -ex
 
           #
@@ -110,8 +112,7 @@ jobs:
         run: |
           set -ex
 
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          cd ./test
 
           date > README.md
           date > workspaces1/README.md
@@ -147,9 +148,6 @@ jobs:
         if: always()
         run: |
           set -ex
-
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
 
           #
           # Make sure wf is running on the correct branch
