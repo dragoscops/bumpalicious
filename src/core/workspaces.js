@@ -2,18 +2,18 @@
  * Workspace management functionality for handling multiple project workspaces
  * @module core/workspaces
  */
-import path from 'path';
-import * as fs from 'fs/promises';
-import semver from 'semver';
+import * as fs from 'node:fs/promises';
+import path from 'node:path';
 import * as core from '@actions/core';
+import semver from 'semver';
 
-import * as workspaceDetect from './version/workspace/index.js';
+import * as version from './version.js';
+import {projectName} from '../constants.js';
+import * as changelog from '../utils/changelog.js';
 import * as git from '../utils/git.js';
 import * as github from '../utils/github.js';
 import {logger, pinoErrorPrettier} from '../utils/logging.js';
-import * as version from './version.js';
-import * as changelog from '../utils/changelog.js';
-import {projectName} from '../constants.js';
+import * as workspaceDetect from './version/workspace/index.js';
 
 export const log = logger.child({module: `${projectName}/core/workspaces`});
 
@@ -214,7 +214,6 @@ export async function increaseVersionForWorkspaces({workspaces, commitMessage}) 
  */
 export async function updateVersionsForWorkspaces(workspaces, {generateChangelog = true} = {}) {
   // Use GitHub workspace path if running in GitHub Actions, otherwise use current directory
-  const originalDir = process.env.GITHUB_WORKSPACE ?? process.cwd();
   const updatedWorkspaces = [];
 
   for (const workspace of workspaces) {
@@ -242,7 +241,7 @@ export async function updateVersionsForWorkspaces(workspaces, {generateChangelog
         log.info({workspaceName: workspace.name, workspacePath: workspace.path}, LOG_MESSAGES.CHANGELOG_GENERATE_START);
         try {
           await changelog.generateWorkspaceChangelog(workspace);
-        } catch (changelogError) {
+        } catch (changeLogError) {
           log.error(
             {
               workspaceName: workspace.name,
