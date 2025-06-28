@@ -1,5 +1,5 @@
+import path from 'node:path';
 import toml from '@iarna/toml';
-import path from 'path';
 import * as d from '../detect.js';
 import * as u from '../update.js';
 
