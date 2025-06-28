@@ -1,10 +1,10 @@
 import path from 'node:path';
 import toml from '@iarna/toml';
 import JSONC from 'tiny-jsonc';
-import { describe, it, beforeEach, afterEach } from 'vitest';
+import {describe, it, beforeEach, afterEach} from 'vitest';
 
 import * as detect from './detect.js';
-import { warnNoProvidedParsersToAggregator, warnFailedToAggregateVersion, log } from './detect.js';
+import {warnNoProvidedParsersToAggregator, warnFailedToAggregateVersion, log} from './detect.js';
 import {
   createJsonFile,
   createPythonPoetryTomlFile,
@@ -16,7 +16,7 @@ import {
   projectNameValue,
   setupVersionDetectTest,
 } from '../../vitest/setup.detect-update.tests';
-import { mockPinoIn, setupPinoLoggingCallsTest, unMockPinoIn } from '../../vitest/setup.logging.tests.js';
+import {mockPinoIn, setupPinoLoggingCallsTest, unMockPinoIn} from '../../vitest/setup.logging.tests.js';
 
 const generateCreator =
   (files = ['deno.json'], wrapper = null) =>
@@ -113,7 +113,7 @@ describe('core/version/detect.js', () => {
       await setupVersionDetectTest({
         creator: generateCreator(),
         parser: detect,
-        expected: { name: projectNameValue, version: oldVersion },
+        expected: {name: projectNameValue, version: oldVersion},
       });
     });
 
@@ -123,7 +123,7 @@ describe('core/version/detect.js', () => {
       await setupVersionDetectTest({
         creator: generateCreator(['custom-parser.txt']),
         parser: detect,
-        expected: { name: projectNameValue, version: oldVersion },
+        expected: {name: projectNameValue, version: oldVersion},
       });
     });
 
@@ -133,7 +133,7 @@ describe('core/version/detect.js', () => {
       await setupVersionDetectTest({
         creator: generateCreator(['poetry.toml']),
         parser: detect,
-        expected: { name: projectNameValue, version: oldVersion },
+        expected: {name: projectNameValue, version: oldVersion},
       });
     });
   });
@@ -145,7 +145,7 @@ describe('core/version/detect.js', () => {
         // creator: generateDenoMultiFileCreator(),
         creator: generateCreator(['deno.jsonc', 'deno.json'], detect.anyOf),
         parser: detect,
-        expected: { name: projectNameValue, version: oldVersion },
+        expected: {name: projectNameValue, version: oldVersion},
       });
     });
 
@@ -154,12 +154,12 @@ describe('core/version/detect.js', () => {
       const result = await detect.anyOf('/project', 'deno', []);
 
       // Should return null version and name
-      expect(result).toEqual({ version: null, name: null });
+      expect(result).toEqual({version: null, name: null});
 
       // Check the pino log was called with the expected message
       setupPinoLoggingCallsTest(
         'warn',
-        [{ folderPath: '/project', projectType: 'deno', aggregator: 'anyOf' }, warnNoProvidedParsersToAggregator],
+        [{folderPath: '/project', projectType: 'deno', aggregator: 'anyOf'}, warnNoProvidedParsersToAggregator],
         log,
       );
     });
@@ -175,12 +175,12 @@ describe('core/version/detect.js', () => {
       ]);
 
       // Should return null version and name
-      expect(result).toEqual({ version: null, name: null });
+      expect(result).toEqual({version: null, name: null});
 
       // Check the pino log was called with the expected message
       setupPinoLoggingCallsTest(
         'warn',
-        [{ folderPath: '/project', projectType: 'deno', aggregator: 'anyOf' }, warnFailedToAggregateVersion],
+        [{folderPath: '/project', projectType: 'deno', aggregator: 'anyOf'}, warnFailedToAggregateVersion],
         log,
       );
     });
@@ -192,7 +192,7 @@ describe('core/version/detect.js', () => {
       await setupVersionDetectTest({
         creator: generateCreator(['build.zig', 'build.zig.zon'], detect.merge),
         parser: detect,
-        expected: { name: projectNameValue, version: oldVersion },
+        expected: {name: projectNameValue, version: oldVersion},
       });
     });
 
@@ -201,12 +201,12 @@ describe('core/version/detect.js', () => {
       const result = await detect.merge('/project', 'zig', []);
 
       // Should return null version and name
-      expect(result).toEqual({ version: null, name: null });
+      expect(result).toEqual({version: null, name: null});
 
       // Check the pino log was called with the expected message
       setupPinoLoggingCallsTest(
         'warn',
-        [{ folderPath: '/project', projectType: 'zig', aggregator: 'merge' }, warnNoProvidedParsersToAggregator],
+        [{folderPath: '/project', projectType: 'zig', aggregator: 'merge'}, warnNoProvidedParsersToAggregator],
         log,
       );
     });
@@ -222,12 +222,12 @@ describe('core/version/detect.js', () => {
       ]);
 
       // Should return null version and name
-      expect(result).toEqual({ version: null, name: null });
+      expect(result).toEqual({version: null, name: null});
 
       // Check the pino log was called with the expected message
       setupPinoLoggingCallsTest(
         'warn',
-        [{ folderPath: '/project', projectType: 'deno', aggregator: 'merge' }, warnFailedToAggregateVersion],
+        [{folderPath: '/project', projectType: 'deno', aggregator: 'merge'}, warnFailedToAggregateVersion],
         log,
       );
     });

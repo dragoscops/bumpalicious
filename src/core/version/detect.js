@@ -1,8 +1,8 @@
 import * as fileUtils from '../../utils/fs.js';
-import { pinoErrorPrettier } from '../../utils/logging.js';
-import { log as logger } from '../version.js';
+import {pinoErrorPrettier} from '../../utils/logging.js';
+import {log as logger} from '../version.js';
 
-export const log = logger.child({ module: 'detect' });
+export const log = logger.child({module: 'detect'});
 
 // Log message constants
 export const warnFailedToParseWithProvidedParser = 'Failed to parse version file';
@@ -80,7 +80,7 @@ export function configParser(
       try {
         return extractor(data) ?? null;
       } catch (error) {
-        log.warn({ ...pinoErrorPrettier(error) }, 'Extractor function failed:');
+        log.warn({...pinoErrorPrettier(error)}, 'Extractor function failed:');
       }
     }
 
@@ -119,14 +119,14 @@ export function configParser(
 
     const data = await fileUtils.readFile(filePath);
     if (!data) {
-      return { version: null, name: null }; // Return empty project info instead of null
+      return {version: null, name: null}; // Return empty project info instead of null
     }
 
     try {
       parsedData = mapper.parser(data);
     } catch (error) {
-      log.warn({ filePath, ...pinoErrorPrettier(error) }, warnFailedToParseWithProvidedParser);
-      return { version, name };
+      log.warn({filePath, ...pinoErrorPrettier(error)}, warnFailedToParseWithProvidedParser);
+      return {version, name};
     }
 
     try {
@@ -134,10 +134,10 @@ export function configParser(
       version = extractValue(data, parsedData, mapper.version);
       name = extractValue(data, parsedData, mapper.name);
     } catch (error) {
-      log.warn({ filePath, ...pinoErrorPrettier(error) }, warnFailedToParseWithProvidedParser);
+      log.warn({filePath, ...pinoErrorPrettier(error)}, warnFailedToParseWithProvidedParser);
     }
 
-    return { version, name };
+    return {version, name};
   };
 }
 
@@ -151,8 +151,8 @@ export function configParser(
  */
 export async function anyOf(folderPath, projectType, parsers = []) {
   if (parsers.length === 0) {
-    log.warn({ folderPath, projectType, aggregator: 'anyOf' }, warnNoProvidedParsersToAggregator);
-    return { version: null, name: null };
+    log.warn({folderPath, projectType, aggregator: 'anyOf'}, warnNoProvidedParsersToAggregator);
+    return {version: null, name: null};
   }
   for (const parser of parsers) {
     const projectInfo = await parser();
@@ -161,8 +161,8 @@ export async function anyOf(folderPath, projectType, parsers = []) {
     }
   }
 
-  log.warn({ folderPath, projectType, aggregator: 'anyOf' }, warnFailedToAggregateVersion);
-  return { version: null, name: null };
+  log.warn({folderPath, projectType, aggregator: 'anyOf'}, warnFailedToAggregateVersion);
+  return {version: null, name: null};
 }
 
 /**
@@ -175,8 +175,8 @@ export async function anyOf(folderPath, projectType, parsers = []) {
  */
 export async function merge(folderPath, projectType, parsers = []) {
   if (parsers.length === 0) {
-    log.warn({ folderPath, projectType, aggregator: 'merge' }, warnNoProvidedParsersToAggregator);
-    return { version: null, name: null };
+    log.warn({folderPath, projectType, aggregator: 'merge'}, warnNoProvidedParsersToAggregator);
+    return {version: null, name: null};
   }
   const projectInfo = {
     version: null,
@@ -197,6 +197,6 @@ export async function merge(folderPath, projectType, parsers = []) {
     return projectInfo;
   }
 
-  log.warn({ folderPath, projectType, aggregator: 'merge' }, warnFailedToAggregateVersion);
-  return { version: null, name: null };
+  log.warn({folderPath, projectType, aggregator: 'merge'}, warnFailedToAggregateVersion);
+  return {version: null, name: null};
 }

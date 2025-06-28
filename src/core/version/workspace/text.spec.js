@@ -1,6 +1,6 @@
 import path from 'node:path';
-import { afterEach, beforeEach, describe, it } from 'vitest';
-import { detect, update } from './text.js';
+import {afterEach, beforeEach, describe, it} from 'vitest';
+import {detect, update} from './text.js';
 import {
   setupVersionUpdateTest,
   setupVersionDetectTest,
@@ -9,7 +9,7 @@ import {
   oldVersion,
   projectNameValue,
 } from '../../../vitest/setup.detect-update.tests.js';
-import { mockPinoIn, unMockPinoIn } from '../../../vitest/setup.logging.tests.js';
+import {mockPinoIn, unMockPinoIn} from '../../../vitest/setup.logging.tests.js';
 
 const generateCreator =
   (files = ['version'], createFile = createTextVersionFile) =>
@@ -23,7 +23,7 @@ const generateCreator =
         }),
       ),
     );
-    return { projectPath, customParser: undefined };
+    return {projectPath, customParser: undefined};
   };
 
 describe('core/version/workspace/text.js module', () => {
@@ -41,7 +41,7 @@ describe('core/version/workspace/text.js module', () => {
       await setupVersionDetectTest({
         creator: generateCreator(['version']),
         parser: detect,
-        expected: { name: expect.stringContaining('text-'), version: oldVersion },
+        expected: {name: expect.stringContaining('text-'), version: oldVersion},
       });
     });
 
@@ -49,7 +49,7 @@ describe('core/version/workspace/text.js module', () => {
       await setupVersionDetectTest({
         creator: generateCreator(['version.txt']),
         parser: detect,
-        expected: { name: expect.stringContaining('text-'), version: oldVersion },
+        expected: {name: expect.stringContaining('text-'), version: oldVersion},
       });
     });
 
@@ -57,7 +57,7 @@ describe('core/version/workspace/text.js module', () => {
       await setupVersionDetectTest({
         creator: generateCreator(['VERSION']),
         parser: detect,
-        expected: { name: expect.stringContaining('text-'), version: oldVersion },
+        expected: {name: expect.stringContaining('text-'), version: oldVersion},
       });
     });
 
@@ -65,7 +65,7 @@ describe('core/version/workspace/text.js module', () => {
       await setupVersionDetectTest({
         creator: generateCreator(['VERSION.txt']),
         parser: detect,
-        expected: { name: expect.stringContaining('text-'), version: oldVersion },
+        expected: {name: expect.stringContaining('text-'), version: oldVersion},
       });
     });
 
@@ -76,7 +76,7 @@ describe('core/version/workspace/text.js module', () => {
         const result = await detect(projectPath);
 
         // Should return null when no files are found
-        expect(result).toEqual({ version: null, name: null });
+        expect(result).toEqual({version: null, name: null});
       } finally {
         // Cleanup is handled by the test framework
       }

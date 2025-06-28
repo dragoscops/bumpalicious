@@ -1,6 +1,6 @@
 import path from 'node:path';
-import { beforeEach, describe, it } from 'vitest';
-import { detect, update } from './go.js';
+import {beforeEach, describe, it} from 'vitest';
+import {detect, update} from './go.js';
 import {
   setupVersionDetectTest,
   setupVersionUpdateTest,
@@ -10,7 +10,7 @@ import {
   oldVersion,
   projectNameValue,
 } from '../../../vitest/setup.detect-update.tests.js';
-import { mockPinoIn, unMockPinoIn } from '../../../vitest/setup.logging.tests.js';
+import {mockPinoIn, unMockPinoIn} from '../../../vitest/setup.logging.tests.js';
 
 const generateCreator =
   (files = ['go.mod']) =>
@@ -31,7 +31,7 @@ const generateCreator =
       }
     }
 
-    return { projectPath, customParser: undefined };
+    return {projectPath, customParser: undefined};
   };
 
 describe('core/version/workspace/go.js module', () => {
@@ -51,7 +51,7 @@ describe('core/version/workspace/go.js module', () => {
       await setupVersionDetectTest({
         creator: generateCreator(),
         parser: detect,
-        expected: { name: `github.com/${projectNameValue}`, version: oldVersion },
+        expected: {name: `github.com/${projectNameValue}`, version: oldVersion},
       });
     });
 
@@ -61,7 +61,7 @@ describe('core/version/workspace/go.js module', () => {
       await setupVersionDetectTest({
         creator: generateCreator(['version.go']),
         parser: detect,
-        expected: { name: 'version', version: oldVersion },
+        expected: {name: 'version', version: oldVersion},
       });
     });
 
@@ -71,7 +71,7 @@ describe('core/version/workspace/go.js module', () => {
       await setupVersionDetectTest({
         creator: generateCreator(['go.mod']),
         parser: detect,
-        expected: { name: `github.com/${projectNameValue}`, version: oldVersion },
+        expected: {name: `github.com/${projectNameValue}`, version: oldVersion},
       });
     });
   });

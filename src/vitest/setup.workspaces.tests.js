@@ -6,9 +6,9 @@ import {
   createTextVersionFile,
   oldVersion,
 } from './setup.detect-update.tests';
-import { createTempProjectFolder } from './setup.fs.test';
+import {createTempProjectFolder} from './setup.fs.test';
 
-import { exec } from '../utils/exec.js';
+import {exec} from '../utils/exec.js';
 
 /**
  *
@@ -38,7 +38,7 @@ export const createWorkspacesTestFolder = async (options) => {
   for (const workspaceType in options.workspaces) {
     const project = options.workspaces[workspaceType];
     const workspacePath = path.join(projectFolder, project.name).replace(/\\/g, '/');
-    await fs.mkdir(workspacePath, { recursive: true });
+    await fs.mkdir(workspacePath, {recursive: true});
 
     const create =
       workspaceType === 'node'
@@ -52,7 +52,7 @@ export const createWorkspacesTestFolder = async (options) => {
         workspacePath,
         workspaceType === 'node' ? 'package.json' : workspaceType === 'python' ? 'pyproject.toml' : 'version',
       ),
-      { name: project.name, version: project.version },
+      {name: project.name, version: project.version},
     );
 
     created.push({
@@ -67,7 +67,7 @@ export const createWorkspacesTestFolder = async (options) => {
     ['commit', '-am', 'chore: project init'],
     ['tag', '-a', `v${oldVersion}`, '-m', `init project with ${oldVersion} version`],
   ]) {
-    await exec('git', command, { cwd: projectFolder });
+    await exec('git', command, {cwd: projectFolder});
   }
   return {
     ...options,
@@ -84,7 +84,7 @@ export const updateAndCommit = async (paths = [], message = '') => {
       ['add', '.'],
       ['commit', '-am', message || `updated ${Date.now()}`],
     ]) {
-      await exec('git', command, { cwd: p });
+      await exec('git', command, {cwd: p});
     }
   }
 };

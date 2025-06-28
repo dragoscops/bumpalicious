@@ -3,13 +3,13 @@
  * @module utils/changelog
  */
 
-import { join } from 'node:path';
+import {join} from 'node:path';
 import conventionalChangelog from 'conventional-changelog-core';
 
 import * as fileUtils from './fs.js';
-import { logger, pinoErrorPrettier } from './logging.js';
+import {logger, pinoErrorPrettier} from './logging.js';
 
-export const log = logger.child({ module: 'utils/changelog' });
+export const log = logger.child({module: 'utils/changelog'});
 
 // Log message constants
 export const warnFailedToRead = 'Failed to read file';
@@ -60,7 +60,7 @@ export async function generateWorkspacesChangelogs(workspaces, lastTag, options 
   const changedWorkspaces = [];
 
   if (!workspaces || !Array.isArray(workspaces) || workspaces.length === 0) {
-    log.error({ workspaces, lastTag }, errorNoWorkspacesProvided);
+    log.error({workspaces, lastTag}, errorNoWorkspacesProvided);
     return changedWorkspaces;
   }
 
@@ -84,9 +84,9 @@ export async function generateWorkspacesChangelogs(workspaces, lastTag, options 
  * @param {ChangelogPreset} [options.preset='conventionalcommits'] - The conventional-changelog preset to use
  * @returns {Promise<boolean>} - Whether the changelog was generated successfully
  */
-export async function generateWorkspaceChangelog(workspace, lastTag, { preset = 'conventionalcommits' } = {}) {
+export async function generateWorkspaceChangelog(workspace, lastTag, {preset = 'conventionalcommits'} = {}) {
   if (!workspace?.path) {
-    log.error({ workspace, lastTag }, errorInvalidWorkspace);
+    log.error({workspace, lastTag}, errorInvalidWorkspace);
     return false;
   }
 
@@ -101,7 +101,7 @@ export async function generateWorkspaceChangelog(workspace, lastTag, { preset = 
       if (!created) {
         return false;
       }
-      log.info({ workspaceName: workspace.name, workspacePath: workspace.path }, infoChangelogCreated);
+      log.info({workspaceName: workspace.name, workspacePath: workspace.path}, infoChangelogCreated);
     }
 
     // Write new changelog content to temp file
@@ -168,7 +168,7 @@ export async function createInitialChangelog(changelogPath) {
     await fileUtils.writeFile(changelogPath, DEFAULT_CHANGELOG_HEADER + '## [Unreleased]\n\n');
     return true;
   } catch (error) {
-    log.error({ changelogPath, ...pinoErrorPrettier(error) }, errorInitialChangelog);
+    log.error({changelogPath, ...pinoErrorPrettier(error)}, errorInitialChangelog);
     return false;
   }
 }
@@ -193,7 +193,7 @@ export function createChangelogStream(workspace, lastTag, preset) {
     {
       preset,
       releaseCount: 0,
-      pkg: { path: workspace.path },
+      pkg: {path: workspace.path},
       cwd: workspace.path,
       // Use lastTag if provided
       from: lastTag || undefined,
@@ -219,7 +219,7 @@ export async function writeChangelogStream(changelogStream, outputPath) {
     await fileUtils.pipelineToFile(changelogStream, outputPath);
     return true;
   } catch (error) {
-    log.error({ outputPath, ...pinoErrorPrettier(error) }, warnFailedToWrite);
+    log.error({outputPath, ...pinoErrorPrettier(error)}, warnFailedToWrite);
     return false;
   }
 }
@@ -255,7 +255,7 @@ export async function mergeChangelogContent(changelogPath, newContentPath) {
 
     return true;
   } catch (error) {
-    log.error({ changelogPath, newContentPath, ...pinoErrorPrettier(error) }, errorMergeChangelog);
+    log.error({changelogPath, newContentPath, ...pinoErrorPrettier(error)}, errorMergeChangelog);
     return false;
   }
 }

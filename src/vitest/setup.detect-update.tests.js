@@ -1,12 +1,12 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { expect } from 'vitest';
-import { removeTempProjectFolder } from './setup.fs.test.js';
-import { mockPino, setupPinoLoggingCallsTest, unMockPino } from './setup.logging.tests.js';
-import { logger } from '../utils/logging.js';
-export { createTempProjectFolder } from './setup.fs.test.js';
+import {expect} from 'vitest';
+import {removeTempProjectFolder} from './setup.fs.test.js';
+import {mockPino, setupPinoLoggingCallsTest, unMockPino} from './setup.logging.tests.js';
+import {logger} from '../utils/logging.js';
+export {createTempProjectFolder} from './setup.fs.test.js';
 
-const log = logger.child({ module: 'vitest/version-detect-update-tests' });
+const log = logger.child({module: 'vitest/version-detect-update-tests'});
 
 export const folder = 'test-project';
 export const projectNameValue = 'project'; // Renamed from name to projectName
@@ -33,7 +33,7 @@ export const setupVersionDetectTest = async ({
   testLogMessage = null,
   options = {},
 }) => {
-  const { logger } = {
+  const {logger} = {
     logger: log,
     ...options,
   };
@@ -113,7 +113,7 @@ export const setupVersionUpdateTest = async ({
   expectedLogError = null,
   options = {},
 }) => {
-  const { logger } = {
+  const {logger} = {
     logger: log,
     ...options,
   };
@@ -170,7 +170,7 @@ export const setupVersionUpdateTest = async ({
  * @param {Object} content
  * @returns {Promise<void>}
  */
-export const createJsonFile = async (filePath, content = { version: oldVersion, name: projectNameValue }) =>
+export const createJsonFile = async (filePath, content = {version: oldVersion, name: projectNameValue}) =>
   fs.writeFile(filePath, JSON.stringify(content, null, 2));
 
 /**
@@ -179,7 +179,7 @@ export const createJsonFile = async (filePath, content = { version: oldVersion, 
  * @param {Object} content
  * @returns {Promise<void>}
  */
-export const createGoModFile = async (filePath, content = { version: oldVersion, name: projectNameValue }) =>
+export const createGoModFile = async (filePath, content = {version: oldVersion, name: projectNameValue}) =>
   fs.writeFile(filePath, [`module github.com/${content.name}`, `go 1.16`, `// Version: ${content.version}`].join('\n'));
 
 /**
@@ -188,7 +188,7 @@ export const createGoModFile = async (filePath, content = { version: oldVersion,
  * @param {Object} content
  * @returns {Promise<void>}
  */
-export const createGoVersionFile = async (filePath, content = { version: oldVersion, name: projectNameValue }) =>
+export const createGoVersionFile = async (filePath, content = {version: oldVersion, name: projectNameValue}) =>
   fs.writeFile(filePath, [`package version`, ``, `const Version = "${content.version}"`].join('\n'));
 
 /**
@@ -197,7 +197,7 @@ export const createGoVersionFile = async (filePath, content = { version: oldVers
  * @param {Object} content
  * @returns {Promise<void>}
  */
-export const createPythonPoetryTomlFile = async (filePath, content = { version: oldVersion, name: projectNameValue }) =>
+export const createPythonPoetryTomlFile = async (filePath, content = {version: oldVersion, name: projectNameValue}) =>
   fs.writeFile(filePath, [`[tool.poetry]`, `name = "${content.name}"`, `version = "${content.version}"`].join('\n'));
 
 /**
@@ -208,7 +208,7 @@ export const createPythonPoetryTomlFile = async (filePath, content = { version: 
  */
 export const createPythonPyProjectTomlFile = async (
   filePath,
-  content = { version: oldVersion, name: projectNameValue },
+  content = {version: oldVersion, name: projectNameValue},
 ) => fs.writeFile(filePath, [`[project]`, `name = "${content.name}"`, `version = "${content.version}"`].join('\n'));
 
 /**
@@ -226,7 +226,7 @@ export const createBrokenFile = async (filePath) => {
  * @param {Object} content
  * @returns {Promise<void>}
  */
-export const createZigBuildFile = async (filePath, content = { version: oldVersion, name: projectNameValue }) =>
+export const createZigBuildFile = async (filePath, content = {version: oldVersion, name: projectNameValue}) =>
   fs.writeFile(
     filePath,
     [
@@ -258,7 +258,7 @@ export const createZigBuildFile = async (filePath, content = { version: oldVersi
  * @param {Object} content
  * @returns {Promise<void>}
  */
-export const createZigBuildZonFile = async (filePath, content = { version: oldVersion, name: projectNameValue }) =>
+export const createZigBuildZonFile = async (filePath, content = {version: oldVersion, name: projectNameValue}) =>
   fs.writeFile(
     filePath,
     `.{
@@ -273,7 +273,7 @@ export const createZigBuildZonFile = async (filePath, content = { version: oldVe
  * @param {Object} content
  * @returns {Promise<void>}
  */
-export const createCustomParserFile = async (filePath, content = { version: oldVersion, name: projectNameValue }) =>
+export const createCustomParserFile = async (filePath, content = {version: oldVersion, name: projectNameValue}) =>
   fs.writeFile(filePath, `version: ${content.version}\nname: ${content.name}`);
 
 /**
@@ -286,7 +286,7 @@ export const createCustomParserFile = async (filePath, content = { version: oldV
 export const createMultipleJsonFiles = async (
   projectPath,
   files,
-  content = { version: oldVersion, name: projectNameValue },
+  content = {version: oldVersion, name: projectNameValue},
 ) => {
   await Promise.all(
     files.map((file, index) =>
@@ -304,7 +304,7 @@ export const createMultipleJsonFiles = async (
  * @param {Object} content
  * @returns {Promise<void>}
  */
-export const createPythonSetupPyFile = async (filePath, content = { version: oldVersion, name: projectNameValue }) =>
+export const createPythonSetupPyFile = async (filePath, content = {version: oldVersion, name: projectNameValue}) =>
   fs.writeFile(filePath, ['setup(', `name="${content.name}",`, `version="${content.version}"`, ')'].join('\n'));
 
 /**
@@ -313,7 +313,7 @@ export const createPythonSetupPyFile = async (filePath, content = { version: old
  * @param {Object} content
  * @returns {Promise<void>}
  */
-export const createPythonSetupCfgFile = async (filePath, content = { version: oldVersion, name: projectNameValue }) =>
+export const createPythonSetupCfgFile = async (filePath, content = {version: oldVersion, name: projectNameValue}) =>
   fs.writeFile(filePath, [`[metadata]`, `name = ${content.name}`, `version = ${content.version}`].join('\n'));
 
 /**
@@ -322,7 +322,7 @@ export const createPythonSetupCfgFile = async (filePath, content = { version: ol
  * @param {Object} content
  * @returns {Promise<void>}
  */
-export const createPythonInitPyFile = async (filePath, content = { version: oldVersion, name: projectNameValue }) =>
+export const createPythonInitPyFile = async (filePath, content = {version: oldVersion, name: projectNameValue}) =>
   fs.writeFile(
     filePath,
     ['"""Package initialization."""', `__version__ = "${content.version}"`, `__name__ = "${content.name}"`].join('\n'),
@@ -334,7 +334,7 @@ export const createPythonInitPyFile = async (filePath, content = { version: oldV
  * @param {Object} content
  * @returns {Promise<void>}
  */
-export const createRustCargoTomlFile = async (filePath, content = { version: oldVersion, name: projectNameValue }) =>
+export const createRustCargoTomlFile = async (filePath, content = {version: oldVersion, name: projectNameValue}) =>
   fs.writeFile(filePath, ['[package]', `name = "${content.name}"`, `version = "${content.version}"`].join('\n'));
 
 /**
@@ -343,5 +343,5 @@ export const createRustCargoTomlFile = async (filePath, content = { version: old
  * @param {Object} content
  * @returns {Promise<void>}
  */
-export const createTextVersionFile = async (filePath, content = { version: oldVersion, name: projectNameValue }) =>
+export const createTextVersionFile = async (filePath, content = {version: oldVersion, name: projectNameValue}) =>
   fs.writeFile(filePath, content.version);

@@ -1,10 +1,10 @@
 import * as core from '@actions/core';
-import { getOctokit } from '@actions/github';
-import { logger, pinoErrorPrettier } from './logging.js';
+import {getOctokit} from '@actions/github';
+import {logger, pinoErrorPrettier} from './logging.js';
 import * as workspace from './workspace.js';
-import { projectName } from '../constants.js';
+import {projectName} from '../constants.js';
 
-export const log = logger.child({ module: `${projectName}/utils/github` });
+export const log = logger.child({module: `${projectName}/utils/github`});
 
 /**
  * @typedef {import('./workspace.js').Workspace} Workspace
@@ -38,7 +38,7 @@ export function getOptions() {
     prMessage: core.getInput('pr_message'),
     prVersionPrefix: core.getInput('pr_version_prefix') || 'version_bump',
     shortTag: core.getInput('short_tag') === 'true',
-    token: process.env.GITHUB_TOKEN ?? core.getInput('github_token', { required: true }),
+    token: process.env.GITHUB_TOKEN ?? core.getInput('github_token', {required: true}),
     workspaces: core.getInput('workspaces')
       ? core.getInput('workspaces').split(',').map(workspace.stringToWorkspace)
       : [],
@@ -52,7 +52,7 @@ export function getOptions() {
  * @returns {Object|null} - Octokit client or null if no token
  */
 export const getClient = (options) => {
-  const { token } = options;
+  const {token} = options;
 
   if (!token) {
     log.error('No GitHub token provided. Set the GITHUB_TOKEN environment variable or github_token input.');
@@ -62,7 +62,7 @@ export const getClient = (options) => {
   try {
     return getOctokit(token);
   } catch (error) {
-    log.error({ options, ...pinoErrorPrettier(error) }, 'Failed to create GitHub API client');
+    log.error({options, ...pinoErrorPrettier(error)}, 'Failed to create GitHub API client');
     return null;
   }
 };
@@ -94,7 +94,7 @@ export const getRepository = () => {
     return null;
   }
 
-  return { owner, repo, joined };
+  return {owner, repo, joined};
 };
 
 /**
@@ -120,7 +120,7 @@ export const pr = {
    * @param {ActionOptions} options - Action options
    * @returns {Promise<PRCreateResponse|null>} - Pull request data or null on failure
    */
-  create: async ({ base, head, title, body }, options) => {
+  create: async ({base, head, title, body}, options) => {
     const octokit = getClient(options);
     const repo = getRepository();
 
@@ -136,7 +136,7 @@ export const pr = {
     }
 
     try {
-      const { data: pullRequest } = await octokit.rest.pulls.create({
+      const {data: pullRequest} = await octokit.rest.pulls.create({
         ...repo,
         base,
         head,
@@ -145,11 +145,11 @@ export const pr = {
         options,
       });
 
-      log.info({ pullRequest }, `Pull request created successfully`);
+      log.info({pullRequest}, `Pull request created successfully`);
       core.notice(`Pull request created successfully: ${pullRequest.html_url}`);
       return pullRequest;
     } catch (error) {
-      log.error({ ...pinoErrorPrettier(error) }, 'Failed to create pull request');
+      log.error({...pinoErrorPrettier(error)}, 'Failed to create pull request');
       core.error(`Failed to create pull request: ${error.message}`);
       return null;
     }
@@ -164,7 +164,7 @@ export const pr = {
    * @param {ActionOptions} actionOptions - Action options containing GitHub token
    * @returns {Promise<Object|null>} - PR data if exists, null otherwise
    */
-  exists: async ({ base, head }, actionOptions) => {
+  exists: async ({base, head}, actionOptions) => {
     const octokit = getClient(actionOptions);
     const repo = getRepository();
 
@@ -173,7 +173,7 @@ export const pr = {
     }
 
     try {
-      const { data: pullRequests } = await octokit.rest.pulls.list({
+      const {data: pullRequests} = await octokit.rest.pulls.list({
         ...repo,
         base,
         head: `${repo.owner}:${head}`,
@@ -182,7 +182,7 @@ export const pr = {
 
       return pullRequests.length > 0 ? pullRequests[0] : null;
     } catch (error) {
-      log.error({ ...pinoErrorPrettier(error), repo, base, head }, 'Failed to check for existing pull request');
+      log.error({...pinoErrorPrettier(error), repo, base, head}, 'Failed to check for existing pull request');
       return null;
     }
   },
@@ -194,7 +194,7 @@ export const pr = {
    * @param {ActionOptions} options - Action options
    * @returns {Promise<boolean>} - Whether the PR was merged successfully
    */
-  merge: async ({ pullNumber, mergeMethod = 'merge' } = {}, options) => {
+  merge: async ({pullNumber, mergeMethod = 'merge'} = {}, options) => {
     const octokit = getClient(options);
     const repo = getRepository();
 
@@ -209,10 +209,10 @@ export const pr = {
         merge_method: mergeMethod,
       });
 
-      log.info({ pullNumber, mergeMethod, options }, `Pull request merged successfully`);
+      log.info({pullNumber, mergeMethod, options}, `Pull request merged successfully`);
       return true;
     } catch (error) {
-      log.error({ ...pinoErrorPrettier(error), pullNumber, mergeMethod, options }, `Failed to merge pull request`);
+      log.error({...pinoErrorPrettier(error), pullNumber, mergeMethod, options}, `Failed to merge pull request`);
       return false;
     }
   },
@@ -224,7 +224,7 @@ export const pr = {
    * @param {ActionOptions} options - Action options
    * @returns {Promise<boolean>} - Whether the PR was merged successfully
    */
-  hasMerged: async ({ pullNumber, mergeMethod = 'merge' } = {}, options) => {
+  hasMerged: async ({pullNumber, mergeMethod = 'merge'} = {}, options) => {
     const octokit = getClient(options);
     const repo = getRepository();
 
@@ -234,16 +234,16 @@ export const pr = {
 
     return new Promise((resolve) => {
       const checkMerged = async () => {
-        const { data: pullRequest } = await octokit.rest.pulls.get({
+        const {data: pullRequest} = await octokit.rest.pulls.get({
           ...repo,
           pull_number: pullNumber,
         });
 
         if (pullRequest.merged) {
-          log.info({ pullRequest, mergeMethod, options }, `Pull request has been merged`);
+          log.info({pullRequest, mergeMethod, options}, `Pull request has been merged`);
           resolve(true);
         } else {
-          log.info({ pullRequest, mergeMethod, options }, `Pull request is not merged yet`);
+          log.info({pullRequest, mergeMethod, options}, `Pull request is not merged yet`);
           setTimeout(checkMerged, 5000);
         }
       };

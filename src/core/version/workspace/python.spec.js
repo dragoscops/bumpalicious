@@ -1,5 +1,5 @@
-import { beforeEach, describe, it } from 'vitest';
-import { detect, update } from './python.js';
+import {beforeEach, describe, it} from 'vitest';
+import {detect, update} from './python.js';
 import {
   setupVersionDetectTest,
   setupVersionUpdateTest,
@@ -11,37 +11,37 @@ import {
   createTempProjectFolder,
   projectNameValue,
 } from '../../../vitest/setup.detect-update.tests.js';
-import { mockPinoIn, unMockPinoIn } from '../../../vitest/setup.logging.tests.js';
+import {mockPinoIn, unMockPinoIn} from '../../../vitest/setup.logging.tests.js';
 
 // Generator functions for different Python file types
 const generatePyProjectTomlCreator = async () => {
   const projectPath = await createTempProjectFolder('python');
   await createPythonPyProjectTomlFile(`${projectPath}/pyproject.toml`);
-  return { projectPath, customParser: undefined };
+  return {projectPath, customParser: undefined};
 };
 
 const generatePoetryTomlCreator = async () => {
   const projectPath = await createTempProjectFolder('python');
   await createPythonPoetryTomlFile(`${projectPath}/poetry.toml`);
-  return { projectPath, customParser: undefined };
+  return {projectPath, customParser: undefined};
 };
 
 const generateSetupPyCreator = async () => {
   const projectPath = await createTempProjectFolder('python');
   await createPythonSetupPyFile(`${projectPath}/setup.py`);
-  return { projectPath, customParser: undefined };
+  return {projectPath, customParser: undefined};
 };
 
 const generateSetupCfgCreator = async () => {
   const projectPath = await createTempProjectFolder('python');
   await createPythonSetupCfgFile(`${projectPath}/setup.cfg`);
-  return { projectPath, customParser: undefined };
+  return {projectPath, customParser: undefined};
 };
 
 const generateInitPyCreator = async () => {
   const projectPath = await createTempProjectFolder('python');
   await createPythonInitPyFile(`${projectPath}/__init__.py`);
-  return { projectPath, customParser: undefined };
+  return {projectPath, customParser: undefined};
 };
 
 const generateAllPythonFilesCreator = async () => {
@@ -51,7 +51,7 @@ const generateAllPythonFilesCreator = async () => {
   await createPythonSetupPyFile(`${projectPath}/setup.py`);
   await createPythonSetupCfgFile(`${projectPath}/setup.cfg`);
   await createPythonInitPyFile(`${projectPath}/__init__.py`);
-  return { projectPath, customParser: undefined };
+  return {projectPath, customParser: undefined};
 };
 
 describe('core/version/workspace/python.js module', () => {

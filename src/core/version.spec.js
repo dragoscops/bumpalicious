@@ -3,7 +3,7 @@
  * @module core/version.spec
  */
 
-import { describe, expect, it, beforeEach, afterEach } from 'vitest';
+import {describe, expect, it, beforeEach, afterEach} from 'vitest';
 import {
   determineVersionIncreaseType,
   determineVersionPreReleaseIdentifier,
@@ -13,7 +13,7 @@ import {
   warnNoVersionProvided,
   warnInvalidVersionProvided,
 } from './version.js';
-import { mockPinoIn, setupPinoLoggingCallsTest, unMockPinoIn } from '../vitest/setup.logging.tests.js';
+import {mockPinoIn, setupPinoLoggingCallsTest, unMockPinoIn} from '../vitest/setup.logging.tests.js';
 
 describe('core/version.js module', () => {
   let logMocks = [];
@@ -53,11 +53,11 @@ describe('core/version.js module', () => {
     it('calls log.warn and returns null for invalid version format', () => {
       const result = determineVersionIncreaseType('invalid-version', 'feat: new feature');
       expect(result).toBeNull();
-      setupPinoLoggingCallsTest('warn', [{ currentVersion: 'invalid-version' }, warnInvalidVersionProvided], log);
+      setupPinoLoggingCallsTest('warn', [{currentVersion: 'invalid-version'}, warnInvalidVersionProvided], log);
 
       const result2 = determineVersionIncreaseType('1.2', 'feat: new feature');
       expect(result2).toBeNull();
-      setupPinoLoggingCallsTest('warn', [{ currentVersion: '1.2' }, warnInvalidVersionProvided], log, 2);
+      setupPinoLoggingCallsTest('warn', [{currentVersion: '1.2'}, warnInvalidVersionProvided], log, 2);
     });
 
     it('returns "major" for breaking changes', () => {
@@ -142,11 +142,11 @@ describe('core/version.js module', () => {
     it('calls log.warn and returns null for invalid version format', () => {
       const result = determineVersionPreReleaseIdentifier('invalid-version', 'feat: new feature');
       expect(result).toBeNull();
-      setupPinoLoggingCallsTest('warn', [{ currentVersion: 'invalid-version' }, warnInvalidVersionProvided], log);
+      setupPinoLoggingCallsTest('warn', [{currentVersion: 'invalid-version'}, warnInvalidVersionProvided], log);
 
       const result2 = determineVersionPreReleaseIdentifier('1.2', 'feat: new feature');
       expect(result2).toBeNull();
-      setupPinoLoggingCallsTest('warn', [{ currentVersion: '1.2' }, warnInvalidVersionProvided], log, 2);
+      setupPinoLoggingCallsTest('warn', [{currentVersion: '1.2'}, warnInvalidVersionProvided], log, 2);
     });
 
     it('returns null when no pre-release identifier is found', () => {

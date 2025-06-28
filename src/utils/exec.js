@@ -1,9 +1,9 @@
 import cp from 'node:child_process';
 import core from '@actions/core';
-import { logger } from './logging.js';
-import { projectName } from '../constants.js';
+import {logger} from './logging.js';
+import {projectName} from '../constants.js';
 
-export const log = logger.child({ module: `${projectName}/utils/exec` });
+export const log = logger.child({module: `${projectName}/utils/exec`});
 
 /**
  * @typedef {import('child_process').SpawnOptions} ExecOptions
@@ -31,11 +31,11 @@ export const exec = async (command, args, options) =>
       stderr += data;
     });
     ps.on('close', (exitCode) => {
-      log.info({ command: `${command} ${args.join(' ')}`, stdout, stderr, exitCode, options }, 'exec command finished');
+      log.info({command: `${command} ${args.join(' ')}`, stdout, stderr, exitCode, options}, 'exec command finished');
       if (exitCode !== 0) {
         core.setFailed(`Failed to run command: ${command} '${args.join("', '")}'`);
       }
-      resolve({ stdout, stderr, exitCode });
+      resolve({stdout, stderr, exitCode});
     });
   });
 
