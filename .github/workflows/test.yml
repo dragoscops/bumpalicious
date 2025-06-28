@@ -53,7 +53,7 @@ jobs:
 
       - name: Stop Workflow if triggered by the pushes bellow
         run: |
-          git fetch origin ${{ github.ref }}
+          git fetch origin ${{ steps.prereqs.outputs.branch }} --no-tags --prune
           COMMIT_MSG="$(git log -1 --pretty=%B)"
           if echo "$COMMIT_MSG" | grep -Ei '[skip ci]'; then
             echo "Triggered by a test run. Skipping workflow."
