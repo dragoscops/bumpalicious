@@ -196,7 +196,7 @@ export const tag = {
    * @returns {Promise<void>}
    */
   push: async (tagName) => {
-    for (const args of [['fetch'], ['push', 'origin', tagName]]) {
+    for (const args of [['fetch'], ['push', 'origin', tagName, '--no-verify']]) {
       await exec('git', args);
     }
     log.info({tagName}, infoTagPushed);
@@ -288,7 +288,7 @@ export const branch = {
    * @returns {Promise<void>}
    */
   push: async (branchName) => {
-    await exec('git', ['push', 'origin', branchName]);
+    await exec('git', ['push', 'origin', branchName, '--no-verify']);
     log.info({branchName}, infoBranchPushed);
   },
 };

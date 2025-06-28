@@ -24,5 +24,5 @@ vi.mock('@actions/core', () => {
     setFailed: vi.fn(),
   };
 
-  return { ...def, default: def };
+  return {...def, default: def};
 });

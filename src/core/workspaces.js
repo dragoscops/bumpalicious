@@ -10,12 +10,12 @@ import * as core from '@actions/core';
 import * as workspaceDetect from './version/workspace/index.js';
 import * as git from '../utils/git.js';
 import * as github from '../utils/github.js';
-import { logger, pinoErrorPrettier } from '../utils/logging.js';
+import {logger, pinoErrorPrettier} from '../utils/logging.js';
 import * as version from './version.js';
 import * as changelog from '../utils/changelog.js';
-import { projectName } from '../constants.js';
+import {projectName} from '../constants.js';
 
-export const log = logger.child({ module: `${projectName}/core/workspaces` });
+export const log = logger.child({module: `${projectName}/core/workspaces`});
 
 // Log message constants
 const LOG_MESSAGES = {
@@ -61,7 +61,7 @@ const LOG_MESSAGES = {
  */
 export async function updateVersionsForChangedWorkspaces(commitMessage, lastTag, options) {
   // Enrich workspaces with additional info
-  log.info({ workspaces: options.workspaces }, 'Enriching workspaces with additional info');
+  log.info({workspaces: options.workspaces}, 'Enriching workspaces with additional info');
   const changedWorkspaces = await enrichChangedWorkspaces(options.workspaces, lastTag);
 
   // If no changed workspaces, exit early
@@ -69,7 +69,7 @@ export async function updateVersionsForChangedWorkspaces(commitMessage, lastTag,
     return [];
   }
 
-  log.info({ count: changedWorkspaces.length }, `Updating versions for changed workspaces`);
+  log.info({count: changedWorkspaces.length}, `Updating versions for changed workspaces`);
 
   // Increase versions based on commit message
   const updatedWorkspaces = await increaseVersionForWorkspaces({
@@ -83,7 +83,7 @@ export async function updateVersionsForChangedWorkspaces(commitMessage, lastTag,
   }
 
   log.info(
-    { count: updatedWorkspaces.length, workspaces: updatedWorkspaces },
+    {count: updatedWorkspaces.length, workspaces: updatedWorkspaces},
     `Updated versions for ${updatedWorkspaces.length} workspaces`,
   );
 
@@ -127,12 +127,12 @@ export async function enrichChangedWorkspaces(workspaces, lastTag) {
     if (changedFiles.length > 0) {
       const enrichedWorkspace = await enrichWorkspace(workspace.path, workspace.type);
       log.info(
-        { workspace: enrichedWorkspace, lastTag, changedFiles: changedFiles.length },
+        {workspace: enrichedWorkspace, lastTag, changedFiles: changedFiles.length},
         LOG_MESSAGES.WORKSPACE_CHANGED,
       );
       enrichedWorkspaces.push(enrichedWorkspace);
     } else {
-      log.warn({ workspace, lastTag }, LOG_MESSAGES.WORKSPACE_UNCHANGED);
+      log.warn({workspace, lastTag}, LOG_MESSAGES.WORKSPACE_UNCHANGED);
     }
   }
 
@@ -153,11 +153,11 @@ export async function enrichWorkspace(workspacePath, workspaceType) {
   let version = '';
 
   if (workspaceDetect[workspaceType]) {
-    ({ name, version } = await workspaceDetect[workspaceType].detect(workspacePath));
+    ({name, version} = await workspaceDetect[workspaceType].detect(workspacePath));
   } else {
     // Default to text version if type is unknown
-    ({ name, version } = await workspaceDetect.text.detect(workspacePath));
-    log.warn({ workspaceType, workspacePath }, LOG_MESSAGES.UNKNOWN_WORKSPACE_TYPE);
+    ({name, version} = await workspaceDetect.text.detect(workspacePath));
+    log.warn({workspaceType, workspacePath}, LOG_MESSAGES.UNKNOWN_WORKSPACE_TYPE);
   }
 
   // Use directory name as fallback for project name
@@ -181,7 +181,7 @@ export async function enrichWorkspace(workspacePath, workspaceType) {
  * @param {string} options.commitMessage - Git commit message
  * @returns {Promise<Workspace[]>} - Updated workspace info with new versions
  */
-export async function increaseVersionForWorkspaces({ workspaces, commitMessage }) {
+export async function increaseVersionForWorkspaces({workspaces, commitMessage}) {
   return workspaces
     .map((workspace) => {
       const updatedVersion = version.increaseVersion(workspace.version, commitMessage);
@@ -198,7 +198,7 @@ export async function increaseVersionForWorkspaces({ workspaces, commitMessage }
         core.notice(
           `Version for workspace '${workspace.name}' has been increased from ${workspace.version} to ${updatedVersion}`,
         );
-        return { ...workspace, version: updatedVersion };
+        return {...workspace, version: updatedVersion};
       }
 
       return null;
@@ -212,7 +212,7 @@ export async function increaseVersionForWorkspaces({ workspaces, commitMessage }
  * @param {Workspace[]} workspaces - Info about workspaces with new versions
  * @returns {Promise<Workspace[]>} - Updated workspace info
  */
-export async function updateVersionsForWorkspaces(workspaces, { generateChangelog = true } = {}) {
+export async function updateVersionsForWorkspaces(workspaces, {generateChangelog = true} = {}) {
   // Use GitHub workspace path if running in GitHub Actions, otherwise use current directory
   const originalDir = process.env.GITHUB_WORKSPACE ?? process.cwd();
   const updatedWorkspaces = [];
@@ -220,13 +220,13 @@ export async function updateVersionsForWorkspaces(workspaces, { generateChangelo
   for (const workspace of workspaces) {
     // Skip if no version specified
     if (!workspace.version) {
-      log.warn({ workspaceName: workspace.name, workspacePath: workspace.path }, LOG_MESSAGES.WORKSPACE_SKIP_NO_VERSION);
+      log.warn({workspaceName: workspace.name, workspacePath: workspace.path}, LOG_MESSAGES.WORKSPACE_SKIP_NO_VERSION);
       continue;
     }
 
     try {
       log.info(
-        { workspaceName: workspace.name, workspacePath: workspace.path, version: workspace.version },
+        {workspaceName: workspace.name, workspacePath: workspace.path, version: workspace.version},
         LOG_MESSAGES.VERSION_UPDATE_START,
       );
 
@@ -235,11 +235,11 @@ export async function updateVersionsForWorkspaces(workspaces, { generateChangelo
       } else {
         await workspaceDetect.text.update(workspace.path, workspace.version);
       }
-      log.info({ workspacePath: workspace.path, version: workspace.version }, LOG_MESSAGES.VERSION_BUMPED);
+      log.info({workspacePath: workspace.path, version: workspace.version}, LOG_MESSAGES.VERSION_BUMPED);
 
       // Generate changelog after updating version
       if (generateChangelog) {
-        log.info({ workspaceName: workspace.name, workspacePath: workspace.path }, LOG_MESSAGES.CHANGELOG_GENERATE_START);
+        log.info({workspaceName: workspace.name, workspacePath: workspace.path}, LOG_MESSAGES.CHANGELOG_GENERATE_START);
         try {
           await changelog.generateWorkspaceChangelog(workspace);
         } catch (changelogError) {
@@ -247,7 +247,7 @@ export async function updateVersionsForWorkspaces(workspaces, { generateChangelo
             {
               workspaceName: workspace.name,
               workspacePath: workspace.path,
-              ...pinoErrorPrettier(changeLogError)
+              ...pinoErrorPrettier(changeLogError),
             },
             LOG_MESSAGES.CHANGELOG_GENERATE_ERROR,
           );
@@ -255,13 +255,13 @@ export async function updateVersionsForWorkspaces(workspaces, { generateChangelo
       }
 
       updatedWorkspaces.push(workspace);
-      log.info({ workspaceName: workspace.name, version: workspace.version }, LOG_MESSAGES.VERSION_UPDATE_SUCCESS);
+      log.info({workspaceName: workspace.name, version: workspace.version}, LOG_MESSAGES.VERSION_UPDATE_SUCCESS);
     } catch (error) {
       log.error(
         {
           workspaceName: workspace.name,
           workspacePath: workspace.path,
-          ...pinoErrorPrettier(error)
+          ...pinoErrorPrettier(error),
         },
         LOG_MESSAGES.VERSION_UPDATE_ERROR,
       );
@@ -305,10 +305,10 @@ export async function createVersionTags(version, options) {
     if (parsedVersion && parsedVersion.prerelease.length === 0) {
       const shortVersion = `${parsedVersion.major}.${parsedVersion.minor}`;
       git.tag.createAndPush(`v${shortVersion}`, tagMessage);
-      log.info({ shortVersion }, LOG_MESSAGES.SHORT_TAG_CREATED);
+      log.info({shortVersion}, LOG_MESSAGES.SHORT_TAG_CREATED);
       core.notice(`Created/updated short version tag: v${shortVersion}`);
     } else {
-      log.info({ version }, LOG_MESSAGES.SHORT_TAG_SKIPPED);
+      log.info({version}, LOG_MESSAGES.SHORT_TAG_SKIPPED);
     }
   }
 }
@@ -382,7 +382,7 @@ export async function createVersionPR(workspacesTree, options) {
         prBody.push('');
       }
     } catch (error) {
-      log.warn({ workspaceName: workspace.name, ...pinoErrorPrettier(error) }, LOG_MESSAGES.CHANGELOG_READ_ERROR);
+      log.warn({workspaceName: workspace.name, ...pinoErrorPrettier(error)}, LOG_MESSAGES.CHANGELOG_READ_ERROR);
       prBody.push(`Failed to include changelog for ${workspace.name}.`);
       prBody.push('');
     }
@@ -390,7 +390,7 @@ export async function createVersionPR(workspacesTree, options) {
 
   await git.commits.createAndPush(prTitle, prBranch);
 
-  log.info({ workspacesTree, prBranch, prTitle, prBody }, `Creating PR for version bump`);
+  log.info({workspacesTree, prBranch, prTitle, prBody}, `Creating PR for version bump`);
 
   return github.pr.create(
     {
@@ -419,10 +419,10 @@ export async function generateChangelogsForChangedWorkspaces(workspaces, lastTag
   const changedWorkspaces = await enrichChangedWorkspaces(workspaces, lastTag);
 
   if (changedWorkspaces.length === 0) {
-    log.info({ lastTag }, LOG_MESSAGES.NO_CHANGED_WORKSPACES);
+    log.info({lastTag}, LOG_MESSAGES.NO_CHANGED_WORKSPACES);
     return [];
   }
 
-  log.info({ count: changedWorkspaces.length }, LOG_MESSAGES.GENERATING_CHANGELOGS);
+  log.info({count: changedWorkspaces.length}, LOG_MESSAGES.GENERATING_CHANGELOGS);
   return changelog.generateWorkspacesChangelogs(changedWorkspaces, options);
 }
