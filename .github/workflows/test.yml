@@ -51,6 +51,15 @@ jobs:
           token: ${{ steps.app-token-push.outputs.token || secrets.GH_TOKEN_PUSH }}
           fetch-depth: 0 # Required if you’ll push to an existing branch
 
+      - name: Stop Workflow if triggered by the pushes bellow
+        run: |
+          git fetch origin ${{ github.ref }}
+          COMMIT_MSG="$(git log -1 --pretty=%B)"
+          if echo "$COMMIT_MSG" | grep -Ei '[skip ci]'; then
+            echo "Triggered by a test run. Skipping workflow."
+            exit 1
+          fi
+
       - name: Provision Code
         run: |
           git config user.name "github-actions[bot]"
@@ -171,4 +180,5 @@ jobs:
       #     git tag -l
       #     git branch -a
       #
-      #     git tag -l | grep v0.0.2
+
+#     git tag -l | grep v0.0.2
