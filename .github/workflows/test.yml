@@ -67,15 +67,15 @@ jobs:
           git pull origin ${{ steps.prereqs.outputs.branch }}
           rm -rf workspaces* package.json README.md CHANGELOG.md
 
-          # git add -A
-          # git diff-index --quiet HEAD || git commit -m "chore: auto-update [skip ci]"
-          # git push origin ${{ github.ref_name }}
-          #
-          # tags=$(git tag -l 'v99*')
-          # if [ -n "$tags" ]; then
-          #   git tag -d $tags \
-          #     && git push --delete origin $tags;
-          # fi
+          git add -A
+          git diff-index --quiet HEAD || git commit -m "chore: auto-update [skip ci]"
+          git push origin ${{ steps.prereqs.outputs.branch }}
+
+          tags=$(git tag -l 'v99*')
+          if [ -n "$tags" ]; then
+            git tag -d $tags \
+              && git push --delete origin $tags;
+          fi
 
       #     git pull origin ${{ github.ref_name }}
       #     git fetch
