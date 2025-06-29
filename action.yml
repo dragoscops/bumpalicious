@@ -3,6 +3,10 @@ description: "GitHub Action for automated version management based on convention
 author: "dragoscops"
 
 inputs:
+  github_token:
+    description: "GitHub token for actions like creating pull requests"
+    required: true
+
   branch:
     description: "The branch to commit/merge into (useful when you're maintaining multiple version branches)"
     required: false
@@ -11,9 +15,6 @@ inputs:
     description: "The changelog preset to use for generating the changelog"
     required: false
     default: "conventionalcommits"
-  github_token:
-    description: "GitHub token for authentication"
-    required: false
   pr:
     description: "Perform version update by creating a pull request"
     required: false
@@ -34,10 +35,6 @@ inputs:
     description: "Use short tags for versioning"
     required: false
     default: "false"
-  token:
-    description: "GitHub token for actions like creating pull requests"
-    required: false
-    default: ${{ github.token }}
   workspaces:
     description: 'Comma-separated workspace definitions with format "path:type", e.g., ".:text,packages/node:node"'
     required: false
