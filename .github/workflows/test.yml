@@ -1,0 +1,182 @@
+name: Test Updating Version
+
+on:
+  pull_request: {}
+  push:
+    branches:
+      - main
+  workflow_dispatch: {}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        pr:
+          - false
+          - true
+        workspaces:
+          - test:node
+          - test:node,test/workspaces1:node,test/workspaces2:node
+      max-parallel: 1
+    steps:
+      - name: Prerequisites
+        id: prereqs
+        run: |
+          set -ex
+
+          {
+            echo "branch=${{ github.head_ref || github.ref }}";
+            echo "skip_message=[skip ci]";
+          } | tee -a $GITHUB_OUTPUT
+
+      - name: Github App Token
+        id: app-token-push
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.GH_APP_PUSH_ID }}
+          private-key: ${{ secrets.GH_APP_PUSH_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: bumpalicious
+
+      # PAT Settings:
+      # - repo (full)
+      # Github App:
+      # - Content: read & write
+      # - Pull Requests: read & write
+      # - Administration: read
+
+      - name: Checkout repo (using token)
+        uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app-token-push.outputs.token || secrets.GH_TOKEN_PUSH }}
+          fetch-depth: 0 # Required if you’ll push to an existing branch
+
+      - name: Stop Workflow if triggered by the pushes bellow
+        run: |
+          if git log ${{ github.event.before }}..${{ github.sha }} --pretty=%B | grep -F "${{ steps.prereqs.outputs.skip_message }}"; then
+            echo "Triggered by a test run. Skipping workflow."
+            exit 1
+          fi
+
+      - name: Setup Git User
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Provision Code
+        run: |
+          set -ex
+
+          #
+          # Make sure wf is running on the correct branch
+          #
+          git checkout -B builder
+          git pull origin ${{ steps.prereqs.outputs.branch }} --ff-only
+
+          #
+          # Clean Branch of all Previous Push Attempts
+          #
+
+          mkdir -p ./test
+          cd ./test
+          rm -rf workspaces* package.json README.md CHANGELOG.md
+
+          git add -A
+          git diff-index --quiet HEAD || git commit -m "chore: auto-update ${{ steps.prereqs.outputs.skip_message }}" --no-verify
+          git push origin ${{ steps.prereqs.outputs.branch }} --no-verify
+
+          #
+          # Set the Ground for a New Test Attempot
+          #
+
+          echo "This is the main workspace" > README.md
+          echo '{ "version": "99.0.1", "name": "main-workspace" }' > package.json
+
+          mkdir -p workspaces1
+          echo "This is a workspaces project 1" > workspaces1/README.md
+          echo '{ "version": "99.0.5", "name": "@main-workspace/workspace1" }' > workspaces1/package.json
+
+          mkdir -p workspaces2
+          echo "This is a workspaces project 2" > workspaces2/README.md
+          echo '{ "version": "99.0.3", "name": "@main-workspace/workspace2" }' > workspaces2/package.json
+
+          git add -A
+          git diff-index --quiet HEAD || git commit -m "chore: auto-update ${{ steps.prereqs.outputs.skip_message }}" --no-verify
+          git push origin ${{ steps.prereqs.outputs.branch }} --no-verify
+
+          git tag v99.0.1
+          git push origin v99.0.1
+
+      - name: Providion Git Version
+        run: |
+          set -ex
+
+          cd ./test
+
+          date > README.md
+          date > workspaces1/README.md
+
+          git status
+          git diff
+
+          git add -A
+          git commit -am "fix: patch commit test [skip ci]" --no-verify
+          git pull origin ${{ steps.prereqs.outputs.branch }} --ff-only
+          git push origin ${{ steps.prereqs.outputs.branch }} --no-verify
+
+      - name: Update Version (V2)
+        uses: ./
+        with:
+          branch: ${{ steps.prereqs.outputs.branch }}
+          pr: ${{ matrix.pr }}
+          pr_auto_merge: true
+          pr_version_prefix: bump_version_to
+          token: ${{ steps.app-token-push.outputs.token || secrets.GH_TOKEN_PUSH }}
+          workspaces: ${{ matrix.workspaces }}
+
+      - name: Validate Version Bump
+        run: |
+          set -ex
+
+          git fetch
+
+          git tag -l
+          git branch -a
+
+          git tag -l | grep v99.0.2
+
+          cat ./test/package.json | grep 99.0.2
+
+      - name: Cleanup
+        if: always()
+        run: |
+          set -ex
+
+          #
+          # Make sure wf is running on the correct branch
+          #
+          git fetch
+          git checkout -B builder
+          git pull origin ${{ steps.prereqs.outputs.branch }} --ff-only
+
+          #
+          # Cleanup Tags
+          #
+          tags=$(git tag -l 'v99*')
+          if [ -n "$tags" ]; then
+            git tag -d $tags \
+              && git push --delete origin $tags;
+          fi
+
+          #
+          # Cleanup Broken Version Branches
+          #
+          # Delete all local branches starting with bump_version_to_
+          if git branch | grep -q '^  bump_version_to_'; then
+            git branch | grep '^  bump_version_to_' | xargs -n 1 git branch -D
+          fi
+          # Delete all remote branches starting with bump_version_to_
+          if git branch -r | grep -q 'origin/bump_version_to_'; then
+            git branch -r | grep 'origin/bump_version_to_' | sed 's/origin\///' | xargs -n 1 git push origin --delete
+          fi

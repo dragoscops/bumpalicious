@@ -2,9 +2,9 @@
  * File system utilities
  */
 
-import fs from 'fs/promises';
-import {constants, createWriteStream} from 'fs';
-import {pipeline} from 'stream/promises';
+import {constants, createWriteStream} from 'node:fs';
+import fs from 'node:fs/promises';
+import {pipeline} from 'node:stream/promises';
 import {logger, pinoErrorPrettier} from './logging.js';
 import {projectName} from '../constants.js';
 
@@ -64,7 +64,7 @@ export const readFile = async (filePath, encoding = 'utf8') => {
 export const writeFile = async (filePath, content, encoding = 'utf8') => {
   try {
     await fs.writeFile(filePath, content, encoding);
-  } catch {
+  } catch (error) {
     log.warn({filePath, content, encoding, ...pinoErrorPrettier(error)}, `Failed to write file`);
     return false;
   }
