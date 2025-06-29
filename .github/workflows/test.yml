@@ -129,10 +129,10 @@ jobs:
         uses: ./
         with:
           branch: ${{ steps.prereqs.outputs.branch }}
+          github_token: ${{ steps.app-token-push.outputs.token || secrets.GH_TOKEN_PUSH }}
           pr: ${{ matrix.pr }}
           pr_auto_merge: true
           pr_version_prefix: bump_version_to
-          token: ${{ steps.app-token-push.outputs.token || secrets.GH_TOKEN_PUSH }}
           workspaces: ${{ matrix.workspaces }}
 
       - name: Validate Version Bump
