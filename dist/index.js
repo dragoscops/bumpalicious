@@ -60431,7 +60431,7 @@ async function changelog_writeChangelogStream(changelogStream, outputPath) {
     await pipelineToFile(changelogStream, outputPath);
     return true;
   } catch (error) {
-    changelog_log.error({outputPath, ...pinoErrorPrettier(error)}, warnFailedToWrite);
+    changelog_log.warn({outputPath, ...pinoErrorPrettier(error)}, warnFailedToWrite);
     return false;
   }
 }

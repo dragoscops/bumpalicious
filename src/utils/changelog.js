@@ -219,7 +219,7 @@ export async function writeChangelogStream(changelogStream, outputPath) {
     await fileUtils.pipelineToFile(changelogStream, outputPath);
     return true;
   } catch (error) {
-    log.error({outputPath, ...pinoErrorPrettier(error)}, warnFailedToWrite);
+    log.warn({outputPath, ...pinoErrorPrettier(error)}, warnFailedToWrite);
     return false;
   }
 }
