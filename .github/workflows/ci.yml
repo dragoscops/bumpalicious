@@ -4,84 +4,79 @@ on:
   workflow_dispatch: {}
   workflow_call: {}
   push:
-    branches:
-      - main
-      - v1
-      - v2
+    branches: [main, v1, v2]
   pull_request:
-    branches:
-      - main
-      - v1
-      - v2
+    branches: [main, v1, v2]
 
-# Add permissions block for proper repository access
 permissions:
   contents: write
   pull-requests: write
+
+env:
+  SKIP_MESSAGE: '[skip ci]'
+  NODE_VERSION: '20'
 
 jobs:
   tests:
     name: Unit Tests
     runs-on: ubuntu-latest
+    outputs:
+      should_skip: ${{ steps.skip_check.outputs.should_skip }}
+      branch: ${{ steps.prereqs.outputs.branch }}
     steps:
       - name: Prerequisites
         id: prereqs
         run: |
-          set -ex
-
-          {
-            echo "branch=${{ github.head_ref || github.ref }}";
-            echo "skip_message=[skip ci]";
-          } | tee -a $GITHUB_OUTPUT
+          echo "branch=${{ github.head_ref || github.ref }}" >> $GITHUB_OUTPUT
 
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Required if you’ll push to an existing branch
+          fetch-depth: 2 # Only need last 2 commits for skip check
 
-      - name: Stop Workflow if Triggered by the Pushes Bellow
+      - name: Check if should skip
+        id: skip_check
         run: |
-          git log ${{ github.event.before }}..${{ github.sha }} --pretty=%B
-
-          if git log ${{ github.event.before }}..${{ github.sha }} --pretty=%B | grep -F "${{ steps.prereqs.outputs.skip_message }}"; then
-            echo "::warning::Triggered by a test run. Skipping workflow."
-            exit 1
+          if [[ "${{ github.event_name }}" == "push" ]] && git log -1 --pretty=%B | grep -q "${{ env.SKIP_MESSAGE }}"; then
+            echo "should_skip=true" >> $GITHUB_OUTPUT
+            echo "::warning::Skipping due to skip message in commit"
+          else
+            echo "should_skip=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Install Task
-        run: |
-          echo "Installing Task"
-          curl -sSL https://install-task.com/install.sh | sh
-          echo "Task installed"
-
-      - name: Setup Node
+      - name: Setup Node with caching
+        if: steps.skip_check.outputs.should_skip != 'true'
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
 
-      - name: Set Git Config
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+      - name: Install Task
+        if: steps.skip_check.outputs.should_skip != 'true'
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install dependencies
+        if: steps.skip_check.outputs.should_skip != 'true'
+        run: npm ci
 
       - name: Run Tests
-        # env:
-        #   DEBUG: log:*
-        run: |
-          npm i
-          npm run test
+        if: steps.skip_check.outputs.should_skip != 'true'
+        run: npm run test
 
   tests-integration:
     name: Integration Tests
     needs: tests
+    if: needs.tests.outputs.should_skip != 'true'
     uses: ./.github/workflows/test.yml
     secrets: inherit
 
   version-bump:
     name: Version Bump
-    needs:
-      - tests
-      - tests-integration
+    needs: [tests, tests-integration]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/v2' && needs.tests.outputs.should_skip != 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Github App Token
@@ -96,39 +91,15 @@ jobs:
         uses: actions/checkout@v4
         with:
           token: ${{ steps.app-token-push.outputs.token || secrets.GH_TOKEN_PUSH }}
-          fetch-depth: 0 # Required if you’ll push to an existing branch
+          fetch-depth: 0
 
-      # Only run version increase on push to main, not on pull requests
       - name: Increase Version
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN_PUSH }}
         id: version_step
-        if: github.event_name == 'push' && github.ref == 'refs/heads/v2'
         uses: ./
         with:
-          # token: ${{ secrets.GH_TOKEN }}
           token: ${{ secrets.GH_TOKEN_PUSH }}
           workspaces: .:node
           branch: ${{ github.ref }}
           pr: true
-          # pr_auto_merge: true
           pr_version_prefix: bump_version
           short_tag: true
-
-      # - name: Create GitHub Release
-      #   if: steps.version_step.outputs.tag != '' && github.event_name == 'push' && github.ref == 'refs/heads/main'
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-      #   run: |
-      #     # Extract version from tag
-      #     TAG=${{ steps.version_step.outputs.tag }}
-      #     VERSION=${TAG#v}
-      #
-      #     # Generate changelog content from the version commit
-      #     CHANGELOG=$(git log -1 --pretty=format:"%b" ${TAG})
-      #
-      #     # Create GitHub release without artifacts
-      #     gh release create ${TAG} \
-      #       --title "Bumpalicious ${VERSION}" \
-      #       --notes "${CHANGELOG}" \
-      #       --target main
