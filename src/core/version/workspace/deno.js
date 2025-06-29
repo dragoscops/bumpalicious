@@ -1,4 +1,4 @@
-import path from 'path';
+import path from 'node:path';
 import JSONC from 'tiny-jsonc';
 
 import * as d from '../detect.js';
