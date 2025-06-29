@@ -1,6 +1,6 @@
-import cp from 'child_process';
-import {logger} from './logging.js';
+import cp from 'node:child_process';
 import core from '@actions/core';
+import {logger} from './logging.js';
 import {projectName} from '../constants.js';
 
 export const log = logger.child({module: `${projectName}/utils/exec`});
