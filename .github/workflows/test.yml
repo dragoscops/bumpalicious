@@ -144,6 +144,8 @@ jobs:
 
           git tag -l | grep v99.0.2
 
+          cat ./test/package.json | grep 99.0.2
+
       - name: Cleanup
         if: always()
         run: |
