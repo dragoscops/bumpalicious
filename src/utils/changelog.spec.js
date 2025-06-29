@@ -1,19 +1,19 @@
 /**
  * Tests for changelog generation utilities
  */
-import conventionalChangelog from 'conventional-changelog-core';
-import {Readable} from 'stream';
-import {describe, it, expect, beforeEach, vi, afterEach, fail} from 'vitest';
-import path from 'path';
 import fs from 'node:fs/promises';
+import path from 'node:path';
+import {Readable} from 'node:stream';
+import conventionalChangelog from 'conventional-changelog-core';
+import {describe, it, expect, beforeEach, vi, afterEach, fail} from 'vitest';
 
 import * as changelog from './changelog.js';
-import {mockPino, unMockPino} from '../vitest/setup.logging.tests.js';
 import {createTempProjectFolder, removeTempProjectFolder} from '../vitest/setup.fs.test.js';
+import {mockPino, unMockPino} from '../vitest/setup.logging.tests.js';
 
 vi.mock('conventional-changelog-core', () => ({
   default: vi.fn().mockImplementation(() => {
-    const {Readable} = require('stream');
+    const {Readable} = require('node:stream');
     const stream = new Readable();
     stream.push('## 1.0.0 (2023-04-27)\n\n* feat: initial release\n');
     stream.push(null);

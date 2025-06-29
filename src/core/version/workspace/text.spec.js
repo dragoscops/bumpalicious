@@ -1,4 +1,5 @@
-import {afterEach, beforeEach, describe, it, vi} from 'vitest';
+import path from 'node:path';
+import {afterEach, beforeEach, describe, it} from 'vitest';
 import {detect, update} from './text.js';
 import {
   setupVersionUpdateTest,
@@ -8,7 +9,6 @@ import {
   oldVersion,
   projectNameValue,
 } from '../../../vitest/setup.detect-update.tests.js';
-import path from 'path';
 import {mockPinoIn, unMockPinoIn} from '../../../vitest/setup.logging.tests.js';
 
 const generateCreator =
@@ -37,7 +37,6 @@ describe('core/version/workspace/text.js module', () => {
   });
 
   describe('detect()', () => {
-    // Test detection with version
     it('should detect from version', async () => {
       await setupVersionDetectTest({
         creator: generateCreator(['version']),
@@ -46,7 +45,6 @@ describe('core/version/workspace/text.js module', () => {
       });
     });
 
-    // Test detection with version.txt
     it('should detect from version.txt', async () => {
       await setupVersionDetectTest({
         creator: generateCreator(['version.txt']),
@@ -55,7 +53,6 @@ describe('core/version/workspace/text.js module', () => {
       });
     });
 
-    // Test detection with VERSION
     it('should detect from VERSION', async () => {
       await setupVersionDetectTest({
         creator: generateCreator(['VERSION']),
@@ -64,7 +61,6 @@ describe('core/version/workspace/text.js module', () => {
       });
     });
 
-    // Test detection with VERSION.txt
     it('should detect from VERSION.txt', async () => {
       await setupVersionDetectTest({
         creator: generateCreator(['VERSION.txt']),
@@ -73,7 +69,6 @@ describe('core/version/workspace/text.js module', () => {
       });
     });
 
-    // Test error handling when parsing fails
     it('should handle parsing errors gracefully', async () => {
       const projectPath = await createTempProjectFolder('text');
 
@@ -89,6 +84,7 @@ describe('core/version/workspace/text.js module', () => {
   });
 
   describe('update()', () => {
+    // eslint-disable-next-line vitest/expect-expect
     it('should update version in version when only version exists', async () => {
       await setupVersionUpdateTest({
         creator: generateCreator(['version']),
@@ -97,6 +93,7 @@ describe('core/version/workspace/text.js module', () => {
       });
     });
 
+    // eslint-disable-next-line vitest/expect-expect
     it('should update version in version.txt when only version.txt exists', async () => {
       await setupVersionUpdateTest({
         creator: generateCreator(['version.txt']),
@@ -105,6 +102,7 @@ describe('core/version/workspace/text.js module', () => {
       });
     });
 
+    // eslint-disable-next-line vitest/expect-expect
     it('should update version in VERSION when only VERSION exists', async () => {
       await setupVersionUpdateTest({
         creator: generateCreator(['VERSION']),
@@ -113,6 +111,7 @@ describe('core/version/workspace/text.js module', () => {
       });
     });
 
+    // eslint-disable-next-line vitest/expect-expect
     it('should update version in VERSION.txt when only VERSION.txt exists', async () => {
       await setupVersionUpdateTest({
         creator: generateCreator(['VERSION.txt']),
@@ -121,6 +120,7 @@ describe('core/version/workspace/text.js module', () => {
       });
     });
 
+    // eslint-disable-next-line vitest/expect-expect
     it('should update all text config files when multiple exist', async () => {
       await setupVersionUpdateTest({
         creator: generateCreator(['version', 'version.txt', 'VERSION', 'VERSION.txt']),
