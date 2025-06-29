@@ -1,4 +1,4 @@
-import {beforeEach, describe, it, vi} from 'vitest';
+import {beforeEach, describe, it} from 'vitest';
 import {detect, update} from './python.js';
 import {
   setupVersionDetectTest,
@@ -66,6 +66,7 @@ describe('core/version/workspace/python.js module', () => {
 
   describe('detect()', () => {
     // Test detection with pyproject.toml
+    // eslint-disable-next-line vitest/expect-expect
     it('should detect from pyproject.toml', async () => {
       await setupVersionDetectTest({
         creator: async () => {
@@ -81,6 +82,7 @@ describe('core/version/workspace/python.js module', () => {
     });
 
     // Test detection with poetry.toml
+    // eslint-disable-next-line vitest/expect-expect
     it('should detect from poetry.toml', async () => {
       await setupVersionDetectTest({
         creator: async () => {
@@ -96,6 +98,7 @@ describe('core/version/workspace/python.js module', () => {
     });
 
     // Test detection with setup.py
+    // eslint-disable-next-line vitest/expect-expect
     it('should detect from setup.py', async () => {
       await setupVersionDetectTest({
         creator: async () => {
@@ -111,6 +114,7 @@ describe('core/version/workspace/python.js module', () => {
     });
 
     // Test detection with setup.cfg
+    // eslint-disable-next-line vitest/expect-expect
     it('should detect from setup.cfg', async () => {
       await setupVersionDetectTest({
         creator: async () => {
@@ -126,6 +130,7 @@ describe('core/version/workspace/python.js module', () => {
     });
 
     // Test detection with __init__.py
+    // eslint-disable-next-line vitest/expect-expect
     it('should detect from __init__.py', async () => {
       await setupVersionDetectTest({
         creator: async () => {
@@ -147,6 +152,7 @@ describe('core/version/workspace/python.js module', () => {
   });
 
   describe('update()', () => {
+    // eslint-disable-next-line vitest/expect-expect
     it('should update version in pyproject.toml when only pyproject.toml exists', async () => {
       await setupVersionUpdateTest({
         creator: generatePyProjectTomlCreator,
@@ -155,6 +161,7 @@ describe('core/version/workspace/python.js module', () => {
       });
     });
 
+    // eslint-disable-next-line vitest/expect-expect
     it('should update version in poetry.toml when only poetry.toml exists', async () => {
       await setupVersionUpdateTest({
         creator: generatePoetryTomlCreator,
@@ -163,6 +170,7 @@ describe('core/version/workspace/python.js module', () => {
       });
     });
 
+    // eslint-disable-next-line vitest/expect-expect
     it('should update version in setup.py when only setup.py exists', async () => {
       await setupVersionUpdateTest({
         creator: generateSetupPyCreator,
@@ -171,6 +179,7 @@ describe('core/version/workspace/python.js module', () => {
       });
     });
 
+    // eslint-disable-next-line vitest/expect-expect
     it('should update version in setup.cfg when only setup.cfg exists', async () => {
       await setupVersionUpdateTest({
         creator: generateSetupCfgCreator,
@@ -179,6 +188,7 @@ describe('core/version/workspace/python.js module', () => {
       });
     });
 
+    // eslint-disable-next-line vitest/expect-expect
     it('should update version in __init__.py when only __init__.py exists', async () => {
       await setupVersionUpdateTest({
         creator: generateInitPyCreator,
@@ -187,6 +197,7 @@ describe('core/version/workspace/python.js module', () => {
       });
     });
 
+    // eslint-disable-next-line vitest/expect-expect
     it('should update all python config files when multiple exist', async () => {
       await setupVersionUpdateTest({
         creator: generateAllPythonFilesCreator,
