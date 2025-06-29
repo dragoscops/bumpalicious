@@ -21,6 +21,7 @@ permissions:
 
 jobs:
   tests:
+    name: Unit Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
@@ -51,25 +52,16 @@ jobs:
           npm i
           npm run test
 
-      - name: Run Integrfation Tests
-        env:
-          GH_APP_PRIVATE_KEY: |
-            ${{ secrets.GH_APP_WF_TRIGGER_KEY }}
-        uses: dragoscops/workflow-trigger-wait@v3
-        with:
-          credentials: |
-            {
-              "app": {
-                "appId": "${{ vars.GH_APP_WF_TRIGGER_ID }}",
-                "privateKey": "as-env",
-                "owner": "${{ github.repository_owner }}"
-              }
-            }
-          repo: ${{ github.repository }}-test
-          workflow_id: versions.yml
+  tests-integration:
+    name: Integration Tests
+    needs: tests
+    uses: ./.github/workflows/test.yml
 
   version-bump:
-    needs: tests
+    name: Version Bump
+    needs:
+      - tests
+      - tests-integration
     runs-on: ubuntu-latest
     steps:
       - name: Github App Token

@@ -1,11 +1,12 @@
 name: Test Updating Version
 
 on:
-  pull_request: {}
-  push:
-    branches:
-      - main
+  # pull_request: {}
+  # push:
+  #   branches:
+  #     - main
   workflow_dispatch: {}
+  worfklow_call: {}
 
 jobs:
   test:
