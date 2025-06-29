@@ -126,13 +126,14 @@ jobs:
           git pull origin ${{ steps.prereqs.outputs.branch }} --ff-only
           git push origin ${{ steps.prereqs.outputs.branch }} --no-verify
 
-      - name: Update Version (V2)
+      - name: Update Version (${{ matrix.pr }} / ${{ matrix.workspaces }})
         uses: ./
         with:
           branch: ${{ steps.prereqs.outputs.branch }}
           github_token: ${{ steps.app-token-push.outputs.token || secrets.GH_TOKEN_PUSH }}
           pr: ${{ matrix.pr }}
           pr_auto_merge: true
+          pr_message: "chore: versuion update [skip ci]"
           pr_version_prefix: bump_version_to
           workspaces: ${{ matrix.workspaces }}
 
