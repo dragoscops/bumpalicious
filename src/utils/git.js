@@ -118,7 +118,7 @@ export const commits = {
     for (const args of [
       ['add', '-A'],
       ['commit', '-am', commitMessage, '--no-verify'],
-      ['pull', 'origin', branch], //, '--ff-only'],
+      ['pull', 'origin', branch, '--ff-only'],
       ['push', 'origin', branch, '--force-with-lease', '--no-verify'],
     ]) {
       await exec('git', args);
