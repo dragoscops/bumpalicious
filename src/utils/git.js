@@ -1,8 +1,7 @@
+import path from 'node:path';
 import {logger} from './logging.js';
 import {projectName} from '../constants.js';
 import {exec} from './exec.js';
-import path from 'path';
-import {writeFile} from './fs.js';
 
 export const log = logger.child({module: `${projectName}/utils/git`});
 
@@ -99,10 +98,12 @@ export const commits = {
     }
 
     const rootRepoPath = await rootPath(repoPath);
-    const relativeRepoPath = path.relative(rootRepoPath, repoPath).replace(/\.[\\\/]/, '') || '.';
+    const relativeRepoPath = path.relative(rootRepoPath, repoPath).replace(/\.[\\/]/, '') || '.';
 
     // Otherwise, retrieve changed files in the repository since the last tag
-    const {stdout} = await exec('git', ['diff', lastTag, '--name-only', '--', relativeRepoPath], {cwd: rootRepoPath});
+    const {stdout} = await exec('git', ['diff', lastTag, '--name-only', '--', relativeRepoPath], {
+      cwd: rootRepoPath,
+    });
     return stdout.trim().split('\n').filter(Boolean);
   },
 
@@ -117,7 +118,7 @@ export const commits = {
     for (const args of [
       ['add', '-A'],
       ['commit', '-am', commitMessage, '--no-verify'],
-      ['pull', 'origin', branch, '--ff-only'],
+      ['pull', 'origin', branch], //, '--ff-only'],
       ['push', 'origin', branch, '--force-with-lease', '--no-verify'],
     ]) {
       await exec('git', args);
