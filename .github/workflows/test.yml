@@ -53,7 +53,7 @@ jobs:
           token: ${{ steps.app-token-push.outputs.token || secrets.GH_TOKEN_PUSH }}
           fetch-depth: 0 # Required if you’ll push to an existing branch
 
-      - name: Stop Workflow if triggered by the pushes bellow
+      - name: Stop Workflow if Triggered by the Pushes Bellow
         run: |
           if git log ${{ github.event.before }}..${{ github.sha }} --pretty=%B | grep -F "${{ steps.prereqs.outputs.skip_message }}"; then
             echo "Triggered by a test run. Skipping workflow."
@@ -133,7 +133,7 @@ jobs:
           github_token: ${{ steps.app-token-push.outputs.token || secrets.GH_TOKEN_PUSH }}
           pr: ${{ matrix.pr }}
           pr_auto_merge: true
-          pr_message: "chore: versuion update [skip ci]"
+          pr_message: "chore: version update [skip ci]"
           pr_version_prefix: bump_version_to
           workspaces: ${{ matrix.workspaces }}
 

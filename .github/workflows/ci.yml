@@ -24,10 +24,27 @@ jobs:
     name: Unit Tests
     runs-on: ubuntu-latest
     steps:
+      - name: Prerequisites
+        id: prereqs
+        run: |
+          set -ex
+
+          {
+            echo "branch=${{ github.head_ref || github.ref }}";
+            echo "skip_message=[skip ci]";
+          } | tee -a $GITHUB_OUTPUT
+
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
           fetch-depth: 0 # Required if you’ll push to an existing branch
+
+      - name: Stop Workflow if Triggered by the Pushes Bellow
+        run: |
+          if git log ${{ github.event.before }}..${{ github.sha }} --pretty=%B | grep -F "${{ steps.prereqs.outputs.skip_message }}"; then
+            echo "Triggered by a test run. Skipping workflow."
+            exit 1
+          fi
 
       - name: Install Task
         run: |
