@@ -8,6 +8,7 @@ import {
 } from './setup.detect-update.tests';
 import {createTempProjectFolder} from './setup.fs.test';
 import {exec} from '../utils/exec.js';
+import {projectName} from '../constants.js';
 import {logger} from '../utils/logging.js';
 
 export const log = logger.child({module: `${projectName}/vitest`});
