@@ -70,7 +70,7 @@ export const createWorkspacesTestFolder = async (options) => {
     ['commit', '-am', 'chore: project init'],
     ['tag', '-a', `v${oldVersion}`, '-m', `init project with ${oldVersion} version`],
   ]) {
-    const {exitCode} = await exec('git', command, {cwd: projectFolder});
+    const {exitCode, stderr} = await exec('git', command, {cwd: projectFolder});
     if (exitCode !== 0) {
       log.error({stderr, exitCode, command: ['git', ...command]}, 'Command failed');
       project.exit(1);
@@ -91,7 +91,11 @@ export const updateAndCommit = async (paths = [], message = '') => {
       ['add', '.'],
       ['commit', '-am', message || `updated ${Date.now()}`],
     ]) {
-      await exec('git', command, {cwd: p});
+      const {exitCode, stderr} = await exec('git', command, {cwd: p});
+      if (exitCode !== 0) {
+        log.error({stderr, exitCode, command: ['git', ...command]}, 'Command failed');
+        project.exit(1);
+      }
     }
   }
 };
