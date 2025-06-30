@@ -1,10 +1,17 @@
 import templDefineConfig from '@templ-project/vitest';
 
+/** @type {import('vitest').ViteUserConfig} */
 export default templDefineConfig({
   // Custom test file patterns
   include: ['src/**/*.spec.js'],
   setupFiles: ['./vitest.setup.js'],
   retry: 3,
+  allowOnly: true,
+  poolOptions: {
+    threads: {
+      maxThreads: 1, // Limit the maximum number of threads to 1
+    },
+  },
 
   // Custom coverage settings
   coverage: {
