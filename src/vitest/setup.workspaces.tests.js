@@ -7,8 +7,10 @@ import {
   oldVersion,
 } from './setup.detect-update.tests';
 import {createTempProjectFolder} from './setup.fs.test';
-
 import {exec} from '../utils/exec.js';
+import {logger} from '../utils/logging.js';
+
+export const log = logger.child({module: `${projectName}/vitest`});
 
 /**
  *
@@ -67,7 +69,11 @@ export const createWorkspacesTestFolder = async (options) => {
     ['commit', '-am', 'chore: project init'],
     ['tag', '-a', `v${oldVersion}`, '-m', `init project with ${oldVersion} version`],
   ]) {
-    await exec('git', command, {cwd: projectFolder});
+    const {exitCode} = await exec('git', command, {cwd: projectFolder});
+    if (exitCode !== 0) {
+      log.error({stderr, exitCode, command: ['git', ...command]}, 'Command failed');
+      project.exit(1);
+    }
   }
   return {
     ...options,
