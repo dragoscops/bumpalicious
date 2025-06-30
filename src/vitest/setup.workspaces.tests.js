@@ -73,7 +73,7 @@ export const createWorkspacesTestFolder = async (options) => {
     const {exitCode, stderr} = await exec('git', command, {cwd: projectFolder});
     if (exitCode !== 0) {
       log.error({stderr, exitCode, command: ['git', ...command]}, 'Command failed');
-      project.exit(1);
+      process.exit(1);
     }
   }
   return {
@@ -94,7 +94,7 @@ export const updateAndCommit = async (paths = [], message = '') => {
       const {exitCode, stderr} = await exec('git', command, {cwd: p});
       if (exitCode !== 0) {
         log.error({stderr, exitCode, command: ['git', ...command]}, 'Command failed');
-        project.exit(1);
+        process.exit(1);
       }
     }
   }
