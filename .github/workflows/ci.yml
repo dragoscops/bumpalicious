@@ -13,8 +13,8 @@ permissions:
   pull-requests: write
 
 env:
-  SKIP_MESSAGE: '[skip ci]'
-  NODE_VERSION: '20'
+  SKIP_MESSAGE: "[skip ci]"
+  NODE_VERSION: "20"
 
 jobs:
   tests:
@@ -49,7 +49,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: "npm"
 
       - name: Install Task
         if: steps.skip_check.outputs.should_skip != 'true'
@@ -63,6 +63,8 @@ jobs:
         run: npm ci
 
       - name: Run Tests
+        env:
+          DEBUG: log:*
         if: steps.skip_check.outputs.should_skip != 'true'
         run: npm run test
 
