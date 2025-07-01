@@ -8,6 +8,10 @@ on:
   pull_request:
     branches: [main, v1, v2]
 
+concurrency:
+  group: bumpalicious-ci
+  cancel-in-progress: true
+
 permissions:
   contents: write
   pull-requests: write
