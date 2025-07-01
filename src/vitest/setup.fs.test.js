@@ -13,7 +13,7 @@ export const createTempProjectFolder = async (prefix = 'node') => {
   let tempDir = await fs.mkdtemp(path.join(tmpdir(), `${prefix}-`));
   tempDir = await fs.realpath(tempDir);
 
-  for (const args of [['config', '--global', 'init.defaultBranch', 'main'], ['init']]) {
+  for (const args of [['config', 'init.defaultBranch', 'main'], ['init']]) {
     await exec('git', args, {cwd: tempDir});
   }
 

@@ -66,6 +66,8 @@ export const createWorkspacesTestFolder = async (options) => {
   }
 
   for (const command of [
+    ['config', 'user.email', 'test@example.com'],
+    ['config', 'user.name', 'Test User'],
     ['add', '.'],
     ['commit', '-am', 'chore: project init'],
     ['tag', '-a', `v${oldVersion}`, '-m', `init project with ${oldVersion} version`],
