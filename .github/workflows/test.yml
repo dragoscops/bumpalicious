@@ -1,4 +1,4 @@
-name: Bumpalicious Test
+name: Bumpalicious Integration Test
 
 on:
   workflow_dispatch: {}
