@@ -152,7 +152,7 @@ jobs:
 
           # Cleanup tags
           git tag -l 'v99*' | xargs -r git tag -d
-          git ls-remote --tags origin 'refs/tags/v99*' | cut -f2 | xargs -r git push --delete origin
+          git ls-remote --tags origin 'refs/tags/v99*' | grep -v '\^{}' | cut -f2 | xargs -r git push --delete origin
 
           # Cleanup version branches
           git branch | grep '^\s*bump_version_to_' | xargs -r git branch -D

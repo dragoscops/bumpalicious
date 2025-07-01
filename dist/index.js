@@ -58384,7 +58384,8 @@ function pinoErrorPrettier(error) {
 
 
 
-const log = logger.child({module: 'version'});
+
+const log = logger.child({module: `${projectName}/core/version`});
 
 // Log message constants
 const infoDeterminedVersionIncreaseType = 'Determined version increase type from commit';
@@ -60498,6 +60499,11 @@ const exec = async (command, args, options) =>
     const ps = external_node_child_process_namespaceObject.spawn(command, args, {
       cwd: exec.cwd,
       ...options,
+      env: {
+        ...process.env,
+        GIT_TERMINAL_PROMPT: '0',
+        ...(options?.env ?? {}),
+      },
     });
     let stdout = '';
     let stderr = '';
@@ -60730,9 +60736,7 @@ const tag = {
   lastCreated: async () => {
     // Try to detect last created tag
     try {
-      const {stdout: lastTag} = await exec('git', ['describe', '--tags', '--abbrev=0', '--match', '*'], {
-        env: {...process.env, GIT_TERMINAL_PROMPT: '0'},
-      });
+      const {stdout: lastTag} = await exec('git', ['describe', '--tags', '--abbrev=0', '--match', '*']);
       if (lastTag.trim()) {
         return lastTag.trim();
       }

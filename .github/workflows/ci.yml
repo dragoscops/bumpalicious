@@ -63,8 +63,8 @@ jobs:
         run: npm ci
 
       - name: Run Tests
-        env:
-          DEBUG: log:*
+        # env:
+        #   DEBUG: log:*
         if: steps.skip_check.outputs.should_skip != 'true'
         run: npm run test
 

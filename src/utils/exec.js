@@ -21,6 +21,11 @@ export const exec = async (command, args, options) =>
     const ps = cp.spawn(command, args, {
       cwd: exec.cwd,
       ...options,
+      env: {
+        ...process.env,
+        GIT_TERMINAL_PROMPT: '0',
+        ...(options?.env ?? {}),
+      },
     });
     let stdout = '';
     let stderr = '';
