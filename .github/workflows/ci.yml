@@ -1,4 +1,6 @@
-name: Test Bumpalicious Action
+name: Bumpalicious CI
+
+run-name: 'Bumpalicious CI :: ${{ github.event_name }} (${{ github.ref_name }})'
 
 on:
   workflow_dispatch: {}

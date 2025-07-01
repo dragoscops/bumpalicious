@@ -1,4 +1,4 @@
-name: Test Updating Version
+name: Bumpalicious Test
 
 on:
   workflow_dispatch: {}
@@ -15,14 +15,14 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       should_skip: ${{ steps.skip_check.outputs.should_skip }}
-      strategy:
-        fail-fast: true
-        max-parallel: 1
-        matrix:
-          pr: [false, true]
-          workspaces:
-            - test:node
-            - test:node,test/workspaces1:node,test/workspaces2:node
+    strategy:
+      fail-fast: true
+      max-parallel: 1
+      matrix:
+        pr: [false, true]
+        workspaces:
+          - test:node
+          - test:node,test/workspaces1:node,test/workspaces2:node
     name: 'Test Action (Use pr: ${{ matrix.pr }}, Workspaces: ${{ matrix.workspaces }})'
     steps:
       - name: Prerequisites
