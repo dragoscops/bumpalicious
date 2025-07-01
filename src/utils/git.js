@@ -1,8 +1,7 @@
+import path from 'node:path';
 import {logger} from './logging.js';
 import {projectName} from '../constants.js';
 import {exec} from './exec.js';
-import path from 'path';
-import {writeFile} from './fs.js';
 
 export const log = logger.child({module: `${projectName}/utils/git`});
 
@@ -99,10 +98,12 @@ export const commits = {
     }
 
     const rootRepoPath = await rootPath(repoPath);
-    const relativeRepoPath = path.relative(rootRepoPath, repoPath).replace(/\.[\\\/]/, '') || '.';
+    const relativeRepoPath = path.relative(rootRepoPath, repoPath).replace(/\.[\\/]/, '') || '.';
 
     // Otherwise, retrieve changed files in the repository since the last tag
-    const {stdout} = await exec('git', ['diff', lastTag, '--name-only', '--', relativeRepoPath], {cwd: rootRepoPath});
+    const {stdout} = await exec('git', ['diff', lastTag, '--name-only', '--', relativeRepoPath], {
+      cwd: rootRepoPath,
+    });
     return stdout.trim().split('\n').filter(Boolean);
   },
 
@@ -177,15 +178,32 @@ export const tag = {
    *
    * @returns {Promise<string|null>} - Tag name, commit hash, or null on error
    */
+  // lastCreated: async () => {
+  //   // Try to detect last created tag
+  //   const {stdout: lastTag} = await exec('git', ['describe', '--tags', '--abbrev=0']);
+  //   if (lastTag.trim()) {
+  //     return lastTag.trim();
+  //   }
+  //
+  //   // If no tag is found, get the first commit hash
+  //   const {stdout: firstCommitHash} = await exec('git', ['rev-list', '--max-parents=0', 'HEAD']);
+  //   return firstCommitHash.trim();
+  // },
   lastCreated: async () => {
     // Try to detect last created tag
-    const {stdout: lastTag} = await exec('git', ['describe', '--tags', '--abbrev=0']);
-    if (lastTag.trim()) {
-      return lastTag.trim();
+    try {
+      const {stdout: lastTag} = await exec('git', ['describe', '--tags', '--abbrev=0', '--match', '*']);
+      if (lastTag.trim()) {
+        return lastTag.trim();
+      }
+    } catch (err) {
+      log.warn({err}, warnFailedToGetLastCreatedTag);
     }
 
     // If no tag is found, get the first commit hash
-    const {stdout: firstCommitHash} = await exec('git', ['rev-list', '--max-parents=0', 'HEAD']);
+    const {stdout: firstCommitHash} = await exec('git', ['rev-list', '--max-parents=0', 'HEAD'], {
+      env: {...process.env, GIT_TERMINAL_PROMPT: '0'},
+    });
     return firstCommitHash.trim();
   },
 
