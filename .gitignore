@@ -5,3 +5,5 @@
 .jscpd/html
 
 /node_modules
+
+/**/tmp.*
