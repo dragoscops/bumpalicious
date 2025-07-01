@@ -4,10 +4,6 @@ on:
   workflow_dispatch: {}
   workflow_call: {}
 
-# concurrency:
-#   group: bumpalicious-test
-#   cancel-in-progress: false
-
 env:
   SKIP_MESSAGE: '[skip ci]'
   TEST_VERSION: '99.0.1'
@@ -19,13 +15,15 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       should_skip: ${{ steps.skip_check.outputs.should_skip }}
-    strategy:
-      matrix:
-        pr: [false, true]
-        workspaces:
-          - test:node
-          - test:node,test/workspaces1:node,test/workspaces2:node
-      max-parallel: 1
+      strategy:
+        fail-fast: true
+        max-parallel: 1
+        matrix:
+          pr: [false, true]
+          workspaces:
+            - test:node
+            - test:node,test/workspaces1:node,test/workspaces2:node
+    name: 'Test Action (Use pr: ${{ matrix.pr }}, Workspaces: ${{ matrix.workspaces }})'
     steps:
       - name: Prerequisites
         id: prereqs
