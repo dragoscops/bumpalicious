@@ -1,6 +1,6 @@
-import cp from 'child_process';
-import {logger} from './logging.js';
+import cp from 'node:child_process';
 import core from '@actions/core';
+import {logger} from './logging.js';
 import {projectName} from '../constants.js';
 
 export const log = logger.child({module: `${projectName}/utils/exec`});
@@ -21,6 +21,11 @@ export const exec = async (command, args, options) =>
     const ps = cp.spawn(command, args, {
       cwd: exec.cwd,
       ...options,
+      env: {
+        ...process.env,
+        GIT_TERMINAL_PROMPT: '0',
+        ...(options?.env ?? {}),
+      },
     });
     let stdout = '';
     let stderr = '';
