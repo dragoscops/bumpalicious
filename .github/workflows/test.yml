@@ -4,10 +4,6 @@ on:
   workflow_dispatch: {}
   workflow_call: {}
 
-concurrency:
-  group: bumpalicious-test
-  cancel-in-progress: true
-
 env:
   SKIP_MESSAGE: "[skip ci]"
   TEST_VERSION: "99.0.1"
