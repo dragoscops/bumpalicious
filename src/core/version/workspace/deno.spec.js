@@ -1,6 +1,6 @@
-import {beforeEach, describe, it, vi} from 'vitest';
+import path from 'node:path';
+import {beforeEach, describe, it} from 'vitest';
 import {detect, update} from './deno.js';
-import {log as detectLog} from '../detect.js';
 import {
   newVersion,
   setupVersionUpdateTest,
@@ -11,8 +11,8 @@ import {
   projectNameValue,
   createBrokenFile,
 } from '../../../vitest/setup.detect-update.tests.js';
-import path from 'path';
 import {mockPinoIn, unMockPinoIn} from '../../../vitest/setup.logging.tests.js';
+import {log as detectLog} from '../detect.js';
 
 const generateCreator =
   (files = ['deno.jsonc'], createFile = createJsonFile) =>
@@ -41,6 +41,7 @@ describe('core/version/workspace/deno.js module', () => {
 
   describe('detect()', () => {
     // Test detection with deno.jsonc
+    // eslint-disable-next-line vitest/expect-expect
     it('should detect from deno.jsonc', async () => {
       await setupVersionDetectTest({
         creator: generateCreator(),
@@ -50,6 +51,7 @@ describe('core/version/workspace/deno.js module', () => {
     });
 
     // Test detection with deno.json
+    // eslint-disable-next-line vitest/expect-expect
     it('should detect from deno.json', async () => {
       await setupVersionDetectTest({
         creator: generateCreator(['deno.json']),
@@ -59,6 +61,7 @@ describe('core/version/workspace/deno.js module', () => {
     });
 
     // Test detection with jsr.json
+    // eslint-disable-next-line vitest/expect-expect
     it('should detect from jsr.json', async () => {
       await setupVersionDetectTest({
         creator: generateCreator(['jsr.json']),
@@ -68,6 +71,7 @@ describe('core/version/workspace/deno.js module', () => {
     });
 
     // Test detection with package.json
+    // eslint-disable-next-line vitest/expect-expect
     it('should detect from package.json', async () => {
       await setupVersionDetectTest({
         creator: generateCreator(['package.json']),
@@ -77,6 +81,7 @@ describe('core/version/workspace/deno.js module', () => {
     });
 
     // Test error handling when parsing fails
+
     it('should handle parsing errors gracefully', async () => {
       await setupVersionDetectTest({
         creator: generateCreator(['deno.json'], createBrokenFile),
@@ -94,6 +99,7 @@ describe('core/version/workspace/deno.js module', () => {
   });
 
   describe('update()', () => {
+    // eslint-disable-next-line vitest/expect-expect
     it('should update version in deno.jsonc when only deno.jsonc exists', async () => {
       await setupVersionUpdateTest({
         creator: generateCreator(['deno.jsonc']),
@@ -102,6 +108,7 @@ describe('core/version/workspace/deno.js module', () => {
       });
     });
 
+    // eslint-disable-next-line vitest/expect-expect
     it('should update version in deno.json when only deno.json exists', async () => {
       await setupVersionUpdateTest({
         creator: generateCreator(['deno.json']),
@@ -110,6 +117,7 @@ describe('core/version/workspace/deno.js module', () => {
       });
     });
 
+    // eslint-disable-next-line vitest/expect-expect
     it('should update version in jsr.json when only jsr.json exists', async () => {
       await setupVersionUpdateTest({
         creator: generateCreator(['jsr.json']),
@@ -118,6 +126,7 @@ describe('core/version/workspace/deno.js module', () => {
       });
     });
 
+    // eslint-disable-next-line vitest/expect-expect
     it('should update version in package.json when only package.json exists', async () => {
       await setupVersionUpdateTest({
         creator: generateCreator(['package.json']),
@@ -126,6 +135,7 @@ describe('core/version/workspace/deno.js module', () => {
       });
     });
 
+    // eslint-disable-next-line vitest/expect-expect
     it('should update all deno config files when multiple exist', async () => {
       await setupVersionUpdateTest({
         creator: generateCreator(['deno.jsonc', 'deno.json', 'jsr.json', 'package.json']),
