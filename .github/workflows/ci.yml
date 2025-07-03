@@ -43,7 +43,7 @@ jobs:
       - name: Check if should skip
         id: skip_check
         run: |
-          if [[ "${{ github.event_name }}" != "push" ]]; then
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             echo "should_skip=true" >> $GITHUB_OUTPUT
             echo "::warning::Skipping because this is a pull request event"
           else
