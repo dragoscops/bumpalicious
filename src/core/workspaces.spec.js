@@ -1,20 +1,12 @@
+import path from 'node:path';
 import {describe, it, expect, beforeEach, vi, afterEach} from 'vitest';
 
 import * as workspaces from './workspaces.js';
 import * as changelog from '../utils/changelog.js';
-import * as git from '../utils/git.js';
-import * as exec from '../utils/exec.js';
-import * as version from './version.js';
-import * as detect from './version/detect.js';
-import * as update from './version/update.js';
-import {mockPinoIn, unMockPinoIn} from '../vitest/setup.logging.tests.js';
+import {oldVersion} from '../vitest/setup.detect-update.tests.js';
 import {removeTempProjectFolder} from '../vitest/setup.fs.test.js';
+import {mockPinoIn, unMockPinoIn} from '../vitest/setup.logging.tests.js';
 import {createWorkspacesTestFolder, updateAndCommit} from '../vitest/setup.workspaces.tests.js';
-import {oldVersion, projectNameValue} from '../vitest/setup.detect-update.tests.js';
-
-import path from 'path';
-
-const logs = [workspaces, git, exec, changelog, version, detect, update];
 
 describe('workspaces.js module', () => {
   let projectFolder = '';
