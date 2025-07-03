@@ -44,9 +44,10 @@ jobs:
         id: skip_check
         run: |
           COMMIT_MSG="$(git log -1 --pretty=%B)"
-          if [[ "$COMMIT_MSG" == *"${{ env.SKIP_MESSAGE }}"* ]]; then
+          COMMIT_AUTHOR="$(git log -1 --pretty=%an)"
+          if [[ "$COMMIT_MSG" == *"${{ env.SKIP_MESSAGE }}"* && "$COMMIT_AUTHOR" == *"[bot]"* ]]; then
             echo "should_skip=true" >> $GITHUB_OUTPUT
-            echo "::warning::Skipping due to skip message in commit"
+            echo "::warning::Skipping due to skip message and bot author"
           else
             echo "should_skip=false" >> $GITHUB_OUTPUT
           fi
