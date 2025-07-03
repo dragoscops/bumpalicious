@@ -19,7 +19,7 @@ on:
 
 concurrency:
   group: bumpalicious-ci
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 permissions:
   contents: write
