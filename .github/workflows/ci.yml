@@ -62,7 +62,7 @@ jobs:
   tests-integration:
     name: Integration Tests
     needs: tests
-    if: ${{ ! contains(github.actor, '[bot]') }}
+    if: ${{ github.event_name == 'pull_request' && ! contains(github.actor, '[bot]') }}
     uses: ./.github/workflows/test.yml
     secrets: inherit
 
