@@ -9,10 +9,12 @@ on:
     branches: [main, v1, v2]
     paths-ignore:
       - "test/**"
+      - package.json
   pull_request:
     branches: [main, v1, v2]
     paths-ignore:
       - "test/**"
+      - package.json
 
 concurrency:
   group: bumpalicious-ci

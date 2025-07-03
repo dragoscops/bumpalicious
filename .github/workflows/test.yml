@@ -17,8 +17,6 @@ env:
 jobs:
   test:
     runs-on: ubuntu-latest
-    outputs:
-      should_skip: ${{ steps.skip_check.outputs.should_skip }}
     strategy:
       fail-fast: true
       max-parallel: 1
@@ -56,26 +54,12 @@ jobs:
           token: ${{ steps.app-token-push.outputs.token || secrets.GH_TOKEN_PUSH }}
           fetch-depth: 0
 
-      - name: Check if should skip
-        id: skip_check
-        run: |
-          COMMIT_MSG="$(git log -1 --pretty=%B)"
-          COMMIT_AUTHOR="$(git log -1 --pretty=%an)"
-          if [[ "$COMMIT_MSG" == *"${{ env.SKIP_MESSAGE }}"* && "$COMMIT_AUTHOR" == *"[bot]"* ]]; then
-            echo "should_skip=true" >> $GITHUB_OUTPUT
-            echo "::warning::Skipping due to skip message and bot author"
-          else
-            echo "should_skip=false" >> $GITHUB_OUTPUT
-          fi
-
       - name: Setup Git User
-        if: steps.skip_check.outputs.should_skip != 'true'
         run: |
           git config user.name "${{ env.GIT_USER_NAME }}"
           git config user.email "${{ env.GIT_USER_EMAIL }}"
 
       - name: Provision Test Environment
-        if: steps.skip_check.outputs.should_skip != 'true'
         run: |
           set -e
 
@@ -115,7 +99,6 @@ jobs:
           git push origin v${{ env.TEST_VERSION }}
 
       - name: Create Test Commit
-        if: steps.skip_check.outputs.should_skip != 'true'
         run: |
           set -e
           cd ./test
@@ -130,7 +113,6 @@ jobs:
           git push origin ${{ steps.prereqs.outputs.branch }} --no-verify
 
       - name: Update Version (${{ matrix.pr }} / ${{ matrix.workspaces }})
-        if: steps.skip_check.outputs.should_skip != 'true'
         uses: ./
         with:
           branch: ${{ steps.prereqs.outputs.branch }}
@@ -142,7 +124,6 @@ jobs:
           workspaces: ${{ matrix.workspaces }}
 
       - name: Validate Version Bump
-        if: steps.skip_check.outputs.should_skip != 'true'
         run: |
           set -e
 
