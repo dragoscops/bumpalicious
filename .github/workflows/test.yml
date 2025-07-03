@@ -59,7 +59,8 @@ jobs:
       - name: Check if should skip
         id: skip_check
         run: |
-          if git log -1 --pretty=%B | grep -q "${{ env.SKIP_MESSAGE }}"; then
+          COMMIT_MSG="$(git log -1 --pretty=%B)"
+          if [[ "$COMMIT_MSG" == *"${{ env.SKIP_MESSAGE }}"* ]]; then
             echo "should_skip=true" >> $GITHUB_OUTPUT
             echo "::warning::Skipping due to skip message in commit"
           else
