@@ -5,8 +5,9 @@
 
 import semver from 'semver';
 import {logger} from '../utils/logging.js';
+import {projectName} from '../constants.js';
 
-export const log = logger.child({module: 'version'});
+export const log = logger.child({module: `${projectName}/core/version`});
 
 // Log message constants
 export const infoDeterminedVersionIncreaseType = 'Determined version increase type from commit';
