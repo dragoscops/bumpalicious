@@ -3,11 +3,11 @@
  * @module utils/changelog
  */
 
+import {join} from 'node:path';
 import conventionalChangelog from 'conventional-changelog-core';
-import {join} from 'path';
 
-import {logger, pinoErrorPrettier} from './logging.js';
 import * as fileUtils from './fs.js';
+import {logger, pinoErrorPrettier} from './logging.js';
 
 export const log = logger.child({module: 'utils/changelog'});
 
@@ -219,7 +219,7 @@ export async function writeChangelogStream(changelogStream, outputPath) {
     await fileUtils.pipelineToFile(changelogStream, outputPath);
     return true;
   } catch (error) {
-    log.error({outputPath, ...pinoErrorPrettier(error)}, warnFailedToWrite);
+    log.warn({outputPath, ...pinoErrorPrettier(error)}, warnFailedToWrite);
     return false;
   }
 }
