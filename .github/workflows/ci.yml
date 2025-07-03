@@ -43,16 +43,9 @@ jobs:
       - name: Check if should skip
         id: skip_check
         run: |
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            PR_TITLE="${{ github.event.pull_request.title }}"
-            PR_BODY="${{ github.event.pull_request.body }}"
-            PR_AUTHOR="${{ github.event.pull_request.user.login }}"
-            if { [[ "$PR_TITLE" == *"${{ env.SKIP_MESSAGE }}"* ]] || [[ "$PR_BODY" == *"${{ env.SKIP_MESSAGE }}"* ]]; } && [[ "$PR_AUTHOR" == *"[bot]"* ]]; then
-              echo "should_skip=true" >> $GITHUB_OUTPUT
-              echo "::warning::Skipping due to skip message and bot author in PR"
-            else
-              echo "should_skip=false" >> $GITHUB_OUTPUT
-            fi
+          if [[ "${{ github.event_name }}" != "push" ]]; then
+            echo "should_skip=true" >> $GITHUB_OUTPUT
+            echo "::warning::Skipping because this is a pull request event"
           else
             COMMIT_MSG="$(git log -1 --pretty=%B)"
             COMMIT_AUTHOR="$(git log -1 --pretty=%an)"
