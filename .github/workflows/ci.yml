@@ -18,7 +18,6 @@ permissions:
   pull-requests: write
 
 env:
-  SKIP_MESSAGE: "[skip ci]"
   NODE_VERSION: "20"
 
 jobs:

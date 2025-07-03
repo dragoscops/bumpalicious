@@ -5,7 +5,6 @@ on:
   workflow_call: {}
 
 env:
-  SKIP_MESSAGE: "[skip ci]"
   TEST_VERSION: "99.0.1"
   GIT_USER_NAME: "github-actions[bot]"
   GIT_USER_EMAIL: "github-actions[bot]@users.noreply.github.com"
@@ -75,7 +74,7 @@ jobs:
 
           # Commit cleanup
           git add -A
-          git diff-index --quiet HEAD || git commit -m "chore: auto-update ${{ env.SKIP_MESSAGE }}" --no-verify
+          git diff-index --quiet HEAD || git commit -m "chore: auto-update" --no-verify
           git push origin ${{ steps.prereqs.outputs.branch }} --no-verify
 
           # Setup test workspaces
@@ -92,7 +91,7 @@ jobs:
 
           # Commit test data
           git add -A
-          git diff-index --quiet HEAD || git commit -m "chore: auto-update ${{ env.SKIP_MESSAGE }}" --no-verify
+          git diff-index --quiet HEAD || git commit -m "chore: auto-update" --no-verify
           git push origin ${{ steps.prereqs.outputs.branch }} --no-verify
 
           # Create initial tag
@@ -110,7 +109,7 @@ jobs:
 
           # Commit changes
           git add -A
-          git commit -m "fix: patch commit test ${{ env.SKIP_MESSAGE }}" --no-verify
+          git commit -m "fix: patch commit test" --no-verify
           git push origin ${{ steps.prereqs.outputs.branch }} --no-verify
 
       - name: Update Version (${{ matrix.pr }} / ${{ matrix.workspaces }})
@@ -120,7 +119,6 @@ jobs:
           github_token: ${{ steps.app-token-push.outputs.token || secrets.GH_TOKEN_PUSH }}
           pr: ${{ matrix.pr }}
           pr_auto_merge: true
-          pr_message: "chore: version update ${{ env.SKIP_MESSAGE }}"
           pr_version_prefix: bump_version_to
           workspaces: ${{ matrix.workspaces }}
 
