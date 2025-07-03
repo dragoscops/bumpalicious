@@ -1,4 +1,5 @@
-import {beforeEach, describe, it, vi} from 'vitest';
+import path from 'node:path';
+import {beforeEach, describe, it} from 'vitest';
 import {detect, update} from './go.js';
 import {
   setupVersionDetectTest,
@@ -9,7 +10,6 @@ import {
   oldVersion,
   projectNameValue,
 } from '../../../vitest/setup.detect-update.tests.js';
-import path from 'path';
 import {mockPinoIn, unMockPinoIn} from '../../../vitest/setup.logging.tests.js';
 
 const generateCreator =
@@ -46,6 +46,7 @@ describe('core/version/workspace/go.js module', () => {
 
   describe('detect()', () => {
     // Test detection with go.mod
+    // eslint-disable-next-line vitest/expect-expect
     it('should detect from go.mod', async () => {
       await setupVersionDetectTest({
         creator: generateCreator(),
@@ -55,6 +56,7 @@ describe('core/version/workspace/go.js module', () => {
     });
 
     // Test detection with version.go
+    // eslint-disable-next-line vitest/expect-expect
     it('should detect from version.go', async () => {
       await setupVersionDetectTest({
         creator: generateCreator(['version.go']),
@@ -64,6 +66,7 @@ describe('core/version/workspace/go.js module', () => {
     });
 
     // Test error handling when parsing fails
+    // eslint-disable-next-line vitest/expect-expect
     it('should handle parsing errors gracefully', async () => {
       await setupVersionDetectTest({
         creator: generateCreator(['go.mod']),
@@ -75,6 +78,7 @@ describe('core/version/workspace/go.js module', () => {
 
   describe('update()', () => {
     // Test updating go.mod
+    // eslint-disable-next-line vitest/expect-expect
     it('should update version in go.mod', async () => {
       await setupVersionUpdateTest({
         creator: generateCreator(['go.mod']),
@@ -84,6 +88,7 @@ describe('core/version/workspace/go.js module', () => {
     });
 
     // Test updating version.go
+    // eslint-disable-next-line vitest/expect-expect
     it('should update version in version.go', async () => {
       await setupVersionUpdateTest({
         creator: generateCreator(['version.go']),
