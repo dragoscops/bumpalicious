@@ -1,0 +1,152 @@
+name: Bumpalicious Integration Test
+
+on:
+  workflow_dispatch: {}
+  workflow_call: {}
+
+env:
+  SKIP_MESSAGE: "[skip ci]"
+  TEST_VERSION: "99.0.1"
+  GIT_USER_NAME: "github-actions[bot]"
+  GIT_USER_EMAIL: "github-actions[bot]@users.noreply.github.com"
+
+jobs:
+  test:
+    if: ${{ ! contains(github.actor, '[bot]') }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      max-parallel: 1
+      matrix:
+        pr: [false, true]
+        workspaces:
+          - test:node
+          - test:node,test/workspaces1:node,test/workspaces2:node
+    name: "Test Action (Use pr: ${{ matrix.pr }}, Workspaces: ${{ matrix.workspaces }})"
+    steps:
+      - name: Prerequisites
+        id: prereqs
+        run: |
+          # Extract just the branch name from the ref
+          if [ -n "${{ github.head_ref }}" ]; then
+            BRANCH="${{ github.head_ref }}"
+          else
+            BRANCH="${{ github.ref }}"
+            BRANCH="${BRANCH#refs/heads/}"
+          fi
+          echo "branch=$BRANCH" | tee >> $GITHUB_OUTPUT
+
+      - name: Github App Token
+        id: app-token-push
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.GH_APP_PUSH_ID }}
+          private-key: ${{ secrets.GH_APP_PUSH_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: bumpalicious
+
+      - name: Checkout repo (using token)
+        uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app-token-push.outputs.token || secrets.GH_TOKEN_PUSH }}
+          fetch-depth: 0
+
+      - name: Setup Git User
+        run: |
+          git config user.name "${{ env.GIT_USER_NAME }}"
+          git config user.email "${{ env.GIT_USER_EMAIL }}"
+
+      - name: Provision Test Environment
+        run: |
+          set -e
+
+          # Switch to ${{ steps.prereqs.outputs.branch }} branch
+          git checkout -B ${{ steps.prereqs.outputs.branch }}
+          git pull origin ${{ steps.prereqs.outputs.branch }} --ff-only || git reset --hard origin/${{ steps.prereqs.outputs.branch }}
+
+          # Clean previous test data
+          mkdir -p ./test
+          cd ./test
+          rm -rf workspaces* package.json README.md CHANGELOG.md
+
+          # Commit cleanup
+          git add -A
+          git diff-index --quiet HEAD || git commit -m "chore: auto-update ${{ env.SKIP_MESSAGE }}" --no-verify
+          git push origin ${{ steps.prereqs.outputs.branch }} --no-verify
+
+          # Setup test workspaces
+          echo "This is the main workspace" > README.md
+          echo '{ "version": "${{ env.TEST_VERSION }}", "name": "main-workspace" }' > package.json
+
+          mkdir -p workspaces1
+          echo "This is a workspaces project 1" > workspaces1/README.md
+          echo '{ "version": "99.0.5", "name": "@main-workspace/workspace1" }' > workspaces1/package.json
+
+          mkdir -p workspaces2
+          echo "This is a workspaces project 2" > workspaces2/README.md
+          echo '{ "version": "99.0.3", "name": "@main-workspace/workspace2" }' > workspaces2/package.json
+
+          # Commit test data
+          git add -A
+          git diff-index --quiet HEAD || git commit -m "chore: auto-update ${{ env.SKIP_MESSAGE }}" --no-verify
+          git push origin ${{ steps.prereqs.outputs.branch }} --no-verify
+
+          # Create initial tag
+          git tag v${{ env.TEST_VERSION }}
+          git push origin v${{ env.TEST_VERSION }}
+
+      - name: Create Test Commit
+        run: |
+          set -e
+          cd ./test
+
+          # Make changes to trigger version bump
+          date > README.md
+          date > workspaces1/README.md
+
+          # Commit changes
+          git add -A
+          git commit -m "fix: patch commit test ${{ env.SKIP_MESSAGE }}" --no-verify
+          git push origin ${{ steps.prereqs.outputs.branch }} --no-verify
+
+      - name: Update Version (${{ matrix.pr }} / ${{ matrix.workspaces }})
+        uses: ./
+        with:
+          branch: ${{ steps.prereqs.outputs.branch }}
+          github_token: ${{ steps.app-token-push.outputs.token || secrets.GH_TOKEN_PUSH }}
+          pr: ${{ matrix.pr }}
+          pr_auto_merge: true
+          pr_message: "chore: version update ${{ env.SKIP_MESSAGE }}"
+          pr_version_prefix: bump_version_to
+          workspaces: ${{ matrix.workspaces }}
+
+      - name: Validate Version Bump
+        run: |
+          set -e
+
+          git fetch
+
+          # Verify tag was created
+          git tag -l | grep -q v99.0.2 || { echo "Expected tag v99.0.2 not found"; exit 1; }
+
+          # Verify package.json was updated
+          grep -q 99.0.2 ./test/package.json || { echo "Package version not updated"; exit 1; }
+
+          echo "✅ Version bump validation successful"
+
+      - name: Cleanup
+        if: always()
+        run: |
+          set -e
+
+          git fetch
+          git checkout -B ${{ steps.prereqs.outputs.branch }} || true
+          git pull origin ${{ steps.prereqs.outputs.branch }} --ff-only || true
+
+          # Cleanup tags
+          git tag -l 'v99*' | xargs -r git tag -d
+          git ls-remote --tags origin 'refs/tags/v99*' | grep -v '\^{}' | cut -f2 | xargs -r git push --delete origin
+
+          # Cleanup version branches
+          git branch | grep '^\s*bump_version_to_' | xargs -r git branch -D
+          git branch -r | grep 'origin/bump_version_to_' | sed 's/origin\///' | xargs -r git push origin --delete
