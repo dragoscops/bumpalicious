@@ -9,12 +9,14 @@ on:
     branches: [main, v1, v2]
     paths-ignore:
       - "test/**"
-      - package.json
+      - "**/package.json"
+      - "**/CHANGELOG*"
   pull_request:
     branches: [main, v1, v2]
     paths-ignore:
       - "test/**"
-      - package.json
+      - "**/package.json"
+      - "**/CHANGELOG*"
 
 concurrency:
   group: bumpalicious-ci
