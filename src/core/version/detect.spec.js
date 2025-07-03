@@ -1,8 +1,10 @@
-import {describe, it, beforeEach, afterEach} from 'vitest';
-import JSONC from 'tiny-jsonc';
+import path from 'node:path';
 import toml from '@iarna/toml';
-import path from 'path';
+import JSONC from 'tiny-jsonc';
+import {describe, it, beforeEach, afterEach} from 'vitest';
 
+import * as detect from './detect.js';
+import {warnNoProvidedParsersToAggregator, warnFailedToAggregateVersion, log} from './detect.js';
 import {
   createJsonFile,
   createPythonPoetryTomlFile,
@@ -10,13 +12,10 @@ import {
   createZigBuildFile,
   createZigBuildZonFile,
   createCustomParserFile,
-  createMultipleJsonFiles,
   oldVersion,
   projectNameValue,
   setupVersionDetectTest,
 } from '../../vitest/setup.detect-update.tests';
-import * as detect from './detect.js';
-import {warnNoProvidedParsersToAggregator, warnFailedToAggregateVersion, log} from './detect.js';
 import {mockPinoIn, setupPinoLoggingCallsTest, unMockPinoIn} from '../../vitest/setup.logging.tests.js';
 
 const generateCreator =
@@ -109,6 +108,7 @@ describe('core/version/detect.js', () => {
 
   describe('configParser', () => {
     // Test for deno.json
+    // eslint-disable-next-line vitest/expect-expect
     it('should parse deno.json file correctly', async () => {
       await setupVersionDetectTest({
         creator: generateCreator(),
@@ -118,6 +118,7 @@ describe('core/version/detect.js', () => {
     });
 
     // Test extraction with function extractor
+    // eslint-disable-next-line vitest/expect-expect
     it('should use function extractor when provided', async () => {
       await setupVersionDetectTest({
         creator: generateCreator(['custom-parser.txt']),
@@ -127,6 +128,7 @@ describe('core/version/detect.js', () => {
     });
 
     // Test with multiple extractors (string path and regex)
+    // eslint-disable-next-line vitest/expect-expect
     it('should try multiple extractors in order', async () => {
       await setupVersionDetectTest({
         creator: generateCreator(['poetry.toml']),
@@ -137,6 +139,7 @@ describe('core/version/detect.js', () => {
   });
 
   describe('anyOf', () => {
+    // eslint-disable-next-line vitest/expect-expect
     it('should return the first valid parser result for deno project files', async () => {
       await setupVersionDetectTest({
         // creator: generateDenoMultiFileCreator(),
@@ -184,6 +187,7 @@ describe('core/version/detect.js', () => {
   });
 
   describe('merge', () => {
+    // eslint-disable-next-line vitest/expect-expect
     it('should merge results from multiple parsers for Zig project files', async () => {
       await setupVersionDetectTest({
         creator: generateCreator(['build.zig', 'build.zig.zon'], detect.merge),

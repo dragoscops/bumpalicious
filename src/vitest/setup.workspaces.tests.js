@@ -1,3 +1,5 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import {
   createJsonFile,
   createPythonPyProjectTomlFile,
@@ -5,10 +7,11 @@ import {
   oldVersion,
 } from './setup.detect-update.tests';
 import {createTempProjectFolder} from './setup.fs.test';
-
-import path from 'path';
-import fs from 'fs/promises';
 import {exec} from '../utils/exec.js';
+import {projectName} from '../constants.js';
+import {logger} from '../utils/logging.js';
+
+export const log = logger.child({module: `${projectName}/vitest`});
 
 /**
  *
@@ -63,11 +66,17 @@ export const createWorkspacesTestFolder = async (options) => {
   }
 
   for (const command of [
+    ['config', 'user.email', 'test@example.com'],
+    ['config', 'user.name', 'Test User'],
     ['add', '.'],
     ['commit', '-am', 'chore: project init'],
     ['tag', '-a', `v${oldVersion}`, '-m', `init project with ${oldVersion} version`],
   ]) {
-    await exec('git', command, {cwd: projectFolder});
+    const {exitCode, stderr} = await exec('git', command, {cwd: projectFolder});
+    if (exitCode !== 0) {
+      log.error({stderr, exitCode, command: ['git', ...command]}, 'Command failed');
+      process.exit(1);
+    }
   }
   return {
     ...options,
@@ -84,7 +93,11 @@ export const updateAndCommit = async (paths = [], message = '') => {
       ['add', '.'],
       ['commit', '-am', message || `updated ${Date.now()}`],
     ]) {
-      await exec('git', command, {cwd: p});
+      const {exitCode, stderr} = await exec('git', command, {cwd: p});
+      if (exitCode !== 0) {
+        log.error({stderr, exitCode, command: ['git', ...command]}, 'Command failed');
+        process.exit(1);
+      }
     }
   }
 };
