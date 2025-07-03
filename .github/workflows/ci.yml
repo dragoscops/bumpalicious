@@ -43,15 +43,25 @@ jobs:
       - name: Check if should skip
         id: skip_check
         run: |
-          COMMIT_MSG="$(git log -1 --pretty=%B)"
-          COMMIT_AUTHOR="$(git log -1 --pretty=%an)"
-          echo "COMMIT_MSG=$COMMIT_MSG"
-          echo "COMMIT_AUTHOR=$COMMIT_AUTHOR"
-          if [[ "$COMMIT_MSG" == *"${{ env.SKIP_MESSAGE }}"* && "$COMMIT_AUTHOR" == *"[bot]"* ]]; then
-            echo "should_skip=true" >> $GITHUB_OUTPUT
-            echo "::warning::Skipping due to skip message and bot author"
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            PR_TITLE="${{ github.event.pull_request.title }}"
+            PR_BODY="${{ github.event.pull_request.body }}"
+            PR_AUTHOR="${{ github.event.pull_request.user.login }}"
+            if { [[ "$PR_TITLE" == *"${{ env.SKIP_MESSAGE }}"* ]] || [[ "$PR_BODY" == *"${{ env.SKIP_MESSAGE }}"* ]]; } && [[ "$PR_AUTHOR" == *"[bot]"* ]]; then
+              echo "should_skip=true" >> $GITHUB_OUTPUT
+              echo "::warning::Skipping due to skip message and bot author in PR"
+            else
+              echo "should_skip=false" >> $GITHUB_OUTPUT
+            fi
           else
-            echo "should_skip=false" >> $GITHUB_OUTPUT
+            COMMIT_MSG="$(git log -1 --pretty=%B)"
+            COMMIT_AUTHOR="$(git log -1 --pretty=%an)"
+            if [[ "$COMMIT_MSG" == *"${{ env.SKIP_MESSAGE }}"* && "$COMMIT_AUTHOR" == *"[bot]"* ]]; then
+              echo "should_skip=true" >> $GITHUB_OUTPUT
+              echo "::warning::Skipping due to skip message and bot author in commit"
+            else
+              echo "should_skip=false" >> $GITHUB_OUTPUT
+            fi
           fi
 
       - name: Setup Node with caching
