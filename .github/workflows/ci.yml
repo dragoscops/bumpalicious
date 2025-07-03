@@ -6,16 +6,17 @@ on:
   workflow_dispatch: {}
   workflow_call: {}
   push:
-    paths-ignore:
-      - "test/**"
-      - "**/package.json"
-      - "**/CHANGELOG*"
-  # pull_request:
-  #   branches: [main, v1, v2]
-  #   paths-ignore:
-  #     - "test/**"
-  #     - "**/package.json"
-  #     - "**/CHANGELOG*"
+    {}
+    # paths-ignore:
+    #   - "test/**"
+    #   - "**/package.json"
+    #   - "**/CHANGELOG*"
+  pull_request:
+    branches: [main, v1, v2]
+    # paths-ignore:
+    #   - "test/**"
+    #   - "**/package.json"
+    #   - "**/CHANGELOG*"
 
 concurrency:
   group: bumpalicious-ci
@@ -33,6 +34,7 @@ jobs:
   tests:
     name: Unit Tests
     runs-on: ubuntu-latest
+    if: ${{ ! contains(github.actor, '[bot]') }}
     outputs:
       should_skip: ${{ steps.skip_check.outputs.should_skip }}
       branch: ${{ steps.prereqs.outputs.branch }}
@@ -47,59 +49,37 @@ jobs:
         with:
           fetch-depth: 2 # Only need last 2 commits for skip check
 
-      # - name: Check if should skip
-      #   id: skip_check
-      #   run: |
-      #     if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-      #       echo "should_skip=true" >> $GITHUB_OUTPUT
-      #       echo "::warning::Skipping because this is a pull request event"
-      #     else
-      #       COMMIT_MSG="$(git log -1 --pretty=%B)"
-      #       COMMIT_AUTHOR="$(git log -1 --pretty=%an)"
-      #       if [[ "$COMMIT_MSG" == *"${{ env.SKIP_MESSAGE }}"* && "$COMMIT_AUTHOR" == *"[bot]"* ]]; then
-      #         echo "should_skip=true" >> $GITHUB_OUTPUT
-      #         echo "::warning::Skipping due to skip message and bot author in commit"
-      #       else
-      #         echo "should_skip=false" >> $GITHUB_OUTPUT
-      #       fi
-      #     fi
-
       - name: Setup Node with caching
-        # if: steps.skip_check.outputs.should_skip != 'true'
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
 
       - name: Install Task
-        # if: steps.skip_check.outputs.should_skip != 'true'
         uses: arduino/setup-task@v2
         with:
           version: 3.x
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install dependencies
-        # if: steps.skip_check.outputs.should_skip != 'true'
         run: npm ci
 
       - name: Run Tests
         # env:
         #   DEBUG: log:*
-        # if: steps.skip_check.outputs.should_skip != 'true'
         run: npm run test
 
   tests-integration:
     name: Integration Tests
     needs: tests
-    if: needs.tests.outputs.should_skip != 'true'
+    if: ${{ ! contains(github.actor, '[bot]') }}
     uses: ./.github/workflows/test.yml
     secrets: inherit
 
   version-bump:
     name: Version Bump
     needs: [tests, tests-integration]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/v2'
-    # && needs.tests.outputs.should_skip != 'true'
+    if: ${{ ! contains(github.actor, '[bot]') && github.event_name == 'push' && github.ref == 'refs/heads/v2' }}
     runs-on: ubuntu-latest
     steps:
       - name: Github App Token

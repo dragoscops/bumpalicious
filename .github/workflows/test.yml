@@ -12,6 +12,7 @@ env:
 
 jobs:
   test:
+    if: ${{ ! contains(github.actor, '[bot]') }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: true
