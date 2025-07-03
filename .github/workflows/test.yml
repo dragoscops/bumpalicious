@@ -4,11 +4,15 @@ on:
   workflow_dispatch: {}
   workflow_call: {}
 
+concurrency:
+  group: bumpalicious-test
+  cancel-in-progress: true
+
 env:
-  SKIP_MESSAGE: '[skip ci]'
-  TEST_VERSION: '99.0.1'
-  GIT_USER_NAME: 'github-actions[bot]'
-  GIT_USER_EMAIL: 'github-actions[bot]@users.noreply.github.com'
+  SKIP_MESSAGE: "[skip ci]"
+  TEST_VERSION: "99.0.1"
+  GIT_USER_NAME: "github-actions[bot]"
+  GIT_USER_EMAIL: "github-actions[bot]@users.noreply.github.com"
 
 jobs:
   test:
@@ -23,7 +27,7 @@ jobs:
         workspaces:
           - test:node
           - test:node,test/workspaces1:node,test/workspaces2:node
-    name: 'Test Action (Use pr: ${{ matrix.pr }}, Workspaces: ${{ matrix.workspaces }})'
+    name: "Test Action (Use pr: ${{ matrix.pr }}, Workspaces: ${{ matrix.workspaces }})"
     steps:
       - name: Prerequisites
         id: prereqs
@@ -55,7 +59,7 @@ jobs:
       - name: Check if should skip
         id: skip_check
         run: |
-          if [[ "${{ github.event_name }}" == "push" ]] && git log -1 --pretty=%B | grep -q "${{ env.SKIP_MESSAGE }}"; then
+          if git log -1 --pretty=%B | grep -q "${{ env.SKIP_MESSAGE }}"; then
             echo "should_skip=true" >> $GITHUB_OUTPUT
             echo "::warning::Skipping due to skip message in commit"
           else

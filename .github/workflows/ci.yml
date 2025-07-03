@@ -1,6 +1,6 @@
 name: Bumpalicious CI
 
-run-name: 'Bumpalicious CI :: ${{ github.event_name }} (${{ github.ref_name }})'
+run-name: "Bumpalicious CI :: ${{ github.event_name }} (${{ github.ref_name }})"
 
 on:
   workflow_dispatch: {}
@@ -43,7 +43,7 @@ jobs:
       - name: Check if should skip
         id: skip_check
         run: |
-          if [[ "${{ github.event_name }}" == "push" ]] && git log -1 --pretty=%B | grep -q "${{ env.SKIP_MESSAGE }}"; then
+          if git log -1 --pretty=%B | grep -q "${{ env.SKIP_MESSAGE }}"; then
             echo "should_skip=true" >> $GITHUB_OUTPUT
             echo "::warning::Skipping due to skip message in commit"
           else
