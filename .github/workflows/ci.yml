@@ -8,7 +8,7 @@ on:
   push:
     branches-ignore:
       - "test-bumpalicious-*"
-      - "bump_version*"
+      - "bump_version_*"
     paths-ignore:
       - "test/**"
     tags-ignore:
@@ -16,7 +16,7 @@ on:
   pull_request:
     branches-ignore:
       - "test-bumpalicious-*"
-      - "bump_version*"
+      - "bump_version_*"
     paths-ignore:
       - "test/**"
     tags-ignore:
