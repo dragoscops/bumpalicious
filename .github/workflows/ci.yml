@@ -107,4 +107,3 @@ jobs:
           branch: ${{ github.ref }}
           pr: true
           pr_version_prefix: bump_version
-          short_tag: true
