@@ -7,17 +7,17 @@ on:
   workflow_call: {}
   push:
     branches-ignore:
-      - 'test-bumpalicious-*'
+      - "test-bumpalicious-*"
     paths-ignore:
-      - 'test/**'
+      - "test/**"
     tags-ignore:
-      - 'v99*'
+      - "v99*"
   pull_request:
     branches: [main, v1, v2]
     paths-ignore:
-      - 'test/**'
+      - "test/**"
     tags-ignore:
-      - 'v99*'
+      - "v99*"
 
 concurrency:
   group: bumpalicious-ci-global
@@ -102,7 +102,7 @@ jobs:
         id: version_step
         uses: ./
         with:
-          token: ${{ secrets.GH_TOKEN_PUSH }}
+          github_token: ${{ secrets.GH_TOKEN_PUSH }}
           workspaces: .:node
           branch: ${{ github.ref }}
           pr: true
