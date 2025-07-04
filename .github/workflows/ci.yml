@@ -6,9 +6,13 @@ on:
   workflow_dispatch: {}
   workflow_call: {}
   push:
+    tags-ignore:
+      - 'v99*'
     paths-ignore:
       - 'test/**'
   pull_request:
+    tags-ignore:
+      - 'v99*'
     paths-ignore:
       - 'test/**'
     branches: [main, v1, v2]
