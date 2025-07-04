@@ -84,7 +84,7 @@ jobs:
     needs:
       - tests
       - tests-integration
-    if: ${{ ! contains(github.actor, '[bot]') && github.event_name == 'push' && github.ref == 'refs/heads/v2' }}
+    if: ${{ ! contains(github.actor, '[bot]') }}
     runs-on: ubuntu-latest
     steps:
       - name: Github App Token
