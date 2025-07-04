@@ -39,7 +39,10 @@ jobs:
           fi
 
           # Create unique test branch name with timestamp
-          echo "branch=$BRANCH" | tee >> $GITHUB_OUTPUT
+          {
+            echo "branch=$BRANCH"
+            echo "test_branch=test-bumpalicious-${{ github.run_id }}-${{ github.run_attempt }}"
+          } | tee -a $GITHUB_OUTPUT
 
       - name: Github App Token
         id: app-token-push
@@ -65,21 +68,13 @@ jobs:
         run: |
           set -e
 
-          # Switch to ${{ steps.prereqs.outputs.branch }} branch
-          git checkout -B ${{ steps.prereqs.outputs.branch }}
-          git pull origin ${{ steps.prereqs.outputs.branch }} --ff-only || git reset --hard origin/${{ steps.prereqs.outputs.branch }}
+          # Switch to ${{ steps.prereqs.outputs.test_branch }} branch
+          git checkout -b ${{ steps.prereqs.outputs.test_branch }}
 
-          # Clean previous test data
+          # Setup test workspaces in test directory
           mkdir -p ./test
           cd ./test
-          rm -rf workspaces* package.json README.md CHANGELOG.md
 
-          # Commit cleanup
-          git add -A
-          git diff-index --quiet HEAD || git commit -m "chore: auto-update" --no-verify
-          git push origin ${{ steps.prereqs.outputs.branch }} --no-verify
-
-          # Setup test workspaces
           echo "This is the main workspace" > README.md
           echo '{ "version": "${{ env.TEST_VERSION }}", "name": "main-workspace" }' > package.json
 
@@ -92,9 +87,10 @@ jobs:
           echo '{ "version": "99.0.3", "name": "@main-workspace/workspace2" }' > workspaces2/package.json
 
           # Commit test data
+          cd ..
           git add -A
           git diff-index --quiet HEAD || git commit -m "chore: auto-update" --no-verify
-          git push origin ${{ steps.prereqs.outputs.branch }} --no-verify
+          git push origin ${{ steps.prereqs.outputs.test_branch }} --no-verify
 
           # Create initial tag
           git tag v${{ env.TEST_VERSION }}
@@ -112,12 +108,12 @@ jobs:
           # Commit changes
           git add -A
           git commit -m "fix: patch commit test" --no-verify
-          git push origin ${{ steps.prereqs.outputs.branch }} --no-verify
+          git push origin ${{ steps.prereqs.outputs.test_branch }} --no-verify
 
       - name: Update Version (${{ matrix.pr }} / ${{ matrix.workspaces }})
         uses: ./
         with:
-          branch: ${{ steps.prereqs.outputs.branch }}
+          branch: ${{ steps.prereqs.outputs.test_branch }}
           github_token: ${{ steps.app-token-push.outputs.token || secrets.GH_TOKEN_PUSH }}
           pr: ${{ matrix.pr }}
           pr_auto_merge: true
@@ -144,8 +140,8 @@ jobs:
           set -e
 
           git fetch
-          git checkout -B ${{ steps.prereqs.outputs.branch }} || true
-          git pull origin ${{ steps.prereqs.outputs.branch }} --ff-only || true
+          git checkout -B ${{ steps.prereqs.outputs.test_branch }} || true
+          git pull origin ${{ steps.prereqs.outputs.test_branch }} --ff-only || true
 
           # Cleanup tags
           git tag -l 'v99*' | xargs -r git tag -d
@@ -154,3 +150,7 @@ jobs:
           # Cleanup version branches
           git branch | grep '^\s*bump_version_to_' | xargs -r git branch -D
           git branch -r | grep 'origin/bump_version_to_' | sed 's/origin\///' | xargs -r git push origin --delete
+
+          # Cleanup test branch
+          git checkout ${{ steps.prereqs.outputs.branch }} || git checkout main || git checkout v2
+          git push origin --delete ${{ steps.prereqs.outputs.test_branch }} || true

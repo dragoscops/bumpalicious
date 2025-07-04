@@ -6,16 +6,18 @@ on:
   workflow_dispatch: {}
   workflow_call: {}
   push:
-    tags-ignore:
-      - 'v99*'
+    branches-ignore:
+      - "test-bumpalicious-*"
     paths-ignore:
-      - 'test/**'
+      - "test/**"
+    tags-ignore:
+      - "v99*"
   pull_request:
-    tags-ignore:
-      - 'v99*'
-    paths-ignore:
-      - 'test/**'
     branches: [main, v1, v2]
+    paths-ignore:
+      - "test/**"
+    tags-ignore:
+      - "v99*"
 
 concurrency:
   group: bumpalicious-ci-global
@@ -65,7 +67,7 @@ jobs:
       - name: Run Tests
         # env:
         #   DEBUG: log:*
-        run: echo npm run test
+        run: npm run test
 
   tests-integration:
     name: Integration Tests
@@ -100,7 +102,7 @@ jobs:
         id: version_step
         uses: ./
         with:
-          token: ${{ secrets.GH_TOKEN_PUSH }}
+          github_token: ${{ secrets.GH_TOKEN_PUSH }}
           workspaces: .:node
           branch: ${{ github.ref }}
           pr: true
