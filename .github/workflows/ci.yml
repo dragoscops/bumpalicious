@@ -8,19 +8,17 @@ on:
   push:
     branches-ignore:
       - "test-bumpalicious-*"
-      - "bump_version_*"
     paths-ignore:
       - "test/**"
     tags-ignore:
       - "v99*"
   pull_request:
-    branches-ignore:
-      - "test-bumpalicious-*"
-      - "bump_version_*"
+    branches: [main, v1, v2]
     paths-ignore:
       - "test/**"
-    tags-ignore:
-      - "v99*"
+      - package.json
+      - CHANGELOG.md
+      - CHANGELOG.new.md
 
 concurrency:
   group: bumpalicious-ci-global
