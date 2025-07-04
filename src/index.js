@@ -1,11 +1,11 @@
 import core from '@actions/core';
+import {projectName} from './constants.js';
 import * as workspaces from './core/workspaces.js';
+import * as exec from './utils/exec.js';
 import * as git from './utils/git.js';
 import * as github from './utils/github.js';
 import {logger, pinoErrorPrettier} from './utils/logging.js';
 import * as workspace from './utils/workspace.js';
-import {projectName} from './constants.js';
-import * as exec from './utils/exec.js';
 
 const log = logger.child({module: projectName});
 
@@ -47,7 +47,7 @@ const run = async () => {
     {
       core.startGroup('Setting up Github');
       // Setup git user
-      const result = await git.config.set({
+      await git.config.set({
         'user.name': 'GitHub Actions',
         'user.email': 'actions@github.com',
         'safe.directory': process.env.GITHUB_WORKSPACE || process.cwd(),
