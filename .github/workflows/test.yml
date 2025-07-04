@@ -41,7 +41,7 @@ jobs:
           # Create unique test branch name with timestamp
           {
             echo "branch=$BRANCH"
-            echo "test_branch=test-bumpalicious-${{ github.run_id }}-${{ github.strategy.matrix.id }}-${{ github.run_attempt }}"
+            echo "test_branch=test-bumpalicious-${{ github.run_id }}-${{ github.run_attempt }}"
           } | tee -a $GITHUB_OUTPUT
 
       - name: Github App Token
@@ -74,7 +74,7 @@ jobs:
           # Setup test workspaces in test directory
           mkdir -p ./test
           cd ./test
-          
+
           echo "This is the main workspace" > README.md
           echo '{ "version": "${{ env.TEST_VERSION }}", "name": "main-workspace" }' > package.json
 
