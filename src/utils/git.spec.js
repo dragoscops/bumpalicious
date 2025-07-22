@@ -200,7 +200,9 @@ describe('utils/git.js', () => {
       describe('lastCreated()', () => {
         it('returns the last created tag', async () => {
           const result = await git.tag.lastCreated();
-          expect(execMock).toHaveBeenCalledWith('git', ['describe', '--tags', '--abbrev=0', '--match', '*']);
+          expect(execMock).toHaveBeenCalledWith('git', ['describe', '--tags', '--abbrev=0', '--match', '*'], {
+            noThrow: true,
+          });
           expect(result).toBe(lastTag);
         });
       });
