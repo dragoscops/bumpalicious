@@ -291,11 +291,6 @@ export async function createVersionCommit(workspaces, options) {
 export async function createVersionTags(version, options) {
   const tagMessage = `chore: version bump for workspaces: ${options.workspaces.map((node) => node.name).join(', ')}`;
 
-  // Create the main version tag (e.g., v2.0.1)
-  git.tag.createAndPush(`v${version}`, tagMessage);
-  core.setOutput('tag', version);
-  core.notice(`Created/updated version tag: v${version}`);
-
   // Create a shorter tag (e.g., v2.0) if shortTag is set and the version doesn't have a pre-release suffix
   if (options.shortTag) {
     const parsedVersion = semver.parse(version);
@@ -310,6 +305,11 @@ export async function createVersionTags(version, options) {
       log.info({version}, LOG_MESSAGES.SHORT_TAG_SKIPPED);
     }
   }
+
+  // Create the main version tag (e.g., v2.0.1)
+  git.tag.createAndPush(`v${version}`, tagMessage);
+  core.setOutput('tag', version);
+  core.notice(`Created/updated version tag: v${version}`);
 }
 
 /**
