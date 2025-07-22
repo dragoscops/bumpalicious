@@ -60726,17 +60726,6 @@ const tag = {
    *
    * @returns {Promise<string|null>} - Tag name, commit hash, or null on error
    */
-  // lastCreated: async () => {
-  //   // Try to detect last created tag
-  //   const {stdout: lastTag} = await exec('git', ['describe', '--tags', '--abbrev=0']);
-  //   if (lastTag.trim()) {
-  //     return lastTag.trim();
-  //   }
-  //
-  //   // If no tag is found, get the first commit hash
-  //   const {stdout: firstCommitHash} = await exec('git', ['rev-list', '--max-parents=0', 'HEAD']);
-  //   return firstCommitHash.trim();
-  // },
   lastCreated: async () => {
     // Try to detect last created tag
     try {
