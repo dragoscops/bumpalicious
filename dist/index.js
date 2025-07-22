@@ -60729,7 +60729,9 @@ const tag = {
   lastCreated: async () => {
     // Try to detect last created tag
     try {
-      const {stdout: lastTag} = await exec('git', ['describe', '--tags', '--abbrev=0', '--match', '*']);
+      const {stdout: lastTag} = await exec('git', ['describe', '--tags', '--abbrev=0', '--match', '*'], {
+        noThrow: true,
+      });
       if (lastTag.trim()) {
         return lastTag.trim();
       }
