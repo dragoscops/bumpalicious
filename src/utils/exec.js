@@ -6,7 +6,7 @@ import {projectName} from '../constants.js';
 export const log = logger.child({module: `${projectName}/utils/exec`});
 
 /**
- * @typedef {import('child_process').SpawnOptions} ExecOptions
+ * @typedef {import('child_process').SpawnOptions & { noThrow?: boolean }} ExecOptions
  */
 
 /**
@@ -16,17 +16,20 @@ export const log = logger.child({module: `${projectName}/utils/exec`});
  * @param {Array<string>} args - The arguments to pass to the command.
  * @param {ExecOptions} [options] - Options for the child process.
  */
-export const exec = async (command, args, options) =>
-  new Promise((resolve) => {
-    const ps = cp.spawn(command, args, {
-      cwd: exec.cwd,
-      ...options,
-      env: {
-        ...process.env,
-        GIT_TERMINAL_PROMPT: '0',
-        ...(options?.env ?? {}),
-      },
-    });
+export const exec = async (command, args, options) => {
+  options = {
+    cwd: exec.cwd,
+    noThrow: false,
+    ...options,
+    env: {
+      ...process.env,
+      GIT_TERMINAL_PROMPT: '0',
+      ...(options?.env ?? {}),
+    },
+  };
+
+  return new Promise((resolve) => {
+    const ps = cp.spawn(command, args, options);
     let stdout = '';
     let stderr = '';
     ps.stdout.on('data', (data) => {
@@ -37,12 +40,13 @@ export const exec = async (command, args, options) =>
     });
     ps.on('close', (exitCode) => {
       log.info({command: `${command} ${args.join(' ')}`, stdout, stderr, exitCode, options}, 'exec command finished');
-      if (exitCode !== 0) {
+      if (exitCode !== 0 && options.noThrow === false) {
         core.setFailed(`Failed to run command: ${command} '${args.join("', '")}'`);
       }
       resolve({stdout, stderr, exitCode});
     });
   });
+};
 
 /**
  * Sets the current working directory for the exec function.
