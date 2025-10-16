@@ -7,15 +7,6 @@ import * as workspace from './workspace.js';
 export const log = logger.child({module: `${projectName}/utils/github`});
 
 /**
- * @param message {string}
- * @param data {Object}
- */
-const error = (message, data) => {
-  log.error({...(data ?? {})}, message);
-  core.setFailed(message);
-}
-
-/**
  * @typedef {import('./workspace.js').Workspace} Workspace
  */
 
@@ -247,7 +238,8 @@ export const pr = {
     return new Promise((resolve) => {
       const checkMerged = async () => {
         if (attempts++ >= maxAttempts) {
-          error(`Pull request merge check timed out`, {pullNumber, mergeMethod, options});
+          log.error({pullNumber, mergeMethod, options}, `Pull request merge check timed out`);
+          core.setFailed(`Pull request #${pullNumber} merge check timed out`);
           resolve(false);
           return;
         }
