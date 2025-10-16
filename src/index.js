@@ -17,6 +17,8 @@ const error = (message) => {
   core.setFailed(message);
 }
 
+const errorWorkspaceFolderOneRoot = 'Workspaces folder should only have a root workspace. Please ensure there is only one root workspace.';
+const errorNoWorkspacesRootTreeFound = 'No root workspace found in the changed workspaces. Please ensure there is a root workspace.';
 const errorNoTagsFoundInRepository = 'No tags found in the repository. Please create a tag before running this action.';
 const warnNoChangedWorkspacesFound = 'No workspaces have changed since the last tag. No version bumping needed.';
 
@@ -76,6 +78,14 @@ const run = async () => {
       // enrich all workspaces
       options.workspaces = await workspaces.enrichWorkspaces(options.workspaces, lastTag);
       const changedWorkspacesTrees = workspace.buildUpdatedWorkspacesTrees(options.workspaces);
+      if (changedWorkspacesTrees.length === 0) {
+        error(errorNoWorkspacesRootTreeFound);
+        return;
+      }
+      if (changedWorkspacesTrees.length > 1) {
+        error(errorWorkspaceFolderOneRoot);
+        return;
+      }
       // create tag
       await workspaces.createVersionTags(changedWorkspacesTrees[0].workspace.version, options);
     } else {
@@ -97,11 +107,13 @@ const run = async () => {
       core.startGroup('Updating workspaces tree');
       // Organizes workspaces into a tree like structure to also determine the root workspace
       const changedWorkspacesTrees = workspace.buildUpdatedWorkspacesTrees(changedWorkspaces);
-      if (changedWorkspacesTrees.length > 1) {
-        log.error('Workspaces folder should only have a root workspace');
-      }
       if (changedWorkspacesTrees.length === 0) {
-        log.error('No workspaces found');
+        error(errorNoWorkspacesRootTreeFound);
+        return;
+      }
+      if (changedWorkspacesTrees.length > 1) {
+        error(errorWorkspaceFolderOneRoot);
+        return;
       }
       log.info(
         { workspaces: changedWorkspacesTrees },
