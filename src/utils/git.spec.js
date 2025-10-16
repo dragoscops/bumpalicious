@@ -176,8 +176,8 @@ describe('utils/git.js', () => {
           await git.tag.createAndPush('v1.0.0', 'Version 1.0.0');
 
           expect(execMock).toHaveBeenNthCalledWith(2, 'git', ['tag', '-d', 'v1.0.0']);
-          expect(execMock).toHaveBeenNthCalledWith(3, 'git', ['fetch'], {noThrow: true});
-          expect(execMock).toHaveBeenNthCalledWith(4, 'git', ['push', 'origin', '--delete', 'v1.0.0'], {noThrow: true});
+          expect(execMock).toHaveBeenNthCalledWith(3, 'git', ['fetch']);
+          expect(execMock).toHaveBeenNthCalledWith(4, 'git', ['push', 'origin', '--delete', 'v1.0.0']);
           expect(execMock).toHaveBeenNthCalledWith(5, 'git', ['tag', '-a', 'v1.0.0', '-m', 'Version 1.0.0']);
           expect(execMock).toHaveBeenNthCalledWith(6, 'git', ['fetch']);
           expect(execMock).toHaveBeenNthCalledWith(7, 'git', ['push', 'origin', 'v1.0.0', '--no-verify']);

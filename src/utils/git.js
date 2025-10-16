@@ -222,12 +222,11 @@ export const tag = {
     log.info({tagName}, infoTagDeleted);
 
     // Also try to delete the tag from remote
-    try {
-      for (const args of [['fetch'], ['push', 'origin', '--delete', tagName]]) {
-        await exec('git', args, {noThrow: true});
-      }
+    await exec('git', ['fetch']);
+    const {exitCode} = await exec('git', ['push', 'origin', '--delete', tagName]);
+    if (exitCode === 0) {
       log.info({tagName}, infoRemoteTagDeleted);
-    } catch (err) {
+    } else {
       log.warn({tagName, err}, warnCouldNotRemoveRemoteTag);
     }
   },
