@@ -1,7 +1,7 @@
-import cp from 'node:child_process';
 import core from '@actions/core';
-import {logger} from './logging.js';
+import cp from 'node:child_process';
 import {projectName} from '../constants.js';
+import {logger} from './logging.js';
 
 export const log = logger.child({module: `${projectName}/utils/exec`});
 
@@ -41,7 +41,8 @@ export const exec = async (command, args, options) => {
     ps.on('close', (exitCode) => {
       log.info({command: `${command} ${args.join(' ')}`, stdout, stderr, exitCode, options}, 'exec command finished');
       if (exitCode !== 0 && options.noThrow === false) {
-        core.setFailed(`Failed to run command: ${command} '${args.join("', '")}'`);
+        core.warning(`Failed to run command: ${command} '${args.join("', '")}'`);
+        log.warn({command, args, options, stdout, stderr, exitCode}, 'Command failed');
       }
       resolve({stdout, stderr, exitCode});
     });

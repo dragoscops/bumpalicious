@@ -1,11 +1,11 @@
-import {describe, it, expect, beforeEach, vi} from 'vitest';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
 
-import * as exec from './exec.js';
-import * as git from './git.js';
 import {oldVersion} from '../vitest/setup.detect-update.tests.js';
 import {removeTempProjectFolder} from '../vitest/setup.fs.test.js';
-import {mockPinoIn, unMockPinoIn, setupPinoLoggingCallsTest} from '../vitest/setup.logging.tests.js';
+import {mockPinoIn, setupPinoLoggingCallsTest, unMockPinoIn} from '../vitest/setup.logging.tests.js';
 import {createWorkspacesTestFolder, updateAndCommit} from '../vitest/setup.workspaces.tests.js';
+import * as exec from './exec.js';
+import * as git from './git.js';
 
 /**
  * TODO: As seen, not all tests use mkdtemp. Need to adapt the one that can be adapted to use mkdtemp.
@@ -176,9 +176,11 @@ describe('utils/git.js', () => {
           await git.tag.createAndPush('v1.0.0', 'Version 1.0.0');
 
           expect(execMock).toHaveBeenNthCalledWith(2, 'git', ['tag', '-d', 'v1.0.0']);
-          expect(execMock).toHaveBeenNthCalledWith(3, 'git', ['tag', '-a', 'v1.0.0', '-m', 'Version 1.0.0']);
-          expect(execMock).toHaveBeenNthCalledWith(4, 'git', ['fetch']);
-          expect(execMock).toHaveBeenNthCalledWith(5, 'git', ['push', 'origin', 'v1.0.0', '--no-verify']);
+          expect(execMock).toHaveBeenNthCalledWith(3, 'git', ['fetch']);
+          expect(execMock).toHaveBeenNthCalledWith(4, 'git', ['ls-remote', '--tags', 'origin', 'refs/tags/v1.0.0']);
+          expect(execMock).toHaveBeenNthCalledWith(5, 'git', ['tag', '-a', 'v1.0.0', '-m', 'Version 1.0.0']);
+          expect(execMock).toHaveBeenNthCalledWith(6, 'git', ['fetch']);
+          expect(execMock).toHaveBeenNthCalledWith(7, 'git', ['push', 'origin', 'v1.0.0', '--no-verify']);
 
           setupPinoLoggingCallsTest('info', [{tagName: 'v1.0.0'}, git.infoTagAlreadyExists], git.log);
         });
@@ -194,6 +196,37 @@ describe('utils/git.js', () => {
         it('returns false when tag does not exist', async () => {
           const result = await git.tag.exists('v2.0.0');
           expect(result).toBe(false);
+        });
+      });
+
+      describe('existsRemote()', () => {
+        it('returns true when remote tag exists', async () => {
+          execMock.mockResolvedValueOnce({stdout: `abc123\trefs/tags/${lastTag}\n`, stderr: '', exitCode: 0});
+
+          const result = await git.tag.existsRemote(lastTag);
+          expect(execMock).toHaveBeenCalledWith('git', ['ls-remote', '--tags', 'origin', `refs/tags/${lastTag}`]);
+          expect(result).toBe(true);
+        });
+
+        it('returns false when remote tag does not exist', async () => {
+          execMock.mockResolvedValueOnce({stdout: '', stderr: '', exitCode: 0});
+
+          const result = await git.tag.existsRemote('v2.0.0');
+          expect(result).toBe(false);
+        });
+
+        it('returns false on error', async () => {
+          execMock.mockRejectedValueOnce(new Error('Network error'));
+
+          const result = await git.tag.existsRemote('v1.0.0');
+          expect(result).toBe(false);
+        });
+
+        it('accepts custom remote name', async () => {
+          execMock.mockResolvedValueOnce({stdout: `abc123\trefs/tags/v1.0.0\n`, stderr: '', exitCode: 0});
+
+          await git.tag.existsRemote('v1.0.0', 'upstream');
+          expect(execMock).toHaveBeenCalledWith('git', ['ls-remote', '--tags', 'upstream', 'refs/tags/v1.0.0']);
         });
       });
 
@@ -218,10 +251,65 @@ describe('utils/git.js', () => {
       });
 
       describe('remove()', () => {
-        it('removes a tag', async () => {
+        it('removes a tag locally and remotely when remote tag exists', async () => {
+          execMock.mockResolvedValueOnce({stdout: '', stderr: '', exitCode: 0}); // For tag -d
+          execMock.mockResolvedValueOnce({stdout: '', stderr: '', exitCode: 0}); // For fetch
+          execMock.mockResolvedValueOnce({stdout: `abc123\trefs/tags/${lastTag}\n`, stderr: '', exitCode: 0}); // For ls-remote (existsRemote)
+          execMock.mockResolvedValueOnce({stdout: '', stderr: '', exitCode: 0}); // For push --delete
+
           await git.tag.remove(lastTag);
+
+          expect(execMock).toHaveBeenCalledTimes(4);
+          expect(execMock).toHaveBeenNthCalledWith(1, 'git', ['tag', '-d', lastTag]);
+          expect(execMock).toHaveBeenNthCalledWith(2, 'git', ['fetch']);
+          expect(execMock).toHaveBeenNthCalledWith(3, 'git', ['ls-remote', '--tags', 'origin', `refs/tags/${lastTag}`]);
+          expect(execMock).toHaveBeenNthCalledWith(4, 'git', ['push', 'origin', '--delete', lastTag]);
+          setupPinoLoggingCallsTest('info', [{tagName: lastTag}, git.infoTagDeleted], git.log);
+          setupPinoLoggingCallsTest('info', [{tagName: lastTag}, git.infoRemoteTagDeleted], git.log);
+        });
+
+        it('skips remote deletion when remote tag does not exist', async () => {
+          execMock.mockResolvedValueOnce({stdout: '', stderr: '', exitCode: 0}); // For tag -d
+          execMock.mockResolvedValueOnce({stdout: '', stderr: '', exitCode: 0}); // For fetch
+          execMock.mockResolvedValueOnce({stdout: '', stderr: '', exitCode: 0}); // For ls-remote (existsRemote returns false)
+
+          await git.tag.remove(lastTag);
+
+          expect(execMock).toHaveBeenCalledTimes(3);
+          expect(execMock).toHaveBeenNthCalledWith(1, 'git', ['tag', '-d', lastTag]);
+          setupPinoLoggingCallsTest('info', [{tagName: lastTag}, git.infoTagDeleted], git.log);
+          setupPinoLoggingCallsTest(
+            'info',
+            [{tagName: lastTag}, 'Remote tag does not exist, skipping remote deletion'],
+            git.log,
+          );
+        });
+
+        it('handles remote tag deletion failure gracefully', async () => {
+          execMock.mockResolvedValueOnce({stdout: '', stderr: '', exitCode: 0}); // For tag -d
+          execMock.mockRejectedValueOnce(new Error('Network error')); // For fetch failure
+
+          await git.tag.remove(lastTag);
+
           expect(execMock).toHaveBeenCalledWith('git', ['tag', '-d', lastTag]);
           setupPinoLoggingCallsTest('info', [{tagName: lastTag}, git.infoTagDeleted], git.log);
+          setupPinoLoggingCallsTest(
+            'warn',
+            [expect.objectContaining({tagName: lastTag, err: expect.any(Error)}), git.warnCouldNotRemoveRemoteTag],
+            git.log,
+          );
+        });
+
+        it('warns when push --delete fails', async () => {
+          execMock.mockResolvedValueOnce({stdout: '', stderr: '', exitCode: 0}); // For tag -d
+          execMock.mockResolvedValueOnce({stdout: '', stderr: '', exitCode: 0}); // For fetch
+          execMock.mockResolvedValueOnce({stdout: `abc123\trefs/tags/${lastTag}\n`, stderr: '', exitCode: 0}); // For ls-remote
+          execMock.mockResolvedValueOnce({stdout: '', stderr: 'error: failed to delete', exitCode: 1}); // For push --delete fails
+
+          await git.tag.remove(lastTag);
+
+          setupPinoLoggingCallsTest('info', [{tagName: lastTag}, git.infoTagDeleted], git.log);
+          setupPinoLoggingCallsTest('warn', [{tagName: lastTag}, git.warnCouldNotRemoveRemoteTag], git.log);
         });
       });
     });
