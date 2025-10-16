@@ -60350,7 +60350,7 @@ const exec = async (command, args, options) => {
     },
   };
 
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const ps = external_node_child_process_namespaceObject.spawn(command, args, options);
     let stdout = '';
     let stderr = '';
@@ -60363,8 +60363,11 @@ const exec = async (command, args, options) => {
     ps.on('close', (exitCode) => {
       exec_log.info({command: `${command} ${args.join(' ')}`, stdout, stderr, exitCode, options}, 'exec command finished');
       if (exitCode !== 0 && options.noThrow === false) {
-        core.warning(`Failed to run command: ${command} '${args.join("', '")}'`);
-        exec_log.warn({command, args, options, stdout, stderr, exitCode}, 'Command failed');
+        const errorMessage = `Failed to run command: ${command} '${args.join("', '")}' with exit code ${exitCode}`;
+        core.warning(errorMessage);
+        exec_log.warn({command, args, options, stdout, stderr, exitCode}, errorMessage);
+        // TODO: still not sure whether to reject when exec is failing; I would rather have the caller handle it
+        // return reject(errorMessage);
       }
       resolve({stdout, stderr, exitCode});
     });
