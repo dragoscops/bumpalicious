@@ -1,7 +1,7 @@
 import path from 'node:path';
-import {logger} from './logging.js';
 import {projectName} from '../constants.js';
 import {exec} from './exec.js';
+import {logger} from './logging.js';
 
 export const log = logger.child({module: `${projectName}/utils/git`});
 
@@ -212,7 +212,7 @@ export const tag = {
   },
 
   /**
-   * Delete an existing Tag from the repository.
+   * Delete an existing Tag from the repository (both local and remote).
    *
    * @param {string} tagName
    * @returns {Promise<void>}
@@ -221,10 +221,15 @@ export const tag = {
     await exec('git', ['tag', '-d', tagName]);
     log.info({tagName}, infoTagDeleted);
 
-    // TODO: Remote tag deletion is optional and might not be necessary
-    // // Also try to delete it from remote
-    //   await exec('git', ['push', 'origin', `:refs/tags/${tagName}`]);
-    //   log.info({tagName}, infoRemoteTagDeleted);
+    // Also try to delete the tag from remote
+    try {
+      for (const args of [['fetch'], ['push', 'origin', '--delete', tagName]]) {
+        await exec('git', args, {noThrow: true});
+      }
+      log.info({tagName}, infoRemoteTagDeleted);
+    } catch (err) {
+      log.warn({tagName, err}, warnCouldNotRemoveRemoteTag);
+    }
   },
 };
 
