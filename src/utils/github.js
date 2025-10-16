@@ -1,10 +1,19 @@
 import * as core from '@actions/core';
-import {getOctokit} from '@actions/github';
-import {logger, pinoErrorPrettier} from './logging.js';
+import { getOctokit } from '@actions/github';
+import { projectName } from '../constants.js';
+import { logger, pinoErrorPrettier } from './logging.js';
 import * as workspace from './workspace.js';
-import {projectName} from '../constants.js';
 
 export const log = logger.child({module: `${projectName}/utils/github`});
+
+/**
+ * @param message {string}
+ * @param data {Object}
+ */
+const error = (message, data) => {
+  log.error({...(data ?? {})}, message);
+  core.setFailed(message);
+}
 
 /**
  * @typedef {import('./workspace.js').Workspace} Workspace
@@ -232,8 +241,17 @@ export const pr = {
       return false;
     }
 
+    const maxAttempts = 60; // Maximum number of attempts (e.g., 60 attempts = 5 minutes if interval is 5 seconds)
+    let attempts = 0;
+
     return new Promise((resolve) => {
       const checkMerged = async () => {
+        if (attempts++ >= maxAttempts) {
+          error(`Pull request merge check timed out`, {pullNumber, mergeMethod, options});
+          resolve(false);
+          return;
+        }
+
         const {data: pullRequest} = await octokit.rest.pulls.get({
           ...repo,
           pull_number: pullNumber,
