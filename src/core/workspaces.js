@@ -2,17 +2,17 @@
  * Workspace management functionality for handling multiple project workspaces
  * @module core/workspaces
  */
+import * as core from '@actions/core';
 import * as fs from 'node:fs/promises';
 import path from 'node:path';
-import * as core from '@actions/core';
 import semver from 'semver';
 
-import * as version from './version.js';
 import {projectName} from '../constants.js';
 import * as changelog from '../utils/changelog.js';
 import * as git from '../utils/git.js';
 import * as github from '../utils/github.js';
 import {logger, pinoErrorPrettier} from '../utils/logging.js';
+import * as version from './version.js';
 import * as workspaceDetect from './version/workspace/index.js';
 
 export const log = logger.child({module: `${projectName}/core/workspaces`});
@@ -343,7 +343,7 @@ export async function createVersionPR(workspacesTree, options) {
    * @return {string[]} - List of workspaces and their versions in markdown for
    */
   function listWorkspacesVersions(node) {
-    return (node?.children ?? []).map((child) => [
+    return (node?.children ?? []).flatMap((child) => [
       `* ${child.workspace.name}: ${child.workspace.version}`,
       ...listWorkspacesVersions(child),
     ]);
