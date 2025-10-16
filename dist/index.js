@@ -60604,7 +60604,7 @@ const tag = {
   },
 
   /**
-   * Delete an existing Tag from the repository.
+   * Delete an existing Tag from the repository (both local and remote).
    *
    * @param {string} tagName
    * @returns {Promise<void>}
@@ -60613,10 +60613,15 @@ const tag = {
     await exec('git', ['tag', '-d', tagName]);
     git_log.info({tagName}, infoTagDeleted);
 
-    // TODO: Remote tag deletion is optional and might not be necessary
-    // // Also try to delete it from remote
-    //   await exec('git', ['push', 'origin', `:refs/tags/${tagName}`]);
-    //   log.info({tagName}, infoRemoteTagDeleted);
+    // Also try to delete the tag from remote
+    try {
+      for (const args of [['fetch'], ['push', 'origin', '--delete', tagName]]) {
+        await exec('git', args, {noThrow: true});
+      }
+      git_log.info({tagName}, infoRemoteTagDeleted);
+    } catch (err) {
+      git_log.warn({tagName, err}, warnCouldNotRemoveRemoteTag);
+    }
   },
 };
 
