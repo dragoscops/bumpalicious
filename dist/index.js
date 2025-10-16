@@ -62732,8 +62732,17 @@ const run = async () => {
           return;
         }
         if (options.prAutoMerge) {
-          await github_pr.merge({pullNumber: pr.number}, options);
-          await github_pr.hasMerged({pullNumber: pr.number}, options);
+          const merged = await github_pr.merge({pullNumber: pr.number}, options);
+          if (!merged) {
+            core.setFailed('Failed to merge PR');
+            return;
+          }
+
+          const hasMerged = await github_pr.hasMerged({pullNumber: pr.number}, options);
+          if (!hasMerged) {
+            core.setFailed('PR merge timed out or failed');
+            return;
+          }
 
           await branch.checkout(pr.base.ref);
           await branch.pull(pr.base.ref);
