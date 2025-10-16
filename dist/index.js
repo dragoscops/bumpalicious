@@ -61187,19 +61187,38 @@ const github_pr = {
       return false;
     }
 
+    const maxAttempts = 60; // Maximum number of attempts (e.g., 60 attempts = 5 minutes if interval is 5 seconds)
+    let attempts = 0;
+
     return new Promise((resolve) => {
       const checkMerged = async () => {
-        const {data: pullRequest} = await octokit.rest.pulls.get({
-          ...repo,
-          pull_number: pullNumber,
-        });
+        if (attempts++ >= maxAttempts) {
+          github_log.error({pullNumber, mergeMethod, options}, `Pull request merge check timed out`);
+          core.setFailed(`Pull request #${pullNumber} merge check timed out`);
+          resolve(false);
+          return;
+        }
 
-        if (pullRequest.merged) {
-          github_log.info({pullRequest, mergeMethod, options}, `Pull request has been merged`);
-          resolve(true);
-        } else {
-          github_log.info({pullRequest, mergeMethod, options}, `Pull request is not merged yet`);
-          setTimeout(checkMerged, 5000);
+        try {
+          const {data: pullRequest} = await octokit.rest.pulls.get({
+            ...repo,
+            pull_number: pullNumber,
+          });
+
+          if (pullRequest.merged) {
+            github_log.info({pullRequest, mergeMethod, options}, `Pull request has been merged`);
+            resolve(true);
+          } else {
+            github_log.info({pullRequest, mergeMethod, options}, `Pull request is not merged yet`);
+            setTimeout(checkMerged, 5000);
+          }
+        } catch (error) {
+          github_log.error(
+            {...pinoErrorPrettier(error), pullNumber, mergeMethod, options},
+            `Failed to check pull request status`,
+          );
+          core.setFailed(`Failed to check pull request #${pullNumber} status: ${error.message}`);
+          resolve(false);
         }
       };
 
@@ -62449,7 +62468,7 @@ async function createVersionTags(version, options) {
     // Only create short tags for non-prerelease versions
     if (parsedVersion && parsedVersion.prerelease.length === 0) {
       const shortVersion = `${parsedVersion.major}.${parsedVersion.minor}`;
-      tag.createAndPush(`v${shortVersion}`, tagMessage);
+      await tag.createAndPush(`v${shortVersion}`, tagMessage);
       workspaces_log.info({shortVersion}, LOG_MESSAGES.SHORT_TAG_CREATED);
       core.notice(`Created/updated short version tag: v${shortVersion}`);
     } else {
@@ -62458,7 +62477,7 @@ async function createVersionTags(version, options) {
   }
 
   // Create the main version tag (e.g., v2.0.1)
-  tag.createAndPush(`v${version}`, tagMessage);
+  await tag.createAndPush(`v${version}`, tagMessage);
   core.setOutput('tag', version);
   core.notice(`Created/updated version tag: v${version}`);
 }
@@ -62588,6 +62607,19 @@ async function generateChangelogsForChangedWorkspaces(workspaces, lastTag, optio
 
 const src_log = logger.child({module: projectName});
 
+/**
+ * @param message {string}
+ */
+const error = (message) => {
+  src_log.error(message);
+  core.setFailed(message);
+};
+
+const errorWorkspaceFolderOneRoot =
+  'Workspaces folder should only have a root workspace. Please ensure there is only one root workspace.';
+const errorNoWorkspacesRootTreeFound =
+  'No root workspace found in the changed workspaces. Please ensure there is a root workspace.';
+const errorNoTagsFoundInRepository = 'No tags found in the repository. Please create a tag before running this action.';
 const warnNoChangedWorkspacesFound = 'No workspaces have changed since the last tag. No version bumping needed.';
 
 /**
@@ -62607,7 +62639,8 @@ const run = async () => {
     // Get last created tag or 1st commit message
     const lastTag = await tag.lastCreated();
     if (!lastTag) {
-      core.setFailed('No tags found in the repository. Please create a tag before running this action.');
+      error(errorNoTagsFoundInRepository);
+      return;
     }
     src_log.info({lastTag}, 'Last created tag');
     core.notice(`Last created tag: ${lastTag}`);
@@ -62645,6 +62678,14 @@ const run = async () => {
       // enrich all workspaces
       options.workspaces = await enrichWorkspaces(options.workspaces, lastTag);
       const changedWorkspacesTrees = buildUpdatedWorkspacesTrees(options.workspaces);
+      if (changedWorkspacesTrees.length === 0) {
+        error(errorNoWorkspacesRootTreeFound);
+        return;
+      }
+      if (changedWorkspacesTrees.length > 1) {
+        error(errorWorkspaceFolderOneRoot);
+        return;
+      }
       // create tag
       await createVersionTags(changedWorkspacesTrees[0].workspace.version, options);
     } else {
@@ -62666,11 +62707,13 @@ const run = async () => {
       core.startGroup('Updating workspaces tree');
       // Organizes workspaces into a tree like structure to also determine the root workspace
       const changedWorkspacesTrees = buildUpdatedWorkspacesTrees(changedWorkspaces);
-      if (changedWorkspacesTrees.length > 1) {
-        src_log.error('Workspaces folder should only have a root workspace');
-      }
       if (changedWorkspacesTrees.length === 0) {
-        src_log.error('No workspaces found');
+        error(errorNoWorkspacesRootTreeFound);
+        return;
+      }
+      if (changedWorkspacesTrees.length > 1) {
+        error(errorWorkspaceFolderOneRoot);
+        return;
       }
       src_log.info(
         {workspaces: changedWorkspacesTrees},
