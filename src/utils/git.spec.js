@@ -199,6 +199,41 @@ describe('utils/git.js', () => {
         });
       });
 
+      describe('existsRemote()', () => {
+        it('returns true when remote tag exists', async () => {
+          execMock.mockResolvedValueOnce({stdout: `abc123\trefs/tags/${lastTag}\n`, stderr: '', exitCode: 0});
+
+          const result = await git.tag.existsRemote(lastTag);
+          expect(execMock).toHaveBeenCalledWith('git', ['ls-remote', '--tags', 'origin', `refs/tags/${lastTag}`], {
+            noThrow: true,
+          });
+          expect(result).toBe(true);
+        });
+
+        it('returns false when remote tag does not exist', async () => {
+          execMock.mockResolvedValueOnce({stdout: '', stderr: '', exitCode: 0});
+
+          const result = await git.tag.existsRemote('v2.0.0');
+          expect(result).toBe(false);
+        });
+
+        it('returns false on error', async () => {
+          execMock.mockRejectedValueOnce(new Error('Network error'));
+
+          const result = await git.tag.existsRemote('v1.0.0');
+          expect(result).toBe(false);
+        });
+
+        it('accepts custom remote name', async () => {
+          execMock.mockResolvedValueOnce({stdout: `abc123\trefs/tags/v1.0.0\n`, stderr: '', exitCode: 0});
+
+          await git.tag.existsRemote('v1.0.0', 'upstream');
+          expect(execMock).toHaveBeenCalledWith('git', ['ls-remote', '--tags', 'upstream', 'refs/tags/v1.0.0'], {
+            noThrow: true,
+          });
+        });
+      });
+
       describe('lastCreated()', () => {
         it('returns the last created tag', async () => {
           const result = await git.tag.lastCreated();

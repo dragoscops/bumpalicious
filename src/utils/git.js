@@ -162,7 +162,7 @@ export const tag = {
   },
 
   /**
-   * Test if a tag exists in the repository.
+   * Test if a tag exists locally in the repository.
    *
    * @param {string} tagName
    * @returns {Promise<boolean>}
@@ -170,6 +170,25 @@ export const tag = {
   exists: async (tagName) => {
     const {stdout} = await exec('git', ['tag', '-l', tagName]);
     return stdout.trim() === tagName;
+  },
+
+  /**
+   * Test if a tag exists on the remote repository.
+   *
+   * @param {string} tagName
+   * @param {string} [remote='origin'] - Remote name to check
+   * @returns {Promise<boolean>}
+   */
+  existsRemote: async (tagName, remote = 'origin') => {
+    try {
+      const {stdout} = await exec('git', ['ls-remote', '--tags', remote, `refs/tags/${tagName}`], {
+        noThrow: true,
+      });
+      return stdout.trim().includes(`refs/tags/${tagName}`);
+    } catch (err) {
+      log.warn({tagName, remote, err}, 'Failed to check if remote tag exists');
+      return false;
+    }
   },
 
   /**
@@ -222,11 +241,21 @@ export const tag = {
     log.info({tagName}, infoTagDeleted);
 
     // Also try to delete the tag from remote
-    await exec('git', ['fetch']);
-    const {exitCode} = await exec('git', ['push', 'origin', '--delete', tagName]);
-    if (exitCode === 0) {
-      log.info({tagName}, infoRemoteTagDeleted);
-    } else {
+    try {
+      await exec('git', ['fetch'], {noThrow: true});
+      const remoteTagExists = await tag.existsRemote(tagName);
+
+      if (remoteTagExists) {
+        const {exitCode} = await exec('git', ['push', 'origin', '--delete', tagName], {noThrow: true});
+        if (exitCode === 0) {
+          log.info({tagName}, infoRemoteTagDeleted);
+        } else {
+          log.warn({tagName}, warnCouldNotRemoveRemoteTag);
+        }
+      } else {
+        log.info({tagName}, 'Remote tag does not exist, skipping remote deletion');
+      }
+    } catch (err) {
       log.warn({tagName, err}, warnCouldNotRemoveRemoteTag);
     }
   },
