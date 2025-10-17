@@ -62447,13 +62447,16 @@ async function updateVersionsForWorkspaces(workspaces, {generateChangelog = true
         try {
           await generateWorkspaceChangelog(workspace);
         } catch (changeLogError) {
-          workspaces_log.error(
+          workspaces_log.warn(
             {
               workspaceName: workspace.name,
               workspacePath: workspace.path,
               ...pinoErrorPrettier(changeLogError),
             },
             LOG_MESSAGES.CHANGELOG_GENERATE_ERROR,
+          );
+          core.warning(
+            `${LOG_MESSAGES.CHANGELOG_GENERATE_ERROR} for workspace '${workspace.name}': ${changeLogError.message}`,
           );
         }
       }
@@ -62711,7 +62714,11 @@ const run = async () => {
       src_log.info(`Version PR was merged with message: ${commitMessage}`);
       core.notice(`Version PR was merged with message: ${commitMessage}`);
       // enrich all workspaces
-      options.workspaces = await enrichWorkspaces(options.workspaces, lastTag);
+      options.workspaces = await enrichWorkspaces(options.workspaces);
+      if (!options.workspaces || options.workspaces.length === 0) {
+        core.setFailed('No workspaces specified. Please provide workspaces input.');
+        return;
+      }
       const changedWorkspacesTrees = buildUpdatedWorkspacesTrees(options.workspaces);
       if (changedWorkspacesTrees.length === 0) {
         error(errorNoWorkspacesRootTreeFound);
