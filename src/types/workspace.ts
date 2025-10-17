@@ -2,7 +2,7 @@
  * Workspace type definitions for multi-language monorepo support
  */
 
-import type {Version} from './version.js';
+import type { Version } from './version.js';
 
 /**
  * Supported workspace types

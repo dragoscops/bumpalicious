@@ -1,9 +1,9 @@
 import core from '@actions/core';
 import cp from 'node:child_process';
-import {projectName} from '../constants.js';
-import {logger} from './logging.js';
+import { projectName } from '../constants.js';
+import { logger } from './logging.js';
 
-export const log = logger.child({module: `${projectName}/utils/exec`});
+export const log = logger.child({ module: `${projectName}/utils/exec` });
 
 /**
  * @typedef {import('child_process').SpawnOptions & { noThrow?: boolean }} ExecOptions
@@ -39,15 +39,15 @@ export const exec = async (command, args, options) => {
       stderr += data;
     });
     ps.on('close', (exitCode) => {
-      log.info({command: `${command} ${args.join(' ')}`, stdout, stderr, exitCode, options}, 'exec command finished');
+      log.info({ command: `${command} ${args.join(' ')}`, stdout, stderr, exitCode, options }, 'exec command finished');
       if (exitCode !== 0 && options.noThrow === false) {
         const errorMessage = `Failed to run command: ${command} '${args.join("', '")}' with exit code ${exitCode}`;
         core.warning(errorMessage);
-        log.warn({command, args, options, stdout, stderr, exitCode}, errorMessage);
+        log.warn({ command, args, options, stdout, stderr, exitCode }, errorMessage);
         // TODO: still not sure whether to reject when exec is failing; I would rather have the caller handle it
         // return reject(errorMessage);
       }
-      resolve({stdout, stderr, exitCode});
+      resolve({ stdout, stderr, exitCode });
     });
   });
 };

@@ -1,5 +1,5 @@
 import path from 'node:path';
-import {expect, vi} from 'vitest';
+import { expect, vi } from 'vitest';
 import * as logging from '../utils/logging.js';
 
 const pinoMethods = ['debug', 'info', 'warn', 'error', 'fatal', 'trace'];

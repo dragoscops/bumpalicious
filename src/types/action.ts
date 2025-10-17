@@ -2,7 +2,7 @@
  * GitHub Action input/output type definitions
  */
 
-import type {WorkspaceConfig} from './workspace.js';
+import type { WorkspaceConfig } from './workspace.js';
 
 /**
  * GitHub Action inputs from action.yml

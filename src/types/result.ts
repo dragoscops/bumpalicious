@@ -27,14 +27,14 @@ export type Result<T, E = Error> = Ok<T> | Err<E>;
  * Creates a successful result
  */
 export function ok<T>(value: T): Ok<T> {
-  return {ok: true, value};
+  return { ok: true, value };
 }
 
 /**
  * Creates an error result
  */
 export function err<E>(error: E): Err<E> {
-  return {ok: false, error};
+  return { ok: false, error };
 }
 
 /**

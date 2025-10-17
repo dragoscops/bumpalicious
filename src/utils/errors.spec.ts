@@ -2,7 +2,7 @@
  * Tests for custom error classes
  */
 
-import {describe, it, expect} from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
   BumpaliciousError,
   GitOperationError,

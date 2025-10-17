@@ -6,7 +6,7 @@ import pinoPretty from 'pino-pretty';
  * @module utils/logging
  */
 
-const stream = pinoPretty({colorize: true});
+const stream = pinoPretty({ colorize: true });
 export const logger = pino(stream);
 
 /**

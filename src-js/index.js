@@ -1,13 +1,13 @@
 import core from '@actions/core';
-import {projectName} from './constants.js';
+import { projectName } from './constants.js';
 import * as workspaces from './core/workspaces.js';
 import * as exec from './utils/exec.js';
 import * as git from './utils/git.js';
 import * as github from './utils/github.js';
-import {logger, pinoErrorPrettier} from './utils/logging.js';
+import { logger, pinoErrorPrettier } from './utils/logging.js';
 import * as workspace from './utils/workspace.js';
 
-const log = logger.child({module: projectName});
+const log = logger.child({ module: projectName });
 
 /**
  * @param message {string}
@@ -36,7 +36,7 @@ const run = async () => {
     //======================================================================
 
     core.startGroup('Gathering workspaces info');
-    log.info({options}, 'Options received');
+    log.info({ options }, 'Options received');
 
     // Get last created tag or 1st commit message
     const lastTag = await git.tag.lastCreated();
@@ -44,7 +44,7 @@ const run = async () => {
       error(errorNoTagsFoundInRepository);
       return;
     }
-    log.info({lastTag}, 'Last created tag');
+    log.info({ lastTag }, 'Last created tag');
     core.notice(`Last created tag: ${lastTag}`);
 
     // Get the last commit message
@@ -52,7 +52,7 @@ const run = async () => {
     if (!commitMessage) {
       core.error('No commit messages found in the repository. Please make a commit before running this action.');
     }
-    log.info({commitMessage}, 'Last commit message');
+    log.info({ commitMessage }, 'Last commit message');
     core.notice(`Last commit message: ${commitMessage}`);
     core.endGroup();
 
@@ -105,7 +105,7 @@ const run = async () => {
         core.notice(warnNoChangedWorkspacesFound);
         return;
       } else {
-        log.info({updatedWorkspaces: changedWorkspaces}, 'Changed workspaces found');
+        log.info({ updatedWorkspaces: changedWorkspaces }, 'Changed workspaces found');
       }
 
       //======================================================================
@@ -122,7 +122,7 @@ const run = async () => {
         return;
       }
       log.info(
-        {workspaces: changedWorkspacesTrees},
+        { workspaces: changedWorkspacesTrees },
         `Updated workspaces trees -> Found ${changedWorkspacesTrees.length} main nodes`,
       );
       core.endGroup();
@@ -133,18 +133,18 @@ const run = async () => {
         // If createPR is true, create a pull request with the version changes
         /** @type {import('./utils/github.js').PRCreateResponse} */
         const pr = await workspaces.createVersionPR(changedWorkspacesTrees, options);
-        log.info({pr}, 'Pull request created?');
+        log.info({ pr }, 'Pull request created?');
         if (!pr) {
           return;
         }
         if (options.prAutoMerge) {
-          const merged = await github.pr.merge({pullNumber: pr.number}, options);
+          const merged = await github.pr.merge({ pullNumber: pr.number }, options);
           if (!merged) {
             core.setFailed('Failed to merge PR');
             return;
           }
 
-          const hasMerged = await github.pr.hasMerged({pullNumber: pr.number}, options);
+          const hasMerged = await github.pr.hasMerged({ pullNumber: pr.number }, options);
           if (!hasMerged) {
             core.setFailed('PR merge timed out or failed');
             return;
@@ -167,7 +167,7 @@ const run = async () => {
       }
     }
   } catch (error) {
-    log.error({...pinoErrorPrettier(error)}, 'Version bump failed');
+    log.error({ ...pinoErrorPrettier(error) }, 'Version bump failed');
     core.setFailed('Version bump failed');
   }
 };

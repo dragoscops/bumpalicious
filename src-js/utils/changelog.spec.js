@@ -3,17 +3,17 @@
  */
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import {Readable} from 'node:stream';
+import { Readable } from 'node:stream';
 import conventionalChangelog from 'conventional-changelog-core';
-import {describe, it, expect, beforeEach, vi, afterEach, fail} from 'vitest';
+import { describe, it, expect, beforeEach, vi, afterEach, fail } from 'vitest';
 
 import * as changelog from './changelog.js';
-import {createTempProjectFolder, removeTempProjectFolder} from '../vitest/setup.fs.test.js';
-import {mockPino, unMockPino} from '../vitest/setup.logging.tests.js';
+import { createTempProjectFolder, removeTempProjectFolder } from '../vitest/setup.fs.test.js';
+import { mockPino, unMockPino } from '../vitest/setup.logging.tests.js';
 
 vi.mock('conventional-changelog-core', () => ({
   default: vi.fn().mockImplementation(() => {
-    const {Readable} = require('node:stream');
+    const { Readable } = require('node:stream');
     const stream = new Readable();
     stream.push('## 1.0.0 (2023-04-27)\n\n* feat: initial release\n');
     stream.push(null);
@@ -119,7 +119,7 @@ describe.skip('changelog.js module', () => {
 
       expect(result).toBe(false);
       expect(changelog.log.error).toHaveBeenCalledWith(
-        {changelogPath: badDir, error: expect.any(Error)},
+        { changelogPath: badDir, error: expect.any(Error) },
         changelog.errorInitialChangelog,
       );
     });
@@ -141,7 +141,7 @@ describe.skip('changelog.js module', () => {
         expect.objectContaining({
           preset,
           releaseCount: 0,
-          pkg: {path: workspace.path},
+          pkg: { path: workspace.path },
           cwd: workspace.path,
           from: lastTag,
         }),
@@ -184,7 +184,7 @@ describe.skip('changelog.js module', () => {
 
       expect(result).toBe(false);
       expect(changelog.log.error).toHaveBeenCalledWith(
-        {outputPath: badDir, error: expect.any(Error)},
+        { outputPath: badDir, error: expect.any(Error) },
         changelog.warnFailedToWrite,
       );
     });
@@ -245,7 +245,7 @@ describe.skip('changelog.js module', () => {
 
       expect(result).toBe(false);
       expect(changelog.log.error).toHaveBeenCalledWith(
-        {workspace: null, lastTag: undefined},
+        { workspace: null, lastTag: undefined },
         changelog.errorInvalidWorkspace,
       );
     });
@@ -268,7 +268,7 @@ describe.skip('changelog.js module', () => {
       expect(content).toContain('# Changelog');
 
       expect(changelog.log.info).toHaveBeenCalledWith(
-        {workspaceName: workspace.name, workspacePath: workspace.path},
+        { workspaceName: workspace.name, workspacePath: workspace.path },
         changelog.infoChangelogCreated,
       );
     });
@@ -299,7 +299,7 @@ describe.skip('changelog.js module', () => {
       await changelog.generateWorkspacesChangelogs([], 'v0.1.0');
 
       expect(changelog.log.error).toHaveBeenCalledWith(
-        {workspaces: [], lastTag: 'v0.1.0'},
+        { workspaces: [], lastTag: 'v0.1.0' },
         changelog.errorNoWorkspacesProvided,
       );
     });
@@ -308,7 +308,7 @@ describe.skip('changelog.js module', () => {
       await changelog.generateWorkspacesChangelogs(null, 'v0.1.0');
 
       expect(changelog.log.error).toHaveBeenCalledWith(
-        {workspaces: null, lastTag: 'v0.1.0'},
+        { workspaces: null, lastTag: 'v0.1.0' },
         changelog.errorNoWorkspacesProvided,
       );
     });

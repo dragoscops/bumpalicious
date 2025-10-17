@@ -10,12 +10,12 @@
 
 | Phase               | Tasks      | Status      | Completion |
 | ------------------- | ---------- | ----------- | ---------- |
-| Foundation          | TSK-001-08 | In Progress | 37.5%      |
+| Foundation          | TSK-001-08 | In Progress | 50%        |
 | Adapters            | TSK-009-20 | Not Started | 0%         |
 | Services            | TSK-021-24 | Not Started | 0%         |
 | Core Logic          | TSK-025-27 | Not Started | 0%         |
 | Orchestration & E2E | TSK-028-30 | Not Started | 0%         |
-| **Overall**         | **30**     | **10%**     | **3/30**   |
+| **Overall**         | **30**     | **13%**     | **4/30**   |
 
 ---
 
@@ -164,10 +164,63 @@ Created error hierarchy in `src/utils/errors.ts`:
 **Test Results**:
 
 ```text
-Test Files  2 passed (2)
-Tests       29 passed (29)
-Duration    280ms
+Test Files  3 passed (3)
+Tests       49 passed (49)
+Duration    310ms
 ```
+
+---
+
+### ✅ TSK-004: Logger Utility (2h)
+
+**Completed**: 2025-10-17
+
+**Deliverables**:
+
+Created structured logging utility in `src/utils/logger.ts`:
+
+1. **Logger Configuration**:
+   - Pino logger with TypeScript types
+   - Log level from `LOG_LEVEL` environment variable (default: 'info')
+   - Pretty printing in development (`NODE_ENV=development` or `DEBUG=true`)
+   - JSON output in production
+   - Configurable transport with pino-pretty
+
+2. **Core Functions**:
+   - `logger` - Base Pino logger instance
+   - `createChildLogger(bindings)` - Create child logger with context
+   - `maskSensitiveData(data)` - Mask tokens, passwords, secrets, keys, auth headers
+   - `formatError(error)` - Format Error objects for logging
+   - `logSafe(level, message, data)` - Log with automatic sensitive data masking
+
+3. **Security Features**:
+   - Automatic token masking (shows first 4 + last 4 characters)
+   - Password masking (>=8 chars: show first 4 + last 4)
+   - Case-insensitive sensitive key detection
+   - Masks: token, password, secret, key, authorization, auth
+   - Short values (<8 chars) fully redacted as `***REDACTED***`
+
+**Tests**:
+
+- Created `logger.spec.ts` with 20 test cases
+- All tests passing (20/20)
+- Test groups:
+  - logger: 2 tests (instance and methods)
+  - createChildLogger: 2 tests
+  - maskSensitiveData: 7 tests (tokens, passwords, headers, edge cases)
+  - formatError: 4 tests (Error objects, custom properties, non-Error values)
+  - logSafe: 5 tests (all log levels, data masking, integration)
+- Coverage: 100% for logger utilities
+
+**Validation**:
+
+- ✅ Pino logger configured with TypeScript types
+- ✅ Child logger creation implemented
+- ✅ Log level from environment variable
+- ✅ Pretty printing in development
+- ✅ JSON output in production
+- ✅ All log levels tested (trace, debug, info, warn, error, fatal)
+- ✅ No sensitive data logged (token masking verified)
 
 ---
 
@@ -185,7 +238,7 @@ Duration    280ms
 
 ## Files Created
 
-### Source Files (10)
+### Source Files (11)
 
 - `tsconfig.json` - TypeScript configuration
 - `src/types/version.ts` - Version type definitions (63 lines)
@@ -195,17 +248,19 @@ Duration    280ms
 - `src/types/result.ts` - Result type utility (66 lines)
 - `src/types/index.ts` - Type exports (6 lines)
 - `src/utils/errors.ts` - Error class hierarchy (167 lines)
+- `src/utils/logger.ts` - Structured logging with Pino (123 lines)
 
-### Test Files (2)
+### Test Files (3)
 
 - `src/types/version.spec.ts` - Version type tests (51 lines, 8 tests)
 - `src/utils/errors.spec.ts` - Error class tests (147 lines, 21 tests)
+- `src/utils/logger.spec.ts` - Logger utility tests (237 lines, 20 tests)
 
-### Modified Files (3)
+### Modified Files (4)
 
 - `package.json` - Added TypeScript scripts and dependencies
 - `.gitignore` - Added TypeScript build artifacts
-- `vitest.config.js` - Added TypeScript test patterns
+- `vitest.config.js` → `vitest.config.mjs` - Added TypeScript test patterns (renamed for ESM)
 
 ---
 
@@ -229,11 +284,10 @@ Duration    280ms
 
 ### Immediate (Foundation Phase)
 
-1. **TSK-004: Logger Utility** (2h) - Migrate logging to TypeScript with Pino
-2. **TSK-005: Retry Logic Utility** (2h) - Implement exponential backoff
-3. **TSK-006: Input Validation with Zod** (3h) - Runtime input validation
-4. **TSK-007: Workspace Input Parser** (2h) - Parse workspace input string
-5. **TSK-008: Test Fixtures Setup** (2h) - Create reusable test fixtures
+1. **TSK-005: Retry Logic Utility** (2h) - Implement exponential backoff
+2. **TSK-006: Input Validation with Zod** (3h) - Runtime input validation
+3. **TSK-007: Workspace Input Parser** (2h) - Parse workspace input string
+4. **TSK-008: Test Fixtures Setup** (2h) - Create reusable test fixtures
 
 ### Next Phase (Adapters)
 

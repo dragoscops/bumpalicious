@@ -1,6 +1,6 @@
 import path from 'node:path';
-import {beforeEach, describe, it} from 'vitest';
-import {detect, update} from './zig.js';
+import { beforeEach, describe, it } from 'vitest';
+import { detect, update } from './zig.js';
 import {
   setupVersionUpdateTest,
   setupVersionDetectTest,
@@ -11,7 +11,7 @@ import {
   projectNameValue,
   createBrokenFile,
 } from '../../../vitest/setup.detect-update.tests.js';
-import {mockPinoIn, unMockPinoIn} from '../../../vitest/setup.logging.tests.js';
+import { mockPinoIn, unMockPinoIn } from '../../../vitest/setup.logging.tests.js';
 
 const generateCreator =
   (files = ['build.zig'], createFile = createZigBuildFile) =>
@@ -27,7 +27,7 @@ const generateCreator =
         });
       }),
     );
-    return {projectPath, customParser: undefined};
+    return { projectPath, customParser: undefined };
   };
 
 describe('core/version/workspace/zig.js module', () => {
@@ -46,7 +46,7 @@ describe('core/version/workspace/zig.js module', () => {
       await setupVersionDetectTest({
         creator: generateCreator(),
         parser: detect,
-        expected: {name: projectNameValue, version: oldVersion},
+        expected: { name: projectNameValue, version: oldVersion },
       });
     });
 
@@ -55,7 +55,7 @@ describe('core/version/workspace/zig.js module', () => {
       await setupVersionDetectTest({
         creator: generateCreator(['build.zig.zon'], createZigBuildZonFile),
         parser: detect,
-        expected: {name: projectNameValue, version: oldVersion},
+        expected: { name: projectNameValue, version: oldVersion },
       });
     });
 
@@ -64,7 +64,7 @@ describe('core/version/workspace/zig.js module', () => {
       await setupVersionDetectTest({
         creator: generateCreator(['build.zig'], createBrokenFile),
         parser: detect,
-        expected: {name: null, version: null},
+        expected: { name: null, version: null },
       });
     });
   });

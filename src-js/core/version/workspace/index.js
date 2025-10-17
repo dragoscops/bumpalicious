@@ -21,4 +21,4 @@ export default {
   zig,
 };
 
-export {deno, go, node, python, rust, text, zig};
+export { deno, go, node, python, rust, text, zig };

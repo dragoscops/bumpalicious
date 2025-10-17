@@ -1,4 +1,4 @@
-import {describe, it, expect} from 'vitest';
+import { describe, it, expect } from 'vitest';
 
 import * as workspace from './workspace.js';
 
@@ -7,7 +7,7 @@ describe('utils/workspace.js module', () => {
     it('will parse path and type', async () => {
       const result = workspace.stringToWorkspace('.:text');
 
-      expect(result).toEqual({path: '.', type: 'text'});
+      expect(result).toEqual({ path: '.', type: 'text' });
     });
 
     it('will parse all 4 params', async () => {
@@ -32,7 +32,7 @@ describe('utils/workspace.js module', () => {
     it('will handle only path', () => {
       const result = workspace.stringToWorkspace('/path/to/workspace');
 
-      expect(result).toEqual({path: '/path/to/workspace'});
+      expect(result).toEqual({ path: '/path/to/workspace' });
     });
   });
 
@@ -44,7 +44,7 @@ describe('utils/workspace.js module', () => {
     });
 
     it('creates a single node tree for a single workspace', () => {
-      const workspaceObject = {path: '/root/project', name: 'project', type: 'node', version: '1.0.0'};
+      const workspaceObject = { path: '/root/project', name: 'project', type: 'node', version: '1.0.0' };
       const result = workspace.buildUpdatedWorkspacesTrees([workspaceObject]);
 
       expect(result).toEqual([
@@ -58,9 +58,9 @@ describe('utils/workspace.js module', () => {
 
     it('creates a tree with parent-child relationships based on paths', () => {
       const workspaceObjects = [
-        {path: '/root/project', name: 'project', type: 'node', version: '1.0.0'},
-        {path: '/root/project/service1', name: 'service1', type: 'node', version: '0.5.0'},
-        {path: '/root/project/service2', name: 'service2', type: 'python', version: '0.2.0'},
+        { path: '/root/project', name: 'project', type: 'node', version: '1.0.0' },
+        { path: '/root/project/service1', name: 'service1', type: 'node', version: '0.5.0' },
+        { path: '/root/project/service2', name: 'service2', type: 'python', version: '0.2.0' },
       ];
 
       const result = workspace.buildUpdatedWorkspacesTrees(workspaceObjects);
@@ -88,9 +88,9 @@ describe('utils/workspace.js module', () => {
 
     it('creates a tree with multiple levels of nesting', () => {
       const workspaceObjects = [
-        {path: '/root/project', name: 'project', type: 'node', version: '1.0.0'},
-        {path: '/root/project/service1', name: 'service1', type: 'node', version: '0.5.0'},
-        {path: '/root/project/service1/submodule', name: 'submodule', type: 'node', version: '0.1.0'},
+        { path: '/root/project', name: 'project', type: 'node', version: '1.0.0' },
+        { path: '/root/project/service1', name: 'service1', type: 'node', version: '0.5.0' },
+        { path: '/root/project/service1/submodule', name: 'submodule', type: 'node', version: '0.1.0' },
       ];
 
       const result = workspace.buildUpdatedWorkspacesTrees(workspaceObjects);
@@ -114,8 +114,8 @@ describe('utils/workspace.js module', () => {
 
     it('returns multiple roots for unrelated workspaces', () => {
       const workspaceObjects = [
-        {path: '/projects/project1', name: 'project1', type: 'node', version: '1.0.0'},
-        {path: '/apps/app1', name: 'app1', type: 'python', version: '0.5.0'},
+        { path: '/projects/project1', name: 'project1', type: 'node', version: '1.0.0' },
+        { path: '/apps/app1', name: 'app1', type: 'python', version: '0.5.0' },
       ];
 
       const result = workspace.buildUpdatedWorkspacesTrees(workspaceObjects);
@@ -138,9 +138,9 @@ describe('utils/workspace.js module', () => {
 
     it('correctly identifies the closest parent in complex scenarios', () => {
       const workspaceObjects = [
-        {path: '/root/project', name: 'project', type: 'node', version: '1.0.0'},
-        {path: '/root', name: 'root', type: 'text', version: '0.1.0'},
-        {path: '/root/project/service1', name: 'service1', type: 'node', version: '0.5.0'},
+        { path: '/root/project', name: 'project', type: 'node', version: '1.0.0' },
+        { path: '/root', name: 'root', type: 'text', version: '0.1.0' },
+        { path: '/root/project/service1', name: 'service1', type: 'node', version: '0.5.0' },
       ];
 
       const result = workspace.buildUpdatedWorkspacesTrees(workspaceObjects);
@@ -162,10 +162,10 @@ describe('utils/workspace.js module', () => {
 
     it('handles multiple trees in the same workspace array', () => {
       const workspaceObjects = [
-        {path: '/project1/main', name: 'main1', type: 'node', version: '1.0.0'},
-        {path: '/project1/main/service', name: 'service1', type: 'node', version: '0.5.0'},
-        {path: '/project2/main', name: 'main2', type: 'python', version: '0.2.0'},
-        {path: '/project2/main/service', name: 'service2', type: 'python', version: '0.1.0'},
+        { path: '/project1/main', name: 'main1', type: 'node', version: '1.0.0' },
+        { path: '/project1/main/service', name: 'service1', type: 'node', version: '0.5.0' },
+        { path: '/project2/main', name: 'main2', type: 'python', version: '0.2.0' },
+        { path: '/project2/main/service', name: 'service2', type: 'python', version: '0.1.0' },
       ];
 
       const result = workspace.buildUpdatedWorkspacesTrees(workspaceObjects);

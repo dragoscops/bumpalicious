@@ -2,8 +2,8 @@
  * Tests for version type utilities
  */
 
-import {describe, it, expect} from 'vitest';
-import {isVersion, toVersion, type Version, type BumpType, type PreReleaseIdentifier} from './version.js';
+import { describe, it, expect } from 'vitest';
+import { isVersion, toVersion, type Version, type BumpType, type PreReleaseIdentifier } from './version.js';
 
 describe('isVersion', () => {
   it('should validate valid semantic versions', () => {

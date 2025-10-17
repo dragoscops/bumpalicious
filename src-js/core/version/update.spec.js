@@ -1,14 +1,14 @@
 import path from 'node:path';
-import {describe, it, expect, beforeEach, afterEach} from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as update from './update.js';
-import {warnNoVersionDetected, log} from './update.js';
+import { warnNoVersionDetected, log } from './update.js';
 import {
   newVersion,
   setupVersionUpdateTest,
   createTempProjectFolder,
   createJsonFile,
 } from '../../vitest/setup.detect-update.tests.js';
-import {mockPinoIn, setupPinoLoggingCallsTest, unMockPinoIn} from '../../vitest/setup.logging.tests.js';
+import { mockPinoIn, setupPinoLoggingCallsTest, unMockPinoIn } from '../../vitest/setup.logging.tests.js';
 
 // Generator functions for different test scenarios
 const generatePackageJsonCreator = async () => {
@@ -144,7 +144,7 @@ describe('core/version/update.js', () => {
         expected: undefined, // No content should be written
         validator: async () => {
           // Verify that the warning was logged
-          setupPinoLoggingCallsTest('warn', [{filePath: 'missing.json'}, warnNoVersionDetected], log);
+          setupPinoLoggingCallsTest('warn', [{ filePath: 'missing.json' }, warnNoVersionDetected], log);
         },
       });
     });
@@ -241,7 +241,7 @@ go 1.21
         expected: undefined, // No content should be written
         validator: async () => {
           // Verify that the warning was logged
-          setupPinoLoggingCallsTest('warn', [{filePath: 'nonexistent.json'}, warnNoVersionDetected], log);
+          setupPinoLoggingCallsTest('warn', [{ filePath: 'nonexistent.json' }, warnNoVersionDetected], log);
         },
       });
     });

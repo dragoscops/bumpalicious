@@ -1,6 +1,6 @@
 import path from 'node:path';
-import {beforeEach, describe, it} from 'vitest';
-import {detect, update} from './deno.js';
+import { beforeEach, describe, it } from 'vitest';
+import { detect, update } from './deno.js';
 import {
   newVersion,
   setupVersionUpdateTest,
@@ -11,8 +11,8 @@ import {
   projectNameValue,
   createBrokenFile,
 } from '../../../vitest/setup.detect-update.tests.js';
-import {mockPinoIn, unMockPinoIn} from '../../../vitest/setup.logging.tests.js';
-import {log as detectLog} from '../detect.js';
+import { mockPinoIn, unMockPinoIn } from '../../../vitest/setup.logging.tests.js';
+import { log as detectLog } from '../detect.js';
 
 const generateCreator =
   (files = ['deno.jsonc'], createFile = createJsonFile) =>
@@ -26,7 +26,7 @@ const generateCreator =
         }),
       ),
     );
-    return {projectPath, customParser: undefined};
+    return { projectPath, customParser: undefined };
   };
 
 describe('core/version/workspace/deno.js module', () => {
@@ -46,7 +46,7 @@ describe('core/version/workspace/deno.js module', () => {
       await setupVersionDetectTest({
         creator: generateCreator(),
         parser: detect,
-        expected: {name: projectNameValue, version: oldVersion},
+        expected: { name: projectNameValue, version: oldVersion },
       });
     });
 
@@ -56,7 +56,7 @@ describe('core/version/workspace/deno.js module', () => {
       await setupVersionDetectTest({
         creator: generateCreator(['deno.json']),
         parser: detect,
-        expected: {name: projectNameValue, version: oldVersion},
+        expected: { name: projectNameValue, version: oldVersion },
       });
     });
 
@@ -66,7 +66,7 @@ describe('core/version/workspace/deno.js module', () => {
       await setupVersionDetectTest({
         creator: generateCreator(['jsr.json']),
         parser: detect,
-        expected: {name: projectNameValue, version: oldVersion},
+        expected: { name: projectNameValue, version: oldVersion },
       });
     });
 
@@ -76,7 +76,7 @@ describe('core/version/workspace/deno.js module', () => {
       await setupVersionDetectTest({
         creator: generateCreator(['package.json']),
         parser: detect,
-        expected: {name: projectNameValue, version: oldVersion},
+        expected: { name: projectNameValue, version: oldVersion },
       });
     });
 
@@ -89,11 +89,11 @@ describe('core/version/workspace/deno.js module', () => {
         expectedLogError: {
           method: 'warn',
           expected: [
-            expect.objectContaining({filePath: expect.stringContaining('deno.json'), error: expect.any(Error)}),
+            expect.objectContaining({ filePath: expect.stringContaining('deno.json'), error: expect.any(Error) }),
             'Failed to parse version file',
           ],
         },
-        options: {logger: detectLog},
+        options: { logger: detectLog },
       });
     });
   });

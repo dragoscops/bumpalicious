@@ -597,7 +597,7 @@ workspaces: ".:node;packages/api:python;packages/ui:node"
 // Core type definitions
 
 /** Branded type for version strings */
-type Version = string & {readonly __brand: "Version"};
+type Version = string & { readonly __brand: "Version" };
 
 /** Workspace configuration (parsed from input) */
 interface WorkspaceConfig {
@@ -648,7 +648,7 @@ interface ActionInputs {
 }
 
 /** Result type for fallible operations */
-type Result<T, E = Error> = {success: true; data: T} | {success: false; error: E};
+type Result<T, E = Error> = { success: true; data: T } | { success: false; error: E };
 
 /** Commit message analysis */
 interface CommitAnalysis {
@@ -986,12 +986,12 @@ async function createTag(tagName, message) {
 class GitOperations {
   constructor(
     private readonly octokit: Octokit,
-    private readonly repo: {owner: string; repo: string},
+    private readonly repo: { owner: string; repo: string },
   ) {}
 
   async createTag(tagName: string, message: string, commitSha: string): Promise<Result<GitTag>> {
     try {
-      const {data} = await this.octokit.git.createTag({
+      const { data } = await this.octokit.git.createTag({
         ...this.repo,
         tag: tagName,
         message,
@@ -1006,7 +1006,7 @@ class GitOperations {
         sha: data.sha,
       });
 
-      return {success: true, data};
+      return { success: true, data };
     } catch (error) {
       return {
         success: false,
@@ -1174,7 +1174,7 @@ const VALIDATION_ERRORS = {
 
 ```typescript
 // validators.ts
-import {z} from "zod";
+import { z } from "zod";
 
 const WorkspaceTypeSchema = z.enum(["node", "python", "deno", "go", "rust", "zig", "text"]);
 
@@ -1236,9 +1236,9 @@ export function validateInputs(raw: unknown): ActionInputs {
 
 ```typescript
 // src/core/adapters/NodeAdapter.spec.ts
-import {describe, it, expect, beforeEach} from "vitest";
-import {NodeAdapter} from "./NodeAdapter";
-import {join} from "node:path";
+import { describe, it, expect, beforeEach } from "vitest";
+import { NodeAdapter } from "./NodeAdapter";
+import { join } from "node:path";
 
 describe("NodeAdapter", () => {
   let adapter: NodeAdapter;
@@ -1273,9 +1273,9 @@ describe("NodeAdapter", () => {
 
 ```typescript
 // src/parsers/ConventionalCommitParser.spec.ts
-import {describe, it, expect} from "vitest";
-import {ConventionalCommitParser} from "./ConventionalCommitParser";
-import {commitMessages} from "./fixtures/commit-messages";
+import { describe, it, expect } from "vitest";
+import { ConventionalCommitParser } from "./ConventionalCommitParser";
+import { commitMessages } from "./fixtures/commit-messages";
 
 describe("ConventionalCommitParser", () => {
   const parser = new ConventionalCommitParser();
@@ -1307,10 +1307,10 @@ describe("ConventionalCommitParser", () => {
 
 ```typescript
 // test/workflows/version-bump.test.ts
-import {describe, it, expect, beforeEach, afterEach} from "vitest";
-import {WorkspaceManager} from "../../src/core/WorkspaceManager";
-import {createMockOctokit} from "../fixtures/mocks/github-api";
-import {setupTestRepo} from "../fixtures/repos/setup";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { WorkspaceManager } from "../../src/core/WorkspaceManager";
+import { createMockOctokit } from "../fixtures/mocks/github-api";
+import { setupTestRepo } from "../fixtures/repos/setup";
 
 describe("Version Bump Workflow", () => {
   let testRepoPath: string;
@@ -1329,7 +1329,7 @@ describe("Version Bump Workflow", () => {
     const manager = new WorkspaceManager(mockOctokit);
 
     const result = await manager.bumpVersion({
-      workspaces: [{path: testRepoPath, type: "node"}],
+      workspaces: [{ path: testRepoPath, type: "node" }],
       commitMessage: "feat: new feature",
       createPR: true,
     });
@@ -1347,8 +1347,8 @@ describe("Version Bump Workflow", () => {
 
     const result = await manager.bumpVersion({
       workspaces: [
-        {path: testRepoPath, type: "node"},
-        {path: "/other/root", type: "node"}, // Invalid: multiple roots
+        { path: testRepoPath, type: "node" },
+        { path: "/other/root", type: "node" }, // Invalid: multiple roots
       ],
       commitMessage: "feat: new feature",
       createPR: false,
@@ -1364,17 +1364,17 @@ describe("Version Bump Workflow", () => {
 
 ```typescript
 // test/e2e/monorepo.test.ts
-import {describe, it, expect} from "vitest";
-import {runAction} from "../helpers/action-runner";
-import {createMonorepo} from "../fixtures/repos/monorepo";
+import { describe, it, expect } from "vitest";
+import { runAction } from "../helpers/action-runner";
+import { createMonorepo } from "../fixtures/repos/monorepo";
 
 describe("Monorepo Version Management", () => {
   it("should bump root version when child changes", async () => {
     const repoPath = await createMonorepo({
-      root: {path: ".", type: "node", version: "1.0.0"},
+      root: { path: ".", type: "node", version: "1.0.0" },
       children: [
-        {path: "packages/api", type: "python", version: "2.0.0"},
-        {path: "packages/ui", type: "node", version: "3.0.0"},
+        { path: "packages/api", type: "python", version: "2.0.0" },
+        { path: "packages/ui", type: "node", version: "3.0.0" },
       ],
     });
 
@@ -1419,9 +1419,9 @@ export const mockWorkspaces = {
 
 ```typescript
 // test/fixtures/repos/setup.ts
-import {mkdtemp, writeFile, mkdir} from "node:fs/promises";
-import {join} from "node:path";
-import {tmpdir} from "node:os";
+import { mkdtemp, writeFile, mkdir } from "node:fs/promises";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 
 export async function setupTestRepo(template: string): Promise<string> {
   const repoPath = await mkdtemp(join(tmpdir(), "bumpalicious-test-"));
@@ -1429,14 +1429,14 @@ export async function setupTestRepo(template: string): Promise<string> {
   // Copy template files
   const templates = {
     "node-project": {
-      "package.json": JSON.stringify({name: "test", version: "1.0.0"}),
+      "package.json": JSON.stringify({ name: "test", version: "1.0.0" }),
       "src/index.js": "console.log('test')",
     },
   };
 
   for (const [file, content] of Object.entries(templates[template])) {
     const filePath = join(repoPath, file);
-    await mkdir(dirname(filePath), {recursive: true});
+    await mkdir(dirname(filePath), { recursive: true });
     await writeFile(filePath, content);
   }
 
@@ -1644,7 +1644,7 @@ await exec("git", ["push", "origin", branch]);
 **After (API)**:
 
 ```typescript
-const {data: commit} = await octokit.git.createCommit({
+const { data: commit } = await octokit.git.createCommit({
   owner,
   repo,
   message,

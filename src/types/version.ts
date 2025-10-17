@@ -6,7 +6,7 @@
  * Branded type for semantic version strings
  * Ensures compile-time safety for version values
  */
-export type Version = string & {readonly __brand: 'Version'};
+export type Version = string & { readonly __brand: 'Version' };
 
 /**
  * Type guard to validate and brand version strings
