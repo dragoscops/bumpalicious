@@ -9,6 +9,19 @@ import * as workspace from './utils/workspace.js';
 
 const log = logger.child({module: projectName});
 
+/**
+ * @param message {string}
+ */
+const error = (message) => {
+  log.error(message);
+  core.setFailed(message);
+};
+
+const errorWorkspaceFolderOneRoot =
+  'Workspaces folder should only have a root workspace. Please ensure there is only one root workspace.';
+const errorNoWorkspacesRootTreeFound =
+  'No root workspace found in the changed workspaces. Please ensure there is a root workspace.';
+const errorNoTagsFoundInRepository = 'No tags found in the repository. Please create a tag before running this action.';
 const warnNoChangedWorkspacesFound = 'No workspaces have changed since the last tag. No version bumping needed.';
 
 /**
@@ -28,7 +41,8 @@ const run = async () => {
     // Get last created tag or 1st commit message
     const lastTag = await git.tag.lastCreated();
     if (!lastTag) {
-      core.setFailed('No tags found in the repository. Please create a tag before running this action.');
+      error(errorNoTagsFoundInRepository);
+      return;
     }
     log.info({lastTag}, 'Last created tag');
     core.notice(`Last created tag: ${lastTag}`);
@@ -66,6 +80,14 @@ const run = async () => {
       // enrich all workspaces
       options.workspaces = await workspaces.enrichWorkspaces(options.workspaces, lastTag);
       const changedWorkspacesTrees = workspace.buildUpdatedWorkspacesTrees(options.workspaces);
+      if (changedWorkspacesTrees.length === 0) {
+        error(errorNoWorkspacesRootTreeFound);
+        return;
+      }
+      if (changedWorkspacesTrees.length > 1) {
+        error(errorWorkspaceFolderOneRoot);
+        return;
+      }
       // create tag
       await workspaces.createVersionTags(changedWorkspacesTrees[0].workspace.version, options);
     } else {
@@ -87,11 +109,13 @@ const run = async () => {
       core.startGroup('Updating workspaces tree');
       // Organizes workspaces into a tree like structure to also determine the root workspace
       const changedWorkspacesTrees = workspace.buildUpdatedWorkspacesTrees(changedWorkspaces);
-      if (changedWorkspacesTrees.length > 1) {
-        log.error('Workspaces folder should only have a root workspace');
-      }
       if (changedWorkspacesTrees.length === 0) {
-        log.error('No workspaces found');
+        error(errorNoWorkspacesRootTreeFound);
+        return;
+      }
+      if (changedWorkspacesTrees.length > 1) {
+        error(errorWorkspaceFolderOneRoot);
+        return;
       }
       log.info(
         {workspaces: changedWorkspacesTrees},
@@ -110,8 +134,17 @@ const run = async () => {
           return;
         }
         if (options.prAutoMerge) {
-          await github.pr.merge({pullNumber: pr.number}, options);
-          await github.pr.hasMerged({pullNumber: pr.number}, options);
+          const merged = await github.pr.merge({pullNumber: pr.number}, options);
+          if (!merged) {
+            core.setFailed('Failed to merge PR');
+            return;
+          }
+
+          const hasMerged = await github.pr.hasMerged({pullNumber: pr.number}, options);
+          if (!hasMerged) {
+            core.setFailed('PR merge timed out or failed');
+            return;
+          }
 
           await git.branch.checkout(pr.base.ref);
           await git.branch.pull(pr.base.ref);

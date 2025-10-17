@@ -9775,7 +9775,7 @@ const parse = __nccwpck_require__(2015)
 const redactor = __nccwpck_require__(6370)
 const restorer = __nccwpck_require__(1262)
 const { groupRedact, nestedRedact } = __nccwpck_require__(2369)
-const state = __nccwpck_require__(9882)
+const state = __nccwpck_require__(2263)
 const rx = __nccwpck_require__(2288)
 const validate = validator()
 const noop = (o) => o
@@ -10414,7 +10414,7 @@ Alt 2: /\[((?:.)*?)\]/ - If the char IS dot or square bracket, then create a cap
 
 /***/ }),
 
-/***/ 9882:
+/***/ 2263:
 /***/ ((module) => {
 
 
@@ -17108,7 +17108,7 @@ function makeTypoWarning (providedName, probableName, field) {
 
 /***/ }),
 
-/***/ 4644:
+/***/ 9882:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 module.exports = normalize
@@ -54281,7 +54281,7 @@ const {
   formattersSym,
   hooksSym,
   levelCompSym
-} = __nccwpck_require__(2520)
+} = __nccwpck_require__(139)
 const { noop, genLog } = __nccwpck_require__(2694)
 const { DEFAULT_LEVELS, SORTING_ORDER } = __nccwpck_require__(3256)
 
@@ -54755,7 +54755,7 @@ const {
   stringifiersSym,
   msgPrefixSym,
   hooksSym
-} = __nccwpck_require__(2520)
+} = __nccwpck_require__(139)
 const {
   getLevel,
   setLevel,
@@ -54968,7 +54968,7 @@ function flush (cb) {
 
 
 const fastRedact = __nccwpck_require__(6960)
-const { redactFmtSym, wildcardFirstSym } = __nccwpck_require__(2520)
+const { redactFmtSym, wildcardFirstSym } = __nccwpck_require__(139)
 const { rx, validator } = fastRedact
 
 const validate = validator({
@@ -55087,7 +55087,7 @@ module.exports = redaction
 
 /***/ }),
 
-/***/ 2520:
+/***/ 139:
 /***/ ((module) => {
 
 
@@ -55214,7 +55214,7 @@ const {
   errorKeySym,
   nestedKeyStrSym,
   msgPrefixSym
-} = __nccwpck_require__(2520)
+} = __nccwpck_require__(139)
 const { isMainThread } = __nccwpck_require__(8167)
 const transport = __nccwpck_require__(4124)
 
@@ -55768,7 +55768,7 @@ const caller = __nccwpck_require__(450)
 const redaction = __nccwpck_require__(9096)
 const time = __nccwpck_require__(4416)
 const proto = __nccwpck_require__(1239)
-const symbols = __nccwpck_require__(2520)
+const symbols = __nccwpck_require__(139)
 const { configure } = __nccwpck_require__(7467)
 const { assertDefaultLevelFound, mappings, genLsCache, genLevelComparison, assertLevelComparison } = __nccwpck_require__(3114)
 const { DEFAULT_LEVELS, SORTING_ORDER } = __nccwpck_require__(3256)
@@ -57362,7 +57362,7 @@ exports["default"] = index;
 
 /***/ }),
 
-/***/ 139:
+/***/ 2520:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
 // ESM COMPAT FLAG
@@ -58334,203 +58334,6 @@ var promises_ = __nccwpck_require__(1455);
 var external_node_path_ = __nccwpck_require__(6760);
 // EXTERNAL MODULE: ./node_modules/semver/index.js
 var semver = __nccwpck_require__(2088);
-// EXTERNAL MODULE: ./node_modules/pino/pino.js
-var pino = __nccwpck_require__(5005);
-// EXTERNAL MODULE: ./node_modules/pino-pretty/index.js
-var pino_pretty = __nccwpck_require__(6372);
-;// CONCATENATED MODULE: ./src/utils/logging.js
-
-
-
-/**
- * Logging utilities for consistent output formatting
- * @module utils/logging
- */
-
-const stream = pino_pretty({colorize: true});
-const logger = pino(stream);
-
-/**
- * @param {Error} error - The error object to convert
- * @returns {Object} - An object loggable by pino
- */
-function pinoErrorPrettier(error) {
-  return {
-    error: {
-      message: error.message,
-      name: error.name,
-      stack: error.stack,
-      ...error, // in case there are custom enumerable properties
-    },
-  };
-}
-// export const logger = pino({
-//   level: process.env.LOG_LEVEL || 'info',
-//   transport: {
-//     target: 'pino-pretty',
-//     options: {
-//       // destination: 1,
-//       colorize: true,
-//     },
-//   },
-// });
-
-;// CONCATENATED MODULE: ./src/core/version.js
-/**
- * Version management functionality
- * @module core/version
- */
-
-
-
-
-
-const log = logger.child({module: `${projectName}/core/version`});
-
-// Log message constants
-const infoDeterminedVersionIncreaseType = 'Determined version increase type from commit';
-const infoPreReleaseIdentifierFound = 'Pre-release identifier found in commit message';
-const infoPreReleaseIdentifierExtracted = 'Pre-release identifier extracted';
-
-const warnNoVersionProvided = 'No version provided';
-const warnInvalidVersionProvided = 'Invalid version provided';
-const warnNoCommitMessageProvided = 'No commit message provided';
-const warnNoVersionIncreaseNeeded = 'No version increase needed based on commit message';
-
-// ...existing code...
-
-/**
- * Increase version according to semver rules
- *
- * @param {string} currentVersion - Current version
- * @param {string} commitMessage - Git commit message
- * @returns {string|null} - New version
- */
-function increaseVersion(currentVersion, commitMessage) {
-  const increaseType = determineVersionIncreaseType(currentVersion, commitMessage);
-
-  if (!increaseType) {
-    log.warn({commitMessage}, warnNoVersionIncreaseNeeded);
-    return null;
-  }
-
-  log.info({increaseType, commitMessage}, infoDeterminedVersionIncreaseType);
-
-  const preReleaseIdentifier = determineVersionPreReleaseIdentifier(currentVersion, commitMessage);
-  if (preReleaseIdentifier) {
-    log.info({preReleaseIdentifier, commitMessage}, infoPreReleaseIdentifierFound);
-  }
-
-  const version = semver.parse(currentVersion);
-  if (!version) {
-    log.warn({currentVersion}, warnInvalidVersionProvided);
-    return null;
-  }
-
-  return semver.inc(currentVersion, increaseType, preReleaseIdentifier);
-}
-
-/**
- * @typedef {"major" | "premajor" | "minor" | "preminor" | "patch" | "prepatch" | "prerelease" | "release"} ReleaseType;
- */
-
-/**
- * Determine version increase type from commit message
- * @link https://www.conventionalcommits.org/en/v1.0.0/#summary
- *
- * @param {string} currentVersion - Current version
- * @param {string} commitMessage - Git commit message
- * @returns {ReleaseType | null} - Type of version increase or null for none
- */
-function determineVersionIncreaseType(currentVersion, commitMessage) {
-  if (!commitMessage) {
-    log.warn(warnNoCommitMessageProvided);
-    return null;
-  }
-  if (!currentVersion) {
-    log.warn(warnNoVersionProvided);
-    return null;
-  }
-
-  const version = semver.parse(currentVersion);
-  if (!version) {
-    log.warn({currentVersion}, warnInvalidVersionProvided);
-    return null;
-  }
-
-  if (commitMessage.includes('pre-release') && version.prerelease.length > 0) {
-    return 'prerelease';
-  }
-
-  // Check for BREAKING CHANGE or feat! for major version bump
-  if (
-    commitMessage.includes('BREAKING CHANGE') ||
-    commitMessage.includes('BREAKING-CHANGE') ||
-    commitMessage.includes('feat!:') ||
-    commitMessage.includes('feat(!)')
-  ) {
-    // For pre-existing pre-release versions, we'll handle this in workspaces.js
-    if (commitMessage.includes('pre-release')) {
-      return 'premajor';
-    }
-    return 'major';
-  }
-
-  if (commitMessage.startsWith('feat:') || /^feat\([^)]+\):/.test(commitMessage)) {
-    // For pre-existing pre-release versions, we'll handle this in workspaces.js
-    if (commitMessage.includes('pre-release')) {
-      return 'preminor';
-    }
-    return 'minor';
-  }
-
-  if (commitMessage.startsWith('fix:') || /^fix\([^)]+\):/.test(commitMessage)) {
-    // For pre-existing pre-release versions, we'll handle this in workspaces.js
-    if (commitMessage.includes('pre-release')) {
-      return 'prepatch';
-    }
-    return 'patch';
-  }
-
-  return null;
-}
-
-/**
- * Determine pre-release identifier from commit message
- *
- * @param {string} commitMessage - Git commit message
- * @returns {string|null} - Pre-release identifier or null if not found
- */
-function determineVersionPreReleaseIdentifier(currentVersion, commitMessage) {
-  if (!commitMessage) {
-    log.warn(warnNoCommitMessageProvided);
-    return null;
-  }
-  if (!currentVersion) {
-    log.warn(warnNoVersionProvided);
-    return null;
-  }
-
-  // More flexible regex that handles:
-  // 1. "pre-release:alpha" format (no space)
-  // 2. "pre-release: alpha" format (with space)
-  // 3. Case insensitivity
-  const preReleaseRegex = /pre-release\s*:\s*([a-zA-Z0-9_-]+)/i;
-  const preReleaseMatch = preReleaseRegex.exec(commitMessage);
-  if (preReleaseMatch?.[1]) {
-    log.info({preReleaseIdentifier: preReleaseMatch[1]}, infoPreReleaseIdentifierExtracted);
-    return preReleaseMatch[1];
-  }
-
-  const version = semver.parse(currentVersion);
-  if (!version) {
-    log.warn({currentVersion}, warnInvalidVersionProvided);
-    return null;
-  }
-
-  return version?.prerelease?.[0] || null;
-}
-
 // EXTERNAL MODULE: external "stream"
 var external_stream_ = __nccwpck_require__(2203);
 // EXTERNAL MODULE: external "child_process"
@@ -58867,7 +58670,7 @@ class ConventionalGitClient extends GitClient {
         this.deps = Promise.all([
             Promise.resolve(/* import() */).then(__nccwpck_require__.bind(__nccwpck_require__, 4674))
                 .then(({ parseCommits }) => parseCommits),
-            Promise.resolve(/* import() */).then(__nccwpck_require__.bind(__nccwpck_require__, 139))
+            Promise.resolve(/* import() */).then(__nccwpck_require__.bind(__nccwpck_require__, 2520))
                 .then(({ filterRevertedCommits }) => filterRevertedCommits)
         ]);
         return this.deps;
@@ -59189,7 +58992,7 @@ const external_fs_promises_namespaceObject = __WEBPACK_EXTERNAL_createRequire(im
 // EXTERNAL MODULE: ./node_modules/handlebars/lib/index.js
 var lib = __nccwpck_require__(8508);
 // EXTERNAL MODULE: ./node_modules/conventional-commits-filter/dist/index.js + 3 modules
-var conventional_commits_filter_dist = __nccwpck_require__(139);
+var conventional_commits_filter_dist = __nccwpck_require__(2520);
 ;// CONCATENATED MODULE: ./node_modules/conventional-changelog-writer/dist/context.js
 
 
@@ -59582,7 +59385,7 @@ async function getSemverTags (options = {}) {
 }
 
 // EXTERNAL MODULE: ./node_modules/normalize-package-data/lib/normalize.js
-var normalize = __nccwpck_require__(4644);
+var normalize = __nccwpck_require__(9882);
 ;// CONCATENATED MODULE: ./node_modules/conventional-changelog-core/lib/merge-config.js
 
 
@@ -60121,6 +59924,47 @@ function conventionalChangelog (options, context, gitRawCommitsOpts, parserOpts,
 var external_node_fs_ = __nccwpck_require__(3024);
 ;// CONCATENATED MODULE: external "node:stream/promises"
 const external_node_stream_promises_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:stream/promises");
+// EXTERNAL MODULE: ./node_modules/pino/pino.js
+var pino = __nccwpck_require__(5005);
+// EXTERNAL MODULE: ./node_modules/pino-pretty/index.js
+var pino_pretty = __nccwpck_require__(6372);
+;// CONCATENATED MODULE: ./src/utils/logging.js
+
+
+
+/**
+ * Logging utilities for consistent output formatting
+ * @module utils/logging
+ */
+
+const stream = pino_pretty({colorize: true});
+const logger = pino(stream);
+
+/**
+ * @param {Error} error - The error object to convert
+ * @returns {Object} - An object loggable by pino
+ */
+function pinoErrorPrettier(error) {
+  return {
+    error: {
+      message: error.message,
+      name: error.name,
+      stack: error.stack,
+      ...error, // in case there are custom enumerable properties
+    },
+  };
+}
+// export const logger = pino({
+//   level: process.env.LOG_LEVEL || 'info',
+//   transport: {
+//     target: 'pino-pretty',
+//     options: {
+//       // destination: 1,
+//       colorize: true,
+//     },
+//   },
+// });
+
 ;// CONCATENATED MODULE: ./src/utils/fs.js
 /**
  * File system utilities
@@ -60132,7 +59976,7 @@ const external_node_stream_promises_namespaceObject = __WEBPACK_EXTERNAL_createR
 
 
 
-const fs_log = logger.child({module: `${projectName}/utils/fs`});
+const log = logger.child({module: `${projectName}/utils/fs`});
 
 /**
  * @typedef {string | Buffer | URL} PathLike
@@ -60148,7 +59992,7 @@ const fileExists = async (filePath) => {
     await promises_.access(filePath, external_node_fs_.constants.F_OK);
     return true;
   } catch (error) {
-    fs_log.warn({filePath, ...pinoErrorPrettier(error)}, 'File does not exist or is not accessible');
+    log.warn({filePath, ...pinoErrorPrettier(error)}, 'File does not exist or is not accessible');
     return false;
   }
 };
@@ -60173,7 +60017,7 @@ const readFile = async (filePath, encoding = 'utf8') => {
     await promises_.access(filePath, external_node_fs_.constants.R_OK);
     return await promises_.readFile(filePath, encoding);
   } catch (error) {
-    fs_log.warn({filePath, encoding, ...pinoErrorPrettier(error)}, `Failed to read file`);
+    log.warn({filePath, encoding, ...pinoErrorPrettier(error)}, `Failed to read file`);
   }
   return null;
 };
@@ -60189,7 +60033,7 @@ const writeFile = async (filePath, content, encoding = 'utf8') => {
   try {
     await promises_.writeFile(filePath, content, encoding);
   } catch (error) {
-    fs_log.warn({filePath, content, encoding, ...pinoErrorPrettier(error)}, `Failed to write file`);
+    log.warn({filePath, content, encoding, ...pinoErrorPrettier(error)}, `Failed to write file`);
     return false;
   }
   return true;
@@ -60204,7 +60048,7 @@ const unlink = async (...args) => {
   try {
     await promises_.unlink(...args);
   } catch (error) {
-    fs_log.warn({error, ...args}, 'Failed to remove file/folder');
+    log.warn({error, ...args}, 'Failed to remove file/folder');
     return false;
   }
   return true;
@@ -60484,7 +60328,7 @@ const external_node_child_process_namespaceObject = __WEBPACK_EXTERNAL_createReq
 const exec_log = logger.child({module: `${projectName}/utils/exec`});
 
 /**
- * @typedef {import('child_process').SpawnOptions} ExecOptions
+ * @typedef {import('child_process').SpawnOptions & { noThrow?: boolean }} ExecOptions
  */
 
 /**
@@ -60494,17 +60338,20 @@ const exec_log = logger.child({module: `${projectName}/utils/exec`});
  * @param {Array<string>} args - The arguments to pass to the command.
  * @param {ExecOptions} [options] - Options for the child process.
  */
-const exec = async (command, args, options) =>
-  new Promise((resolve) => {
-    const ps = external_node_child_process_namespaceObject.spawn(command, args, {
-      cwd: exec.cwd,
-      ...options,
-      env: {
-        ...process.env,
-        GIT_TERMINAL_PROMPT: '0',
-        ...(options?.env ?? {}),
-      },
-    });
+const exec = async (command, args, options) => {
+  options = {
+    cwd: exec.cwd,
+    noThrow: false,
+    ...options,
+    env: {
+      ...process.env,
+      GIT_TERMINAL_PROMPT: '0',
+      ...(options?.env ?? {}),
+    },
+  };
+
+  return new Promise((resolve, reject) => {
+    const ps = external_node_child_process_namespaceObject.spawn(command, args, options);
     let stdout = '';
     let stderr = '';
     ps.stdout.on('data', (data) => {
@@ -60515,12 +60362,17 @@ const exec = async (command, args, options) =>
     });
     ps.on('close', (exitCode) => {
       exec_log.info({command: `${command} ${args.join(' ')}`, stdout, stderr, exitCode, options}, 'exec command finished');
-      if (exitCode !== 0) {
-        core.setFailed(`Failed to run command: ${command} '${args.join("', '")}'`);
+      if (exitCode !== 0 && options.noThrow === false) {
+        const errorMessage = `Failed to run command: ${command} '${args.join("', '")}' with exit code ${exitCode}`;
+        core.warning(errorMessage);
+        exec_log.warn({command, args, options, stdout, stderr, exitCode}, errorMessage);
+        // TODO: still not sure whether to reject when exec is failing; I would rather have the caller handle it
+        // return reject(errorMessage);
       }
       resolve({stdout, stderr, exitCode});
     });
   });
+};
 
 /**
  * Sets the current working directory for the exec function.
@@ -60706,7 +60558,7 @@ const tag = {
   },
 
   /**
-   * Test if a tag exists in the repository.
+   * Test if a tag exists locally in the repository.
    *
    * @param {string} tagName
    * @returns {Promise<boolean>}
@@ -60717,26 +60569,34 @@ const tag = {
   },
 
   /**
+   * Test if a tag exists on the remote repository.
+   *
+   * @param {string} tagName
+   * @param {string} [remote='origin'] - Remote name to check
+   * @returns {Promise<boolean>}
+   */
+  existsRemote: async (tagName, remote = 'origin') => {
+    try {
+      const {stdout} = await exec('git', ['ls-remote', '--tags', remote, `refs/tags/${tagName}`]);
+      return stdout.trim().includes(`refs/tags/${tagName}`);
+    } catch (err) {
+      git_log.warn({tagName, remote, err}, 'Failed to check if remote tag exists');
+      return false;
+    }
+  },
+
+  /**
    * Get the last created tag in the repository.
    * If no tags are found, returns the hash of the first commit.
    *
    * @returns {Promise<string|null>} - Tag name, commit hash, or null on error
    */
-  // lastCreated: async () => {
-  //   // Try to detect last created tag
-  //   const {stdout: lastTag} = await exec('git', ['describe', '--tags', '--abbrev=0']);
-  //   if (lastTag.trim()) {
-  //     return lastTag.trim();
-  //   }
-  //
-  //   // If no tag is found, get the first commit hash
-  //   const {stdout: firstCommitHash} = await exec('git', ['rev-list', '--max-parents=0', 'HEAD']);
-  //   return firstCommitHash.trim();
-  // },
   lastCreated: async () => {
     // Try to detect last created tag
     try {
-      const {stdout: lastTag} = await exec('git', ['describe', '--tags', '--abbrev=0', '--match', '*']);
+      const {stdout: lastTag} = await exec('git', ['describe', '--tags', '--abbrev=0', '--match', '*'], {
+        noThrow: true,
+      });
       if (lastTag.trim()) {
         return lastTag.trim();
       }
@@ -60765,7 +60625,7 @@ const tag = {
   },
 
   /**
-   * Delete an existing Tag from the repository.
+   * Delete an existing Tag from the repository (both local and remote).
    *
    * @param {string} tagName
    * @returns {Promise<void>}
@@ -60774,10 +60634,24 @@ const tag = {
     await exec('git', ['tag', '-d', tagName]);
     git_log.info({tagName}, infoTagDeleted);
 
-    // TODO: Remote tag deletion is optional and might not be necessary
-    // // Also try to delete it from remote
-    //   await exec('git', ['push', 'origin', `:refs/tags/${tagName}`]);
-    //   log.info({tagName}, infoRemoteTagDeleted);
+    // Also try to delete the tag from remote
+    try {
+      await exec('git', ['fetch']);
+      const remoteTagExists = await tag.existsRemote(tagName);
+
+      if (remoteTagExists) {
+        const {exitCode} = await exec('git', ['push', 'origin', '--delete', tagName]);
+        if (exitCode === 0) {
+          git_log.info({tagName}, infoRemoteTagDeleted);
+        } else {
+          git_log.warn({tagName}, warnCouldNotRemoveRemoteTag);
+        }
+      } else {
+        git_log.info({tagName}, 'Remote tag does not exist, skipping remote deletion');
+      }
+    } catch (err) {
+      git_log.warn({tagName, err}, warnCouldNotRemoveRemoteTag);
+    }
   },
 };
 
@@ -61192,19 +61066,38 @@ const github_pr = {
       return false;
     }
 
+    const maxAttempts = 60; // Maximum number of attempts (e.g., 60 attempts = 5 minutes if interval is 5 seconds)
+    let attempts = 0;
+
     return new Promise((resolve) => {
       const checkMerged = async () => {
-        const {data: pullRequest} = await octokit.rest.pulls.get({
-          ...repo,
-          pull_number: pullNumber,
-        });
+        if (attempts++ >= maxAttempts) {
+          github_log.error({pullNumber, mergeMethod, options}, `Pull request merge check timed out`);
+          core.setFailed(`Pull request #${pullNumber} merge check timed out`);
+          resolve(false);
+          return;
+        }
 
-        if (pullRequest.merged) {
-          github_log.info({pullRequest, mergeMethod, options}, `Pull request has been merged`);
-          resolve(true);
-        } else {
-          github_log.info({pullRequest, mergeMethod, options}, `Pull request is not merged yet`);
-          setTimeout(checkMerged, 5000);
+        try {
+          const {data: pullRequest} = await octokit.rest.pulls.get({
+            ...repo,
+            pull_number: pullNumber,
+          });
+
+          if (pullRequest.merged) {
+            github_log.info({pullRequest, mergeMethod, options}, `Pull request has been merged`);
+            resolve(true);
+          } else {
+            github_log.info({pullRequest, mergeMethod, options}, `Pull request is not merged yet`);
+            setTimeout(checkMerged, 5000);
+          }
+        } catch (error) {
+          github_log.error(
+            {...pinoErrorPrettier(error), pullNumber, mergeMethod, options},
+            `Failed to check pull request status`,
+          );
+          core.setFailed(`Failed to check pull request #${pullNumber} status: ${error.message}`);
+          resolve(false);
         }
       };
 
@@ -61212,6 +61105,162 @@ const github_pr = {
     });
   },
 };
+
+;// CONCATENATED MODULE: ./src/core/version.js
+/**
+ * Version management functionality
+ * @module core/version
+ */
+
+
+
+
+
+const version_log = logger.child({module: `${projectName}/core/version`});
+
+// Log message constants
+const infoDeterminedVersionIncreaseType = 'Determined version increase type from commit';
+const infoPreReleaseIdentifierFound = 'Pre-release identifier found in commit message';
+const infoPreReleaseIdentifierExtracted = 'Pre-release identifier extracted';
+
+const warnNoVersionProvided = 'No version provided';
+const warnInvalidVersionProvided = 'Invalid version provided';
+const warnNoCommitMessageProvided = 'No commit message provided';
+const warnNoVersionIncreaseNeeded = 'No version increase needed based on commit message';
+
+// ...existing code...
+
+/**
+ * Increase version according to semver rules
+ *
+ * @param {string} currentVersion - Current version
+ * @param {string} commitMessage - Git commit message
+ * @returns {string|null} - New version
+ */
+function increaseVersion(currentVersion, commitMessage) {
+  const increaseType = determineVersionIncreaseType(currentVersion, commitMessage);
+
+  if (!increaseType) {
+    version_log.warn({commitMessage}, warnNoVersionIncreaseNeeded);
+    return null;
+  }
+
+  version_log.info({increaseType, commitMessage}, infoDeterminedVersionIncreaseType);
+
+  const preReleaseIdentifier = determineVersionPreReleaseIdentifier(currentVersion, commitMessage);
+  if (preReleaseIdentifier) {
+    version_log.info({preReleaseIdentifier, commitMessage}, infoPreReleaseIdentifierFound);
+  }
+
+  const version = semver.parse(currentVersion);
+  if (!version) {
+    version_log.warn({currentVersion}, warnInvalidVersionProvided);
+    return null;
+  }
+
+  return semver.inc(currentVersion, increaseType, preReleaseIdentifier);
+}
+
+/**
+ * @typedef {"major" | "premajor" | "minor" | "preminor" | "patch" | "prepatch" | "prerelease" | "release"} ReleaseType;
+ */
+
+/**
+ * Determine version increase type from commit message
+ * @link https://www.conventionalcommits.org/en/v1.0.0/#summary
+ *
+ * @param {string} currentVersion - Current version
+ * @param {string} commitMessage - Git commit message
+ * @returns {ReleaseType | null} - Type of version increase or null for none
+ */
+function determineVersionIncreaseType(currentVersion, commitMessage) {
+  if (!commitMessage) {
+    version_log.warn(warnNoCommitMessageProvided);
+    return null;
+  }
+  if (!currentVersion) {
+    version_log.warn(warnNoVersionProvided);
+    return null;
+  }
+
+  const version = semver.parse(currentVersion);
+  if (!version) {
+    version_log.warn({currentVersion}, warnInvalidVersionProvided);
+    return null;
+  }
+
+  if (commitMessage.includes('pre-release') && version.prerelease.length > 0) {
+    return 'prerelease';
+  }
+
+  // Check for BREAKING CHANGE or feat! for major version bump
+  if (
+    commitMessage.includes('BREAKING CHANGE') ||
+    commitMessage.includes('BREAKING-CHANGE') ||
+    commitMessage.includes('feat!:') ||
+    commitMessage.includes('feat(!)')
+  ) {
+    // For pre-existing pre-release versions, we'll handle this in workspaces.js
+    if (commitMessage.includes('pre-release')) {
+      return 'premajor';
+    }
+    return 'major';
+  }
+
+  if (commitMessage.startsWith('feat:') || /^feat\([^)]+\):/.test(commitMessage)) {
+    // For pre-existing pre-release versions, we'll handle this in workspaces.js
+    if (commitMessage.includes('pre-release')) {
+      return 'preminor';
+    }
+    return 'minor';
+  }
+
+  if (commitMessage.startsWith('fix:') || /^fix\([^)]+\):/.test(commitMessage)) {
+    // For pre-existing pre-release versions, we'll handle this in workspaces.js
+    if (commitMessage.includes('pre-release')) {
+      return 'prepatch';
+    }
+    return 'patch';
+  }
+
+  return null;
+}
+
+/**
+ * Determine pre-release identifier from commit message
+ *
+ * @param {string} commitMessage - Git commit message
+ * @returns {string|null} - Pre-release identifier or null if not found
+ */
+function determineVersionPreReleaseIdentifier(currentVersion, commitMessage) {
+  if (!commitMessage) {
+    version_log.warn(warnNoCommitMessageProvided);
+    return null;
+  }
+  if (!currentVersion) {
+    version_log.warn(warnNoVersionProvided);
+    return null;
+  }
+
+  // More flexible regex that handles:
+  // 1. "pre-release:alpha" format (no space)
+  // 2. "pre-release: alpha" format (with space)
+  // 3. Case insensitivity
+  const preReleaseRegex = /pre-release\s*:\s*([a-zA-Z0-9_-]+)/i;
+  const preReleaseMatch = preReleaseRegex.exec(commitMessage);
+  if (preReleaseMatch?.[1]) {
+    version_log.info({preReleaseIdentifier: preReleaseMatch[1]}, infoPreReleaseIdentifierExtracted);
+    return preReleaseMatch[1];
+  }
+
+  const version = semver.parse(currentVersion);
+  if (!version) {
+    version_log.warn({currentVersion}, warnInvalidVersionProvided);
+    return null;
+  }
+
+  return version?.prerelease?.[0] || null;
+}
 
 ;// CONCATENATED MODULE: ./node_modules/tiny-jsonc/dist/index.js
 /* HELPERS */
@@ -61237,7 +61286,7 @@ const JSONC = {
 
 
 
-const detect_log = log.child({module: 'detect'});
+const detect_log = version_log.child({module: 'detect'});
 
 // Log message constants
 const warnFailedToParseWithProvidedParser = 'Failed to parse version file';
@@ -61442,7 +61491,7 @@ async function merge(folderPath, projectType, parsers = []) {
 
 
 
-const update_log = log.child({module: 'update'});
+const update_log = version_log.child({module: 'update'});
 
 // Log message constants
 const warnNoVersionDetected = 'No version detected in file, skipping update';
@@ -62454,7 +62503,7 @@ async function createVersionTags(version, options) {
     // Only create short tags for non-prerelease versions
     if (parsedVersion && parsedVersion.prerelease.length === 0) {
       const shortVersion = `${parsedVersion.major}.${parsedVersion.minor}`;
-      tag.createAndPush(`v${shortVersion}`, tagMessage);
+      await tag.createAndPush(`v${shortVersion}`, tagMessage);
       workspaces_log.info({shortVersion}, LOG_MESSAGES.SHORT_TAG_CREATED);
       core.notice(`Created/updated short version tag: v${shortVersion}`);
     } else {
@@ -62463,7 +62512,7 @@ async function createVersionTags(version, options) {
   }
 
   // Create the main version tag (e.g., v2.0.1)
-  tag.createAndPush(`v${version}`, tagMessage);
+  await tag.createAndPush(`v${version}`, tagMessage);
   core.setOutput('tag', version);
   core.notice(`Created/updated version tag: v${version}`);
 }
@@ -62499,7 +62548,7 @@ async function createVersionPR(workspacesTree, options) {
    * @return {string[]} - List of workspaces and their versions in markdown for
    */
   function listWorkspacesVersions(node) {
-    return (node?.children ?? []).map((child) => [
+    return (node?.children ?? []).flatMap((child) => [
       `* ${child.workspace.name}: ${child.workspace.version}`,
       ...listWorkspacesVersions(child),
     ]);
@@ -62593,6 +62642,19 @@ async function generateChangelogsForChangedWorkspaces(workspaces, lastTag, optio
 
 const src_log = logger.child({module: projectName});
 
+/**
+ * @param message {string}
+ */
+const error = (message) => {
+  src_log.error(message);
+  core.setFailed(message);
+};
+
+const errorWorkspaceFolderOneRoot =
+  'Workspaces folder should only have a root workspace. Please ensure there is only one root workspace.';
+const errorNoWorkspacesRootTreeFound =
+  'No root workspace found in the changed workspaces. Please ensure there is a root workspace.';
+const errorNoTagsFoundInRepository = 'No tags found in the repository. Please create a tag before running this action.';
 const warnNoChangedWorkspacesFound = 'No workspaces have changed since the last tag. No version bumping needed.';
 
 /**
@@ -62612,7 +62674,8 @@ const run = async () => {
     // Get last created tag or 1st commit message
     const lastTag = await tag.lastCreated();
     if (!lastTag) {
-      core.setFailed('No tags found in the repository. Please create a tag before running this action.');
+      error(errorNoTagsFoundInRepository);
+      return;
     }
     src_log.info({lastTag}, 'Last created tag');
     core.notice(`Last created tag: ${lastTag}`);
@@ -62650,6 +62713,14 @@ const run = async () => {
       // enrich all workspaces
       options.workspaces = await enrichWorkspaces(options.workspaces, lastTag);
       const changedWorkspacesTrees = buildUpdatedWorkspacesTrees(options.workspaces);
+      if (changedWorkspacesTrees.length === 0) {
+        error(errorNoWorkspacesRootTreeFound);
+        return;
+      }
+      if (changedWorkspacesTrees.length > 1) {
+        error(errorWorkspaceFolderOneRoot);
+        return;
+      }
       // create tag
       await createVersionTags(changedWorkspacesTrees[0].workspace.version, options);
     } else {
@@ -62671,11 +62742,13 @@ const run = async () => {
       core.startGroup('Updating workspaces tree');
       // Organizes workspaces into a tree like structure to also determine the root workspace
       const changedWorkspacesTrees = buildUpdatedWorkspacesTrees(changedWorkspaces);
-      if (changedWorkspacesTrees.length > 1) {
-        src_log.error('Workspaces folder should only have a root workspace');
-      }
       if (changedWorkspacesTrees.length === 0) {
-        src_log.error('No workspaces found');
+        error(errorNoWorkspacesRootTreeFound);
+        return;
+      }
+      if (changedWorkspacesTrees.length > 1) {
+        error(errorWorkspaceFolderOneRoot);
+        return;
       }
       src_log.info(
         {workspaces: changedWorkspacesTrees},
@@ -62694,8 +62767,17 @@ const run = async () => {
           return;
         }
         if (options.prAutoMerge) {
-          await github_pr.merge({pullNumber: pr.number}, options);
-          await github_pr.hasMerged({pullNumber: pr.number}, options);
+          const merged = await github_pr.merge({pullNumber: pr.number}, options);
+          if (!merged) {
+            core.setFailed('Failed to merge PR');
+            return;
+          }
+
+          const hasMerged = await github_pr.hasMerged({pullNumber: pr.number}, options);
+          if (!hasMerged) {
+            core.setFailed('PR merge timed out or failed');
+            return;
+          }
 
           await branch.checkout(pr.base.ref);
           await branch.pull(pr.base.ref);

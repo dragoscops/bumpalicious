@@ -1,8 +1,8 @@
 import * as core from '@actions/core';
 import {getOctokit} from '@actions/github';
+import {projectName} from '../constants.js';
 import {logger, pinoErrorPrettier} from './logging.js';
 import * as workspace from './workspace.js';
-import {projectName} from '../constants.js';
 
 export const log = logger.child({module: `${projectName}/utils/github`});
 
@@ -232,19 +232,38 @@ export const pr = {
       return false;
     }
 
+    const maxAttempts = 60; // Maximum number of attempts (e.g., 60 attempts = 5 minutes if interval is 5 seconds)
+    let attempts = 0;
+
     return new Promise((resolve) => {
       const checkMerged = async () => {
-        const {data: pullRequest} = await octokit.rest.pulls.get({
-          ...repo,
-          pull_number: pullNumber,
-        });
+        if (attempts++ >= maxAttempts) {
+          log.error({pullNumber, mergeMethod, options}, `Pull request merge check timed out`);
+          core.setFailed(`Pull request #${pullNumber} merge check timed out`);
+          resolve(false);
+          return;
+        }
 
-        if (pullRequest.merged) {
-          log.info({pullRequest, mergeMethod, options}, `Pull request has been merged`);
-          resolve(true);
-        } else {
-          log.info({pullRequest, mergeMethod, options}, `Pull request is not merged yet`);
-          setTimeout(checkMerged, 5000);
+        try {
+          const {data: pullRequest} = await octokit.rest.pulls.get({
+            ...repo,
+            pull_number: pullNumber,
+          });
+
+          if (pullRequest.merged) {
+            log.info({pullRequest, mergeMethod, options}, `Pull request has been merged`);
+            resolve(true);
+          } else {
+            log.info({pullRequest, mergeMethod, options}, `Pull request is not merged yet`);
+            setTimeout(checkMerged, 5000);
+          }
+        } catch (error) {
+          log.error(
+            {...pinoErrorPrettier(error), pullNumber, mergeMethod, options},
+            `Failed to check pull request status`,
+          );
+          core.setFailed(`Failed to check pull request #${pullNumber} status: ${error.message}`);
+          resolve(false);
         }
       };
 

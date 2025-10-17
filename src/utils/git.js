@@ -1,7 +1,7 @@
 import path from 'node:path';
-import {logger} from './logging.js';
 import {projectName} from '../constants.js';
 import {exec} from './exec.js';
+import {logger} from './logging.js';
 
 export const log = logger.child({module: `${projectName}/utils/git`});
 
@@ -162,7 +162,7 @@ export const tag = {
   },
 
   /**
-   * Test if a tag exists in the repository.
+   * Test if a tag exists locally in the repository.
    *
    * @param {string} tagName
    * @returns {Promise<boolean>}
@@ -173,26 +173,34 @@ export const tag = {
   },
 
   /**
+   * Test if a tag exists on the remote repository.
+   *
+   * @param {string} tagName
+   * @param {string} [remote='origin'] - Remote name to check
+   * @returns {Promise<boolean>}
+   */
+  existsRemote: async (tagName, remote = 'origin') => {
+    try {
+      const {stdout} = await exec('git', ['ls-remote', '--tags', remote, `refs/tags/${tagName}`]);
+      return stdout.trim().includes(`refs/tags/${tagName}`);
+    } catch (err) {
+      log.warn({tagName, remote, err}, 'Failed to check if remote tag exists');
+      return false;
+    }
+  },
+
+  /**
    * Get the last created tag in the repository.
    * If no tags are found, returns the hash of the first commit.
    *
    * @returns {Promise<string|null>} - Tag name, commit hash, or null on error
    */
-  // lastCreated: async () => {
-  //   // Try to detect last created tag
-  //   const {stdout: lastTag} = await exec('git', ['describe', '--tags', '--abbrev=0']);
-  //   if (lastTag.trim()) {
-  //     return lastTag.trim();
-  //   }
-  //
-  //   // If no tag is found, get the first commit hash
-  //   const {stdout: firstCommitHash} = await exec('git', ['rev-list', '--max-parents=0', 'HEAD']);
-  //   return firstCommitHash.trim();
-  // },
   lastCreated: async () => {
     // Try to detect last created tag
     try {
-      const {stdout: lastTag} = await exec('git', ['describe', '--tags', '--abbrev=0', '--match', '*']);
+      const {stdout: lastTag} = await exec('git', ['describe', '--tags', '--abbrev=0', '--match', '*'], {
+        noThrow: true,
+      });
       if (lastTag.trim()) {
         return lastTag.trim();
       }
@@ -221,7 +229,7 @@ export const tag = {
   },
 
   /**
-   * Delete an existing Tag from the repository.
+   * Delete an existing Tag from the repository (both local and remote).
    *
    * @param {string} tagName
    * @returns {Promise<void>}
@@ -230,10 +238,24 @@ export const tag = {
     await exec('git', ['tag', '-d', tagName]);
     log.info({tagName}, infoTagDeleted);
 
-    // TODO: Remote tag deletion is optional and might not be necessary
-    // // Also try to delete it from remote
-    //   await exec('git', ['push', 'origin', `:refs/tags/${tagName}`]);
-    //   log.info({tagName}, infoRemoteTagDeleted);
+    // Also try to delete the tag from remote
+    try {
+      await exec('git', ['fetch']);
+      const remoteTagExists = await tag.existsRemote(tagName);
+
+      if (remoteTagExists) {
+        const {exitCode} = await exec('git', ['push', 'origin', '--delete', tagName]);
+        if (exitCode === 0) {
+          log.info({tagName}, infoRemoteTagDeleted);
+        } else {
+          log.warn({tagName}, warnCouldNotRemoveRemoteTag);
+        }
+      } else {
+        log.info({tagName}, 'Remote tag does not exist, skipping remote deletion');
+      }
+    } catch (err) {
+      log.warn({tagName, err}, warnCouldNotRemoveRemoteTag);
+    }
   },
 };
 
