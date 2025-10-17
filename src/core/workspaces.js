@@ -242,13 +242,16 @@ export async function updateVersionsForWorkspaces(workspaces, {generateChangelog
         try {
           await changelog.generateWorkspaceChangelog(workspace);
         } catch (changeLogError) {
-          log.error(
+          log.warn(
             {
               workspaceName: workspace.name,
               workspacePath: workspace.path,
               ...pinoErrorPrettier(changeLogError),
             },
             LOG_MESSAGES.CHANGELOG_GENERATE_ERROR,
+          );
+          core.warning(
+            `${LOG_MESSAGES.CHANGELOG_GENERATE_ERROR} for workspace '${workspace.name}': ${changeLogError.message}`,
           );
         }
       }

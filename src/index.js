@@ -78,7 +78,11 @@ const run = async () => {
       log.info(`Version PR was merged with message: ${commitMessage}`);
       core.notice(`Version PR was merged with message: ${commitMessage}`);
       // enrich all workspaces
-      options.workspaces = await workspaces.enrichWorkspaces(options.workspaces, lastTag);
+      options.workspaces = await workspaces.enrichWorkspaces(options.workspaces);
+      if (!options.workspaces || options.workspaces.length === 0) {
+        core.setFailed('No workspaces specified. Please provide workspaces input.');
+        return;
+      }
       const changedWorkspacesTrees = workspace.buildUpdatedWorkspacesTrees(options.workspaces);
       if (changedWorkspacesTrees.length === 0) {
         error(errorNoWorkspacesRootTreeFound);
@@ -148,9 +152,10 @@ const run = async () => {
 
           await git.branch.checkout(pr.base.ref);
           await git.branch.pull(pr.base.ref);
-          await git.branch.remove(pr.head.ref);
 
           await workspaces.createVersionTags(changedWorkspacesTrees[0].workspace.version, options);
+
+          await git.branch.remove(pr.head.ref);
         }
       } else {
         // Otherwise, create a commit with the version changes and tags
