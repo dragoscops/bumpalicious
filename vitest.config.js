@@ -3,7 +3,7 @@ import templDefineConfig from '@templ-project/vitest';
 /** @type {import('vitest').ViteUserConfig} */
 export default templDefineConfig({
   // Custom test file patterns
-  include: ['src/**/*.spec.js'],
+  include: ['src/**/*.spec.{js,ts}', 'test/**/*.test.{js,ts}'],
   setupFiles: ['./vitest.setup.js'],
   retry: 3,
   allowOnly: true,
@@ -23,7 +23,7 @@ export default templDefineConfig({
         statements: 80,
       },
     },
-    exclude: ['src/legacy/**/*'],
+    exclude: ['src/legacy/**/*', 'src-js/**/*', '**/*.spec.ts', '**/*.test.ts', '**/fixtures/**'],
   },
 });
 
