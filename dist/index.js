@@ -62711,7 +62711,11 @@ const run = async () => {
       src_log.info(`Version PR was merged with message: ${commitMessage}`);
       core.notice(`Version PR was merged with message: ${commitMessage}`);
       // enrich all workspaces
-      options.workspaces = await enrichWorkspaces(options.workspaces, lastTag);
+      options.workspaces = await enrichWorkspaces(options.workspaces);
+      if (!options.workspaces || options.workspaces.length === 0) {
+        core.setFailed('No workspaces specified. Please provide workspaces input.');
+        return;
+      }
       const changedWorkspacesTrees = buildUpdatedWorkspacesTrees(options.workspaces);
       if (changedWorkspacesTrees.length === 0) {
         error(errorNoWorkspacesRootTreeFound);
