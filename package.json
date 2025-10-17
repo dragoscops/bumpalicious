@@ -42,6 +42,7 @@
     "@jscpd/html-reporter": "^4.0.1",
     "@templ-project/eslint": "^1.0.3",
     "@templ-project/prettier": "^1.0.3",
+    "@templ-project/tsconfig": "^0.4.2",
     "@templ-project/vitest": "^0.1.3",
     "@vercel/ncc": "^0.38.3",
     "esbuild": "^0.25.5",

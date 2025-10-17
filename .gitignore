@@ -1,3 +1,11 @@
+# CwAI Files
+.cwai
+.github/prompts/
+
+# Env files
+.env*
+!.env.example
+
 .DS_Store
 /.task
 
