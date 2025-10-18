@@ -11,11 +11,11 @@
 | Phase               | Tasks      | Status      | Completion |
 | ------------------- | ---------- | ----------- | ---------- |
 | Foundation          | TSK-001-08 | Completed   | 100%       |
-| Adapters            | TSK-009-20 | In Progress | 83%        |
+| Adapters            | TSK-009-20 | In Progress | 92%        |
 | Services            | TSK-021-24 | Not Started | 0%         |
 | Core Logic          | TSK-025-27 | Not Started | 0%         |
 | Orchestration & E2E | TSK-028-30 | Not Started | 0%         |
-| **Overall**         | **30**     | **60%**     | **18/30**  |
+| **Overall**         | **30**     | **63%**     | **19/30**  |
 
 ---
 
@@ -1348,6 +1348,104 @@ Created Rust workspace adapter in `src/core/adapters/RustAdapter.ts` (125 lines)
 
 ---
 
+### ✅ TSK-018: Zig Workspace Adapter (2h)
+
+**Completed**: 2025-01-18
+
+**Deliverables**:
+
+Created Zig workspace adapter in `src/core/adapters/ZigAdapter.ts` (178 lines) extending BaseWorkspaceAdapter with support for two Zig configuration file formats.
+
+1. **Supported File Formats**:
+   - `build.zig.zon` - Zig package manager format (newer, preferred)
+   - `build.zig` - Zig build script with version constants (fallback)
+
+2. **File Format Details**:
+   - **build.zig.zon**: Zig struct literal syntax
+     - Version format: `.version = "1.0.0"`
+     - Name format: `.name = "package-name"`
+     - Pattern: `/\.version\s*=\s*"([^"]+)"/m`
+     - Replacement: `.version = "$VERSION"`
+   - **build.zig**: Zig const declarations
+     - Version format: `const VERSION = "1.0.0"` (case-insensitive)
+     - Name format: `const NAME = "package-name"`
+     - Pattern: `/const\s+VERSION\s*=\s*"([^"]+)"/i`
+     - Replacement: `const VERSION = "$VERSION"`
+
+3. **Detection Logic**:
+   - `detect()` - Priority-based file detection
+   - Priority order: build.zig.zon > build.zig
+   - Regex-based parsing using FileParser with format='regex'
+   - Falls through to next file if parsing fails (resilient detection)
+   - Returns `Result<ProjectInfo, WorkspaceDetectionError>`
+
+4. **Update Logic**:
+   - `update()` - Updates ALL existing config files
+   - Multi-file strategy ensures consistency across build.zig.zon and build.zig
+   - Format-specific handling:
+     - build.zig.zon: Updates struct literal syntax
+     - build.zig: Updates const declaration
+   - Preserves original formatting and whitespace
+   - Returns `Result<void, FileOperationError>`
+
+5. **File Configuration**:
+   - Each format defined in `FILE_CONFIGS` array with `ZigFileConfig` interface
+   - Properties: `filename`, `versionPattern`, `namePattern`, `versionReplacement`
+   - All patterns are regex-based (no JSON/TOML parsers for Zig-specific syntax)
+   - Priority order reflects Zig ecosystem evolution (build.zig.zon is newer package manager format)
+
+6. **Error Handling**:
+   - No config file found - returns WorkspaceDetectionError
+   - Invalid version format - skips to next file
+   - Missing version/name fields - validation error from parser
+   - Pattern mismatch on update - FileOperationError
+
+**Tests**:
+
+- Created `ZigAdapter.spec.ts` with 26 test cases (100% passing)
+- Test groups:
+  - properties (2): type, supportedFiles
+  - detect (13):
+    - build.zig.zon (3): basic, pre-release, complex structure with dependencies
+    - build.zig (3): basic const, lowercase const, pre-release
+    - priority order (2): build.zig.zon preferred, fallback to build.zig
+    - error handling (5): no file, invalid version, missing version, missing name, non-existent dir
+  - update (9):
+    - single file updates (3): build.zig.zon, build.zig, pre-release
+    - multi-file updates (1): both build.zig.zon and build.zig together
+    - error handling (3): no file, pattern mismatch, non-existent dir
+    - version format preservation (2): pre-release, build metadata
+  - integration tests (2):
+    - detect and update workflow
+    - real-world Zig project with build.zig.zon dependencies array
+
+**Validation**:
+
+- ✅ src/core/adapters/ZigAdapter.ts created (178 lines)
+- ✅ Detect from build.zig.zon and build.zig
+- ✅ Support Zig struct literal syntax (`.version = "x.y.z"`)
+- ✅ Support const declarations (`const VERSION = "x.y.z"`)
+- ✅ Case-insensitive const matching for build.zig
+- ✅ Update all matching files for version consistency
+- ✅ Priority-based detection (build.zig.zon first)
+- ✅ Unit tests with both file formats (26 tests passing)
+- ✅ Test with real Zig project structures
+- ✅ Type-check passes (0 errors)
+- ✅ All 558 tests passing (26 new + 532 existing)
+
+**Design Decisions**:
+
+- Array-based FILE_CONFIGS for maintainability (parallel to Go/Python/Deno adapters)
+- Regex patterns handle Zig-specific syntax (no generic parsers available)
+- build.zig.zon prioritized over build.zig (newer package manager format)
+- Multi-file update strategy prevents version drift between formats
+- Case-insensitive const matching for build.zig (VERSION or version accepted)
+- Skips invalid files instead of failing early (tries all options in priority order)
+- Supports standard semantic versioning including pre-release and build metadata
+- Priority order reflects Zig package manager evolution and community best practices
+
+---
+
 ## Quality Metrics
 
 | Metric        | Target | Current | Status |
@@ -1362,7 +1460,7 @@ Created Rust workspace adapter in `src/core/adapters/RustAdapter.ts` (125 lines)
 
 ## Files Created
 
-### Source Files (26)
+### Source Files (27)
 
 - `tsconfig.json` - TypeScript configuration
 - `src/types/version.ts` - Version type definitions (63 lines)
@@ -1388,10 +1486,11 @@ Created Rust workspace adapter in `src/core/adapters/RustAdapter.ts` (125 lines)
 - `src/core/adapters/DenoAdapter.ts` - Deno workspace adapter (311 lines)
 - `src/core/adapters/GoAdapter.ts` - Go workspace adapter (226 lines)
 - `src/core/adapters/RustAdapter.ts` - Rust workspace adapter (125 lines)
+- `src/core/adapters/ZigAdapter.ts` - Zig workspace adapter (178 lines)
 - `src/core/adapters/TextAdapter.ts` - Text workspace adapter (171 lines)
 - `test/fixtures/repos/setup.ts` - Test repository setup utilities (318 lines)
 
-### Test Files (20)
+### Test Files (21)
 
 - `src/types/version.spec.ts` - Version type tests (51 lines, 8 tests)
 - `src/utils/errors.spec.ts` - Error class tests (147 lines, 21 tests)
@@ -1411,6 +1510,7 @@ Created Rust workspace adapter in `src/core/adapters/RustAdapter.ts` (125 lines)
 - `src/core/adapters/DenoAdapter.spec.ts` - Deno adapter tests (600 lines, 30 tests)
 - `src/core/adapters/GoAdapter.spec.ts` - Go adapter tests (540 lines, 30 tests)
 - `src/core/adapters/RustAdapter.spec.ts` - Rust adapter tests (450 lines, 23 tests)
+- `src/core/adapters/ZigAdapter.spec.ts` - Zig adapter tests (645 lines, 26 tests)
 - `src/core/adapters/TextAdapter.spec.ts` - Text adapter tests (298 lines, 33 tests)
 - `test/fixtures/repos/setup.test.ts` - Repository setup tests (163 lines, 16 tests)
 
@@ -1441,18 +1541,19 @@ Created Rust workspace adapter in `src/core/adapters/RustAdapter.ts` (125 lines)
 ## Last Activity
 
 **Date**: 2025-01-18
-**Task**: TSK-017 Rust Workspace Adapter
+**Task**: TSK-018 Zig Workspace Adapter
 **Status**: ✅ Completed
-**Test Results**: 532/532 passing (23 new tests + 509 existing)
+**Test Results**: 558/558 passing (26 new tests + 532 existing)
 **Type Check**: 0 errors
 
 Key achievements:
 
-- Created Rust workspace adapter with single file format support
-- Parses Cargo.toml [package] section using TOML parser
-- Simple, clean implementation leveraging existing FileParser/FileUpdater
-- Preserves TOML structure and formatting on updates
-- 23 comprehensive tests covering detect, update, error handling, integration
+- Created Zig workspace adapter with 2 file format support (build.zig.zon, build.zig)
+- Regex-based parsing for Zig struct literal syntax and const declarations
+- Priority order: build.zig.zon (newer package manager) > build.zig
+- Multi-file update strategy ensures consistency across formats
+- Case-insensitive const matching in build.zig
+- 26 comprehensive tests covering both formats, priority, multi-file updates, integration
 - Supports pre-release versions and build metadata
 
 ---
@@ -1461,7 +1562,7 @@ Key achievements:
 
 ## Next Steps
 
-### Adapters Phase (In Progress - 83% Complete)
+### Adapters Phase (In Progress - 92% Complete)
 
 Foundation Phase Complete! ✅
 Parsers Phase Complete! ✅
@@ -1471,12 +1572,12 @@ Python Adapter Complete! ✅
 Deno Adapter Complete! ✅
 Go Adapter Complete! ✅
 Rust Adapter Complete! ✅
+Zig Adapter Complete! ✅
 Text Adapter Complete! ✅
 
 Next up:
 
-1. **TSK-018: Zig Workspace Adapter** (2h) - Implement Zig adapter (build.zig)
-2. **TSK-020: Workspace Adapter Factory** (2h) - Adapter instantiation factory
+1. **TSK-020: Workspace Adapter Factory** (2h) - Adapter instantiation factory (FINAL task in Adapters Phase)
 
 ---
 
