@@ -11,11 +11,11 @@
 | Phase               | Tasks      | Status      | Completion |
 | ------------------- | ---------- | ----------- | ---------- |
 | Foundation          | TSK-001-08 | Completed   | 100%       |
-| Adapters            | TSK-009-20 | In Progress | 33%        |
+| Adapters            | TSK-009-20 | In Progress | 42%        |
 | Services            | TSK-021-24 | Not Started | 0%         |
 | Core Logic          | TSK-025-27 | Not Started | 0%         |
 | Orchestration & E2E | TSK-028-30 | Not Started | 0%         |
-| **Overall**         | **30**     | **40%**     | **12/30**  |
+| **Overall**         | **30**     | **43%**     | **13/30**  |
 
 ---
 
@@ -845,6 +845,66 @@ Created workspace input parser in `src/utils/workspace-parser.ts`:
 
 ---
 
+### ✅ TSK-012: Base Workspace Adapter (3h)
+
+**Completed**: 2025-01-18
+
+**Deliverables**:
+
+Created abstract base class for workspace adapters in `src/core/adapters/BaseAdapter.ts` (155 lines):
+
+1. **Abstract Properties**:
+   - `type: WorkspaceType` - Workspace type identifier (node, python, deno, etc.)
+   - `supportedFiles: ReadonlyArray<string>` - List of configuration files this adapter can parse
+
+2. **Abstract Methods**:
+   - `detect(workspacePath): Promise<Result<ProjectInfo, WorkspaceDetectionError>>` - Detect project info from workspace
+   - `update(workspacePath, newVersion): Promise<Result<void, FileOperationError>>` - Update version in workspace config
+
+3. **Protected Helper Methods**:
+   - `parseFile(filePath, config): Promise<Result<ProjectInfo, FileOperationError>>` - Parse config using FileParser
+   - `updateFile(filePath, newVersion, config): Promise<Result<void, FileOperationError>>` - Update config using FileUpdater
+
+4. **Design Features**:
+   - Type-safe return values with `Result<T, E>` pattern
+   - Integration with FileParser and FileUpdater from TSK-010 and TSK-011
+   - Comprehensive JSDoc documentation for implementers
+   - Provides common functionality while allowing subclass customization
+
+**Tests**:
+
+- Created `BaseAdapter.spec.ts` with 16 test cases (100% passing)
+- Test groups:
+  - abstract properties (3): type, supportedFiles, readonly enforcement
+  - abstract methods (4): detect success/error, update success/error
+  - protected helper methods (2): parseFile, updateFile availability
+  - type safety (3): WorkspaceType enforcement, Result type returns
+  - inheritance (2): subclass overrides for type and supportedFiles
+  - documentation (2): class and method documentation verification
+- Used concrete TestAdapter implementation to test abstract class behavior
+
+**Validation**:
+
+- ✅ src/core/adapters/BaseAdapter.ts created
+- ✅ Abstract methods: detect(), update()
+- ✅ Abstract properties: type, supportedFiles
+- ✅ Protected methods: parseFile(), updateFile()
+- ✅ Type-safe return values with Result<T, E>
+- ✅ Documentation for implementing adapters
+- ✅ Unit tests for base behavior (16 tests passing)
+- ✅ Type-check passes (0 errors)
+- ✅ All 388 tests passing (16 new + 372 existing)
+
+**Design Decisions**:
+
+- Abstract class (not interface) to provide helper method implementations
+- Protected helpers integrate with FileParser/FileUpdater for consistency
+- Subclasses can use helpers or implement their own logic (flexibility)
+- Result<T, E> pattern enforced for all error-prone operations
+- Ready for language-specific adapter implementations (TSK-013 through TSK-019)
+
+---
+
 ## Quality Metrics
 
 | Metric        | Target | Current | Status |
@@ -859,7 +919,7 @@ Created workspace input parser in `src/utils/workspace-parser.ts`:
 
 ## Files Created
 
-### Source Files (19)
+### Source Files (20)
 
 - `tsconfig.json` - TypeScript configuration
 - `src/types/version.ts` - Version type definitions (63 lines)
@@ -879,10 +939,11 @@ Created workspace input parser in `src/utils/workspace-parser.ts`:
 - `src/parsers/ConventionalCommitParser.ts` - Conventional commit parser (230 lines)
 - `src/parsers/FileParser.ts` - Generic file parser (392 lines)
 - `src/parsers/FileUpdater.ts` - Generic file updater (361 lines)
+- `src/core/adapters/BaseAdapter.ts` - Base workspace adapter class (155 lines)
 - `src/core/adapters/TextAdapter.ts` - Text workspace adapter (171 lines)
 - `test/fixtures/repos/setup.ts` - Test repository setup utilities (318 lines)
 
-### Test Files (14)
+### Test Files (15)
 
 - `src/types/version.spec.ts` - Version type tests (51 lines, 8 tests)
 - `src/utils/errors.spec.ts` - Error class tests (147 lines, 21 tests)
@@ -896,6 +957,7 @@ Created workspace input parser in `src/utils/workspace-parser.ts`:
 - `src/parsers/ConventionalCommitParser.spec.ts` - Conventional commit parser tests (303 lines, 53 tests)
 - `src/parsers/FileParser.spec.ts` - File parser tests (508 lines, 43 tests)
 - `src/parsers/FileUpdater.spec.ts` - File updater tests (651 lines, 34 tests)
+- `src/core/adapters/BaseAdapter.spec.ts` - Base adapter tests (150 lines, 16 tests)
 - `src/core/adapters/TextAdapter.spec.ts` - Text adapter tests (298 lines, 33 tests)
 - `test/fixtures/repos/setup.test.ts` - Repository setup tests (163 lines, 16 tests)
 
@@ -925,33 +987,33 @@ Created workspace input parser in `src/utils/workspace-parser.ts`:
 
 ## Last Activity
 
-**Date**: 2025-01-XX
-**Task**: TSK-011 Generic File Updater
+**Date**: 2025-01-18
+**Task**: TSK-012 Base Workspace Adapter
 **Status**: ✅ Completed
-**Test Results**: 372/372 passing (34 new tests + 338 existing)
+**Test Results**: 388/388 passing (16 new tests + 372 existing)
 **Type Check**: 0 errors
 
 Key achievements:
 
-- Implemented updateJsonFile, updateTomlFile, updateRegexFile, configUpdater
-- 34 comprehensive tests covering all formats and edge cases
-- Refactored from parser-based to direct validation approach
-- Validates existing version before updating (safety first)
-- Supports nested paths for JSON/TOML (e.g., "package.version")
+- Created abstract base class for all workspace adapters
+- Defined abstract methods (detect, update) and properties (type, supportedFiles)
+- Added protected helper methods (parseFile, updateFile) for subclass reuse
+- 16 comprehensive tests using concrete test implementation
+- Foundation ready for language-specific adapters (TSK-013 through TSK-019)
 
 ---
 
 ## Next Steps
 
-### Adapters Phase (In Progress - 33% Complete)
+### Adapters Phase (In Progress - 42% Complete)
 
 Foundation Phase Complete! ✅
 Parsers Phase Complete! ✅
 
 Next up:
 
-1. **TSK-012: Base Workspace Adapter** (3h) - Abstract adapter class (CRITICAL PATH)
-2. **TSK-013-018: Language-specific Adapters** (12h) - Node, Python, Deno, Go, Rust, Zig
+1. **TSK-013: Node.js Workspace Adapter** (2h) - Implement Node-specific adapter (CRITICAL PATH)
+2. **TSK-014-018: Other Language Adapters** (10h) - Python, Deno, Go, Rust, Zig
 3. **TSK-020: Workspace Adapter Factory** (2h) - Adapter instantiation factory
 
 ---
