@@ -11,11 +11,11 @@
 | Phase               | Tasks      | Status      | Completion |
 | ------------------- | ---------- | ----------- | ---------- |
 | Foundation          | TSK-001-08 | Completed   | 100%       |
-| Adapters            | TSK-009-20 | In Progress | 17%        |
+| Adapters            | TSK-009-20 | In Progress | 25%        |
 | Services            | TSK-021-24 | Not Started | 0%         |
 | Core Logic          | TSK-025-27 | Not Started | 0%         |
 | Orchestration & E2E | TSK-028-30 | Not Started | 0%         |
-| **Overall**         | **30**     | **33%**     | **10/30**  |
+| **Overall**         | **30**     | **37%**     | **11/30**  |
 
 ---
 
@@ -392,6 +392,109 @@ Created text workspace adapter in `src/core/adapters/TextAdapter.ts` (171 lines)
 
 ---
 
+### ✅ TSK-010: Generic File Parser (3h)
+
+**Completed**: 2025-10-18
+
+**Deliverables**:
+
+Created generic file parser in `src/parsers/FileParser.ts` (392 lines):
+
+1. **Main Parser Functions**:
+   - `parseJsonFile(filePath, versionPath, namePath)` - Parse JSON config files with nested path support
+   - `parseTomlFile(filePath, versionPath, namePath)` - Parse TOML config files (Cargo.toml, pyproject.toml)
+   - `parseRegexFile(filePath, versionPattern, namePattern, defaultName)` - Extract with regex patterns
+   - `configParser(filePath, config)` - Generic parser delegating to format-specific parsers
+
+2. **Supported Formats**:
+   - **JSON**: `package.json`, `jsr.json`, `deno.json` with nested paths (e.g., `project.version`)
+   - **TOML**: `Cargo.toml`, `pyproject.toml`, `poetry.toml` with section.field notation
+   - **Regex**: `setup.py`, `__init__.py`, `setup.cfg`, `go.mod` with pattern matching
+
+3. **Nested Path Support**:
+   - Dot-separated paths for JSON/TOML (e.g., `tool.poetry.version`, `metadata.project.info.version`)
+   - `getNestedValue()` helper function for safe object traversal
+   - Handles missing intermediate keys gracefully
+
+4. **Error Handling**:
+   - Returns `Result<ProjectInfo, FileOperationError>` for all operations
+   - Malformed file detection (JSON syntax errors, TOML parse errors)
+   - Missing field validation with detailed error messages
+   - Invalid version format validation using `isVersion()` guard
+   - File I/O error handling with context preservation
+
+5. **Pre-defined Patterns**:
+   - `VERSION_PATTERNS` object with regex patterns for:
+     - `PYTHON_SETUP` - setup.py version
+     - `PYTHON_INIT` - \_\_version\_\_ in \_\_init\_\_.py
+     - `PYTHON_SETUP_CFG` - setup.cfg version
+     - `GO_VERSION_COMMENT` - Go module version comment
+     - `GENERIC` - Plain text version file
+   - `NAME_PATTERNS` object with regex patterns for:
+     - `PYTHON_SETUP` - setup.py name
+     - `PYTHON_SETUP_CFG` - setup.cfg name
+
+6. **Dependencies**:
+   - Uses `@iarna/toml` for TOML parsing (already in dependencies)
+   - Integrates with `Result<T,E>` pattern from TSK-002
+   - Uses `FileOperationError` from TSK-003
+   - Validates versions with `isVersion()` from TSK-002
+
+**Tests**:
+
+- Created `FileParser.spec.ts` with 43 test cases (100% passing)
+- Test groups:
+  - parseJsonFile (9 tests):
+    - Simple parsing (package.json)
+    - Nested paths (project.version)
+    - Pre-release versions
+    - Error cases (missing fields, malformed JSON, invalid version)
+    - Deep nesting (metadata.project.info.version)
+  - parseTomlFile (8 tests):
+    - Cargo.toml parsing
+    - pyproject.toml parsing
+    - poetry.toml parsing
+    - Error cases (missing fields, malformed TOML, invalid version)
+  - parseRegexFile (12 tests):
+    - Python setup.py (single/double quotes)
+    - Python \_\_init\_\_.py
+    - Python setup.cfg
+    - Go version comment
+    - Pre-release versions
+    - Error cases (pattern mismatch, invalid version)
+    - Default name handling
+  - configParser (7 tests):
+    - Delegation to format-specific parsers
+    - Default path handling
+    - Unsupported format errors
+    - Missing versionPattern for regex
+  - VERSION_PATTERNS (5 tests) - Export validation
+  - NAME_PATTERNS (2 tests) - Export validation
+
+**Validation**:
+
+- ✅ src/parsers/FileParser.ts created (392 lines)
+- ✅ Support JSON parsing with nested paths (e.g., `project.version`)
+- ✅ Support TOML parsing with section notation (e.g., `package.version`)
+- ✅ Support regex extraction for setup.py, \_\_init\_\_.py, go.mod, etc.
+- ✅ Handle nested paths in JSON/TOML (3+ levels deep)
+- ✅ Return `Result<ProjectInfo, FileOperationError>` type
+- ✅ Unit tests with real-world config files (43 tests passing)
+- ✅ Test edge cases: malformed files, missing fields, invalid versions
+- ✅ Type-check passes (0 errors)
+- ✅ All 338 tests passing (43 new + 295 existing)
+
+**Design Decisions**:
+
+- Used `@iarna/toml` library (already in dependencies) for robust TOML parsing
+- Created separate functions per format for clarity and testability
+- `configParser` acts as factory/delegator based on `ParserConfig.format`
+- Exported pre-defined patterns for common use cases (reduces duplication in adapters)
+- Error messages include context (file path, operation, field path) for debugging
+- Nested path support uses string splitting approach (simple, performant)
+
+---
+
 ## Test Infrastructure Updates
 
 **Modified**: `vitest.config.js`
@@ -403,17 +506,18 @@ Created text workspace adapter in `src/core/adapters/TextAdapter.ts` (171 lines)
 **Test Results**:
 
 ```text
-Test Files  12 passed (12)
-Tests       295 passed (295)
-Duration    ~550ms
+Test Files  13 passed (13)
+Tests       338 passed (338)
+Duration    ~603ms
 ```
 
 **Test Count Progression**:
 
 - TSK-008: 262 tests (Foundation Phase complete)
 - TSK-009: +53 tests (ConventionalCommitParser)
+- TSK-010: +43 tests (FileParser)
 - TSK-019: +33 tests (TextAdapter) - **Note**: Implemented out of sequence
-- Total: 295 tests passing
+- Total: 338 tests passing
 
 ---
 
@@ -651,7 +755,7 @@ Created workspace input parser in `src/utils/workspace-parser.ts`:
 
 ## Files Created
 
-### Source Files (17)
+### Source Files (18)
 
 - `tsconfig.json` - TypeScript configuration
 - `src/types/version.ts` - Version type definitions (63 lines)
@@ -669,9 +773,11 @@ Created workspace input parser in `src/utils/workspace-parser.ts`:
 - `src/core/fixtures/versions.ts` - Version test fixtures (127 lines)
 - `src/parsers/fixtures/commit-messages.ts` - Commit message fixtures (203 lines)
 - `src/parsers/ConventionalCommitParser.ts` - Conventional commit parser (230 lines)
+- `src/parsers/FileParser.ts` - Generic file parser (392 lines)
+- `src/core/adapters/TextAdapter.ts` - Text workspace adapter (171 lines)
 - `test/fixtures/repos/setup.ts` - Test repository setup utilities (318 lines)
 
-### Test Files (11)
+### Test Files (13)
 
 - `src/types/version.spec.ts` - Version type tests (51 lines, 8 tests)
 - `src/utils/errors.spec.ts` - Error class tests (147 lines, 21 tests)
@@ -683,6 +789,8 @@ Created workspace input parser in `src/utils/workspace-parser.ts`:
 - `src/core/fixtures/versions.spec.ts` - Version fixture tests (146 lines, 19 tests)
 - `src/parsers/fixtures/commit-messages.spec.ts` - Commit message fixture tests (183 lines, 16 tests)
 - `src/parsers/ConventionalCommitParser.spec.ts` - Conventional commit parser tests (303 lines, 53 tests)
+- `src/parsers/FileParser.spec.ts` - File parser tests (508 lines, 43 tests)
+- `src/core/adapters/TextAdapter.spec.ts` - Text adapter tests (298 lines, 33 tests)
 - `test/fixtures/repos/setup.test.ts` - Repository setup tests (163 lines, 16 tests)
 
 ### Modified Files (2)
@@ -715,13 +823,12 @@ Created workspace input parser in `src/utils/workspace-parser.ts`:
 
 Foundation Phase Complete! ✅
 
-1. **TSK-010: Generic File Parser** (3h) - Parse JSON, TOML, regex extraction
-2. **TSK-011: Generic File Updater** (3h) - Update version in various formats
-3. **TSK-012: Base Workspace Adapter** (3h) - Abstract adapter class
+Next up:
 
-4. **TSK-009: Conventional Commit Parser** (4h) - Parse commit messages
-5. **TSK-010-011: File Parser/Updater** (6h) - Generic file operations
-6. **TSK-012-020: Workspace Adapters** (20h) - Language-specific adapters
+1. **TSK-011: Generic File Updater** (3h) - Update version in various formats
+2. **TSK-012: Base Workspace Adapter** (3h) - Abstract adapter class
+3. **TSK-013-018: Language-specific Adapters** (12h) - Node, Python, Deno, Go, Rust, Zig
+4. **TSK-020: Workspace Adapter Factory** (2h) - Adapter instantiation factory
 
 ---
 
@@ -748,4 +855,4 @@ Foundation Phase Complete! ✅
 
 ---
 
-**Last Activity**: Completed TSK-019 (Text Workspace Adapter). Implemented simple text file version adapter supporting VERSION/VERSION.txt/version/version.txt with priority-based detection. All 33 tests passing (295 total). Adapters phase now 17% complete (2/12 tasks). Note: Implemented out of sequence - will refactor when TSK-012 (Base Adapter) is ready. Next: TSK-010 (Generic File Parser).
+**Last Activity**: Completed TSK-010 (Generic File Parser). Implemented comprehensive file parser with JSON, TOML, and regex support. Handles nested paths for JSON/TOML (e.g., `project.version`, `tool.poetry.version`). All 43 new tests passing (338 total). Adapters phase now 25% complete (3/12 tasks). Next: TSK-011 (Generic File Updater).
