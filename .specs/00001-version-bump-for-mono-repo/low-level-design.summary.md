@@ -11,11 +11,11 @@
 | Phase               | Tasks      | Status      | Completion |
 | ------------------- | ---------- | ----------- | ---------- |
 | Foundation          | TSK-001-08 | Completed   | 100%       |
-| Adapters            | TSK-009-20 | In Progress | 50%        |
+| Adapters            | TSK-009-20 | In Progress | 58%        |
 | Services            | TSK-021-24 | Not Started | 0%         |
 | Core Logic          | TSK-025-27 | Not Started | 0%         |
 | Orchestration & E2E | TSK-028-30 | Not Started | 0%         |
-| **Overall**         | **30**     | **47%**     | **14/30**  |
+| **Overall**         | **30**     | **50%**     | **15/30**  |
 
 ---
 
@@ -977,6 +977,109 @@ Created Node.js workspace adapter in `src/core/adapters/NodeAdapter.ts` (182 lin
 
 ---
 
+### ✅ TSK-014: Python Workspace Adapter (3h)
+
+**Completed**: 2025-01-18
+
+**Deliverables**:
+
+Created Python workspace adapter in `src/core/adapters/PythonAdapter.ts` (300 lines):
+
+1. **Main Features**:
+   - Extends `BaseWorkspaceAdapter` abstract class
+   - Supports 5 Python configuration formats:
+     - `pyproject.toml` - Modern Python packaging (PEP 518/621)
+     - `poetry.toml` - Poetry dependency management
+     - `setup.py` - Traditional setuptools with Python code
+     - `setup.cfg` - INI-style setuptools configuration
+     - `__init__.py` - Package initialization with `__version__`
+   - Priority-based file detection (pyproject.toml > poetry.toml > setup.py > setup.cfg > **init**.py)
+   - Updates ALL existing config files to maintain version consistency
+
+2. **Detection Logic**:
+   - `detect()` - Searches for config files in priority order
+   - Supports both TOML and regex parsing:
+     - TOML files: Uses `parseFile()` helper with format='toml'
+     - Python files: Uses `parseFile()` helper with format='regex'
+   - Special handling for `__init__.py`:
+     - Name field is optional (may not have `__name__` variable)
+     - Falls back to directory basename when name not found
+     - Custom parsing logic to allow version-only detection
+   - Returns `Result<ProjectInfo, WorkspaceDetectionError>`
+
+3. **Update Logic**:
+   - `update()` - Updates all existing config files
+   - Format-specific updates:
+     - TOML files: Uses `versionPath` (e.g., `project.version`, `tool.poetry.version`)
+     - Python files: Uses `versionPattern` regex + `versionReplacement` template
+   - Replacement templates:
+     - setup.py: `version="$VERSION"` (double quotes)
+     - setup.cfg: `version = $VERSION` (no quotes)
+     - **init**.py: `__version__ = "$VERSION"` (double quotes)
+   - Returns `Result<void, FileOperationError>`
+
+4. **File Configuration**:
+   - Each file format defined in `FILE_CONFIGS` array:
+     - pyproject.toml: path `project.version` and `project.name`
+     - poetry.toml: path `tool.poetry.version` and `tool.poetry.name`
+     - setup.py: regex `/version\s*=\s*["']([^"']+)["']/m`
+     - setup.cfg: regex `/version\s*=\s*([^\s]+)/m`
+     - **init**.py: regex `/__version__\s*=\s*["']([^"']+)["']/m`
+
+5. **Error Handling**:
+   - No config file found - returns WorkspaceDetectionError
+   - Malformed TOML - skips to next file
+   - Missing version in file - tries next file
+   - Invalid version format - caught by isVersion() guard
+   - File without name (**init**.py) - falls back to directory name
+
+**Tests**:
+
+- Created `PythonAdapter.spec.ts` with 36 test cases (100% passing)
+- Test groups:
+  - properties (3): type, supportedFiles, readonly enforcement
+  - detect (20):
+    - pyproject.toml (3): basic, pre-release, additional metadata
+    - poetry.toml (2): basic, with dependencies
+    - setup.py (3): basic, single quotes, various whitespace
+    - setup.cfg (2): basic, with metadata
+    - **init**.py (3): basic, single quotes, directory name fallback
+    - priority order (4): all pairwise priority tests
+    - error handling (3): no file, invalid TOML skip, missing version skip
+  - update (11):
+    - single file updates (5): all 5 file types
+    - multi-file updates (2): multiple files, TOML files together
+    - error handling (2): no file, update failure
+    - version format preservation (2): pre-release, build metadata
+  - integration tests (2):
+    - detect and update workflow
+    - real-world project structure with multiple files
+
+**Validation**:
+
+- ✅ src/core/adapters/PythonAdapter.ts created (300 lines)
+- ✅ Detect from pyproject.toml, poetry.toml, setup.py, setup.cfg, **init**.py
+- ✅ Support multiple file formats (TOML and Python regex)
+- ✅ Update all matching files for version consistency
+- ✅ Special handling for **init**.py (optional name field)
+- ✅ Priority-based detection (pyproject.toml first, **init**.py last)
+- ✅ Unit tests with all 5 file types (36 tests passing)
+- ✅ Test with real Python project structures
+- ✅ Type-check passes (0 errors)
+- ✅ All 449 tests passing (36 new + 413 existing)
+
+**Design Decisions**:
+
+- Used array of file configs for maintainability and extensibility
+- TOML files use dot-notation paths (e.g., `tool.poetry.version`)
+- Regex patterns support both single and double quotes
+- `$VERSION` placeholder in replacement templates for FileUpdater
+- Special handling for **init**.py to support version-only files
+- Updates ALL found files (not just first) to prevent version drift
+- Skips invalid files instead of failing early (tries all options)
+
+---
+
 ## Quality Metrics
 
 | Metric        | Target | Current | Status |
@@ -991,7 +1094,7 @@ Created Node.js workspace adapter in `src/core/adapters/NodeAdapter.ts` (182 lin
 
 ## Files Created
 
-### Source Files (21)
+### Source Files (22)
 
 - `tsconfig.json` - TypeScript configuration
 - `src/types/version.ts` - Version type definitions (63 lines)
@@ -1013,10 +1116,11 @@ Created Node.js workspace adapter in `src/core/adapters/NodeAdapter.ts` (182 lin
 - `src/parsers/FileUpdater.ts` - Generic file updater (361 lines)
 - `src/core/adapters/BaseAdapter.ts` - Base workspace adapter class (155 lines)
 - `src/core/adapters/NodeAdapter.ts` - Node.js workspace adapter (182 lines)
+- `src/core/adapters/PythonAdapter.ts` - Python workspace adapter (300 lines)
 - `src/core/adapters/TextAdapter.ts` - Text workspace adapter (171 lines)
 - `test/fixtures/repos/setup.ts` - Test repository setup utilities (318 lines)
 
-### Test Files (16)
+### Test Files (17)
 
 - `src/types/version.spec.ts` - Version type tests (51 lines, 8 tests)
 - `src/utils/errors.spec.ts` - Error class tests (147 lines, 21 tests)
@@ -1032,6 +1136,7 @@ Created Node.js workspace adapter in `src/core/adapters/NodeAdapter.ts` (182 lin
 - `src/parsers/FileUpdater.spec.ts` - File updater tests (651 lines, 34 tests)
 - `src/core/adapters/BaseAdapter.spec.ts` - Base adapter tests (150 lines, 16 tests)
 - `src/core/adapters/NodeAdapter.spec.ts` - Node.js adapter tests (280 lines, 25 tests)
+- `src/core/adapters/PythonAdapter.spec.ts` - Python adapter tests (710 lines, 36 tests)
 - `src/core/adapters/TextAdapter.spec.ts` - Text adapter tests (298 lines, 33 tests)
 - `test/fixtures/repos/setup.test.ts` - Repository setup tests (163 lines, 16 tests)
 
@@ -1062,32 +1167,38 @@ Created Node.js workspace adapter in `src/core/adapters/NodeAdapter.ts` (182 lin
 ## Last Activity
 
 **Date**: 2025-01-18
-**Task**: TSK-013 Node.js Workspace Adapter
+**Task**: TSK-014 Python Workspace Adapter
 **Status**: ✅ Completed
-**Test Results**: 413/413 passing (25 new tests + 388 existing)
+**Test Results**: 449/449 passing (36 new tests + 413 existing)
 **Type Check**: 0 errors
 
 Key achievements:
 
-- Created Node.js workspace adapter extending BaseAdapter
-- Supports both package.json (npm/yarn/pnpm) and jsr.json (JSR registry)
-- Priority-based file detection with automatic consistency updates
-- 25 comprehensive tests covering detection, updates, errors, and integration
-- First concrete language-specific adapter implementation
+- Created Python workspace adapter supporting 5 configuration formats
+- Supports pyproject.toml, poetry.toml, setup.py, setup.cfg, **init**.py
+- Priority-based detection with multi-file version consistency
+- Special **init**.py handling with directory basename fallback
+- 36 comprehensive tests covering all formats, priority, and edge cases
+
+---
 
 ---
 
 ## Next Steps
 
-### Adapters Phase (In Progress - 50% Complete)
+### Adapters Phase (In Progress - 58% Complete)
 
 Foundation Phase Complete! ✅
 Parsers Phase Complete! ✅
+Base Adapter Complete! ✅
+Node.js Adapter Complete! ✅
+Python Adapter Complete! ✅
+Text Adapter Complete! ✅
 
 Next up:
 
-1. **TSK-014: Python Workspace Adapter** (3h) - Implement Python-specific adapter
-2. **TSK-015-018: Other Language Adapters** (8h) - Deno, Go, Rust, Zig
+1. **TSK-015: Deno Workspace Adapter** (2h) - Implement Deno/JSR adapter (deno.json, deno.jsonc, jsr.json)
+2. **TSK-016-018: Other Language Adapters** (6h) - Go (go.mod), Rust (Cargo.toml), Zig (build.zig)
 3. **TSK-020: Workspace Adapter Factory** (2h) - Adapter instantiation factory
 
 ---
