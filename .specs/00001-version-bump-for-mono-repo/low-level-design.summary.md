@@ -1,8 +1,8 @@
 # Implementation Summary: Bumpalicious TypeScript Migration
 
 **Plan ID**: PLAN-001
-**Last Updated**: 2025-10-18
-**Status**: In Progress (Foundation Phase)
+**Last Updated**: 2025-01-18
+**Status**: In Progress (Adapters Phase)
 
 ---
 
@@ -11,11 +11,11 @@
 | Phase               | Tasks      | Status      | Completion |
 | ------------------- | ---------- | ----------- | ---------- |
 | Foundation          | TSK-001-08 | Completed   | 100%       |
-| Adapters            | TSK-009-20 | In Progress | 25%        |
+| Adapters            | TSK-009-20 | In Progress | 33%        |
 | Services            | TSK-021-24 | Not Started | 0%         |
 | Core Logic          | TSK-025-27 | Not Started | 0%         |
 | Orchestration & E2E | TSK-028-30 | Not Started | 0%         |
-| **Overall**         | **30**     | **37%**     | **11/30**  |
+| **Overall**         | **30**     | **40%**     | **12/30**  |
 
 ---
 
@@ -495,6 +495,109 @@ Created generic file parser in `src/parsers/FileParser.ts` (392 lines):
 
 ---
 
+### ✅ TSK-011: Generic File Updater (3h)
+
+**Completed**: 2025-10-18
+
+**Deliverables**:
+
+Created generic file updater in `src/parsers/FileUpdater.ts` (361 lines):
+
+1. **Main Updater Functions**:
+   - `updateJsonFile(filePath, newVersion, versionPath)` - Update JSON config files with nested path support
+   - `updateTomlFile(filePath, newVersion, versionPath)` - Update TOML config files (Cargo.toml, pyproject.toml)
+   - `updateRegexFile(filePath, newVersion, versionPattern, versionReplacement)` - Update with regex patterns
+   - `configUpdater(filePath, newVersion, config)` - Generic updater delegating to format-specific updaters
+
+2. **Supported Formats**:
+   - **JSON**: `package.json`, `jsr.json`, `deno.json` with nested paths (e.g., `project.version`)
+   - **TOML**: `Cargo.toml`, `pyproject.toml`, `poetry.toml` with section.field notation
+   - **Regex**: `setup.py`, `__init__.py`, `setup.cfg`, `go.mod` with pattern replacement
+
+3. **Nested Path Support**:
+   - Dot-separated paths for JSON/TOML (e.g., `tool.poetry.version`, `metadata.project.info.version`)
+   - `setNestedValue()` helper function for safe object modification
+   - `getNestedValue()` helper function for validation before update
+
+4. **Safety Features**:
+   - Validates existing version before updating (prevents updates to non-version files)
+   - Checks version format using `isVersion()` guard
+   - Returns error if version field not found or invalid
+   - Verifies content changed after regex replacement
+   - No file created if update fails (rollback on error)
+
+5. **Error Handling**:
+   - Returns `Result<void, FileOperationError>` for all operations
+   - Malformed file detection (JSON syntax errors, TOML parse errors)
+   - Missing field validation with detailed error messages
+   - File I/O error handling with context preservation
+   - Pattern match failure detection
+
+6. **Version Replacement**:
+   - JSON/TOML: Direct object property assignment with nested path support
+   - Regex: Template-based replacement using `$VERSION` placeholder
+   - Preserves JSON formatting (2-space indent, trailing newline)
+   - TOML serialization via `@iarna/toml.stringify()`
+
+**Tests**:
+
+- Created `FileUpdater.spec.ts` with 34 test cases (100% passing)
+- Test groups:
+  - updateJsonFile (8 tests):
+    - Simple and nested path updates
+    - Pre-release version handling
+    - Error cases (non-existent file, no version, malformed JSON)
+    - Deep nesting validation (3+ levels)
+    - JSON formatting preservation
+  - updateTomlFile (6 tests):
+    - Cargo.toml, pyproject.toml, poetry.toml updates
+    - Nested section paths (e.g., `tool.poetry.version`)
+    - Error cases (no file, no version, malformed TOML)
+  - updateRegexFile (7 tests):
+    - Python setup.py, \_\_init\_\_.py updates
+    - Go version comment updates
+    - Pre-release versions
+    - Multiple `$VERSION` placeholders
+    - Error cases (pattern mismatch, no file)
+  - configUpdater (8 tests):
+    - Delegation to format-specific updaters
+    - Default path handling
+    - Unsupported format errors
+    - Missing required fields for regex
+  - rollback scenarios (2 tests):
+    - No file modification on failure
+    - No file creation if doesn't exist
+  - edge cases (3 tests):
+    - Empty version paths
+    - Complex version strings (build metadata)
+    - Path with only dots
+
+**Validation**:
+
+- ✅ src/parsers/FileUpdater.ts created (361 lines)
+- ✅ Support JSON updates with nested paths
+- ✅ Support TOML updates with section notation
+- ✅ Support regex-based updates with template replacement
+- ✅ Validate existing version before update (safety check)
+- ✅ Return `Result<void, FileOperationError>` type
+- ✅ Unit tests with real file operations (34 tests passing)
+- ✅ Test rollback scenarios (file unchanged on error)
+- ✅ Type-check passes (0 errors)
+- ✅ All 372 tests passing (34 new + 338 existing)
+
+**Design Decisions**:
+
+- Removed dependency on parser functions for validation (caused issues with missing name fields)
+- Instead, updaters directly validate version field exists and is valid before updating
+- This makes updaters more independent and allows them to work without knowing the full file structure
+- Used same TOML library (`@iarna/toml`) for consistency with parser
+- Created separate updater per format for clarity and focused testing
+- `configUpdater` acts as factory/delegator based on `UpdaterConfig.format`
+- Error messages include full context (file path, operation, field path) for debugging
+- Rollback is implicit - files only written after all validations pass
+
+---
+
 ## Test Infrastructure Updates
 
 **Modified**: `vitest.config.js`
@@ -506,9 +609,9 @@ Created generic file parser in `src/parsers/FileParser.ts` (392 lines):
 **Test Results**:
 
 ```text
-Test Files  13 passed (13)
-Tests       338 passed (338)
-Duration    ~603ms
+Test Files  14 passed (14)
+Tests       372 passed (372)
+Duration    ~612ms
 ```
 
 **Test Count Progression**:
@@ -516,8 +619,9 @@ Duration    ~603ms
 - TSK-008: 262 tests (Foundation Phase complete)
 - TSK-009: +53 tests (ConventionalCommitParser)
 - TSK-010: +43 tests (FileParser)
+- TSK-011: +34 tests (FileUpdater)
 - TSK-019: +33 tests (TextAdapter) - **Note**: Implemented out of sequence
-- Total: 338 tests passing
+- Total: 372 tests passing
 
 ---
 
@@ -755,7 +859,7 @@ Created workspace input parser in `src/utils/workspace-parser.ts`:
 
 ## Files Created
 
-### Source Files (18)
+### Source Files (19)
 
 - `tsconfig.json` - TypeScript configuration
 - `src/types/version.ts` - Version type definitions (63 lines)
@@ -774,10 +878,11 @@ Created workspace input parser in `src/utils/workspace-parser.ts`:
 - `src/parsers/fixtures/commit-messages.ts` - Commit message fixtures (203 lines)
 - `src/parsers/ConventionalCommitParser.ts` - Conventional commit parser (230 lines)
 - `src/parsers/FileParser.ts` - Generic file parser (392 lines)
+- `src/parsers/FileUpdater.ts` - Generic file updater (361 lines)
 - `src/core/adapters/TextAdapter.ts` - Text workspace adapter (171 lines)
 - `test/fixtures/repos/setup.ts` - Test repository setup utilities (318 lines)
 
-### Test Files (13)
+### Test Files (14)
 
 - `src/types/version.spec.ts` - Version type tests (51 lines, 8 tests)
 - `src/utils/errors.spec.ts` - Error class tests (147 lines, 21 tests)
@@ -790,6 +895,7 @@ Created workspace input parser in `src/utils/workspace-parser.ts`:
 - `src/parsers/fixtures/commit-messages.spec.ts` - Commit message fixture tests (183 lines, 16 tests)
 - `src/parsers/ConventionalCommitParser.spec.ts` - Conventional commit parser tests (303 lines, 53 tests)
 - `src/parsers/FileParser.spec.ts` - File parser tests (508 lines, 43 tests)
+- `src/parsers/FileUpdater.spec.ts` - File updater tests (651 lines, 34 tests)
 - `src/core/adapters/TextAdapter.spec.ts` - Text adapter tests (298 lines, 33 tests)
 - `test/fixtures/repos/setup.test.ts` - Repository setup tests (163 lines, 16 tests)
 
@@ -817,18 +923,36 @@ Created workspace input parser in `src/utils/workspace-parser.ts`:
 
 ---
 
+## Last Activity
+
+**Date**: 2025-01-XX
+**Task**: TSK-011 Generic File Updater
+**Status**: ✅ Completed
+**Test Results**: 372/372 passing (34 new tests + 338 existing)
+**Type Check**: 0 errors
+
+Key achievements:
+
+- Implemented updateJsonFile, updateTomlFile, updateRegexFile, configUpdater
+- 34 comprehensive tests covering all formats and edge cases
+- Refactored from parser-based to direct validation approach
+- Validates existing version before updating (safety first)
+- Supports nested paths for JSON/TOML (e.g., "package.version")
+
+---
+
 ## Next Steps
 
-### Adapters Phase (In Progress)
+### Adapters Phase (In Progress - 33% Complete)
 
 Foundation Phase Complete! ✅
+Parsers Phase Complete! ✅
 
 Next up:
 
-1. **TSK-011: Generic File Updater** (3h) - Update version in various formats
-2. **TSK-012: Base Workspace Adapter** (3h) - Abstract adapter class
-3. **TSK-013-018: Language-specific Adapters** (12h) - Node, Python, Deno, Go, Rust, Zig
-4. **TSK-020: Workspace Adapter Factory** (2h) - Adapter instantiation factory
+1. **TSK-012: Base Workspace Adapter** (3h) - Abstract adapter class (CRITICAL PATH)
+2. **TSK-013-018: Language-specific Adapters** (12h) - Node, Python, Deno, Go, Rust, Zig
+3. **TSK-020: Workspace Adapter Factory** (2h) - Adapter instantiation factory
 
 ---
 
@@ -852,7 +976,3 @@ Next up:
 - Using branded types for domain-specific strings (Version)
 - Result<T, E> pattern for functional error handling
 - Test-first approach with unit tests alongside implementation
-
----
-
-**Last Activity**: Completed TSK-010 (Generic File Parser). Implemented comprehensive file parser with JSON, TOML, and regex support. Handles nested paths for JSON/TOML (e.g., `project.version`, `tool.poetry.version`). All 43 new tests passing (338 total). Adapters phase now 25% complete (3/12 tasks). Next: TSK-011 (Generic File Updater).
