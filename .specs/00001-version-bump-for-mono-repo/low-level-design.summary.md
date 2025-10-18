@@ -10,12 +10,12 @@
 
 | Phase               | Tasks      | Status      | Completion |
 | ------------------- | ---------- | ----------- | ---------- |
-| Foundation          | TSK-001-08 | In Progress | 63%        |
+| Foundation          | TSK-001-08 | In Progress | 75%        |
 | Adapters            | TSK-009-20 | Not Started | 0%         |
 | Services            | TSK-021-24 | Not Started | 0%         |
 | Core Logic          | TSK-025-27 | Not Started | 0%         |
 | Orchestration & E2E | TSK-028-30 | Not Started | 0%         |
-| **Overall**         | **30**     | **17%**     | **5/30**   |
+| **Overall**         | **30**     | **20%**     | **6/30**   |
 
 ---
 
@@ -164,9 +164,9 @@ Created error hierarchy in `src/utils/errors.ts`:
 **Test Results**:
 
 ```text
-Test Files  4 passed (4)
-Tests       71 passed (71)
-Duration    425ms
+Test Files  5 passed (5)
+Tests       111 passed (111)
+Duration    350ms
 ```
 
 ---
@@ -280,6 +280,59 @@ Created retry logic utility in `src/utils/retry.ts`:
 
 ---
 
+### ✅ TSK-006: Input Validation with Zod (3h)
+
+**Completed**: 2025-10-18
+
+**Deliverables**:
+
+Created runtime input validation utility in `src/utils/validators.ts`:
+
+1. **Zod Schemas**:
+   - `WorkspaceTypeSchema` - Enum schema for 7 workspace types (node, python, deno, go, rust, zig, text)
+   - `WorkspaceConfigSchema` - Object schema with path and type validation
+   - `ActionInputsSchema` - Complete schema for all 13 action input fields
+   - Security: Path validation prevents ".." directory traversal
+
+2. **Validation Functions**:
+   - `validateInputs(inputs)` - Validates action inputs, throws InvalidConfigurationError
+   - `validateWorkspaceConfig(config)` - Validates single workspace configuration
+   - `validateWorkspaceConfigs(configs)` - Validates array of workspace configs with index tracking
+   - All functions provide detailed error messages with field paths
+
+3. **Error Handling**:
+   - Wraps Zod validation errors as InvalidConfigurationError
+   - Includes field paths in error messages (e.g., "token: GitHub token is required")
+   - Handles array validation with index information (e.g., "workspaces[1] is invalid")
+   - Catches and wraps unknown errors gracefully
+
+**Tests**:
+
+- Created `validators.spec.ts` with 40 test cases
+- All tests passing (40/40)
+- Test groups:
+  - WorkspaceTypeSchema: 2 tests (valid/invalid types)
+  - WorkspaceConfigSchema: 7 tests (valid configs, empty paths, security, missing fields)
+  - ActionInputsSchema: 14 tests (all fields, empty strings, type validation)
+  - validateInputs: 5 tests (valid data, errors, error messages, multiple errors)
+  - validateWorkspaceConfig: 5 tests (valid/invalid, error messages, security)
+  - validateWorkspaceConfigs: 7 tests (arrays, empty arrays, invalid items, index tracking)
+- Coverage: 100% for validation utilities
+
+**Validation**:
+
+- ✅ src/utils/validators.ts created with Zod schemas
+- ✅ WorkspaceTypeSchema enum defined for all 7 types
+- ✅ WorkspaceConfigSchema object with path security validation
+- ✅ ActionInputsSchema object with all 13 required fields
+- ✅ validateInputs function with detailed error messages
+- ✅ validateWorkspaceConfig and validateWorkspaceConfigs functions
+- ✅ Meaningful error messages with field paths and context
+- ✅ Unit tests covering valid/invalid inputs and edge cases
+- ✅ Ready for integration with action input parsing
+
+---
+
 ## Quality Metrics
 
 | Metric        | Target | Current | Status |
@@ -294,7 +347,7 @@ Created retry logic utility in `src/utils/retry.ts`:
 
 ## Files Created
 
-### Source Files (10)
+### Source Files (11)
 
 - `tsconfig.json` - TypeScript configuration
 - `src/types/version.ts` - Version type definitions (63 lines)
@@ -306,13 +359,15 @@ Created retry logic utility in `src/utils/retry.ts`:
 - `src/utils/errors.ts` - Error class hierarchy (167 lines)
 - `src/utils/logger.ts` - Structured logging with Pino (123 lines)
 - `src/utils/retry.ts` - Retry logic with exponential backoff (185 lines)
+- `src/utils/validators.ts` - Runtime validation with Zod (133 lines)
 
-### Test Files (4)
+### Test Files (5)
 
 - `src/types/version.spec.ts` - Version type tests (51 lines, 8 tests)
 - `src/utils/errors.spec.ts` - Error class tests (147 lines, 21 tests)
 - `src/utils/logger.spec.ts` - Logger utility tests (237 lines, 20 tests)
 - `src/utils/retry.spec.ts` - Retry utility tests (476 lines, 22 tests)
+- `src/utils/validators.spec.ts` - Validation utility tests (329 lines, 40 tests)
 
 ### Modified Files (2)
 
@@ -342,9 +397,8 @@ Created retry logic utility in `src/utils/retry.ts`:
 
 ### Immediate (Foundation Phase)
 
-1. **TSK-006: Input Validation with Zod** (3h) - Runtime input validation
-2. **TSK-007: Workspace Input Parser** (2h) - Parse workspace input string
-3. **TSK-008: Test Fixtures Setup** (2h) - Create reusable test fixtures
+1. **TSK-007: Workspace Input Parser** (2h) - Parse workspace input string
+2. **TSK-008: Test Fixtures Setup** (2h) - Create reusable test fixtures
 
 ### Next Phase (Adapters)
 
@@ -377,4 +431,4 @@ Created retry logic utility in `src/utils/retry.ts`:
 
 ---
 
-**Last Activity**: Completed foundation tasks TSK-001 through TSK-005 with 100% test coverage and zero type errors. Next: TSK-006 (Input Validation with Zod).
+**Last Activity**: Completed foundation tasks TSK-001 through TSK-006 with 100% test coverage and zero type errors. Next: TSK-007 (Workspace Input Parser).

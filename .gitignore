@@ -1,6 +1,9 @@
 # CwAI Files
-.cwai
+.cwai/
 .github/prompts/
+
+# Codacy
+.codacy/
 
 # Env files
 .env*
