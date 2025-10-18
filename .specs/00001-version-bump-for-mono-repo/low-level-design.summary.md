@@ -11,11 +11,11 @@
 | Phase               | Tasks      | Status      | Completion |
 | ------------------- | ---------- | ----------- | ---------- |
 | Foundation          | TSK-001-08 | Completed   | 100%       |
-| Adapters            | TSK-009-20 | Not Started | 0%         |
+| Adapters            | TSK-009-20 | In Progress | 8%         |
 | Services            | TSK-021-24 | Not Started | 0%         |
 | Core Logic          | TSK-025-27 | Not Started | 0%         |
 | Orchestration & E2E | TSK-028-30 | Not Started | 0%         |
-| **Overall**         | **30**     | **27%**     | **8/30**   |
+| **Overall**         | **30**     | **30%**     | **9/30**   |
 
 ---
 
@@ -231,6 +231,85 @@ Created comprehensive test fixtures for unit and integration tests:
 
 ---
 
+### ✅ TSK-009: Conventional Commit Parser (4h)
+
+**Completed**: 2025-10-18
+
+**Deliverables**:
+
+Created conventional commit parser in `src/parsers/ConventionalCommitParser.ts` (230 lines):
+
+1. **Main Parser Function**:
+   - `parseConventionalCommit(message)` - Parse single commit message to `CommitAnalysis` or null
+   - Returns null for non-bumping commits (chore, docs, style, refactor, test, perf, ci, build, revert)
+   - Returns null for invalid/non-conventional commits
+   - Extracts type, scope, breaking change markers, pre-release identifiers
+
+2. **Bump Type Detection**:
+   - `feat:` → minor bump
+   - `fix:` → patch bump
+   - `feat!:` or `BREAKING CHANGE:` → major bump
+   - Handles scopes: `feat(api):`, `fix(auth)!:`
+   - Non-bumping types return null (no version bump)
+
+3. **Breaking Change Detection**:
+   - Exclamation mark: `feat!:`, `fix(scope)!:`
+   - Footer format: `BREAKING CHANGE: description`
+   - Body format: `BREAKING CHANGE:` in commit body
+   - Case-insensitive matching with hyphen support: `BREAKING-CHANGE:`
+
+4. **Pre-Release Identifier Extraction**:
+   - Pattern: `pre-release:alpha`, `pre-release:beta`, `pre-release:rc`
+   - Case-insensitive matching
+   - Validates against allowed identifiers (alpha, beta, rc)
+   - Invalid identifiers treated as non-bumping commits
+
+5. **Batch Processing**:
+   - `parseCommitMessages(messages)` - Parse multiple commits and determine highest bump
+   - Priority: major > minor > patch
+   - Aggregates scopes from all commits
+   - Tracks breaking changes across commits
+   - Uses last encountered pre-release identifier
+   - Returns null if no bumping commits found
+
+**Tests**:
+
+- Created `ConventionalCommitParser.spec.ts` with 53 test cases (100% passing)
+- Test groups:
+  - parseConventionalCommit:
+    - Feature commits (3 tests) - basic, with scope, with body
+    - Fix commits (3 tests) - basic, with scope, with body
+    - Breaking changes (6 tests) - exclamation, footer, body, with scope
+    - Pre-release commits (4 tests) - alpha, beta, rc, with breaking
+    - Non-bumping commits (9 tests) - all non-bump types return null
+    - Invalid commits (5 tests) - non-conventional, empty, whitespace
+    - Edge cases (3 tests) - multiple scopes, whitespace, message preservation
+  - parseCommitMessages:
+    - Single commit (3 tests)
+    - Multiple commits - bump priority (4 tests) - major > minor > patch
+    - Only fixes (1 test)
+    - With features (1 test)
+    - Non-bumping commits (2 tests)
+    - Pre-release handling (2 tests)
+    - Scope aggregation (2 tests)
+    - Breaking change tracking (2 tests)
+    - Edge cases (3 tests) - empty array, large commits, message format
+
+**Validation**:
+
+- ✅ src/parsers/ConventionalCommitParser.ts created
+- ✅ Parse `feat:` → minor bump
+- ✅ Parse `fix:` → patch bump
+- ✅ Parse `BREAKING CHANGE:` or `feat!:` → major bump
+- ✅ Parse `pre-release:identifier` → extract identifier (alpha, beta, rc)
+- ✅ Handle scopes (e.g., `feat(api):`, `fix(auth)!:`)
+- ✅ Return `CommitAnalysis` object with type, breaking, scope, preRelease, message
+- ✅ Unit tests covering all patterns (53 tests passing)
+- ✅ Test pre-release scenarios (alpha, beta, rc)
+- ✅ Test edge cases (multiple scopes, whitespace, large batches)
+
+---
+
 ## Test Infrastructure Updates
 
 **Modified**: `vitest.config.js`
@@ -242,9 +321,9 @@ Created comprehensive test fixtures for unit and integration tests:
 **Test Results**:
 
 ```text
-Test Files  10 passed (10)
-Tests       209 passed (209)
-Duration    ~500ms
+Test Files  11 passed (11)
+Tests       262 passed (262)
+Duration    ~550ms
 ```
 
 ---
@@ -483,7 +562,7 @@ Created workspace input parser in `src/utils/workspace-parser.ts`:
 
 ## Files Created
 
-### Source Files (16)
+### Source Files (17)
 
 - `tsconfig.json` - TypeScript configuration
 - `src/types/version.ts` - Version type definitions (63 lines)
@@ -500,9 +579,10 @@ Created workspace input parser in `src/utils/workspace-parser.ts`:
 - `src/core/fixtures/workspaces.ts` - Workspace test fixtures (186 lines)
 - `src/core/fixtures/versions.ts` - Version test fixtures (127 lines)
 - `src/parsers/fixtures/commit-messages.ts` - Commit message fixtures (203 lines)
+- `src/parsers/ConventionalCommitParser.ts` - Conventional commit parser (230 lines)
 - `test/fixtures/repos/setup.ts` - Test repository setup utilities (318 lines)
 
-### Test Files (10)
+### Test Files (11)
 
 - `src/types/version.spec.ts` - Version type tests (51 lines, 8 tests)
 - `src/utils/errors.spec.ts` - Error class tests (147 lines, 21 tests)
@@ -513,6 +593,7 @@ Created workspace input parser in `src/utils/workspace-parser.ts`:
 - `src/core/fixtures/workspaces.spec.ts` - Workspace fixture tests (130 lines, 13 tests)
 - `src/core/fixtures/versions.spec.ts` - Version fixture tests (146 lines, 19 tests)
 - `src/parsers/fixtures/commit-messages.spec.ts` - Commit message fixture tests (183 lines, 16 tests)
+- `src/parsers/ConventionalCommitParser.spec.ts` - Conventional commit parser tests (303 lines, 53 tests)
 - `test/fixtures/repos/setup.test.ts` - Repository setup tests (163 lines, 16 tests)
 
 ### Modified Files (2)
@@ -541,13 +622,17 @@ Created workspace input parser in `src/utils/workspace-parser.ts`:
 
 ## Next Steps
 
-### Next Phase (Adapters)
+### Adapters Phase (In Progress)
 
-**Foundation Phase Complete! ✅ All 8 foundation tasks completed.**
+Foundation Phase Complete! ✅
 
-1. **TSK-009: Conventional Commit Parser** (4h) - Parse commit messages
-2. **TSK-010-011: File Parser/Updater** (6h) - Generic file operations
-3. **TSK-012-020: Workspace Adapters** (20h) - Language-specific adapters
+1. **TSK-010: Generic File Parser** (3h) - Parse JSON, TOML, regex extraction
+2. **TSK-011: Generic File Updater** (3h) - Update version in various formats
+3. **TSK-012: Base Workspace Adapter** (3h) - Abstract adapter class
+
+4. **TSK-009: Conventional Commit Parser** (4h) - Parse commit messages
+5. **TSK-010-011: File Parser/Updater** (6h) - Generic file operations
+6. **TSK-012-020: Workspace Adapters** (20h) - Language-specific adapters
 
 ---
 
@@ -574,4 +659,4 @@ Created workspace input parser in `src/utils/workspace-parser.ts`:
 
 ---
 
-**Last Activity**: Completed all foundation tasks TSK-001 through TSK-008 (100% complete). Created comprehensive test fixtures for workspaces, versions, commit messages, and repository templates. Ready to begin Adapters phase with TSK-009 (Conventional Commit Parser).
+**Last Activity**: Completed TSK-009 (Conventional Commit Parser). Implemented parser for conventional commits with support for feat/fix, breaking changes, pre-release identifiers, and scopes. All 53 tests passing. Adapters phase now 8% complete (1/12 tasks). Next: TSK-010 (Generic File Parser).
