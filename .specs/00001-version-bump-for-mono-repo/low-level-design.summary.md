@@ -11,11 +11,11 @@
 | Phase               | Tasks      | Status      | Completion |
 | ------------------- | ---------- | ----------- | ---------- |
 | Foundation          | TSK-001-08 | Completed   | 100%       |
-| Adapters            | TSK-009-20 | In Progress | 67%        |
+| Adapters            | TSK-009-20 | In Progress | 75%        |
 | Services            | TSK-021-24 | Not Started | 0%         |
 | Core Logic          | TSK-025-27 | Not Started | 0%         |
 | Orchestration & E2E | TSK-028-30 | Not Started | 0%         |
-| **Overall**         | **30**     | **53%**     | **16/30**  |
+| **Overall**         | **30**     | **57%**     | **17/30**  |
 
 ---
 
@@ -1169,6 +1169,110 @@ Created Deno workspace adapter in `src/core/adapters/DenoAdapter.ts` (311 lines)
 
 ---
 
+### ✅ TSK-016: Go Workspace Adapter (2h)
+
+**Completed**: 2025-01-18
+
+**Deliverables**:
+
+Created Go workspace adapter in `src/core/adapters/GoAdapter.ts` (226 lines) extending BaseWorkspaceAdapter.
+
+1. **Supported File Formats**:
+   - `go.mod` - Go module file with version comment syntax
+   - `version.go` - Go source file with const or var declaration
+   - `version.txt` - Plain text file with version string
+
+2. **File Format Details**:
+   - **go.mod**: Version as comment with flexible syntax
+     - Pattern: `// [vV]ersion:? 1.2.3`
+     - Supports: `// version: 1.2.3`, `// Version 1.2.3`, `// version1.2.3`
+     - Also extracts module name from `module` directive
+   - **version.go**: Version as Go const or var
+     - Pattern: `const Version = "1.2.3"` or `var version = "1.2.3"`
+     - Supports both `const` and `var` keywords
+     - Case-insensitive variable names (Version, version, VERSION)
+   - **version.txt**: Plain text version (one line)
+     - Pattern: Simple version string, no metadata
+     - Special handling: Uses directory basename for package name (similar to Python `__init__.py`)
+
+3. **Detection Logic**:
+   - `detect()` - Searches for config files in priority order (go.mod > version.go > version.txt)
+   - Regex-based parsing for Go-specific syntax
+   - Special case for version.txt:
+     - Reads file directly (no name pattern available)
+     - Uses `basename(workspacePath)` for package name
+     - Validates version format with `isVersion()` guard
+   - Falls through to next file if parsing fails (resilient detection)
+   - Returns `Result<ProjectInfo, WorkspaceDetectionError>`
+
+4. **Update Logic**:
+   - `update()` - Updates all existing config files
+   - Format-specific handling:
+     - go.mod: Updates comment while preserving surrounding content
+     - version.go: Updates const/var value while preserving declaration style
+     - version.txt: Replaces entire file content with new version
+   - Preserves original formatting and whitespace
+   - Returns `Result<void, FileOperationError>`
+
+5. **File Configuration**:
+   - Each file format defined in `FILE_CONFIGS` array with `GoFileConfig` interface
+   - Properties: `filename`, `versionPattern` (regex), optional `namePattern` (regex)
+   - Replacement templates: `$VERSION` placeholder for new version
+   - Priority order reflects Go ecosystem conventions (go.mod primary, version.txt fallback)
+
+6. **Error Handling**:
+   - No config file found - returns WorkspaceDetectionError
+   - Invalid version format in any file - skips to next file
+   - Missing module name in go.mod - validation error
+   - Invalid regex pattern match - FileOperationError on update
+
+**Tests**:
+
+- Created `GoAdapter.spec.ts` with 30 test cases (100% passing)
+- Test groups:
+  - properties (2): type, supportedFiles
+  - detect (17):
+    - go.mod (4): basic comment, pre-release, capital V, no colon
+    - version.go (3): const declaration, var declaration, lowercase variable
+    - version.txt (3): basic version, with newline, pre-release
+    - priority order (3): go.mod > version.go, version.go > version.txt, fallback chain
+    - error handling (4): no file, invalid version, missing module, invalid format
+  - update (9):
+    - single file updates (3): one test per file format
+    - multi-file updates (2): partial combinations, all three together
+    - error handling (2): no file, pattern mismatch
+    - version format preservation (2): pre-release, build metadata
+  - integration tests (2):
+    - detect and update workflow
+    - real-world Go project with dependencies and build tags
+
+**Validation**:
+
+- ✅ src/core/adapters/GoAdapter.ts created (226 lines)
+- ✅ Detect from go.mod, version.go, version.txt
+- ✅ Support comment-based versioning in go.mod with flexible syntax
+- ✅ Support both const and var declarations in version.go
+- ✅ Handle plain text version.txt with directory basename
+- ✅ Update all matching files for version consistency
+- ✅ Priority-based detection (go.mod first, version.txt last)
+- ✅ Unit tests with all 3 file types (30 tests passing)
+- ✅ Test with real Go project structures
+- ✅ Type-check passes (0 errors)
+- ✅ All 509 tests passing (30 new + 479 existing)
+
+**Design Decisions**:
+
+- Array-based FILE_CONFIGS for maintainability (similar to Deno/Python adapters)
+- Regex patterns handle Go-specific syntax variations (flexible comment syntax, const/var)
+- version.txt uses directory basename approach (parallel to Python `__init__.py` strategy)
+- Special handling for version.txt required because plain text has no package metadata
+- Updates ALL found files (not just first) to prevent version drift across tooling
+- Skips invalid files instead of failing early (tries all options in priority order)
+- Priority order: go.mod preferred (primary Go tooling), version.txt as fallback
+- Comment syntax flexibility in go.mod (version:/Version:/version) for ecosystem compatibility
+
+---
+
 ## Quality Metrics
 
 | Metric        | Target | Current | Status |
@@ -1183,7 +1287,7 @@ Created Deno workspace adapter in `src/core/adapters/DenoAdapter.ts` (311 lines)
 
 ## Files Created
 
-### Source Files (23)
+### Source Files (25)
 
 - `tsconfig.json` - TypeScript configuration
 - `src/types/version.ts` - Version type definitions (63 lines)
@@ -1207,10 +1311,11 @@ Created Deno workspace adapter in `src/core/adapters/DenoAdapter.ts` (311 lines)
 - `src/core/adapters/NodeAdapter.ts` - Node.js workspace adapter (182 lines)
 - `src/core/adapters/PythonAdapter.ts` - Python workspace adapter (300 lines)
 - `src/core/adapters/DenoAdapter.ts` - Deno workspace adapter (311 lines)
+- `src/core/adapters/GoAdapter.ts` - Go workspace adapter (226 lines)
 - `src/core/adapters/TextAdapter.ts` - Text workspace adapter (171 lines)
 - `test/fixtures/repos/setup.ts` - Test repository setup utilities (318 lines)
 
-### Test Files (18)
+### Test Files (19)
 
 - `src/types/version.spec.ts` - Version type tests (51 lines, 8 tests)
 - `src/utils/errors.spec.ts` - Error class tests (147 lines, 21 tests)
@@ -1228,6 +1333,7 @@ Created Deno workspace adapter in `src/core/adapters/DenoAdapter.ts` (311 lines)
 - `src/core/adapters/NodeAdapter.spec.ts` - Node.js adapter tests (280 lines, 25 tests)
 - `src/core/adapters/PythonAdapter.spec.ts` - Python adapter tests (710 lines, 36 tests)
 - `src/core/adapters/DenoAdapter.spec.ts` - Deno adapter tests (600 lines, 30 tests)
+- `src/core/adapters/GoAdapter.spec.ts` - Go adapter tests (540 lines, 30 tests)
 - `src/core/adapters/TextAdapter.spec.ts` - Text adapter tests (298 lines, 33 tests)
 - `test/fixtures/repos/setup.test.ts` - Repository setup tests (163 lines, 16 tests)
 
@@ -1258,19 +1364,20 @@ Created Deno workspace adapter in `src/core/adapters/DenoAdapter.ts` (311 lines)
 ## Last Activity
 
 **Date**: 2025-01-18
-**Task**: TSK-015 Deno Workspace Adapter
+**Task**: TSK-016 Go Workspace Adapter
 **Status**: ✅ Completed
-**Test Results**: 479/479 passing (30 new tests + 449 existing)
+**Test Results**: 509/509 passing (30 new tests + 479 existing)
 **Type Check**: 0 errors
 
 Key achievements:
 
-- Created Deno workspace adapter with JSONC support
-- Supports deno.json, deno.jsonc (JSON with comments), jsr.json
-- Dynamic import for tiny-jsonc library to handle JSONC parsing
-- Priority-based detection (deno.jsonc > deno.json > jsr.json)
-- Multi-file updates for Deno runtime and JSR registry consistency
-- 30 comprehensive tests covering all formats, comments, and edge cases
+- Created Go workspace adapter supporting 3 file formats
+- Supports go.mod (comment-based), version.go (const/var), version.txt (plain text)
+- Regex-based parsing for Go-specific syntax variations
+- Priority-based detection (go.mod > version.go > version.txt)
+- Multi-file updates for consistency across different tooling
+- Special handling for version.txt using directory basename
+- 30 comprehensive tests covering all formats, priority order, and edge cases
 
 ---
 
@@ -1278,7 +1385,7 @@ Key achievements:
 
 ## Next Steps
 
-### Adapters Phase (In Progress - 67% Complete)
+### Adapters Phase (In Progress - 75% Complete)
 
 Foundation Phase Complete! ✅
 Parsers Phase Complete! ✅
@@ -1286,14 +1393,14 @@ Base Adapter Complete! ✅
 Node.js Adapter Complete! ✅
 Python Adapter Complete! ✅
 Deno Adapter Complete! ✅
+Go Adapter Complete! ✅
 Text Adapter Complete! ✅
 
 Next up:
 
-1. **TSK-016: Go Workspace Adapter** (2h) - Implement Go module adapter (go.mod with version comments)
-2. **TSK-017: Rust Workspace Adapter** (2h) - Implement Cargo adapter (Cargo.toml)
-3. **TSK-018: Zig Workspace Adapter** (2h) - Implement Zig adapter (build.zig)
-4. **TSK-020: Workspace Adapter Factory** (2h) - Adapter instantiation factory
+1. **TSK-017: Rust Workspace Adapter** (2h) - Implement Cargo adapter (Cargo.toml)
+2. **TSK-018: Zig Workspace Adapter** (2h) - Implement Zig adapter (build.zig)
+3. **TSK-020: Workspace Adapter Factory** (2h) - Adapter instantiation factory
 
 ---
 
