@@ -11,11 +11,11 @@
 | Phase               | Tasks      | Status      | Completion |
 | ------------------- | ---------- | ----------- | ---------- |
 | Foundation          | TSK-001-08 | Completed   | 100%       |
-| Adapters            | TSK-009-20 | In Progress | 75%        |
+| Adapters            | TSK-009-20 | In Progress | 83%        |
 | Services            | TSK-021-24 | Not Started | 0%         |
 | Core Logic          | TSK-025-27 | Not Started | 0%         |
 | Orchestration & E2E | TSK-028-30 | Not Started | 0%         |
-| **Overall**         | **30**     | **57%**     | **17/30**  |
+| **Overall**         | **30**     | **60%**     | **18/30**  |
 
 ---
 
@@ -1273,6 +1273,81 @@ Created Go workspace adapter in `src/core/adapters/GoAdapter.ts` (226 lines) ext
 
 ---
 
+### ✅ TSK-017: Rust Workspace Adapter (2h)
+
+**Completed**: 2025-01-18
+
+**Deliverables**:
+
+Created Rust workspace adapter in `src/core/adapters/RustAdapter.ts` (125 lines) extending BaseWorkspaceAdapter.
+
+1. **Supported File Format**:
+   - `Cargo.toml` - Rust package manifest file (TOML format)
+
+2. **File Format Details**:
+   - **Cargo.toml**: Standard Rust package configuration
+     - Parses `[package]` section
+     - Fields: `name` and `version`
+     - Path notation: `package.name` and `package.version`
+     - Supports semantic versioning including pre-release and build metadata
+
+3. **Detection Logic**:
+   - `detect()` - Checks for Cargo.toml existence
+   - Uses TOML parser from FileParser (already implemented in TSK-010)
+   - Simple, single-file detection (no priority order needed)
+   - Returns `Result<ProjectInfo, WorkspaceDetectionError>`
+
+4. **Update Logic**:
+   - `update()` - Updates version in Cargo.toml [package] section
+   - Uses TOML updater from FileUpdater (TSK-011)
+   - Preserves TOML structure and formatting
+   - Returns `Result<void, FileOperationError>`
+
+5. **Error Handling**:
+   - No Cargo.toml found - returns WorkspaceDetectionError with clear message
+   - Malformed TOML - error propagated from parser with context
+   - Missing version/name in [package] - validation error from parser
+   - Invalid version format - caught by isVersion() guard
+
+**Tests**:
+
+- Created `RustAdapter.spec.ts` with 23 test cases (100% passing)
+- Test groups:
+  - properties (2): type, supportedFiles
+  - detect (10):
+    - Cargo.toml (4): basic detection, pre-release, build metadata, with dependencies
+    - error handling (6): no file, malformed TOML, missing version, missing name, invalid version, non-existent dir
+  - update (9):
+    - successful updates (3): basic update, pre-release, structure preservation
+    - error handling (4): no file, malformed TOML, missing version, non-existent dir
+    - version format preservation (2): pre-release, build metadata
+  - integration tests (2):
+    - detect and update workflow
+    - real-world Cargo.toml with dependencies, dev-dependencies, profiles
+
+**Validation**:
+
+- ✅ src/core/adapters/RustAdapter.ts created (125 lines)
+- ✅ Detect from Cargo.toml [package] section
+- ✅ Parse TOML using existing FileParser infrastructure
+- ✅ Update version preserving TOML formatting
+- ✅ Unit tests with Cargo.toml fixtures (23 tests passing)
+- ✅ Test with real Rust project structures
+- ✅ Type-check passes (0 errors)
+- ✅ All 532 tests passing (23 new + 509 existing)
+
+**Design Decisions**:
+
+- Simplest adapter implementation (single file format, no special cases)
+- Leverages existing TOML parser/updater from TSK-010/TSK-011
+- No priority order needed (Cargo.toml is the only standard)
+- Follows same Result<T, E> pattern as other adapters
+- Error messages include full context for debugging
+- Standard semantic versioning support (pre-release, build metadata)
+- Integration with existing BaseWorkspaceAdapter infrastructure
+
+---
+
 ## Quality Metrics
 
 | Metric        | Target | Current | Status |
@@ -1287,7 +1362,7 @@ Created Go workspace adapter in `src/core/adapters/GoAdapter.ts` (226 lines) ext
 
 ## Files Created
 
-### Source Files (25)
+### Source Files (26)
 
 - `tsconfig.json` - TypeScript configuration
 - `src/types/version.ts` - Version type definitions (63 lines)
@@ -1312,10 +1387,11 @@ Created Go workspace adapter in `src/core/adapters/GoAdapter.ts` (226 lines) ext
 - `src/core/adapters/PythonAdapter.ts` - Python workspace adapter (300 lines)
 - `src/core/adapters/DenoAdapter.ts` - Deno workspace adapter (311 lines)
 - `src/core/adapters/GoAdapter.ts` - Go workspace adapter (226 lines)
+- `src/core/adapters/RustAdapter.ts` - Rust workspace adapter (125 lines)
 - `src/core/adapters/TextAdapter.ts` - Text workspace adapter (171 lines)
 - `test/fixtures/repos/setup.ts` - Test repository setup utilities (318 lines)
 
-### Test Files (19)
+### Test Files (20)
 
 - `src/types/version.spec.ts` - Version type tests (51 lines, 8 tests)
 - `src/utils/errors.spec.ts` - Error class tests (147 lines, 21 tests)
@@ -1334,6 +1410,7 @@ Created Go workspace adapter in `src/core/adapters/GoAdapter.ts` (226 lines) ext
 - `src/core/adapters/PythonAdapter.spec.ts` - Python adapter tests (710 lines, 36 tests)
 - `src/core/adapters/DenoAdapter.spec.ts` - Deno adapter tests (600 lines, 30 tests)
 - `src/core/adapters/GoAdapter.spec.ts` - Go adapter tests (540 lines, 30 tests)
+- `src/core/adapters/RustAdapter.spec.ts` - Rust adapter tests (450 lines, 23 tests)
 - `src/core/adapters/TextAdapter.spec.ts` - Text adapter tests (298 lines, 33 tests)
 - `test/fixtures/repos/setup.test.ts` - Repository setup tests (163 lines, 16 tests)
 
@@ -1364,20 +1441,19 @@ Created Go workspace adapter in `src/core/adapters/GoAdapter.ts` (226 lines) ext
 ## Last Activity
 
 **Date**: 2025-01-18
-**Task**: TSK-016 Go Workspace Adapter
+**Task**: TSK-017 Rust Workspace Adapter
 **Status**: ✅ Completed
-**Test Results**: 509/509 passing (30 new tests + 479 existing)
+**Test Results**: 532/532 passing (23 new tests + 509 existing)
 **Type Check**: 0 errors
 
 Key achievements:
 
-- Created Go workspace adapter supporting 3 file formats
-- Supports go.mod (comment-based), version.go (const/var), version.txt (plain text)
-- Regex-based parsing for Go-specific syntax variations
-- Priority-based detection (go.mod > version.go > version.txt)
-- Multi-file updates for consistency across different tooling
-- Special handling for version.txt using directory basename
-- 30 comprehensive tests covering all formats, priority order, and edge cases
+- Created Rust workspace adapter with single file format support
+- Parses Cargo.toml [package] section using TOML parser
+- Simple, clean implementation leveraging existing FileParser/FileUpdater
+- Preserves TOML structure and formatting on updates
+- 23 comprehensive tests covering detect, update, error handling, integration
+- Supports pre-release versions and build metadata
 
 ---
 
@@ -1385,7 +1461,7 @@ Key achievements:
 
 ## Next Steps
 
-### Adapters Phase (In Progress - 75% Complete)
+### Adapters Phase (In Progress - 83% Complete)
 
 Foundation Phase Complete! ✅
 Parsers Phase Complete! ✅
@@ -1394,13 +1470,13 @@ Node.js Adapter Complete! ✅
 Python Adapter Complete! ✅
 Deno Adapter Complete! ✅
 Go Adapter Complete! ✅
+Rust Adapter Complete! ✅
 Text Adapter Complete! ✅
 
 Next up:
 
-1. **TSK-017: Rust Workspace Adapter** (2h) - Implement Cargo adapter (Cargo.toml)
-2. **TSK-018: Zig Workspace Adapter** (2h) - Implement Zig adapter (build.zig)
-3. **TSK-020: Workspace Adapter Factory** (2h) - Adapter instantiation factory
+1. **TSK-018: Zig Workspace Adapter** (2h) - Implement Zig adapter (build.zig)
+2. **TSK-020: Workspace Adapter Factory** (2h) - Adapter instantiation factory
 
 ---
 
