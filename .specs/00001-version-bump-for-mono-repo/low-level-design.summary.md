@@ -2,7 +2,7 @@
 
 **Plan ID**: PLAN-001
 **Last Updated**: 2025-10-19
-**Status**: In Progress (Core Logic Phase)
+**Status**: In Progress (Orchestration Phase)
 
 ---
 
@@ -14,8 +14,8 @@
 | Adapters            | TSK-009-20 | Completed   | 100%       |
 | Services            | TSK-021-24 | Completed   | 100%       |
 | Core Logic          | TSK-025-27 | Completed   | 100%       |
-| Orchestration & E2E | TSK-028-30 | In Progress | 33%        |
-| **Overall**         | **30**     | **90%**     | **27/30**  |
+| Orchestration & E2E | TSK-028-30 | In Progress | 67%        |
+| **Overall**         | **30**     | **93%**     | **28/30**  |
 
 ---
 
@@ -1806,7 +1806,7 @@ Created workspace adapter factory in `src/core/adapters/AdapterFactory.ts` (169 
 
 ## Files Created
 
-### Source Files (36)
+### Source Files (37)
 
 - `tsconfig.json` - TypeScript configuration
 - `src/types/version.ts` - Version type definitions (63 lines)
@@ -1844,9 +1844,10 @@ Created workspace adapter factory in `src/core/adapters/AdapterFactory.ts` (169 
 - `src/core/VersionService.ts` - Version calculation service with pre-release support (324 lines)
 - `src/core/ChangelogService.ts` - Changelog generation service with conventional-changelog (374 lines)
 - `src/core/WorkspaceManager.ts` - Main workflow orchestration service (640 lines)
+- `src/index.ts` - GitHub Action entry point (181 lines)
 - `test/fixtures/repos/setup.ts` - Test repository setup utilities (318 lines)
 
-### Test Files (30)
+### Test Files (31)
 
 - `src/types/version.spec.ts` - Version type tests (51 lines, 8 tests)
 - `src/utils/errors.spec.ts` - Error class tests (147 lines, 21 tests)
@@ -1877,6 +1878,7 @@ Created workspace adapter factory in `src/core/adapters/AdapterFactory.ts` (169 
 - `src/core/VersionService.spec.ts` - Version calculation service tests (441 lines, 27 tests)
 - `src/core/ChangelogService.spec.ts` - Changelog generation service tests (537 lines, 16 tests)
 - `src/core/WorkspaceManager.spec.ts` - Workspace manager orchestration tests (569 lines, 20 tests)
+- `src/index.spec.ts` - Action entry point tests (30 tests)
 - `test/fixtures/repos/setup.test.ts` - Repository setup tests (163 lines, 16 tests)
 
 ### Modified Files (4)
@@ -2223,6 +2225,133 @@ Remaining Core Logic tasks: None - **Phase Complete!** 🎉
 | Build configuration    | ✅ Resolved | Using proven @templ-project configs         |
 | Test infrastructure    | ✅ Resolved | Vitest supports both .js and .ts            |
 | Breaking changes       | 🟡 Monitor  | Keep src-js/ intact during migration        |
+
+---
+
+### ✅ TSK-029: Action Entry Point (3h)
+
+**Completed**: 2025-10-19
+
+**Deliverables**:
+
+1. **src/index.ts** (181 lines):
+   - Main entry point for GitHub Action execution
+   - `getInputs()` - Read all action inputs from @actions/core
+   - `run()` - Main execution flow with 7 orchestration steps
+   - Integration with all services and utilities from previous tasks
+
+2. **GitHub Action Integration**:
+   - Uses `@actions/core` for input reading and output setting
+   - Uses `@actions/github` for repository context
+   - Reads 10 action inputs from action.yml:
+     - `github_token` (required) - GitHub authentication
+     - `workspaces` (default: ".:text") - Workspace configurations
+     - `pr` (default: false) - Create pull request flag
+     - `pr_auto_merge` (default: false) - Auto-merge PR flag
+     - `pr_message` (default: "chore: version update") - PR title
+     - `pr_version_prefix` (default: "version_bump") - PR branch prefix
+     - `branch` (default: "main") - Base branch for PR
+     - `changelog_preset` (default: "conventionalcommits") - Changelog format
+     - `short_tag` (default: false) - Create short version tags
+   - Sets 3 action outputs:
+     - `tag` - Created version tag name
+     - `version` - New version number
+     - `pr` - Pull request number (optional, if PR created)
+
+3. **Main Execution Flow**:
+   - **Step 1**: Read inputs from GitHub Actions environment
+   - **Step 2**: Validate inputs with Zod validators from TSK-006
+   - **Step 3**: Parse workspaces string with parseWorkspacesInput from TSK-007
+   - **Step 4**: Initialize GitHub context from github.context.repo
+   - **Step 5**: Initialize all services with dependency injection:
+     - GitHubService (token + repository context)
+     - GitService, PRService (depends on GitHubService)
+     - VersionService, ChangelogService, WorkspaceTreeBuilder (no dependencies)
+     - WorkspaceManager (orchestrates all services)
+   - **Step 6**: Execute workflow via WorkspaceManager.execute() with options
+   - **Step 7**: Set outputs (tag, version, pr) using core.setOutput()
+
+4. **Error Handling**:
+   - Try/catch wrapper around entire workflow
+   - Logs errors with core.error() and logger.error()
+   - Sets action failure status with core.setFailed()
+   - Structured error messages for debugging
+
+5. **Integration with Existing Infrastructure**:
+   - Uses `validateInputs()` from TSK-006 for runtime validation
+   - Uses `parseWorkspacesInput()` from TSK-007 for workspace parsing
+   - Uses all services: GitHubService (TSK-021), GitService (TSK-022), PRService (TSK-023), VersionService (TSK-026), ChangelogService (TSK-027), WorkspaceManager (TSK-028)
+   - Uses `logger` from TSK-004 for structured logging
+   - Uses `@actions/core` for action I/O
+   - Uses `@actions/github` for repository context
+
+**Tests**:
+
+- Created `index.spec.ts` with 30 test cases (100% passing)
+- Test groups:
+  - input reading (3 tests): required token, default values, boolean inputs
+  - output setting (3 tests): tag, version, pr outputs
+  - error handling (4 tests): setFailed, error logging, Error objects, non-Error objects
+  - logging (4 tests): startGroup/endGroup, info, debug, notice messages
+  - GitHub context (3 tests): repository owner/name, commit SHA, ref
+  - input validation (3 tests): workspace format, single workspace, changelog presets
+  - workflow options (3 tests): PR options, tag options, repository context
+  - success scenarios (3 tests): without PR, with PR, multiple tags
+  - error scenarios (4 tests): validation error, service initialization, workflow execution, stack trace logging
+- Mocked @actions/core and @actions/github for isolated unit testing
+- All scenarios validated with proper mock assertions
+
+**Validation**:
+
+- ✅ src/index.ts created (181 lines)
+- ✅ src/index.spec.ts created with 30 comprehensive tests
+- ✅ Read inputs from @actions/core with proper types
+- ✅ Parse workspaces input with validation
+- ✅ Validate inputs with Zod schemas
+- ✅ Initialize all services with dependency injection
+- ✅ Execute WorkspaceManager.execute() workflow
+- ✅ Set outputs (tag, version, pr) with core.setOutput()
+- ✅ Handle errors with core.setFailed()
+- ✅ Log workflow with core.notice()
+- ✅ Unit tests with mocked @actions/core and services
+- ✅ Test error scenarios and edge cases
+- ✅ Type-check passes (0 errors)
+- ✅ All 783 tests passing (30 new + 753 existing)
+- ✅ **Orchestration Phase 67% Complete** - Second task finished! 🎯 (2/3 tasks)
+
+**Design Decisions**:
+
+- Separate getInputs() function for testability and clarity
+- run() as main async function with try/catch error boundary
+- Uses core.startGroup/endGroup for organized action logs
+- Sets outputs only on successful execution (inside try block)
+- Error messages include full stack trace in debug mode
+- Service initialization with explicit dependency injection (no service locator)
+- Repository context from @actions/github.context.repo (no manual parsing)
+- Boolean inputs use core.getBooleanInput for type safety
+- Structured logging with core.info/debug/notice for different log levels
+- WorkspaceManager receives all dependencies via constructor (testable, no globals)
+
+---
+
+## Last Activity
+
+**Date**: 2025-10-19
+**Task**: TSK-029 Action Entry Point
+**Status**: ✅ Completed
+**Test Results**: 783/783 passing (30 new tests + 753 existing)
+**Type Check**: 0 errors
+
+Key achievements:
+
+- Created main entry point for GitHub Action with complete integration
+- Implemented getInputs() reading all 10 action inputs from @actions/core
+- Implemented run() with 7-step orchestration workflow
+- Integration with all services and utilities from Foundation through Core Logic phases
+- Comprehensive error handling with core.setFailed() and structured logging
+- 30 comprehensive tests covering all scenarios and edge cases
+- **Orchestration Phase 67% Complete** - Second task finished! 🎯 (2/3 tasks)
+- **Only TSK-030 Integration & E2E Testing remains!**
 
 ---
 

@@ -1,0 +1,184 @@
+/**
+ * GitHub Action Entry Point
+ *
+ * Main entry point for the Bumpalicious GitHub Action.
+ * Orchestrates version bumping workflow by:
+ * 1. Reading and validating action inputs
+ * 2. Initializing required services
+ * 3. Executing workspace manager workflow
+ * 4. Setting action outputs
+ * 5. Handling errors appropriately
+ */
+
+import * as core from '@actions/core';
+import * as github from '@actions/github';
+import { parseWorkspacesInput } from './utils/workspace-parser.js';
+import { validateInputs } from './utils/validators.js';
+import { GitHubService } from './services/GitHubService.js';
+import { GitService } from './services/GitService.js';
+import { PRService } from './services/PRService.js';
+import { VersionService } from './core/VersionService.js';
+import { ChangelogService } from './core/ChangelogService.js';
+import { WorkspaceTreeBuilder } from './core/WorkspaceTreeBuilder.js';
+import { WorkspaceManager } from './core/WorkspaceManager.js';
+import { logger } from './utils/logger.js';
+import type { ChangelogPreset } from './core/ChangelogService.js';
+
+/**
+ * Read and parse action inputs
+ *
+ * @returns Validated action inputs
+ */
+function getInputs() {
+  const rawInputs = {
+    token: core.getInput('github_token', { required: true }),
+    workspaces: core.getInput('workspaces', { required: false }) || '.:text',
+    createPr: core.getBooleanInput('pr', { required: false }),
+    autoMerge: core.getBooleanInput('pr_auto_merge', { required: false }),
+    prBaseBranch: core.getInput('branch', { required: false }) || 'main',
+    prHeadBranch: core.getInput('pr_version_prefix', { required: false }) || 'version_bump',
+    prTitle: core.getInput('pr_message', { required: false }) || 'chore: version update',
+    prBody: '',
+    commitMessage: core.getInput('pr_message', { required: false }) || 'chore: version update',
+    tagPrefix: 'v',
+    createShortTags: core.getBooleanInput('short_tag', { required: false }),
+    changelogPreset: (core.getInput('changelog_preset', { required: false }) ||
+      'conventionalcommits') as ChangelogPreset,
+    debug: core.isDebug(),
+  };
+
+  // Log inputs (masking token)
+  core.debug(`Inputs: ${JSON.stringify({ ...rawInputs, token: '***' })}`);
+
+  return rawInputs;
+}
+
+/**
+ * Main action execution
+ */
+async function run(): Promise<void> {
+  try {
+    core.info('🚀 Starting Bumpalicious version bump workflow');
+
+    // Step 1: Read inputs
+    core.startGroup('📥 Reading inputs');
+    const inputs = getInputs();
+    core.info(`Workspaces: ${inputs.workspaces}`);
+    core.info(`Create PR: ${inputs.createPr}`);
+    core.info(`Auto-merge: ${inputs.autoMerge}`);
+    core.info(`Changelog preset: ${inputs.changelogPreset}`);
+    core.endGroup();
+
+    // Step 2: Validate inputs
+    core.startGroup('✅ Validating inputs');
+    validateInputs(inputs);
+    core.info('✓ Inputs validated successfully');
+    core.endGroup();
+
+    // Step 3: Parse workspaces
+    core.startGroup('📦 Parsing workspaces');
+    const workspaceConfigs = parseWorkspacesInput(inputs.workspaces);
+    core.info(`Found ${workspaceConfigs.length} workspace(s)`);
+    for (const config of workspaceConfigs) {
+      core.info(`  - ${config.path} (${config.type})`);
+    }
+    core.endGroup();
+
+    // Step 4: Initialize GitHub context
+    core.startGroup('🔧 Initializing services');
+    const { owner, repo } = github.context.repo;
+    core.info(`Repository: ${owner}/${repo}`);
+
+    // Step 5: Initialize services
+    const githubService = new GitHubService(inputs.token, {
+      repository: { owner, repo },
+    });
+
+    const gitService = new GitService(githubService);
+    const prService = new PRService(githubService);
+    const versionService = new VersionService();
+    const changelogService = new ChangelogService();
+    const treeBuilder = new WorkspaceTreeBuilder();
+
+    const workspaceManager = new WorkspaceManager({
+      gitService,
+      prService,
+      versionService,
+      changelogService,
+      treeBuilder,
+    });
+
+    core.info('✓ Services initialized');
+    core.endGroup();
+
+    // Step 6: Execute workflow
+    core.startGroup('⚡ Executing workflow');
+    const workflowOptions = {
+      workspaces: workspaceConfigs,
+      createPR: inputs.createPr,
+      prOptions: inputs.createPr
+        ? {
+            branchPrefix: inputs.prHeadBranch,
+            autoMerge: inputs.autoMerge,
+            draft: false,
+          }
+        : undefined,
+      tagOptions: {
+        shortTag: inputs.createShortTags,
+        tagPrefix: inputs.tagPrefix,
+      },
+      repository: {
+        owner,
+        repo,
+      },
+      changelogPreset: inputs.changelogPreset,
+    };
+
+    const result = await workspaceManager.execute(workflowOptions);
+    core.endGroup();
+
+    if (!result.ok) {
+      throw result.error;
+    }
+
+    // Step 7: Set outputs
+    core.startGroup('📤 Setting outputs');
+    const { tag, allTags, prNumber, tree } = result.value;
+
+    core.setOutput('tag', tag);
+    core.setOutput('version', tree.masterVersion);
+    if (prNumber) {
+      core.setOutput('pr', prNumber.toString());
+    }
+
+    core.info(`✓ Version tag: ${tag}`);
+    core.info(`✓ Version: ${tree.masterVersion}`);
+    if (allTags.length > 1) {
+      core.info(`✓ Additional tags: ${allTags.filter((t) => t !== tag).join(', ')}`);
+    }
+    if (prNumber) {
+      core.info(`✓ Pull Request: #${prNumber}`);
+    }
+    core.endGroup();
+
+    core.notice(`✨ Version bump successful: ${tree.masterVersion} (${tag})`);
+  } catch (error) {
+    // Handle errors
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+
+    core.error(`❌ Version bump failed: ${errorMessage}`);
+    if (errorStack) {
+      core.debug(`Stack trace: ${errorStack}`);
+    }
+
+    // Log to logger for structured logging
+    logger.error({ error, errorMessage }, 'Action execution failed');
+
+    // Set action as failed
+    core.setFailed(errorMessage);
+  }
+}
+
+// Execute the action
+run();
