@@ -92,3 +92,44 @@ export interface UpdateRefParams {
   readonly sha: string;
   readonly force?: boolean;
 }
+
+/**
+ * File content from repository
+ */
+export interface FileContent {
+  readonly path: string;
+  readonly content: string;
+  readonly encoding: 'base64' | 'utf-8';
+  readonly sha: string;
+  readonly size: number;
+}
+
+/**
+ * Parameters for getting file content
+ */
+export interface GetFileContentParams {
+  readonly path: string;
+  readonly ref?: string;
+}
+
+/**
+ * Parameters for updating file content
+ */
+export interface UpdateFileParams {
+  readonly path: string;
+  readonly content: string;
+  readonly message: string;
+  readonly sha?: string;
+  readonly branch?: string;
+}
+
+/**
+ * File update response
+ */
+export interface FileUpdateResponse {
+  readonly sha: string;
+  readonly commit: {
+    readonly sha: string;
+    readonly message: string;
+  };
+}

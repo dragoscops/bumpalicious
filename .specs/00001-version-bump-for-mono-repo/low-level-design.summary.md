@@ -12,10 +12,10 @@
 | ------------------- | ---------- | ----------- | ---------- |
 | Foundation          | TSK-001-08 | Completed   | 100%       |
 | Adapters            | TSK-009-20 | Completed   | 100%       |
-| Services            | TSK-021-24 | In Progress | 75%        |
+| Services            | TSK-021-24 | Completed   | 100%       |
 | Core Logic          | TSK-025-27 | Not Started | 0%         |
 | Orchestration & E2E | TSK-028-30 | Not Started | 0%         |
-| **Overall**         | **30**     | **77%**     | **23/30**  |
+| **Overall**         | **30**     | **80%**     | **24/30**  |
 
 ---
 
@@ -1806,13 +1806,13 @@ Created workspace adapter factory in `src/core/adapters/AdapterFactory.ts` (169 
 
 ## Files Created
 
-### Source Files (30)
+### Source Files (31)
 
 - `tsconfig.json` - TypeScript configuration
 - `src/types/version.ts` - Version type definitions (63 lines)
 - `src/types/workspace.ts` - Workspace type definitions (68 lines)
 - `src/types/action.ts` - Action input/output types (42 lines)
-- `src/types/git.ts` - Git operation types (92 lines)
+- `src/types/git.ts` - Git operation types (143 lines)
 - `src/types/result.ts` - Result type utility (66 lines)
 - `src/types/index.ts` - Type exports (6 lines)
 - `src/utils/errors.ts` - Error class hierarchy (167 lines)
@@ -1838,9 +1838,10 @@ Created workspace adapter factory in `src/core/adapters/AdapterFactory.ts` (169 
 - `src/services/GitHubService.ts` - GitHub API service wrapper (287 lines)
 - `src/services/GitService.ts` - Git operations service (435 lines)
 - `src/services/PRService.ts` - Pull request management service (589 lines)
+- `src/services/RepositoryService.ts` - Repository queries and file operations (242 lines)
 - `test/fixtures/repos/setup.ts` - Test repository setup utilities (318 lines)
 
-### Test Files (25)
+### Test Files (26)
 
 - `src/types/version.spec.ts` - Version type tests (51 lines, 8 tests)
 - `src/utils/errors.spec.ts` - Error class tests (147 lines, 21 tests)
@@ -1866,13 +1867,15 @@ Created workspace adapter factory in `src/core/adapters/AdapterFactory.ts` (169 
 - `src/services/GitHubService.spec.ts` - GitHub API service tests (490 lines, 21 tests)
 - `src/services/GitService.spec.ts` - Git operations service tests (630 lines, 23 tests)
 - `src/services/PRService.spec.ts` - Pull request service tests (710 lines, 23 tests)
+- `src/services/RepositoryService.spec.ts` - Repository service tests (534 lines, 13 tests)
 - `test/fixtures/repos/setup.test.ts` - Repository setup tests (163 lines, 16 tests)
 
-### Modified Files (2)
+### Modified Files (4)
 
 - `package.json` - Added TypeScript scripts and dependencies
 - `.gitignore` - Added TypeScript build artifacts
 - `vitest.config.js` → `vitest.config.mjs` - Added TypeScript test patterns (renamed for ESM)
+- `src/types/git.ts` - Added 4 interfaces for repository operations (FileContent, GetFileContentParams, UpdateFileParams, FileUpdateResponse)
 
 ---
 
@@ -1892,25 +1895,106 @@ Created workspace adapter factory in `src/core/adapters/AdapterFactory.ts` (169 
 
 ---
 
+### ✅ TSK-024: Repository Service (2h)
+
+**Completed**: 2025-10-19
+
+**Deliverables**:
+
+1. **src/services/RepositoryService.ts** (242 lines):
+   - `RepositoryService` class - Repository queries and file operations service
+   - `getFileContent()` - Retrieve and decode file content from repository
+   - `updateFile()` - Create or update files in repository
+   - `getCommits()` - Query commit history with optional filters
+   - 3 TypeScript interfaces for parameters (GetFileContentParams, UpdateFileParams, options)
+
+2. **src/types/git.ts** additions:
+   - `FileContent` interface - File content representation with path, content, encoding, sha, size
+   - `GetFileContentParams` interface - Parameters for file retrieval with optional ref
+   - `UpdateFileParams` interface - Parameters for file updates with message, sha, branch
+   - `FileUpdateResponse` interface - File update response with sha and commit info
+
+3. **Integration with Existing Infrastructure**:
+   - Uses `GitHubService.executeWithRetry()` from TSK-021 for all API calls with automatic retry
+   - Uses `Result<T, E>` pattern from TSK-002 for functional error handling
+   - Uses `GitOperationError` from TSK-003 for consistent error wrapping
+   - Uses `logger` from TSK-004 for structured logging with operation context
+
+4. **Key Features**:
+   - Type-safe repository operations wrapper with comprehensive error handling
+   - Automatic base64 encoding/decoding for file content (GitHub API format → UTF-8)
+   - File existence validation (returns error if path is directory, not file)
+   - Pagination support for commit queries (max 100 per page, GitHub API limit)
+   - Path filtering for commit history (optional workspace-specific queries)
+   - Safe file updates with SHA validation for existing files
+   - Structured logging with operation names and context for debugging
+
+**Error Handling**:
+
+- Repository API failures wrapped in GitOperationError with operation context
+- All errors include cause chain for debugging
+- Directory vs file validation (getFileContent returns error for non-files)
+- Missing author info handled gracefully (defaults to "Unknown" / "unknown\@example.com")
+- Detailed error messages with file paths, operation names, and context
+
+**Tests**:
+
+- Created `RepositoryService.spec.ts` with 13 test cases (100% passing)
+- Test groups:
+  - getFileContent (4 tests): success, without ref, directory error, API failure
+  - updateFile (3 tests): success, create new file, API failure
+  - getCommits (6 tests): success, path filter, no options, perPage limit, API failure, missing author
+- Mocked GitHubService for isolated unit testing
+- All error scenarios validated with proper error wrapping
+- Edge cases tested: missing author information, pagination limits
+
+**Validation**:
+
+- ✅ src/services/RepositoryService.ts created (242 lines)
+- ✅ src/types/git.ts updated with 4 new interfaces
+- ✅ All 3 methods implemented (getFileContent, updateFile, getCommits)
+- ✅ Uses GitHubService.executeWithRetry() for all API calls
+- ✅ Result<T, E> pattern throughout for functional error handling
+- ✅ Repository context from GitHubService
+- ✅ Unit tests with mocked dependencies (13 tests passing)
+- ✅ Integration with existing error/logger utilities
+- ✅ Type-check passes (0 errors)
+- ✅ All 668 tests passing (13 new + 655 existing)
+- ✅ **Services Phase 100% Complete** - All 4 services tasks finished
+
+**Design Decisions**:
+
+- Wrapper pattern for GitHub Repository API provides abstraction for testing and error handling
+- Uses GitHubService instead of direct Octokit access (consistent retry/rate limiting)
+- Automatic base64 encoding/decoding hides GitHub API implementation details
+- getFileContent validates file vs directory (prevents confusing errors downstream)
+- updateFile supports both create and update operations via single method (simpler API)
+- getCommits pagination capped at 100 (GitHub API max) with clear parameter naming
+- Missing author info uses sensible defaults (not errors - maintains data flow)
+- GitOperationError wraps all failures with operation context for debugging
+- Structured logging follows Pino syntax (data first, message second)
+
+---
+
 ## Last Activity
 
 **Date**: 2025-10-19
-**Task**: TSK-023 Pull Request Service
+**Task**: TSK-024 Repository Service
 **Status**: ✅ Completed
-**Test Results**: 655/655 passing (23 new tests + 632 existing)
+**Test Results**: 668/668 passing (13 new tests + 655 existing)
 **Type Check**: 0 errors
 
 Key achievements:
 
-- Created PRService for GitHub pull request management with 4 core methods
-- Implemented create, merge, hasMerged (polling), and exists methods
-- Static buildPRBody method formats WorkspaceTree into markdown per Section 8.2.2
-- PR body includes workspace hierarchy with change indicators (🔄/✓) and proper nesting
+- Created RepositoryService for repository queries and file operations with 3 core methods
+- Implemented getFileContent (with base64 decoding), updateFile, and getCommits methods
+- Added 4 new interfaces to git.ts for repository operations
 - All operations use GitHubService.executeWithRetry() for automatic retry and rate limiting
-- Polling strategy with configurable timeout/interval (non-blocking, returns false on timeout)
-- 23 comprehensive tests with mocked GitHubService covering all methods and edge cases
-- Integration scenarios testing complete workflows (create+exists, merge+hasMerged)
-- **Services Phase 75% Complete** - 3 of 4 services tasks complete
+- Automatic base64 encoding/decoding for file content (GitHub API ↔ UTF-8)
+- Pagination support for commit queries with GitHub API max limit (100)
+- 13 comprehensive tests with mocked GitHubService covering all methods and edge cases
+- Directory vs file validation in getFileContent (prevents downstream errors)
+- **Services Phase 100% Complete** - All 4 services tasks finished successfully! 🎉
 
 ---
 
@@ -1944,50 +2028,23 @@ Remaining services tasks:
 
 ### Core Logic Phase (Not Started - 0%)
 
-- **TSK-025**: Version Calculation Service (3h)
-- **TSK-026**: Workspace Update Service (3h)
-- **TSK-027**: Pull Request Creation Service (4h)
+Next phase begins:
 
-**Total Core Logic Phase**: 10 hours estimated
+1. **TSK-025: Workspace Tree Builder** (5h) - Workspace tree builder with hierarchy validation
+2. **TSK-026: Version Service** (4h) - Semantic version calculation based on commit messages
+3. **TSK-027: Changelog Service** (4h) - Changelog generation using conventional-changelog
+
+**Total Core Logic Phase**: 13 hours estimated
 
 ---
 
 ### Orchestration & E2E Phase (Not Started - 0%)
 
-- **TSK-028**: Main Action Orchestrator (4h)
-- **TSK-029**: Integration Tests (4h)
-- **TSK-030**: End-to-End Tests (4h)
+- **TSK-028**: Workspace Manager (6h) - Main workspace manager orchestrating the entire workflow
+- **TSK-029**: Action Entry Point (3h) - Main entry point for GitHub Action
+- **TSK-030**: Integration & E2E Testing (6h) - Comprehensive integration and E2E tests
 
-**Total Orchestration & E2E Phase**: 12 hours estimated
-
----
-
-### Adapters Phase (✅ Completed - 100%)
-
-Foundation Phase Complete! ✅
-Parsers Phase Complete! ✅
-Base Adapter Complete! ✅
-Node.js Adapter Complete! ✅
-Python Adapter Complete! ✅
-Deno Adapter Complete! ✅
-Go Adapter Complete! ✅
-Rust Adapter Complete! ✅
-Zig Adapter Complete! ✅
-Text Adapter Complete! ✅
-**Adapter Factory Complete!** ✅
-
-**🎉 Adapters Phase finished! All 12 adapter tasks completed successfully.**
-
----
-
-### Services Phase (Not Started - 0%)
-
-Next phase begins:
-
-1. **TSK-021: GitHub API Service** (3h) - Octokit wrapper with retry logic
-2. **TSK-022: Git Operations Service** (4h) - Git operations using GitHub API
-3. **TSK-023: Pull Request Service** (3h) - PR creation and management
-4. **TSK-024: Repository Service** (2h) - Repository queries and file operations
+**Total Orchestration & E2E Phase**: 15 hours estimated
 
 ---
 
