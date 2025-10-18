@@ -10,12 +10,12 @@
 
 | Phase               | Tasks      | Status      | Completion |
 | ------------------- | ---------- | ----------- | ---------- |
-| Foundation          | TSK-001-08 | In Progress | 75%        |
+| Foundation          | TSK-001-08 | In Progress | 88%        |
 | Adapters            | TSK-009-20 | Not Started | 0%         |
 | Services            | TSK-021-24 | Not Started | 0%         |
 | Core Logic          | TSK-025-27 | Not Started | 0%         |
 | Orchestration & E2E | TSK-028-30 | Not Started | 0%         |
-| **Overall**         | **30**     | **20%**     | **6/30**   |
+| **Overall**         | **30**     | **23%**     | **7/30**   |
 
 ---
 
@@ -164,9 +164,9 @@ Created error hierarchy in `src/utils/errors.ts`:
 **Test Results**:
 
 ```text
-Test Files  5 passed (5)
-Tests       111 passed (111)
-Duration    350ms
+Test Files  6 passed (6)
+Tests       145 passed (145)
+Duration    320ms
 ```
 
 ---
@@ -333,6 +333,64 @@ Created runtime input validation utility in `src/utils/validators.ts`:
 
 ---
 
+### ✅ TSK-007: Workspace Input Parser (2h)
+
+**Completed**: 2025-10-18
+
+**Deliverables**:
+
+Created workspace input parser in `src/utils/workspace-parser.ts`:
+
+1. **Main Parser Function**:
+   - `parseWorkspacesInput(input)` - Parses workspace input strings into validated configurations
+   - Supports both `;` and `,` separators (can be mixed)
+   - Parses format `path:type` (e.g., ".:node;packages/api:python")
+   - Validates exactly 2 parts separated by `:` per workspace
+   - Integrates with `validateWorkspaceConfigs()` from TSK-006 for type validation
+
+2. **Path Normalization**:
+   - `normalizePath()` - Helper function for consistent path representation
+   - Converts `./` to `.` for root directory
+   - Removes leading `./` from relative paths
+   - Removes trailing slashes (except for root `.`)
+   - Trims whitespace from all components
+
+3. **Error Handling**:
+   - Throws InvalidConfigurationError for empty/whitespace-only input
+   - Validates format with segment index in error messages
+   - Empty path or type validation with context
+   - Security validation via WorkspaceConfigSchema (prevents `..` traversal)
+   - Ignores empty segments after splitting (lenient parsing)
+
+**Tests**:
+
+- Created `workspace-parser.spec.ts` with 34 test cases
+- All tests passing (34/34)
+- Test groups:
+  - Basic parsing: 5 tests (single, multiple, separators, all types)
+  - Path normalization: 5 tests (./, leading ./, trailing /, multiple)
+  - Whitespace handling: 4 tests (trim, segments, empty segments, around separators)
+  - Error handling - empty input: 3 tests (empty, whitespace, separators only)
+  - Error handling - invalid format: 5 tests (missing colon, too many colons, empty path/type, index)
+  - Error handling - invalid workspace type: 3 tests (invalid type, typo, validation)
+  - Error handling - security: 2 tests (path traversal with ..)
+  - Edge cases: 4 tests (single char, deep paths, special chars, many workspaces)
+  - Real-world scenarios: 3 tests (monorepo patterns, multi-language, single project)
+- Coverage: 100% for parser utilities
+
+**Validation**:
+
+- ✅ parseWorkspacesInput function implemented
+- ✅ Support both `;` and `,` separators (can be mixed)
+- ✅ Parse format `path:type` with validation
+- ✅ Normalize paths (`.` and `./` handling, trailing slashes)
+- ✅ Validate workspace types via validateWorkspaceConfigs
+- ✅ Throw InvalidConfigurationError on malformed input
+- ✅ Unit tests covering various input formats
+- ✅ Edge case tests (empty string, single workspace, invalid format, security)
+
+---
+
 ## Quality Metrics
 
 | Metric        | Target | Current | Status |
@@ -347,7 +405,7 @@ Created runtime input validation utility in `src/utils/validators.ts`:
 
 ## Files Created
 
-### Source Files (11)
+### Source Files (12)
 
 - `tsconfig.json` - TypeScript configuration
 - `src/types/version.ts` - Version type definitions (63 lines)
@@ -360,14 +418,16 @@ Created runtime input validation utility in `src/utils/validators.ts`:
 - `src/utils/logger.ts` - Structured logging with Pino (123 lines)
 - `src/utils/retry.ts` - Retry logic with exponential backoff (185 lines)
 - `src/utils/validators.ts` - Runtime validation with Zod (133 lines)
+- `src/utils/workspace-parser.ts` - Workspace input parser (101 lines)
 
-### Test Files (5)
+### Test Files (6)
 
 - `src/types/version.spec.ts` - Version type tests (51 lines, 8 tests)
 - `src/utils/errors.spec.ts` - Error class tests (147 lines, 21 tests)
 - `src/utils/logger.spec.ts` - Logger utility tests (237 lines, 20 tests)
 - `src/utils/retry.spec.ts` - Retry utility tests (476 lines, 22 tests)
 - `src/utils/validators.spec.ts` - Validation utility tests (329 lines, 40 tests)
+- `src/utils/workspace-parser.spec.ts` - Workspace parser tests (280 lines, 34 tests)
 
 ### Modified Files (2)
 
@@ -397,8 +457,7 @@ Created runtime input validation utility in `src/utils/validators.ts`:
 
 ### Immediate (Foundation Phase)
 
-1. **TSK-007: Workspace Input Parser** (2h) - Parse workspace input string
-2. **TSK-008: Test Fixtures Setup** (2h) - Create reusable test fixtures
+1. **TSK-008: Test Fixtures Setup** (2h) - Create reusable test fixtures
 
 ### Next Phase (Adapters)
 
@@ -431,4 +490,4 @@ Created runtime input validation utility in `src/utils/validators.ts`:
 
 ---
 
-**Last Activity**: Completed foundation tasks TSK-001 through TSK-006 with 100% test coverage and zero type errors. Next: TSK-007 (Workspace Input Parser).
+**Last Activity**: Completed foundation tasks TSK-001 through TSK-007 with 100% test coverage and zero type errors. Next: TSK-008 (Test Fixtures Setup).
