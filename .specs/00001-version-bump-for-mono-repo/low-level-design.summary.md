@@ -12,10 +12,10 @@
 | ------------------- | ---------- | ----------- | ---------- |
 | Foundation          | TSK-001-08 | Completed   | 100%       |
 | Adapters            | TSK-009-20 | Completed   | 100%       |
-| Services            | TSK-021-24 | In Progress | 50%        |
+| Services            | TSK-021-24 | In Progress | 75%        |
 | Core Logic          | TSK-025-27 | Not Started | 0%         |
 | Orchestration & E2E | TSK-028-30 | Not Started | 0%         |
-| **Overall**         | **30**     | **73%**     | **22/30**  |
+| **Overall**         | **30**     | **77%**     | **23/30**  |
 
 ---
 
@@ -1701,6 +1701,97 @@ Created workspace adapter factory in `src/core/adapters/AdapterFactory.ts` (169 
 
 ---
 
+### ✅ TSK-023: Pull Request Service (2h)
+
+**Completed**: 2025-10-19
+
+**Deliverables**:
+
+1. **src/services/PRService.ts** (589 lines):
+   - `PRService` class - GitHub pull request management service
+   - Core methods:
+     - `create(params)` - Creates PR with title, body, base, head branches, optional draft flag
+     - `merge(params)` - Merges PR with merge method (merge/squash/rebase), optional commit title/message
+     - `hasMerged(params)` - Polls PR status until merged or timeout (default 60s, interval 5s)
+     - `exists(params)` - Checks if PR exists for base and head branches
+   - Static helper:
+     - `buildPRBody(tree)` - Formats WorkspaceTree into markdown PR body with hierarchy
+     - `formatWorkspaceNode(node, indentLevel)` - Private helper for recursive workspace formatting
+   - All methods return `Result<T, GitHubAPIError>` for consistent error handling
+   - 8 TypeScript interfaces for parameters and responses
+
+2. **Integration with Existing Infrastructure**:
+   - Uses `GitHubService.executeWithRetry()` from TSK-021 for all API calls with automatic retry
+   - Uses `GitHubService.getRepository()` for repository context (owner, repo)
+   - Uses `GitHubAPIError` from TSK-003 for consistent error handling (4-parameter constructor)
+   - Uses `WorkspaceTree` and `WorkspaceNode` from TSK-002 for PR body formatting
+   - Uses `Result<T, E>` pattern from TSK-002 for functional error handling
+   - Uses `logger` from TSK-004 for structured logging with operation context
+
+3. **Key Features**:
+   - Type-safe PR operations wrapper with comprehensive error handling
+   - Draft PR support for work-in-progress pull requests
+   - Merge method selection (merge, squash, rebase) with optional custom commit details
+   - Polling strategy with configurable timeout and interval (non-blocking)
+   - PR existence check by base/head branches (returns first if multiple found)
+   - PR body formatting following Section 8.2.2 specification:
+     - Root workspace section with version, path, type
+     - Child workspaces with recursive nesting (2 spaces per level)
+     - Change indicators: 🔄 (hasChanges: true), ✓ (hasChanges: false)
+   - Structured logging with operation names and context for debugging
+
+**Error Handling**:
+
+- PR API failures wrapped in GitHubAPIError with status codes and operation context
+- All errors include cause chain for debugging
+- hasMerged returns false on timeout (not error - allows graceful continuation)
+- exists returns empty array if no PRs found (not error - valid state)
+- Detailed error messages with PR numbers, branches, and operation names
+
+**Tests**:
+
+- Created `PRService.spec.ts` with 23 test cases (100% passing)
+- Test groups:
+  - constructor (1): service initialization
+  - create (4): successful creation, draft PR support, creation failure, error preservation
+  - merge (3): successful merge, squash method with custom commit details, merge failure
+  - hasMerged (5): PR merged, closed not merged, polling until merged, timeout reached, API failure
+  - exists (4): PR exists, no PR exists, multiple PRs (returns first), API failure
+  - buildPRBody (4): root workspace only, with children, nested hierarchy, change indicators
+  - integration scenarios (2): create+exists workflow, merge+hasMerged workflow
+- Mocked GitHubService for isolated unit testing
+- All error scenarios validated with proper error wrapping
+- Fixed issues: Mock type definition, nested workspace indentation (2 spaces per level)
+
+**Validation**:
+
+- ✅ src/services/PRService.ts created (589 lines)
+- ✅ All 4 methods implemented (create, merge, hasMerged, exists)
+- ✅ Static buildPRBody method for workspace tree formatting
+- ✅ Uses GitHubService.executeWithRetry() for all API calls
+- ✅ Result<T, E> pattern throughout for functional error handling
+- ✅ Repository context from GitHubService
+- ✅ Unit tests with mocked dependencies (23 tests passing)
+- ✅ Integration with existing error/logger utilities
+- ✅ Type-check passes (0 errors)
+- ✅ All 655 tests passing (23 new + 632 existing)
+
+**Design Decisions**:
+
+- Wrapper pattern for GitHub PR API provides abstraction for testing and error handling
+- Uses GitHubService instead of direct Octokit access (consistent retry/rate limiting)
+- hasMerged polling with timeout prevents indefinite blocking (returns false, not error)
+- exists lists open PRs filtered by base/head, returns first if multiple (GitHub orders by creation date desc)
+- buildPRBody as static method allows usage without service instance (flexible)
+- PR body follows Section 8.2.2 specification with workspace tree, change indicators, proper indentation
+- Nested workspaces use 2 spaces per indentation level (formatWorkspaceNode with `'  '.repeat(indentLevel)`)
+- Draft PR support enables work-in-progress workflow
+- Merge method selection supports different team merge strategies
+- GitHubAPIError includes statusCode for differentiated error handling downstream
+- Structured logging follows Pino syntax (data first, message second)
+
+---
+
 ## Quality Metrics
 
 | Metric        | Target | Current | Status |
@@ -1715,7 +1806,7 @@ Created workspace adapter factory in `src/core/adapters/AdapterFactory.ts` (169 
 
 ## Files Created
 
-### Source Files (29)
+### Source Files (30)
 
 - `tsconfig.json` - TypeScript configuration
 - `src/types/version.ts` - Version type definitions (63 lines)
@@ -1746,9 +1837,10 @@ Created workspace adapter factory in `src/core/adapters/AdapterFactory.ts` (169 
 - `src/core/adapters/AdapterFactory.ts` - Workspace adapter factory (169 lines)
 - `src/services/GitHubService.ts` - GitHub API service wrapper (287 lines)
 - `src/services/GitService.ts` - Git operations service (435 lines)
+- `src/services/PRService.ts` - Pull request management service (589 lines)
 - `test/fixtures/repos/setup.ts` - Test repository setup utilities (318 lines)
 
-### Test Files (24)
+### Test Files (25)
 
 - `src/types/version.spec.ts` - Version type tests (51 lines, 8 tests)
 - `src/utils/errors.spec.ts` - Error class tests (147 lines, 21 tests)
@@ -1773,6 +1865,7 @@ Created workspace adapter factory in `src/core/adapters/AdapterFactory.ts` (169 
 - `src/core/adapters/AdapterFactory.spec.ts` - Adapter factory tests (272 lines, 30 tests)
 - `src/services/GitHubService.spec.ts` - GitHub API service tests (490 lines, 21 tests)
 - `src/services/GitService.spec.ts` - Git operations service tests (630 lines, 23 tests)
+- `src/services/PRService.spec.ts` - Pull request service tests (710 lines, 23 tests)
 - `test/fixtures/repos/setup.test.ts` - Repository setup tests (163 lines, 16 tests)
 
 ### Modified Files (2)
@@ -1801,22 +1894,23 @@ Created workspace adapter factory in `src/core/adapters/AdapterFactory.ts` (169 
 
 ## Last Activity
 
-**Date**: 2025-10-18
-**Task**: TSK-022 Git Operations Service
+**Date**: 2025-10-19
+**Task**: TSK-023 Pull Request Service
 **Status**: ✅ Completed
-**Test Results**: 632/632 passing (23 new tests + 609 existing)
+**Test Results**: 655/655 passing (23 new tests + 632 existing)
 **Type Check**: 0 errors
 
 Key achievements:
 
-- Created GitService for Git operations using GitHub API (no shell commands)
-- Implemented 6 methods: createTag, createCommit, updateRef, getChangedFiles, getLastTag, getCommitsSince
+- Created PRService for GitHub pull request management with 4 core methods
+- Implemented create, merge, hasMerged (polling), and exists methods
+- Static buildPRBody method formats WorkspaceTree into markdown per Section 8.2.2
+- PR body includes workspace hierarchy with change indicators (🔄/✓) and proper nesting
 - All operations use GitHubService.executeWithRetry() for automatic retry and rate limiting
-- Two-step tag creation (object + ref) for annotated tags with full metadata
-- Path filtering for getChangedFiles with post-fetch filtering for flexibility
-- 23 comprehensive tests with mocked GitHubService covering success and error scenarios
-- Integration scenarios testing complete workflows (tag creation, commit+ref updates)
-- **Services Phase 50% Complete** - 2 of 4 services tasks complete
+- Polling strategy with configurable timeout/interval (non-blocking, returns false on timeout)
+- 23 comprehensive tests with mocked GitHubService covering all methods and edge cases
+- Integration scenarios testing complete workflows (create+exists, merge+hasMerged)
+- **Services Phase 75% Complete** - 3 of 4 services tasks complete
 
 ---
 
@@ -1824,39 +1918,27 @@ Key achievements:
 
 ## Next Steps
 
-### Services Phase (🔄 In Progress - 25%)
+### Services Phase (🔄 In Progress - 75%)
 
 Foundation Phase Complete! ✅
 Parsers Phase Complete! ✅
 Adapters Phase Complete! ✅
 GitHub API Service Complete! ✅
+Git Operations Service Complete! ✅
+Pull Request Service Complete! ✅
 
-#### Current Focus: TSK-022 Git Operations Service
+#### Current Focus: TSK-024 Repository Service
 
 Remaining services tasks:
 
-- **TSK-022**: Git Operations Service (2h) - Next
-  - Create `src/services/GitService.ts`
-  - Wrapper for git operations using GitHubService
-  - Methods: createTag, createCommit, updateRef, getCommitsSince
-  - Structured git command interface
-  - Unit tests with mocked GitHub API
+- **TSK-024**: Repository Service (2h) - Next
+  - Create `src/services/RepositoryService.ts`
+  - Methods: getFileContent(), updateFile(), getCommits()
+  - Depends on TSK-021 (GitHubService) - complete
+  - Unit tests with mocked Octokit
+  - Will complete Services Phase (4/4 tasks)
 
-- **TSK-023**: Workspace Detection Service (3h)
-  - Create `src/services/WorkspaceDetectionService.ts`
-  - Use adapters to detect workspace configurations
-  - Handle monorepo structure and workspace hierarchies
-  - Build WorkspaceTree from filesystem scanning
-  - Unit tests with test fixtures
-
-- **TSK-024**: Changelog Generation Service (3h)
-  - Create `src/services/ChangelogService.ts`
-  - Parse conventional commits with ConventionalCommitParser
-  - Generate changelog sections by type (feat, fix, breaking)
-  - Support multiple changelog formats (conventional-changelog presets)
-  - Unit tests with commit message fixtures
-
-**Total Services Phase**: 10 hours estimated
+**Total Services Phase**: 9 hours estimated (7 hours completed)
 
 ---
 
