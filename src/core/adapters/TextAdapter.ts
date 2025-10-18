@@ -6,17 +6,19 @@
  *
  * Usage:
  * ```typescript
- * const result = await detectVersion('.');
+ * const adapter = new TextAdapter();
+ * const result = await adapter.detect('.');
  * if (isOk(result)) {
  *   console.log(result.value.version);
  * }
  *
- * await updateVersion('.', toVersion('1.2.0'));
+ * await adapter.update('.', toVersion('1.2.0'));
  * ```
  */
 
 import { readFile, writeFile, access } from 'node:fs/promises';
 import { join } from 'node:path';
+import { BaseWorkspaceAdapter } from './BaseAdapter.js';
 import type { ProjectInfo, WorkspaceType, Version } from '../../types/index.js';
 import { ok, err, type Result } from '../../types/result.js';
 import { isVersion, toVersion } from '../../types/version.js';
@@ -159,4 +161,36 @@ export async function updateVersion(
 export async function hasVersionFile(workspacePath: string): Promise<boolean> {
   const versionFile = await findVersionFile(workspacePath);
   return versionFile !== null;
+}
+
+/**
+ * Text workspace adapter class
+ *
+ * Class-based adapter for text version files that extends BaseWorkspaceAdapter.
+ * Wraps the functional API for consistency with other adapters.
+ */
+export class TextAdapter extends BaseWorkspaceAdapter {
+  readonly type: WorkspaceType = 'text';
+  readonly supportedFiles = SUPPORTED_FILES as unknown as ReadonlyArray<string>;
+
+  /**
+   * Detect project information from text version file
+   *
+   * @param workspacePath - Path to the workspace directory
+   * @returns Result with ProjectInfo or WorkspaceDetectionError
+   */
+  async detect(workspacePath: string): Promise<Result<ProjectInfo, WorkspaceDetectionError>> {
+    return detectVersion(workspacePath);
+  }
+
+  /**
+   * Update version in text version file
+   *
+   * @param workspacePath - Path to the workspace directory
+   * @param newVersion - New version to write
+   * @returns Result indicating success or FileOperationError
+   */
+  async update(workspacePath: string, newVersion: Version): Promise<Result<void, FileOperationError>> {
+    return updateVersion(workspacePath, newVersion);
+  }
 }

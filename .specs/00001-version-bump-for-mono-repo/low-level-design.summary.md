@@ -11,11 +11,11 @@
 | Phase               | Tasks      | Status      | Completion |
 | ------------------- | ---------- | ----------- | ---------- |
 | Foundation          | TSK-001-08 | Completed   | 100%       |
-| Adapters            | TSK-009-20 | In Progress | 92%        |
+| Adapters            | TSK-009-20 | Completed   | 100%       |
 | Services            | TSK-021-24 | Not Started | 0%         |
 | Core Logic          | TSK-025-27 | Not Started | 0%         |
 | Orchestration & E2E | TSK-028-30 | Not Started | 0%         |
-| **Overall**         | **30**     | **63%**     | **19/30**  |
+| **Overall**         | **30**     | **67%**     | **20/30**  |
 
 ---
 
@@ -1446,6 +1446,83 @@ Created Zig workspace adapter in `src/core/adapters/ZigAdapter.ts` (178 lines) e
 
 ---
 
+### ✅ TSK-020: Workspace Adapter Factory (2h)
+
+**Completed**: 2025-01-18
+
+**Deliverables**:
+
+Created workspace adapter factory in `src/core/adapters/AdapterFactory.ts` (169 lines) providing type-safe adapter instantiation with singleton pattern.
+
+1. **Main Functions**:
+   - `getAdapter(type)` - Returns appropriate adapter instance for workspace type
+   - `getSupportedTypes()` - Returns array of all supported workspace types
+   - `isTypeSupported(type)` - Type guard to check if workspace type is supported
+   - `clearAdapterCache()` - Clears cached adapter instances (for testing)
+
+2. **Factory Pattern**:
+   - Registry-based factory mapping workspace types to adapter constructors
+   - Lazy instantiation - adapters created only on first request
+   - Singleton pattern - each adapter type instantiated once and cached
+   - Type-safe return values matching workspace types
+
+3. **Supported Adapters**:
+   - `node` → NodeAdapter
+   - `python` → PythonAdapter
+   - `deno` → DenoAdapter
+   - `go` → GoAdapter
+   - `rust` → RustAdapter
+   - `zig` → ZigAdapter
+   - `text` → TextAdapter
+
+4. **Error Handling**:
+   - Throws `InvalidConfigurationError` for unsupported workspace types
+   - Clear error messages listing all supported types
+   - Includes the invalid type in error message for debugging
+
+5. **Integration with TextAdapter**:
+   - Enhanced TextAdapter.ts to export class-based `TextAdapter` extending `BaseWorkspaceAdapter`
+   - Maintained backward compatibility with existing functional API (detectVersion, updateVersion, hasVersionFile)
+   - Class wrapper delegates to functional implementation for consistency
+
+**Tests**:
+
+- Created `AdapterFactory.spec.ts` with 30 test cases (100% passing)
+- Test groups:
+  - getAdapter (19 tests):
+    - Individual adapter tests (14): one test per adapter type + singleton behavior
+    - error handling (3): unsupported type, error messages
+    - cache behavior (2): different instances for different types, cache persistence
+  - getSupportedTypes (3): array structure, content validation, consistency
+  - isTypeSupported (3): valid types, invalid types, type guard functionality
+  - clearAdapterCache (3): cache clearing for single/multiple adapters, new instance creation
+  - integration (2): adapter interface validation, all workspace types compatibility
+
+**Validation**:
+
+- ✅ src/core/adapters/AdapterFactory.ts created (169 lines)
+- ✅ getAdapter function with type-safe adapter instantiation
+- ✅ Singleton pattern for performance optimization
+- ✅ Support for all 7 workspace types (node, python, deno, go, rust, zig, text)
+- ✅ Throws InvalidConfigurationError for unknown types
+- ✅ Helper functions: getSupportedTypes, isTypeSupported, clearAdapterCache
+- ✅ Unit tests with 30 comprehensive test cases
+- ✅ Test all adapter types and error scenarios
+- ✅ Type-check passes (0 errors)
+- ✅ All 588 tests passing (30 new + 558 existing)
+
+**Design Decisions**:
+
+- Registry-based factory pattern for extensibility (easy to add new adapters)
+- Singleton pattern for performance (adapters are stateless and can be reused)
+- Lazy instantiation to avoid creating unused adapters
+- Type guard `isTypeSupported` for runtime type narrowing
+- clearAdapterCache function for testing (can force fresh instances)
+- Enhanced TextAdapter with class-based interface while preserving functional API
+- Error messages include both the invalid type and list of valid types for better DX
+
+---
+
 ## Quality Metrics
 
 | Metric        | Target | Current | Status |
@@ -1460,7 +1537,7 @@ Created Zig workspace adapter in `src/core/adapters/ZigAdapter.ts` (178 lines) e
 
 ## Files Created
 
-### Source Files (27)
+### Source Files (28)
 
 - `tsconfig.json` - TypeScript configuration
 - `src/types/version.ts` - Version type definitions (63 lines)
@@ -1487,10 +1564,11 @@ Created Zig workspace adapter in `src/core/adapters/ZigAdapter.ts` (178 lines) e
 - `src/core/adapters/GoAdapter.ts` - Go workspace adapter (226 lines)
 - `src/core/adapters/RustAdapter.ts` - Rust workspace adapter (125 lines)
 - `src/core/adapters/ZigAdapter.ts` - Zig workspace adapter (178 lines)
-- `src/core/adapters/TextAdapter.ts` - Text workspace adapter (171 lines)
+- `src/core/adapters/TextAdapter.ts` - Text workspace adapter (211 lines)
+- `src/core/adapters/AdapterFactory.ts` - Workspace adapter factory (169 lines)
 - `test/fixtures/repos/setup.ts` - Test repository setup utilities (318 lines)
 
-### Test Files (21)
+### Test Files (22)
 
 - `src/types/version.spec.ts` - Version type tests (51 lines, 8 tests)
 - `src/utils/errors.spec.ts` - Error class tests (147 lines, 21 tests)
@@ -1512,6 +1590,7 @@ Created Zig workspace adapter in `src/core/adapters/ZigAdapter.ts` (178 lines) e
 - `src/core/adapters/RustAdapter.spec.ts` - Rust adapter tests (450 lines, 23 tests)
 - `src/core/adapters/ZigAdapter.spec.ts` - Zig adapter tests (645 lines, 26 tests)
 - `src/core/adapters/TextAdapter.spec.ts` - Text adapter tests (298 lines, 33 tests)
+- `src/core/adapters/AdapterFactory.spec.ts` - Adapter factory tests (272 lines, 30 tests)
 - `test/fixtures/repos/setup.test.ts` - Repository setup tests (163 lines, 16 tests)
 
 ### Modified Files (2)
@@ -1541,20 +1620,20 @@ Created Zig workspace adapter in `src/core/adapters/ZigAdapter.ts` (178 lines) e
 ## Last Activity
 
 **Date**: 2025-01-18
-**Task**: TSK-018 Zig Workspace Adapter
+**Task**: TSK-020 Workspace Adapter Factory
 **Status**: ✅ Completed
-**Test Results**: 558/558 passing (26 new tests + 532 existing)
+**Test Results**: 588/588 passing (30 new tests + 558 existing)
 **Type Check**: 0 errors
 
 Key achievements:
 
-- Created Zig workspace adapter with 2 file format support (build.zig.zon, build.zig)
-- Regex-based parsing for Zig struct literal syntax and const declarations
-- Priority order: build.zig.zon (newer package manager) > build.zig
-- Multi-file update strategy ensures consistency across formats
-- Case-insensitive const matching in build.zig
-- 26 comprehensive tests covering both formats, priority, multi-file updates, integration
-- Supports pre-release versions and build metadata
+- Created workspace adapter factory with singleton pattern for performance
+- Type-safe adapter instantiation for all 7 workspace types
+- Registry-based design for easy extensibility
+- Helper functions: getAdapter, getSupportedTypes, isTypeSupported, clearAdapterCache
+- Enhanced TextAdapter with class-based interface (backward compatible)
+- 30 comprehensive tests covering all adapters, error handling, cache behavior
+- **Adapters Phase 100% Complete** - all 12 adapter tasks finished
 
 ---
 
@@ -1562,7 +1641,7 @@ Key achievements:
 
 ## Next Steps
 
-### Adapters Phase (In Progress - 92% Complete)
+### Adapters Phase (✅ Completed - 100%)
 
 Foundation Phase Complete! ✅
 Parsers Phase Complete! ✅
@@ -1574,10 +1653,20 @@ Go Adapter Complete! ✅
 Rust Adapter Complete! ✅
 Zig Adapter Complete! ✅
 Text Adapter Complete! ✅
+**Adapter Factory Complete!** ✅
 
-Next up:
+**🎉 Adapters Phase finished! All 12 adapter tasks completed successfully.**
 
-1. **TSK-020: Workspace Adapter Factory** (2h) - Adapter instantiation factory (FINAL task in Adapters Phase)
+---
+
+### Services Phase (Not Started - 0%)
+
+Next phase begins:
+
+1. **TSK-021: GitHub API Service** (3h) - Octokit wrapper with retry logic
+2. **TSK-022: Git Operations Service** (4h) - Git operations using GitHub API
+3. **TSK-023: Pull Request Service** (3h) - PR creation and management
+4. **TSK-024: Repository Service** (2h) - Repository queries and file operations
 
 ---
 
