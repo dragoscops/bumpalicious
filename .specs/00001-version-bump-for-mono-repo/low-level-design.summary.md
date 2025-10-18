@@ -11,11 +11,11 @@
 | Phase               | Tasks      | Status      | Completion |
 | ------------------- | ---------- | ----------- | ---------- |
 | Foundation          | TSK-001-08 | Completed   | 100%       |
-| Adapters            | TSK-009-20 | In Progress | 42%        |
+| Adapters            | TSK-009-20 | In Progress | 50%        |
 | Services            | TSK-021-24 | Not Started | 0%         |
 | Core Logic          | TSK-025-27 | Not Started | 0%         |
 | Orchestration & E2E | TSK-028-30 | Not Started | 0%         |
-| **Overall**         | **30**     | **43%**     | **13/30**  |
+| **Overall**         | **30**     | **47%**     | **14/30**  |
 
 ---
 
@@ -905,6 +905,78 @@ Created abstract base class for workspace adapters in `src/core/adapters/BaseAda
 
 ---
 
+### ✅ TSK-013: Node.js Workspace Adapter (2h)
+
+**Completed**: 2025-01-18
+
+**Deliverables**:
+
+Created Node.js workspace adapter in `src/core/adapters/NodeAdapter.ts` (182 lines):
+
+1. **Main Features**:
+   - Extends `BaseWorkspaceAdapter` abstract class
+   - Supports both `package.json` (npm/yarn/pnpm) and `jsr.json` (JSR registry)
+   - Priority-based file detection (package.json preferred over jsr.json)
+   - Updates all existing config files to maintain version consistency
+
+2. **Detection Logic**:
+   - `detect()` - Searches for config files in priority order
+   - Uses `parseFile()` helper from BaseAdapter with JSON format
+   - Extracts `name` and `version` fields from first found file
+   - Returns `Result<ProjectInfo, WorkspaceDetectionError>`
+
+3. **Update Logic**:
+   - `update()` - Updates all existing config files (package.json and/or jsr.json)
+   - Ensures version consistency across npm and JSR registries
+   - Preserves JSON formatting (2-space indentation)
+   - Uses `updateFile()` helper from BaseAdapter
+   - Returns `Result<void, FileOperationError>`
+
+4. **Error Handling**:
+   - No config file found - returns WorkspaceDetectionError
+   - Malformed JSON - error propagated from parser
+   - Missing version/name fields - validation error from parser
+   - Invalid version format - caught by isVersion() guard
+
+**Tests**:
+
+- Created `NodeAdapter.spec.ts` with 25 test cases (100% passing)
+- Test groups:
+  - properties (3): type, supportedFiles, readonly enforcement
+  - detect (11):
+    - package.json (3): basic, pre-release, build metadata
+    - jsr.json (2): basic detection, priority order
+    - error handling (6): no file, malformed JSON, missing fields, invalid version
+  - update (9):
+    - package.json (3): basic update, pre-release, formatting preservation
+    - jsr.json (1): basic update
+    - multiple files (1): both package.json and jsr.json
+    - error handling (4): no file, malformed JSON, missing version, non-existent dir
+  - integration (2): real package.json fixture, monorepo workspace
+
+**Validation**:
+
+- ✅ src/core/adapters/NodeAdapter.ts created
+- ✅ Detect version from package.json and jsr.json
+- ✅ Update both files if present
+- ✅ Handle missing files gracefully
+- ✅ Unit tests in NodeAdapter.spec.ts (25 tests passing)
+- ✅ Test with fixtures (real package.json files)
+- ✅ Test edge cases (malformed JSON, missing version)
+- ✅ Type-check passes (0 errors)
+- ✅ All 413 tests passing (25 new + 388 existing)
+
+**Design Decisions**:
+
+- Extends BaseWorkspaceAdapter to reuse parseFile/updateFile helpers
+- Supports both package.json and jsr.json for dual-registry publishing
+- Updates all found config files to maintain consistency
+- Priority order: package.json preferred (more common than jsr.json)
+- Uses JSON parser/updater from FileParser/FileUpdater (TSK-010/TSK-011)
+- Error conversion: FileOperationError → WorkspaceDetectionError in detect()
+
+---
+
 ## Quality Metrics
 
 | Metric        | Target | Current | Status |
@@ -919,7 +991,7 @@ Created abstract base class for workspace adapters in `src/core/adapters/BaseAda
 
 ## Files Created
 
-### Source Files (20)
+### Source Files (21)
 
 - `tsconfig.json` - TypeScript configuration
 - `src/types/version.ts` - Version type definitions (63 lines)
@@ -940,10 +1012,11 @@ Created abstract base class for workspace adapters in `src/core/adapters/BaseAda
 - `src/parsers/FileParser.ts` - Generic file parser (392 lines)
 - `src/parsers/FileUpdater.ts` - Generic file updater (361 lines)
 - `src/core/adapters/BaseAdapter.ts` - Base workspace adapter class (155 lines)
+- `src/core/adapters/NodeAdapter.ts` - Node.js workspace adapter (182 lines)
 - `src/core/adapters/TextAdapter.ts` - Text workspace adapter (171 lines)
 - `test/fixtures/repos/setup.ts` - Test repository setup utilities (318 lines)
 
-### Test Files (15)
+### Test Files (16)
 
 - `src/types/version.spec.ts` - Version type tests (51 lines, 8 tests)
 - `src/utils/errors.spec.ts` - Error class tests (147 lines, 21 tests)
@@ -958,6 +1031,7 @@ Created abstract base class for workspace adapters in `src/core/adapters/BaseAda
 - `src/parsers/FileParser.spec.ts` - File parser tests (508 lines, 43 tests)
 - `src/parsers/FileUpdater.spec.ts` - File updater tests (651 lines, 34 tests)
 - `src/core/adapters/BaseAdapter.spec.ts` - Base adapter tests (150 lines, 16 tests)
+- `src/core/adapters/NodeAdapter.spec.ts` - Node.js adapter tests (280 lines, 25 tests)
 - `src/core/adapters/TextAdapter.spec.ts` - Text adapter tests (298 lines, 33 tests)
 - `test/fixtures/repos/setup.test.ts` - Repository setup tests (163 lines, 16 tests)
 
@@ -988,32 +1062,32 @@ Created abstract base class for workspace adapters in `src/core/adapters/BaseAda
 ## Last Activity
 
 **Date**: 2025-01-18
-**Task**: TSK-012 Base Workspace Adapter
+**Task**: TSK-013 Node.js Workspace Adapter
 **Status**: ✅ Completed
-**Test Results**: 388/388 passing (16 new tests + 372 existing)
+**Test Results**: 413/413 passing (25 new tests + 388 existing)
 **Type Check**: 0 errors
 
 Key achievements:
 
-- Created abstract base class for all workspace adapters
-- Defined abstract methods (detect, update) and properties (type, supportedFiles)
-- Added protected helper methods (parseFile, updateFile) for subclass reuse
-- 16 comprehensive tests using concrete test implementation
-- Foundation ready for language-specific adapters (TSK-013 through TSK-019)
+- Created Node.js workspace adapter extending BaseAdapter
+- Supports both package.json (npm/yarn/pnpm) and jsr.json (JSR registry)
+- Priority-based file detection with automatic consistency updates
+- 25 comprehensive tests covering detection, updates, errors, and integration
+- First concrete language-specific adapter implementation
 
 ---
 
 ## Next Steps
 
-### Adapters Phase (In Progress - 42% Complete)
+### Adapters Phase (In Progress - 50% Complete)
 
 Foundation Phase Complete! ✅
 Parsers Phase Complete! ✅
 
 Next up:
 
-1. **TSK-013: Node.js Workspace Adapter** (2h) - Implement Node-specific adapter (CRITICAL PATH)
-2. **TSK-014-018: Other Language Adapters** (10h) - Python, Deno, Go, Rust, Zig
+1. **TSK-014: Python Workspace Adapter** (3h) - Implement Python-specific adapter
+2. **TSK-015-018: Other Language Adapters** (8h) - Deno, Go, Rust, Zig
 3. **TSK-020: Workspace Adapter Factory** (2h) - Adapter instantiation factory
 
 ---
