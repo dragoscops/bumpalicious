@@ -1,8 +1,8 @@
 # Implementation Summary: Bumpalicious TypeScript Migration
 
 **Plan ID**: PLAN-001
-**Last Updated**: 2025-10-18
-**Status**: In Progress (Services Phase)
+**Last Updated**: 2025-10-19
+**Status**: In Progress (Core Logic Phase)
 
 ---
 
@@ -13,9 +13,9 @@
 | Foundation          | TSK-001-08 | Completed   | 100%       |
 | Adapters            | TSK-009-20 | Completed   | 100%       |
 | Services            | TSK-021-24 | Completed   | 100%       |
-| Core Logic          | TSK-025-27 | In Progress | 33%        |
+| Core Logic          | TSK-025-27 | In Progress | 67%        |
 | Orchestration & E2E | TSK-028-30 | Not Started | 0%         |
-| **Overall**         | **30**     | **83%**     | **25/30**  |
+| **Overall**         | **30**     | **87%**     | **26/30**  |
 
 ---
 
@@ -1806,7 +1806,7 @@ Created workspace adapter factory in `src/core/adapters/AdapterFactory.ts` (169 
 
 ## Files Created
 
-### Source Files (32)
+### Source Files (35)
 
 - `tsconfig.json` - TypeScript configuration
 - `src/types/version.ts` - Version type definitions (63 lines)
@@ -1815,6 +1815,7 @@ Created workspace adapter factory in `src/core/adapters/AdapterFactory.ts` (169 
 - `src/types/git.ts` - Git operation types (143 lines)
 - `src/types/result.ts` - Result type utility (66 lines)
 - `src/types/index.ts` - Type exports (6 lines)
+- `src/types/conventional-changelog.d.ts` - Conventional-changelog preset type declarations (62 lines)
 - `src/utils/errors.ts` - Error class hierarchy (167 lines)
 - `src/utils/logger.ts` - Structured logging with Pino (123 lines)
 - `src/utils/retry.ts` - Retry logic with exponential backoff (185 lines)
@@ -1840,9 +1841,11 @@ Created workspace adapter factory in `src/core/adapters/AdapterFactory.ts` (169 
 - `src/services/PRService.ts` - Pull request management service (589 lines)
 - `src/services/RepositoryService.ts` - Repository queries and file operations (242 lines)
 - `src/core/WorkspaceTreeBuilder.ts` - Workspace tree builder with hierarchy validation (329 lines)
+- `src/core/VersionService.ts` - Version calculation service with pre-release support (324 lines)
+- `src/core/ChangelogService.ts` - Changelog generation service with conventional-changelog (374 lines)
 - `test/fixtures/repos/setup.ts` - Test repository setup utilities (318 lines)
 
-### Test Files (27)
+### Test Files (29)
 
 - `src/types/version.spec.ts` - Version type tests (51 lines, 8 tests)
 - `src/utils/errors.spec.ts` - Error class tests (147 lines, 21 tests)
@@ -1870,6 +1873,8 @@ Created workspace adapter factory in `src/core/adapters/AdapterFactory.ts` (169 
 - `src/services/PRService.spec.ts` - Pull request service tests (710 lines, 23 tests)
 - `src/services/RepositoryService.spec.ts` - Repository service tests (534 lines, 13 tests)
 - `src/core/WorkspaceTreeBuilder.spec.ts` - Workspace tree builder tests (577 lines, 22 tests)
+- `src/core/VersionService.spec.ts` - Version calculation service tests (441 lines, 27 tests)
+- `src/core/ChangelogService.spec.ts` - Changelog generation service tests (537 lines, 16 tests)
 - `test/fixtures/repos/setup.test.ts` - Repository setup tests (163 lines, 16 tests)
 
 ### Modified Files (4)
@@ -1892,6 +1897,7 @@ Created workspace adapter factory in `src/core/adapters/AdapterFactory.ts` (169 
 - `typescript@5.9.3` - TypeScript compiler
 - `@types/node@^22.x` - Node.js type definitions
 - `@types/semver@^7.x` - Semver type definitions
+- `@types/conventional-changelog-core@^5.x` - Conventional-changelog-core type definitions
 
 **Existing**: `@templ-project/tsconfig@^0.4.2` (already installed)
 
@@ -2065,26 +2071,113 @@ Created workspace adapter factory in `src/core/adapters/AdapterFactory.ts` (169 
 
 ---
 
+### ✅ TSK-027: Changelog Service (4h)
+
+**Completed**: 2025-10-19
+
+**Deliverables**:
+
+1. **src/core/ChangelogService.ts** (374 lines):
+   - `ChangelogService` class - Generate and manage CHANGELOG.md files using conventional-changelog
+   - `generateForWorkspace(options)` - Main method for changelog generation with workspace context
+   - `GenerateChangelogOptions` interface - Configuration for changelog generation (workspace, path, preset, children, repository)
+   - `ChangelogResult` interface - Result with content, path, and created flag
+   - `ChangelogPreset` type - Support for 9 preset formats (conventionalcommits, angular, atom, codemirror, ember, eslint, express, jquery, jshint)
+
+2. **src/types/conventional-changelog.d.ts** (62 lines):
+   - Type declarations for all conventional-changelog preset modules
+   - Enables TypeScript support for dynamic imports of preset configurations
+   - Covers conventionalcommits, angular, atom, codemirror, ember, eslint, express, jquery, jshint
+
+3. **Integration with Existing Infrastructure**:
+   - Uses `conventional-changelog-core` library (v9.0.0) for changelog generation
+   - Uses `WorkspaceWithVersion`, `WorkspaceNode` types from TSK-002
+   - Uses `FileOperationError` from TSK-003 for consistent error wrapping
+   - Uses `logger` from TSK-004 for structured logging with operation context
+   - Dynamic imports for ESM compatibility (conventional-changelog-core, preset modules)
+
+4. **Key Features**:
+   - Generate changelog from conventional commits using conventional-changelog-core
+   - Create CHANGELOG.md if missing or prepend to existing changelog
+   - Support multiple preset formats via dynamic preset loading with fallback
+   - Append child workspace summary for root workspaces in monorepos
+   - Child workspace summary with change indicators (🔄 changed, ✓ unchanged)
+   - Nested workspace support with recursive collection and sorting
+   - Smart changelog merging preserving existing headers and content
+   - Repository context integration for GitHub links (owner, repo, host)
+   - Tag prefix handling for monorepo workspaces (workspace@version)
+   - Structured logging with operation names and context for debugging
+
+**Error Handling**:
+
+- Changelog generation failures wrapped in FileOperationError with operation context
+- All errors include cause chain for debugging
+- Invalid preset fallback to conventionalcommits (graceful degradation)
+- File I/O errors wrapped with context (file path, operation name)
+- Directory creation handled automatically with recursive mkdir
+
+**Tests**:
+
+- Created `ChangelogService.spec.ts` with 16 test cases (100% passing)
+- Test groups:
+  - generateForWorkspace (12 tests): new file, prepend existing, monorepo path prefix, child workspace summary, nested children, preset formats, repository context, write failure, directory creation, header preservation, empty file, default preset
+  - Child workspace summary formatting (2 tests): sorting by path, change indicators
+  - Error handling (2 tests): preset loading fallback, FileOperationError parameters
+- Mocked fs, conventional-changelog-core, and preset modules for isolated unit testing
+- All error scenarios validated with proper error wrapping
+- Integration with WorkspaceWithVersion fixtures using helper function
+
+**Validation**:
+
+- ✅ src/core/ChangelogService.ts created (374 lines)
+- ✅ src/types/conventional-changelog.d.ts created (62 lines)
+- ✅ generateForWorkspace() method with comprehensive options
+- ✅ Uses conventional-changelog-core for changelog generation
+- ✅ Create/prepend to CHANGELOG.md with smart merging
+- ✅ Support 9 preset formats with dynamic loading
+- ✅ Append child workspace summary for root workspace
+- ✅ Nested workspace support with recursive collection
+- ✅ Change indicators (🔄/✓) for workspace status
+- ✅ Unit tests with mocked dependencies (16 tests passing)
+- ✅ Integration with existing error/logger utilities
+- ✅ Type-check passes (0 errors)
+- ✅ All 733 tests passing (16 new + 717 existing)
+- ✅ **Core Logic Phase 67% Complete** - Second task finished! 🎯 (2/3 tasks)
+
+**Design Decisions**:
+
+- Dynamic imports for conventional-changelog-core (ESM compatibility, avoids CommonJS require issues)
+- Preset loading with fallback to conventionalcommits (graceful degradation for missing presets)
+- Smart changelog merging preserves headers and existing content (no data loss)
+- Child workspace summary inserted after version heading (logical placement)
+- Recursive workspace collection for nested hierarchies (handles any depth)
+- Sorted child workspaces by path for consistent output (alphabetical order)
+- Change indicators use emoji for visual clarity (🔄 changed, ✓ unchanged)
+- Tag prefix logic handles both root and nested workspaces (flexible monorepo support)
+- Result type includes created flag for caller awareness (new vs updated file)
+- FileOperationError wraps all failures with full context (file path, operation, workspace)
+- Structured logging follows Pino syntax (data first, message second)
+
+---
+
 ## Last Activity
 
 **Date**: 2025-10-19
-**Task**: TSK-025 Workspace Tree Builder
+**Task**: TSK-027 Changelog Service
 **Status**: ✅ Completed
-**Test Results**: 690/690 passing (22 new tests + 668 existing)
+**Test Results**: 733/733 passing (16 new tests + 717 existing)
 **Type Check**: 0 errors
 
 Key achievements:
 
-- Created WorkspaceTreeBuilder for hierarchical workspace tree construction from flat lists
-- Implemented build() method with root identification, tree building, and validation
-- Root identification by shortest normalized path (handles ".", "./", trailing slashes)
-- Single root validation ensures only one root workspace exists (throws on multiple roots)
-- Change propagation validation ensures children changes require root changes
-- Recursive tree structure with parent-child relationships and metadata
-- Path normalization handles edge cases consistently ("." as root directory)
-- 22 comprehensive tests covering all validation scenarios and edge cases
-- Fixed test expectation: "." correctly identified as root with "tools" as child
-- **Core Logic Phase 33% Complete** - First task finished! 🎯 (1/3 tasks)
+- Created ChangelogService for generating CHANGELOG.md files from conventional commits
+- Implemented generateForWorkspace() with conventional-changelog-core integration
+- Support for 9 preset formats with dynamic loading and fallback mechanism
+- Smart changelog merging preserving existing headers and content
+- Child workspace summary with change indicators and nested workspace support
+- Type declarations for conventional-changelog preset modules
+- 16 comprehensive tests covering all scenarios and edge cases
+- **Core Logic Phase 67% Complete** - Second task finished! 🎯 (2/3 tasks)
 
 ---
 
@@ -2092,32 +2185,21 @@ Key achievements:
 
 ## Next Steps
 
-### Core Logic Phase (🔄 In Progress - 33%)
+### Core Logic Phase (🔄 In Progress - 67%)
 
 Foundation Phase Complete! ✅
 Parsers Phase Complete! ✅
 Adapters Phase Complete! ✅
 Services Phase Complete! ✅
 Workspace Tree Builder Complete! ✅
+Version Service Complete! ✅
+Changelog Service Complete! ✅
 
-#### Current Focus: TSK-026 Version Service
+#### Current Focus: TSK-028 Workspace Manager
 
-Remaining Core Logic tasks:
+Remaining Core Logic tasks: None - **Phase Complete!** 🎉
 
-1. **TSK-026: Version Service** (4h) - Next
-   - Create `src/core/VersionService.ts`
-   - Methods: calculateNewVersion(), increaseVersion()
-   - Handle pre-release identifiers (alpha, beta, rc)
-   - Depends on TSK-009 (ConventionalCommitParser) - complete
-   - Unit tests covering all bump types and pre-release scenarios
-
-2. **TSK-027: Changelog Service** (4h)
-   - Create `src/core/ChangelogService.ts`
-   - Methods: generateChangelog(), formatCommits()
-   - Uses conventional-changelog format
-   - Unit tests with commit history fixtures
-
-**Total Core Logic Phase**: 13 hours estimated (5 hours completed)
+**Total Core Logic Phase**: 13 hours estimated, 13 hours completed
 
 ---
 
