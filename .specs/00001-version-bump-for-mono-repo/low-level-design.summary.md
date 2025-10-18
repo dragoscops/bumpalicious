@@ -12,10 +12,10 @@
 | ------------------- | ---------- | ----------- | ---------- |
 | Foundation          | TSK-001-08 | Completed   | 100%       |
 | Adapters            | TSK-009-20 | Completed   | 100%       |
-| Services            | TSK-021-24 | In Progress | 25%        |
+| Services            | TSK-021-24 | In Progress | 50%        |
 | Core Logic          | TSK-025-27 | Not Started | 0%         |
 | Orchestration & E2E | TSK-028-30 | Not Started | 0%         |
-| **Overall**         | **30**     | **70%**     | **21/30**  |
+| **Overall**         | **30**     | **73%**     | **22/30**  |
 
 ---
 
@@ -1616,6 +1616,91 @@ Created workspace adapter factory in `src/core/adapters/AdapterFactory.ts` (169 
 
 ---
 
+### ✅ TSK-022: Git Operations Service (2h)
+
+**Completed**: 2025-10-18
+
+**Deliverables**:
+
+1. **src/services/GitService.ts** (435 lines):
+   - `GitService` class - Wraps Octokit git operations using GitHubService
+   - Core methods:
+     - `createTag(params)` - Creates annotated tag with object and reference (2-step process)
+     - `createCommit(params)` - Creates commit with tree, parents, optional author
+     - `updateRef(params)` - Updates branch/tag reference with optional force flag
+     - `getChangedFiles(base, head, path?)` - Compares commits, returns files and commits, optional path filter
+     - `getLastTag()` - Returns most recent tag or null if no tags exist
+     - `getCommitsSince(base, head?)` - Gets commit history between refs, defaults to HEAD
+
+2. **Integration with Existing Infrastructure**:
+   - Uses `GitHubService.executeWithRetry()` from TSK-021 for all API calls with automatic retry
+   - Uses `GitOperationError` from TSK-003 for consistent error handling
+   - Uses `Result<T, E>` pattern from TSK-002 for functional error handling
+   - Uses Git type interfaces from TSK-002 (GitTag, GitCommit, FileChange, etc.)
+   - Uses `logger` from TSK-004 for structured logging with operation context
+
+3. **Key Features**:
+   - Type-safe Git operations wrapper with comprehensive error handling
+   - Repository context from GitHubService.getRepository() for all operations
+   - Two-step tag creation (object + ref) for annotated tags with full metadata
+   - Path filtering for getChangedFiles (post-fetch filtering for flexibility)
+   - Returns null for getLastTag when no tags exist (not an error condition)
+   - All methods return Result<T, GitOperationError> for consistent error handling
+   - Structured logging with operation names and context for debugging
+
+**Error Handling**:
+
+- Git API failures wrapped in GitOperationError with operation context
+- All errors include cause chain for debugging
+- Non-recoverable errors (Git operations don't retry at this level)
+- Detailed error messages with file paths, refs, and operation names
+
+**Tests**:
+
+- Created `GitService.spec.ts` with 23 test cases (100% passing)
+- Test groups:
+  - constructor (1): service initialization
+  - createTag (4): basic creation, without tagger, tag failure, ref failure
+  - createCommit (3): with author, without author, creation failure
+  - updateRef (3): basic update, force flag, update failure
+  - getChangedFiles (4): basic comparison, path filtering, no changes, comparison failure
+  - getLastTag (3): returns tag, returns null, fetch failure
+  - getCommitsSince (3): basic usage, default HEAD parameter, fetch failure
+  - integration scenarios (2): complete tag workflow, commit+ref workflow
+- Mocked GitHubService for isolated unit testing
+- All error scenarios validated with proper error wrapping
+
+**Validation**:
+
+- ✅ src/services/GitService.ts created (435 lines)
+- ✅ All 6 methods implemented (createTag, createCommit, updateRef, getChangedFiles, getLastTag, getCommitsSince)
+- ✅ Uses GitHubService.executeWithRetry() for all API calls
+- ✅ Result<T, E> pattern throughout for functional error handling
+- ✅ Repository context from GitHubService
+- ✅ Unit tests with mocked dependencies (23 tests passing)
+- ✅ Integration with existing error/logger utilities
+- ✅ Type-check passes (0 errors)
+- ✅ All 632 tests passing (23 new + 609 existing)
+
+**Design Decisions**:
+
+- Wrapper pattern for GitHub API provides abstraction for Git operations
+- Uses GitHubService instead of direct Octokit access (consistent retry/error handling)
+- Two-step tag creation (object then ref) required by GitHub API for annotated tags
+- Path filtering implemented post-fetch (more flexible than GitHub API parameter)
+- getLastTag returns null for no tags (not error - valid state for new repos)
+- getCommitsSince reuses getChangedFiles internal logic (DRY principle)
+- All operations use repository context from GitHubService (no redundant parameters)
+- GitOperationError wraps all failures with operation context for debugging
+- Structured logging follows Pino syntax (data first, message second)
+
+**Deferred**:
+
+- Git CLI fallback - Not implemented (GitHub API sufficient for all operations)
+- Can be added later if specific Git operations require local execution
+
+---
+
 ## Quality Metrics
 
 | Metric        | Target | Current | Status |
@@ -1630,7 +1715,7 @@ Created workspace adapter factory in `src/core/adapters/AdapterFactory.ts` (169 
 
 ## Files Created
 
-### Source Files (28)
+### Source Files (29)
 
 - `tsconfig.json` - TypeScript configuration
 - `src/types/version.ts` - Version type definitions (63 lines)
@@ -1660,9 +1745,10 @@ Created workspace adapter factory in `src/core/adapters/AdapterFactory.ts` (169 
 - `src/core/adapters/TextAdapter.ts` - Text workspace adapter (211 lines)
 - `src/core/adapters/AdapterFactory.ts` - Workspace adapter factory (169 lines)
 - `src/services/GitHubService.ts` - GitHub API service wrapper (287 lines)
+- `src/services/GitService.ts` - Git operations service (435 lines)
 - `test/fixtures/repos/setup.ts` - Test repository setup utilities (318 lines)
 
-### Test Files (23)
+### Test Files (24)
 
 - `src/types/version.spec.ts` - Version type tests (51 lines, 8 tests)
 - `src/utils/errors.spec.ts` - Error class tests (147 lines, 21 tests)
@@ -1686,6 +1772,7 @@ Created workspace adapter factory in `src/core/adapters/AdapterFactory.ts` (169 
 - `src/core/adapters/TextAdapter.spec.ts` - Text adapter tests (298 lines, 33 tests)
 - `src/core/adapters/AdapterFactory.spec.ts` - Adapter factory tests (272 lines, 30 tests)
 - `src/services/GitHubService.spec.ts` - GitHub API service tests (490 lines, 21 tests)
+- `src/services/GitService.spec.ts` - Git operations service tests (630 lines, 23 tests)
 - `test/fixtures/repos/setup.test.ts` - Repository setup tests (163 lines, 16 tests)
 
 ### Modified Files (2)
@@ -1715,21 +1802,21 @@ Created workspace adapter factory in `src/core/adapters/AdapterFactory.ts` (169 
 ## Last Activity
 
 **Date**: 2025-10-18
-**Task**: TSK-021 GitHub API Service
+**Task**: TSK-022 Git Operations Service
 **Status**: ✅ Completed
-**Test Results**: 609/609 passing (21 new tests + 588 existing)
+**Test Results**: 632/632 passing (23 new tests + 609 existing)
 **Type Check**: 0 errors
 
 Key achievements:
 
-- Created GitHubService wrapper for Octokit with type-safe API access
-- Integrated existing retry utility with exponential backoff for API calls
-- Implemented rate limit checking and automatic waiting when approaching limits
-- Repository context management (owner/repo) from configuration
-- Error handling with GitHubAPIError wrapper for consistent error format
-- Helper methods: getOctokit, getRepository, executeWithRetry, getRateLimit, checkRateLimit
-- 21 comprehensive tests covering all methods, retry scenarios, rate limiting
-- **Services Phase Started** - first of 4 services tasks complete
+- Created GitService for Git operations using GitHub API (no shell commands)
+- Implemented 6 methods: createTag, createCommit, updateRef, getChangedFiles, getLastTag, getCommitsSince
+- All operations use GitHubService.executeWithRetry() for automatic retry and rate limiting
+- Two-step tag creation (object + ref) for annotated tags with full metadata
+- Path filtering for getChangedFiles with post-fetch filtering for flexibility
+- 23 comprehensive tests with mocked GitHubService covering success and error scenarios
+- Integration scenarios testing complete workflows (tag creation, commit+ref updates)
+- **Services Phase 50% Complete** - 2 of 4 services tasks complete
 
 ---
 
