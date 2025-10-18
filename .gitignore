@@ -17,3 +17,7 @@
 *.tsbuildinfo
 
 /**/tmp.*
+
+
+#Ignore insiders AI rules
+.github/instructions/codacy.instructions.md

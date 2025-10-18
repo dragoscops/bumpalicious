@@ -1,87 +1,12 @@
 version: '3'
 
 tasks:
-  default:
+  prepare:
     cmds:
-      - task --list
-    desc: Default Action => List all Tasks
-
-  docker:attach:
-    cmds:
-      - docker run --rm -it -v "$(pwd):/app" --entrypoint bash dragoscops/version-update:latest
-    desc: Use a Linux Container to Debug
-    deps:
-      - docker:build
-
-  docker:build:
-    cmds:
-      - docker build . -t dragoscops/version-update:latest
-    # internal: true
-    sources:
-      - Dockerfile
-
-  docker:test:
-    cmds:
-      - docker run --rm -v "$(pwd):/app" --entrypoint bash dragoscops/version-update:latest -c "task test {{ .CLI_ARGS }}"
-    deps:
-      - docker:build
-    desc: Run Unit Tests under Linux
-    sources:
-      - src/**/*
-      - test/**/*
-    summary: |
-      Executes the Test Suite (under a Linux Docker Container) Using https://github.com/bats-core/bats-core.
-
-  test:bats:install:
-    cmds:
-      - mkdir -p test
-      - git submodule add -b master https://github.com/bats-core/bats-core.git test/bats
-      - mkdir -p test/test_helper
-      - git submodule add -b master https://github.com/bats-core/bats-support.git test/test_helper/bats-support
-      - git submodule add -b master https://github.com/bats-core/bats-assert.git test/test_helper/bats-assert
-    desc: Download Bats Dependencies
-    generates:
-      - test/bats
-      - test/test_helper/bats-support
-      - test/test_helper/bats-assert
-    sources:
-      - test/bats/**/*
-    summary: |
-      Initializes git submodules (tracking the latest commit on the 'master' branch) and downloads project dependencies:
-        - bats-core for unit testing (https://github.com/bats-core/bats-core)
-        - bats-support for helper functions
-        - bats-assert for assertions
-
-  test:bats:update:
-    cmds:
-      - git submodule update --init --recursive --remote
-    desc: Update bats dependencies
-    sources:
-      - test/**/*.bats
-      - test/**/*.sh
-    summary: |
-      Updates git submodules (tracking the latest commit on the 'master' branch) and downloads project dependencies:
-        - bats-core for unit testing (https://github.com/bats-core/bats-core)
-        - bats-support for helper functions
-        - bats-assert for assertions
-
-  test:
-    deps:
-      - test:bats:update
-    desc: Run Unit Tests
-    sources:
-      - src/**/*
-      - test/**/*
-    summary: |
-      Executes the test suite using bats.
-    cmds:
-      - rm -rf ./tmp && mkdir ./tmp
-      - ./test/bats/bin/bats -x ./test/
-      # - ./test/bats/bin/bats -x ./test/git.bats
-      # - ./test/bats/bin/bats -x ./test/github.bats
-      # - ./test/bats/bin/bats -x ./test/logging.bats
-      # - ./test/bats/bin/bats -x ./test/package_name_detect.bats
-      # - ./test/bats/bin/bats -x ./test/package_version_detect.bats
-      # - ./test/bats/bin/bats -x ./test/package_version_update.bats
-      # - ./test/bats/bin/bats -x ./test/project.bats
-      # - ./test/bats/bin/bats -x ./test/version.bats
+      - npm install
+      - npx husky
+      # https://github.com/isaacphi/mcp-language-server
+      - go install github.com/isaacphi/mcp-language-server@latest
+      # https://github.com/typescript-language-server/typescript-language-server
+      - npm install -g typescript-language-server typescript
+    desc: "Install dependencies"
