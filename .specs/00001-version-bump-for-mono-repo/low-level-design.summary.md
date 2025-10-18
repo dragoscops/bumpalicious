@@ -13,9 +13,9 @@
 | Foundation          | TSK-001-08 | Completed   | 100%       |
 | Adapters            | TSK-009-20 | Completed   | 100%       |
 | Services            | TSK-021-24 | Completed   | 100%       |
-| Core Logic          | TSK-025-27 | Not Started | 0%         |
+| Core Logic          | TSK-025-27 | In Progress | 33%        |
 | Orchestration & E2E | TSK-028-30 | Not Started | 0%         |
-| **Overall**         | **30**     | **80%**     | **24/30**  |
+| **Overall**         | **30**     | **83%**     | **25/30**  |
 
 ---
 
@@ -1806,7 +1806,7 @@ Created workspace adapter factory in `src/core/adapters/AdapterFactory.ts` (169 
 
 ## Files Created
 
-### Source Files (31)
+### Source Files (32)
 
 - `tsconfig.json` - TypeScript configuration
 - `src/types/version.ts` - Version type definitions (63 lines)
@@ -1839,9 +1839,10 @@ Created workspace adapter factory in `src/core/adapters/AdapterFactory.ts` (169 
 - `src/services/GitService.ts` - Git operations service (435 lines)
 - `src/services/PRService.ts` - Pull request management service (589 lines)
 - `src/services/RepositoryService.ts` - Repository queries and file operations (242 lines)
+- `src/core/WorkspaceTreeBuilder.ts` - Workspace tree builder with hierarchy validation (329 lines)
 - `test/fixtures/repos/setup.ts` - Test repository setup utilities (318 lines)
 
-### Test Files (26)
+### Test Files (27)
 
 - `src/types/version.spec.ts` - Version type tests (51 lines, 8 tests)
 - `src/utils/errors.spec.ts` - Error class tests (147 lines, 21 tests)
@@ -1868,6 +1869,7 @@ Created workspace adapter factory in `src/core/adapters/AdapterFactory.ts` (169 
 - `src/services/GitService.spec.ts` - Git operations service tests (630 lines, 23 tests)
 - `src/services/PRService.spec.ts` - Pull request service tests (710 lines, 23 tests)
 - `src/services/RepositoryService.spec.ts` - Repository service tests (534 lines, 13 tests)
+- `src/core/WorkspaceTreeBuilder.spec.ts` - Workspace tree builder tests (577 lines, 22 tests)
 - `test/fixtures/repos/setup.test.ts` - Repository setup tests (163 lines, 16 tests)
 
 ### Modified Files (4)
@@ -1892,6 +1894,93 @@ Created workspace adapter factory in `src/core/adapters/AdapterFactory.ts` (169 
 - `@types/semver@^7.x` - Semver type definitions
 
 **Existing**: `@templ-project/tsconfig@^0.4.2` (already installed)
+
+---
+
+### ✅ TSK-025: Workspace Tree Builder (5h)
+
+**Completed**: 2025-10-19
+
+**Deliverables**:
+
+1. **src/core/WorkspaceTreeBuilder.ts** (329 lines):
+   - `WorkspaceTreeBuilder` class - Build hierarchical workspace trees from flat lists
+   - Main methods:
+     - `build(workspaces)` - Build workspace tree with validation, returns WorkspaceTree
+     - `identifyRoot(workspaces)` - Find root workspace by shortest path with normalization
+     - `normalizePath(path)` - Normalize paths (handles ".", "./", trailing slashes)
+   - Private methods:
+     - `buildNodes(workspaces)` - Convert workspaces to tree nodes with metadata
+     - `establishRelationships(nodes)` - Build parent-child relationships, return root
+     - `validateSingleRoot(nodes)` - Ensure only one root workspace exists
+     - `validateChangePropagation(root)` - Validate children changes require root changes
+   - All methods throw `WorkspaceValidationError` for validation violations
+
+2. **Integration with Existing Infrastructure**:
+   - Uses `WorkspaceWithVersion`, `WorkspaceNode`, `WorkspaceTree` from TSK-002
+   - Uses `WorkspaceValidationError` from TSK-003 for consistent error handling
+   - Uses `logger` from TSK-004 for structured logging with tree metadata
+
+3. **Key Features**:
+   - Hierarchical tree building from flat workspace lists
+   - Root identification by shortest normalized path ("." preferred)
+   - Single root validation (multiple roots = error)
+   - Change propagation validation (children changes → root must change)
+   - Recursive tree structure with parent-child relationships
+   - Path normalization handles edge cases (".", "./", trailing slashes)
+   - Master version tracking from root workspace
+   - Comprehensive metadata (totalWorkspaces, childrenCount, isRoot flags)
+   - Structured logging with operation context
+
+**Error Handling**:
+
+- Empty workspace list → WorkspaceValidationError
+- Multiple roots detected → WorkspaceValidationError with root details
+- Children changed but root unchanged → WorkspaceValidationError with affected paths
+- Invalid paths normalized gracefully ("./", ".//", "path/" → canonical form)
+
+**Tests**:
+
+- Created `WorkspaceTreeBuilder.spec.ts` with 22 test cases (100% passing)
+- Test groups:
+  - input validation (2): empty list error, single workspace handling
+  - root identification (3): shortest path logic, normalization (".", "./"), closest parent
+  - tree structure (4): parent-child relationships, multi-level nesting, hierarchy
+  - single root validation (2): multiple roots error, "." as root with children
+  - change propagation validation (6): valid scenarios, error scenarios with nested children
+  - tree properties (3): masterVersion, allWorkspaces array, isRoot flag
+  - edge cases (2): trailing slashes, similar path prefixes
+- All error scenarios validated with proper error messages
+- Integration with fixtures from TSK-008
+
+**Validation**:
+
+- ✅ src/core/WorkspaceTreeBuilder.ts created (329 lines)
+- ✅ build() method taking flat workspace list
+- ✅ Identify root workspace by shortest path with normalization
+- ✅ Validate only one root exists (throws on multiple roots)
+- ✅ Build recursive tree structure with parent-child relationships
+- ✅ Validate change propagation (children changes → root must change)
+- ✅ Return WorkspaceTree with masterVersion from root
+- ✅ Throw WorkspaceValidationError for violations
+- ✅ Unit tests covering valid/invalid hierarchies (22 tests passing)
+- ✅ Test error cases: multiple roots, children changed but root unchanged
+- ✅ Type-check passes (0 errors)
+- ✅ All 690 tests passing (22 new + 668 existing)
+- ✅ **Core Logic Phase 33% Complete** - First task finished! 🎯
+
+**Design Decisions**:
+
+- Class-based design for maintaining state during tree building process
+- Path normalization centralized in single method for consistency
+- Root identification uses shortest normalized path (matches monorepo conventions)
+- "." represents root directory and naturally contains all subdirectories
+- Multi-pass algorithm: nodes → relationships → validations (separation of concerns)
+- Change propagation validation ensures version bumps cascade properly
+- Throws errors immediately on validation failures (fail-fast approach)
+- Structured logging includes tree metadata for debugging complex hierarchies
+- isRoot flag on nodes for easy identification without path comparisons
+- allWorkspaces array flattens tree for convenient iteration
 
 ---
 
@@ -1979,22 +2068,23 @@ Created workspace adapter factory in `src/core/adapters/AdapterFactory.ts` (169 
 ## Last Activity
 
 **Date**: 2025-10-19
-**Task**: TSK-024 Repository Service
+**Task**: TSK-025 Workspace Tree Builder
 **Status**: ✅ Completed
-**Test Results**: 668/668 passing (13 new tests + 655 existing)
+**Test Results**: 690/690 passing (22 new tests + 668 existing)
 **Type Check**: 0 errors
 
 Key achievements:
 
-- Created RepositoryService for repository queries and file operations with 3 core methods
-- Implemented getFileContent (with base64 decoding), updateFile, and getCommits methods
-- Added 4 new interfaces to git.ts for repository operations
-- All operations use GitHubService.executeWithRetry() for automatic retry and rate limiting
-- Automatic base64 encoding/decoding for file content (GitHub API ↔ UTF-8)
-- Pagination support for commit queries with GitHub API max limit (100)
-- 13 comprehensive tests with mocked GitHubService covering all methods and edge cases
-- Directory vs file validation in getFileContent (prevents downstream errors)
-- **Services Phase 100% Complete** - All 4 services tasks finished successfully! 🎉
+- Created WorkspaceTreeBuilder for hierarchical workspace tree construction from flat lists
+- Implemented build() method with root identification, tree building, and validation
+- Root identification by shortest normalized path (handles ".", "./", trailing slashes)
+- Single root validation ensures only one root workspace exists (throws on multiple roots)
+- Change propagation validation ensures children changes require root changes
+- Recursive tree structure with parent-child relationships and metadata
+- Path normalization handles edge cases consistently ("." as root directory)
+- 22 comprehensive tests covering all validation scenarios and edge cases
+- Fixed test expectation: "." correctly identified as root with "tools" as child
+- **Core Logic Phase 33% Complete** - First task finished! 🎯 (1/3 tasks)
 
 ---
 
@@ -2002,39 +2092,32 @@ Key achievements:
 
 ## Next Steps
 
-### Services Phase (🔄 In Progress - 75%)
+### Core Logic Phase (🔄 In Progress - 33%)
 
 Foundation Phase Complete! ✅
 Parsers Phase Complete! ✅
 Adapters Phase Complete! ✅
-GitHub API Service Complete! ✅
-Git Operations Service Complete! ✅
-Pull Request Service Complete! ✅
+Services Phase Complete! ✅
+Workspace Tree Builder Complete! ✅
 
-#### Current Focus: TSK-024 Repository Service
+#### Current Focus: TSK-026 Version Service
 
-Remaining services tasks:
+Remaining Core Logic tasks:
 
-- **TSK-024**: Repository Service (2h) - Next
-  - Create `src/services/RepositoryService.ts`
-  - Methods: getFileContent(), updateFile(), getCommits()
-  - Depends on TSK-021 (GitHubService) - complete
-  - Unit tests with mocked Octokit
-  - Will complete Services Phase (4/4 tasks)
+1. **TSK-026: Version Service** (4h) - Next
+   - Create `src/core/VersionService.ts`
+   - Methods: calculateNewVersion(), increaseVersion()
+   - Handle pre-release identifiers (alpha, beta, rc)
+   - Depends on TSK-009 (ConventionalCommitParser) - complete
+   - Unit tests covering all bump types and pre-release scenarios
 
-**Total Services Phase**: 9 hours estimated (7 hours completed)
+2. **TSK-027: Changelog Service** (4h)
+   - Create `src/core/ChangelogService.ts`
+   - Methods: generateChangelog(), formatCommits()
+   - Uses conventional-changelog format
+   - Unit tests with commit history fixtures
 
----
-
-### Core Logic Phase (Not Started - 0%)
-
-Next phase begins:
-
-1. **TSK-025: Workspace Tree Builder** (5h) - Workspace tree builder with hierarchy validation
-2. **TSK-026: Version Service** (4h) - Semantic version calculation based on commit messages
-3. **TSK-027: Changelog Service** (4h) - Changelog generation using conventional-changelog
-
-**Total Core Logic Phase**: 13 hours estimated
+**Total Core Logic Phase**: 13 hours estimated (5 hours completed)
 
 ---
 
