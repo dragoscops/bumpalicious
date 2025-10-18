@@ -13,9 +13,9 @@
 | Foundation          | TSK-001-08 | Completed   | 100%       |
 | Adapters            | TSK-009-20 | Completed   | 100%       |
 | Services            | TSK-021-24 | Completed   | 100%       |
-| Core Logic          | TSK-025-27 | In Progress | 67%        |
-| Orchestration & E2E | TSK-028-30 | Not Started | 0%         |
-| **Overall**         | **30**     | **87%**     | **26/30**  |
+| Core Logic          | TSK-025-27 | Completed   | 100%       |
+| Orchestration & E2E | TSK-028-30 | In Progress | 33%        |
+| **Overall**         | **30**     | **90%**     | **27/30**  |
 
 ---
 
@@ -1806,7 +1806,7 @@ Created workspace adapter factory in `src/core/adapters/AdapterFactory.ts` (169 
 
 ## Files Created
 
-### Source Files (35)
+### Source Files (36)
 
 - `tsconfig.json` - TypeScript configuration
 - `src/types/version.ts` - Version type definitions (63 lines)
@@ -1843,9 +1843,10 @@ Created workspace adapter factory in `src/core/adapters/AdapterFactory.ts` (169 
 - `src/core/WorkspaceTreeBuilder.ts` - Workspace tree builder with hierarchy validation (329 lines)
 - `src/core/VersionService.ts` - Version calculation service with pre-release support (324 lines)
 - `src/core/ChangelogService.ts` - Changelog generation service with conventional-changelog (374 lines)
+- `src/core/WorkspaceManager.ts` - Main workflow orchestration service (640 lines)
 - `test/fixtures/repos/setup.ts` - Test repository setup utilities (318 lines)
 
-### Test Files (29)
+### Test Files (30)
 
 - `src/types/version.spec.ts` - Version type tests (51 lines, 8 tests)
 - `src/utils/errors.spec.ts` - Error class tests (147 lines, 21 tests)
@@ -1875,6 +1876,7 @@ Created workspace adapter factory in `src/core/adapters/AdapterFactory.ts` (169 
 - `src/core/WorkspaceTreeBuilder.spec.ts` - Workspace tree builder tests (577 lines, 22 tests)
 - `src/core/VersionService.spec.ts` - Version calculation service tests (441 lines, 27 tests)
 - `src/core/ChangelogService.spec.ts` - Changelog generation service tests (537 lines, 16 tests)
+- `src/core/WorkspaceManager.spec.ts` - Workspace manager orchestration tests (569 lines, 20 tests)
 - `test/fixtures/repos/setup.test.ts` - Repository setup tests (163 lines, 16 tests)
 
 ### Modified Files (4)
