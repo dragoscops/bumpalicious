@@ -11,11 +11,11 @@
 | Phase               | Tasks      | Status      | Completion |
 | ------------------- | ---------- | ----------- | ---------- |
 | Foundation          | TSK-001-08 | Completed   | 100%       |
-| Adapters            | TSK-009-20 | In Progress | 58%        |
+| Adapters            | TSK-009-20 | In Progress | 67%        |
 | Services            | TSK-021-24 | Not Started | 0%         |
 | Core Logic          | TSK-025-27 | Not Started | 0%         |
 | Orchestration & E2E | TSK-028-30 | Not Started | 0%         |
-| **Overall**         | **30**     | **50%**     | **15/30**  |
+| **Overall**         | **30**     | **53%**     | **16/30**  |
 
 ---
 
@@ -1080,6 +1080,95 @@ Created Python workspace adapter in `src/core/adapters/PythonAdapter.ts` (300 li
 
 ---
 
+### ✅ TSK-015: Deno Workspace Adapter (2h)
+
+**Completed**: 2025-01-18
+
+**Deliverables**:
+
+Created Deno workspace adapter in `src/core/adapters/DenoAdapter.ts` (311 lines):
+
+1. **Main Features**:
+   - Extends `BaseWorkspaceAdapter` abstract class
+   - Supports 3 Deno configuration formats:
+     - `deno.jsonc` - JSON with comments (Deno's preferred format)
+     - `deno.json` - Standard JSON configuration
+     - `jsr.json` - JSR (JavaScript Registry) publishing config
+   - Priority-based file detection (deno.jsonc > deno.json > jsr.json)
+   - Updates ALL existing config files to maintain version consistency
+   - Dynamic import for `tiny-jsonc` library to handle JSONC parsing
+
+2. **Detection Logic**:
+   - `detect()` - Searches for config files in priority order
+   - JSONC support for comments in deno.jsonc files (single-line and block comments)
+   - Uses lazy-loaded `tiny-jsonc` parser for JSONC format
+   - Falls through to next file if parsing fails (resilient detection)
+   - Returns `Result<ProjectInfo, WorkspaceDetectionError>`
+
+3. **Update Logic**:
+   - `update()` - Updates all existing config files
+   - Format-specific handling:
+     - JSONC files: Parses with tiny-jsonc, writes back as standard JSON
+     - JSON files: Uses standard JSON.parse/stringify
+   - Preserves JSON formatting (2-space indentation, trailing newline)
+   - Returns `Result<void, FileOperationError>`
+
+4. **File Configuration**:
+   - Each file format defined in `FILE_CONFIGS` array with `filename` and `isJsonc` flag
+   - Priority order reflects Deno ecosystem conventions (modern deno.jsonc first)
+   - Multi-file strategy ensures version consistency across Deno runtime and JSR registry
+
+5. **Error Handling**:
+   - No config file found - returns WorkspaceDetectionError
+   - Malformed JSON/JSONC - skips to next file in priority order
+   - Missing version/name in file - validation error from parser
+   - Invalid version format - caught by isVersion() guard
+
+**Tests**:
+
+- Created `DenoAdapter.spec.ts` with 30 test cases (100% passing)
+- Test groups:
+  - properties (2): type, supportedFiles
+  - detect (15):
+    - deno.json (3): basic, pre-release, build metadata
+    - deno.jsonc (2): single-line comments, block comments
+    - jsr.json (1): scoped package detection
+    - priority order (4): all pairwise priority tests, fallback on invalid
+    - error handling (5): no file, malformed JSON, missing fields, invalid version
+  - update (11):
+    - single file updates (4): all 3 file types, formatting preservation
+    - multi-file updates (2): multiple files, JSONC + JSR
+    - error handling (3): no file, malformed JSON, missing version
+    - version format preservation (2): pre-release, build metadata
+  - integration tests (2):
+    - detect and update workflow
+    - real-world Deno project structure with tasks and imports
+
+**Validation**:
+
+- ✅ src/core/adapters/DenoAdapter.ts created (311 lines)
+- ✅ Detect from deno.jsonc, deno.json, jsr.json
+- ✅ Handle JSON with comments (JSONC) format correctly
+- ✅ Support both single-line and block comments in JSONC
+- ✅ Update all matching files for version consistency
+- ✅ Priority-based detection (deno.jsonc first, jsr.json last)
+- ✅ Unit tests with all 3 file types (30 tests passing)
+- ✅ Test with real Deno project structures
+- ✅ Type-check passes (0 errors)
+- ✅ All 479 tests passing (30 new + 449 existing)
+
+**Design Decisions**:
+
+- Used dynamic import for tiny-jsonc to avoid CommonJS/ESM issues
+- Lazy-loaded JSONC parser for better performance (only loaded when needed)
+- JSONC files written back as standard JSON (comments not preserved in updates)
+- Array-based FILE_CONFIGS for maintainability and extensibility
+- Updates ALL found files (not just first) to prevent version drift
+- Skips invalid files instead of failing early (tries all options)
+- Priority order: deno.jsonc preferred (modern Deno standard), jsr.json last
+
+---
+
 ## Quality Metrics
 
 | Metric        | Target | Current | Status |
@@ -1094,7 +1183,7 @@ Created Python workspace adapter in `src/core/adapters/PythonAdapter.ts` (300 li
 
 ## Files Created
 
-### Source Files (22)
+### Source Files (23)
 
 - `tsconfig.json` - TypeScript configuration
 - `src/types/version.ts` - Version type definitions (63 lines)
@@ -1117,10 +1206,11 @@ Created Python workspace adapter in `src/core/adapters/PythonAdapter.ts` (300 li
 - `src/core/adapters/BaseAdapter.ts` - Base workspace adapter class (155 lines)
 - `src/core/adapters/NodeAdapter.ts` - Node.js workspace adapter (182 lines)
 - `src/core/adapters/PythonAdapter.ts` - Python workspace adapter (300 lines)
+- `src/core/adapters/DenoAdapter.ts` - Deno workspace adapter (311 lines)
 - `src/core/adapters/TextAdapter.ts` - Text workspace adapter (171 lines)
 - `test/fixtures/repos/setup.ts` - Test repository setup utilities (318 lines)
 
-### Test Files (17)
+### Test Files (18)
 
 - `src/types/version.spec.ts` - Version type tests (51 lines, 8 tests)
 - `src/utils/errors.spec.ts` - Error class tests (147 lines, 21 tests)
@@ -1137,6 +1227,7 @@ Created Python workspace adapter in `src/core/adapters/PythonAdapter.ts` (300 li
 - `src/core/adapters/BaseAdapter.spec.ts` - Base adapter tests (150 lines, 16 tests)
 - `src/core/adapters/NodeAdapter.spec.ts` - Node.js adapter tests (280 lines, 25 tests)
 - `src/core/adapters/PythonAdapter.spec.ts` - Python adapter tests (710 lines, 36 tests)
+- `src/core/adapters/DenoAdapter.spec.ts` - Deno adapter tests (600 lines, 30 tests)
 - `src/core/adapters/TextAdapter.spec.ts` - Text adapter tests (298 lines, 33 tests)
 - `test/fixtures/repos/setup.test.ts` - Repository setup tests (163 lines, 16 tests)
 
@@ -1167,18 +1258,19 @@ Created Python workspace adapter in `src/core/adapters/PythonAdapter.ts` (300 li
 ## Last Activity
 
 **Date**: 2025-01-18
-**Task**: TSK-014 Python Workspace Adapter
+**Task**: TSK-015 Deno Workspace Adapter
 **Status**: ✅ Completed
-**Test Results**: 449/449 passing (36 new tests + 413 existing)
+**Test Results**: 479/479 passing (30 new tests + 449 existing)
 **Type Check**: 0 errors
 
 Key achievements:
 
-- Created Python workspace adapter supporting 5 configuration formats
-- Supports pyproject.toml, poetry.toml, setup.py, setup.cfg, **init**.py
-- Priority-based detection with multi-file version consistency
-- Special **init**.py handling with directory basename fallback
-- 36 comprehensive tests covering all formats, priority, and edge cases
+- Created Deno workspace adapter with JSONC support
+- Supports deno.json, deno.jsonc (JSON with comments), jsr.json
+- Dynamic import for tiny-jsonc library to handle JSONC parsing
+- Priority-based detection (deno.jsonc > deno.json > jsr.json)
+- Multi-file updates for Deno runtime and JSR registry consistency
+- 30 comprehensive tests covering all formats, comments, and edge cases
 
 ---
 
@@ -1186,20 +1278,22 @@ Key achievements:
 
 ## Next Steps
 
-### Adapters Phase (In Progress - 58% Complete)
+### Adapters Phase (In Progress - 67% Complete)
 
 Foundation Phase Complete! ✅
 Parsers Phase Complete! ✅
 Base Adapter Complete! ✅
 Node.js Adapter Complete! ✅
 Python Adapter Complete! ✅
+Deno Adapter Complete! ✅
 Text Adapter Complete! ✅
 
 Next up:
 
-1. **TSK-015: Deno Workspace Adapter** (2h) - Implement Deno/JSR adapter (deno.json, deno.jsonc, jsr.json)
-2. **TSK-016-018: Other Language Adapters** (6h) - Go (go.mod), Rust (Cargo.toml), Zig (build.zig)
-3. **TSK-020: Workspace Adapter Factory** (2h) - Adapter instantiation factory
+1. **TSK-016: Go Workspace Adapter** (2h) - Implement Go module adapter (go.mod with version comments)
+2. **TSK-017: Rust Workspace Adapter** (2h) - Implement Cargo adapter (Cargo.toml)
+3. **TSK-018: Zig Workspace Adapter** (2h) - Implement Zig adapter (build.zig)
+4. **TSK-020: Workspace Adapter Factory** (2h) - Adapter instantiation factory
 
 ---
 
