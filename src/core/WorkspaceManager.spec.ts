@@ -193,7 +193,7 @@ describe('WorkspaceManager', () => {
     it('should detect changed workspaces with last tag', async () => {
       vi.mocked(mockGitService.getChangedFiles).mockResolvedValue(ok(mockGitComparison));
 
-      const result = await workspaceManager.detectChangedWorkspaces([mockWorkspace], 'v1.0.0');
+      const result = await workspaceManager.detectChangedWorkspaces([mockWorkspace], 'v1.0.0', 'main');
 
       expect(result.ok).toBe(true);
       if (result.ok) {
@@ -202,7 +202,7 @@ describe('WorkspaceManager', () => {
         expect(result.value[0].changedFiles.length).toBeGreaterThan(0);
       }
 
-      expect(mockGitService.getChangedFiles).toHaveBeenCalledWith('v1.0.0', 'HEAD');
+      expect(mockGitService.getChangedFiles).toHaveBeenCalledWith('v1.0.0', 'main');
     });
 
     it('should detect changed workspaces without last tag', async () => {
