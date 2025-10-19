@@ -311,20 +311,26 @@ export class GitService {
         }),
       );
 
-      logger.debug(
+      // Filter files by path if specified
+      let files = comparison.data.files || [];
+      const rawCommits = comparison.data.commits || [];
+
+      logger.info(
         {
+          base,
+          head,
           status: comparison.data.status,
           ahead_by: comparison.data.ahead_by,
           behind_by: comparison.data.behind_by,
           total_commits: comparison.data.total_commits,
-          files_count: comparison.data.files?.length || 0,
-          commits_count: comparison.data.commits?.length || 0,
+          files_count: files.length,
+          commits_count: rawCommits.length,
+          file_names: files.map((f) => f.filename),
+          commit_messages: rawCommits.map((c) => c.commit.message.split('\n')[0]),
         },
         'Comparison API response',
       );
 
-      // Filter files by path if specified
-      let files = comparison.data.files || [];
       logger.debug({ totalFiles: files.length, filterPath: path }, 'Files before filtering');
 
       if (path) {
@@ -340,7 +346,7 @@ export class GitService {
         deletions: file.deletions,
       }));
 
-      const commits: GitCommit[] = (comparison.data.commits || []).map((commit) => ({
+      const commits: GitCommit[] = rawCommits.map((commit) => ({
         sha: commit.sha,
         message: commit.commit.message,
         author: {
@@ -349,8 +355,6 @@ export class GitService {
         },
         date: commit.commit.author?.date || new Date().toISOString(),
       }));
-
-      logger.debug({ commitMessages: commits.map((c) => c.message.split('\n')[0]) }, 'Parsed commit messages');
 
       logger.info(
         { base, head, filesCount: fileChanges.length, commitsCount: commits.length },

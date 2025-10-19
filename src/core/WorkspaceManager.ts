@@ -296,7 +296,14 @@ export class WorkspaceManager {
     workspaces: ReadonlyArray<Workspace>,
     lastTag: string | null,
   ): Promise<Result<ReadonlyArray<Workspace>, GitOperationError>> {
-    childLogger.debug({ lastTag }, 'Detecting changed workspaces');
+    childLogger.info(
+      {
+        lastTag,
+        workspaceCount: workspaces.length,
+        workspaces: workspaces.map((w) => ({ name: w.name, path: w.path, type: w.type })),
+      },
+      'Detecting changed workspaces',
+    );
 
     // If no last tag, all workspaces are considered changed
     if (!lastTag) {
@@ -317,13 +324,13 @@ export class WorkspaceManager {
     }
 
     const allChangedFiles = changedFilesResult.value.files;
-    childLogger.debug(
+    childLogger.info(
       {
         fileCount: allChangedFiles.length,
         files: allChangedFiles.map((f) => f.path),
         commitMessages: changedFilesResult.value.commits?.map((c) => c.message.split('\n')[0]),
       },
-      'Changed files retrieved',
+      'Changed files retrieved from comparison',
     );
 
     // Map workspaces to changed files
@@ -338,6 +345,17 @@ export class WorkspaceManager {
         return file.path.startsWith(workspacePath + '/') || file.path === workspacePath;
       });
 
+      childLogger.debug(
+        {
+          workspace: workspace.name,
+          workspacePath,
+          totalFiles: allChangedFiles.length,
+          matchedFiles: changedInWorkspace.length,
+          matchedFilenames: changedInWorkspace.map((f) => f.path),
+        },
+        'Workspace file matching',
+      );
+
       return {
         ...workspace,
         hasChanges: changedInWorkspace.length > 0,
@@ -346,15 +364,17 @@ export class WorkspaceManager {
     });
 
     const changedWorkspaces = updated.filter((w) => w.hasChanges);
-    childLogger.debug(
+    childLogger.info(
       {
         changedCount: changedWorkspaces.length,
         changedWorkspaceNames: changedWorkspaces.map((w) => w.name),
         totalWorkspaces: workspaces.length,
+        allWorkspaces: workspaces.map((w) => ({ name: w.name, path: w.path })),
         breakdown: changedWorkspaces.map((w) => ({
           name: w.name,
           path: w.path,
           fileCount: w.changedFiles?.length || 0,
+          files: w.changedFiles,
         })),
       },
       'Changed workspaces identified',
