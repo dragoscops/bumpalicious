@@ -36,6 +36,7 @@ import type { VersionService } from './VersionService.js';
 import type { ChangelogService } from './ChangelogService.js';
 import type { WorkspaceTreeBuilder } from './WorkspaceTreeBuilder.js';
 import { getAdapter } from './adapters/AdapterFactory.js';
+import * as exec from '@actions/exec';
 import type {
   WorkspaceConfig,
   Workspace,
@@ -538,8 +539,6 @@ export class WorkspaceManager {
     childLogger.debug({ version: tree.masterVersion }, 'Creating version commit');
 
     try {
-      const exec = await import('@actions/exec');
-
       // Stage all changes (version files and changelogs)
       await exec.exec('git', ['add', '-A']);
 
@@ -563,11 +562,7 @@ export class WorkspaceManager {
       childLogger.info({ sha: commitSha, message: commitMessage }, 'Version commit created and pushed');
       return ok(commitSha);
     } catch (error) {
-      const gitError = new GitOperationError(
-        'createVersionCommit',
-        'Failed to create version commit',
-        error
-      );
+      const gitError = new GitOperationError('createVersionCommit', 'Failed to create version commit', error);
       childLogger.error({ error: gitError }, 'Failed to create version commit');
       return err(gitError);
     }

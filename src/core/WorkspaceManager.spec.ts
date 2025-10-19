@@ -19,6 +19,17 @@ import type { Version } from '../types/version.js';
 import type { GitTag, GitComparison, FileChange } from '../types/git.js';
 import { ok as okResult } from '../types/result.js';
 
+// Mock @actions/exec to prevent real Git commands during tests
+vi.mock('@actions/exec', () => ({
+  exec: vi.fn().mockImplementation(async (command: string, args: string[], options?: any) => {
+    // Simulate git rev-parse HEAD returning a commit SHA
+    if (command === 'git' && args[0] === 'rev-parse' && args[1] === 'HEAD' && options?.listeners?.stdout) {
+      options.listeners.stdout(Buffer.from('abc123def456789\n'));
+    }
+    return 0;
+  }),
+}));
+
 // Mock logger before imports
 vi.mock('../utils/logger.js', () => ({
   logger: {
@@ -399,12 +410,12 @@ describe('WorkspaceManager', () => {
         allWorkspaces: [],
       };
 
-      // Note: In actual runtime, this will use @actions/exec to run git commands
-      // In tests, it will fail because exec is not available, which is expected
       const result = await workspaceManager.createVersionCommit(mockTree);
 
-      // In test environment without git/exec available, expect error
-      expect(result.ok).toBe(false);
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value).toBe('abc123def456789');
+      }
     });
   });
 
@@ -513,9 +524,7 @@ describe('WorkspaceManager', () => {
     };
 
     it('should create master version tag', async () => {
-      vi.mocked(mockGitService.getRef).mockResolvedValue(
-        ok({ ref: 'refs/heads/main', sha: 'abc123def456' }),
-      );
+      vi.mocked(mockGitService.getRef).mockResolvedValue(ok({ ref: 'refs/heads/main', sha: 'abc123def456' }));
       vi.mocked(mockGitService.createTag).mockResolvedValue(ok(mockGitTag));
 
       const options: WorkflowOptions = {
@@ -545,9 +554,7 @@ describe('WorkspaceManager', () => {
     });
 
     it('should handle error from tag creation', async () => {
-      vi.mocked(mockGitService.getRef).mockResolvedValue(
-        ok({ ref: 'refs/heads/main', sha: 'abc123def456' }),
-      );
+      vi.mocked(mockGitService.getRef).mockResolvedValue(ok({ ref: 'refs/heads/main', sha: 'abc123def456' }));
       vi.mocked(mockGitService.createTag).mockResolvedValue(
         err(new GitOperationError('createTag', 'Failed to create tag')),
       );

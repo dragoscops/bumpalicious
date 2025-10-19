@@ -18,14 +18,7 @@
     "type": "git",
     "url": "git+https://github.com/dragoscops/version-update.git"
   },
-  "keywords": [
-    "github",
-    "actions",
-    "version",
-    "semver",
-    "release",
-    "conventional-commits"
-  ],
+  "keywords": ["github", "actions", "version", "semver", "release", "conventional-commits"],
   "author": "dragoscops",
   "license": "MIT",
   "bugs": {
