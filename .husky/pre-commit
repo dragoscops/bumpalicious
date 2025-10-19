@@ -2,6 +2,6 @@ npm run prettify
 
 # npm run cpd
 
-# npm run build
+npm run build
 
 git add .

@@ -16,7 +16,6 @@
 .jscpd/html
 
 /node_modules
-/dist
 *.tsbuildinfo
 
 /**/tmp.*

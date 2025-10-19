@@ -3,6 +3,12 @@
  */
 
 import type { WorkspaceConfig } from './workspace.js';
+import type { BumpType } from './version.js';
+
+/**
+ * Action-specific bump type including 'none' for no changes
+ */
+export type ActionBumpType = BumpType | 'none';
 
 /**
  * GitHub Action inputs from action.yml
@@ -34,9 +40,18 @@ export interface ParsedWorkspaces {
  * GitHub Action outputs
  */
 export interface ActionOutputs {
+  /** Primary version tag created (e.g., 'v1.2.3') */
   readonly tag: string;
+  /** New version number without prefix (e.g., '1.2.3') */
   readonly version: string;
-  readonly pr?: string;
+  /** Pull request number if PR was created (empty string if no PR) */
+  readonly pr: string;
+  /** Comma-separated list of all tags created (includes monorepo workspace tags) */
+  readonly all_tags: string;
+  /** JSON array of workspace paths that had version changes */
+  readonly changed_workspaces: string;
+  /** Type of version bump performed (major, minor, patch, pre-release, or none) */
+  readonly bump_type: ActionBumpType;
 }
 
 /**

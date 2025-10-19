@@ -5,7 +5,7 @@
 **Created**: 2025-10-17
 **Delivery Strategy**: Bottom-up incremental (utilities → services → core → orchestration)
 **Estimated Duration**: 8 weeks
-**Total Items**: 30 tasks
+**Total Items**: 31 tasks
 
 ---
 
@@ -21,6 +21,7 @@ This plan breaks down the TypeScript migration and API-based refactor into 30 gr
 4. Workspace adapters: Language-specific handlers (Tasks 19-26)
 5. Core orchestration: Workspace tree, version service, changelog (Tasks 27-29)
 6. Final integration: Entry point and end-to-end testing (Task 30)
+7. Action outputs: Comprehensive output definitions (Task 31)
 
 ---
 
@@ -1019,15 +1020,93 @@ TSK-027 (Changelog Service) → TSK-028
 
 TSK-028 + TSK-006 + TSK-007 → TSK-029 (Entry Point)
 TSK-029 → TSK-030 (E2E Tests)
+TSK-030 → TSK-031 (Action Outputs)
+```
+
+---
+
+### Task 31: Action Outputs Definition
+
+**ID**: TSK-031
+**Type**: Task
+**Priority**: P0 (Critical)
+**Estimate**: 2 hours
+**Dependencies**: TSK-029, TSK-030
+**Source**: Section 5.1 (GitHub Action Interface)
+
+**Description**:
+Define comprehensive action outputs in action.yml and implement output setting in src/index.ts to provide downstream workflows with version bump results.
+
+**Acceptance Criteria**:
+
+- [ ] `action.yml` updated with outputs section
+- [ ] Six outputs defined:
+  - `tag` - Primary version tag created (e.g., "v1.2.3")
+  - `version` - New version number without prefix (e.g., "1.2.3")
+  - `pr` - Pull request number if PR was created
+  - `all_tags` - Comma-separated list of all tags (monorepo support)
+  - `changed_workspaces` - JSON array of changed workspace paths
+  - `bump_type` - Type of version bump (major, minor, patch, pre-release, none)
+- [ ] `src/index.ts` updated to set all outputs using core.setOutput()
+- [ ] Outputs validated in integration tests
+- [ ] Workflow examples updated in .github/workflows/
+- [ ] Documentation updated with output usage examples
+- [ ] All tests passing with new output logic
+
+**Implementation Notes**:
+
+```yaml
+# action.yml outputs section
+outputs:
+  tag:
+    description: "The primary version tag created (e.g., 'v1.2.3')"
+  version:
+    description: "The new version number without prefix (e.g., '1.2.3')"
+  pr:
+    description: "Pull request number if PR was created (empty string if no PR)"
+  all_tags:
+    description: "Comma-separated list of all tags created (includes monorepo workspace tags)"
+  changed_workspaces:
+    description: "JSON array of workspace paths that had version changes"
+  bump_type:
+    description: "The type of version bump performed (major, minor, patch, pre-release, or none)"
+```
+
+```typescript
+// src/index.ts output setting
+core.setOutput("tag", tag);
+core.setOutput("version", tree.masterVersion);
+core.setOutput("pr", prNumber?.toString() ?? "");
+core.setOutput("all_tags", allTags.join(","));
+core.setOutput("changed_workspaces", JSON.stringify(changedWorkspaces));
+core.setOutput("bump_type", bumpType);
+```
+
+**Usage Example**:
+
+```yaml
+# .github/workflows/ci.yml
+- name: Bump Version
+  id: version_step
+  uses: ./
+  with:
+    github_token: ${{ secrets.GITHUB_TOKEN }}
+    workspaces: .:node
+
+- name: Use Outputs
+  run: |
+    echo "New version: ${{ steps.version_step.outputs.version }}"
+    echo "Tag: ${{ steps.version_step.outputs.tag }}"
+    echo "Bump type: ${{ steps.version_step.outputs.bump_type }}"
 ```
 
 ---
 
 ## Completion Report
 
-**Total Tasks**: 30
-**Critical Path**: TSK-001 → TSK-002 → TSK-012 → TSK-020 → TSK-028 → TSK-029 → TSK-030
-**Estimated Duration**: 8 weeks (96 hours of development)
+**Total Tasks**: 31
+**Critical Path**: TSK-001 → TSK-002 → TSK-012 → TSK-020 → TSK-028 → TSK-029 → TSK-030 → TSK-031
+**Estimated Duration**: 8 weeks + 2 hours (98 hours of development)
 **Parallel Work Opportunities**: Adapters (TSK-013 to TSK-019), Services (TSK-021 to TSK-024)
 
 **Task IDs (Priority Order)**:
@@ -1047,23 +1126,24 @@ TSK-029 → TSK-030 (E2E Tests)
 13. TSK-028 - Workspace Manager (P0)
 14. TSK-029 - Action Entry Point (P0)
 15. TSK-030 - Integration & E2E Testing (P0)
-16. TSK-004 - Logger Utility (P1)
-17. TSK-008 - Test Fixtures Setup (P1)
-18. TSK-010 - Generic File Parser (P1)
-19. TSK-011 - Generic File Updater (P1)
-20. TSK-014 - Python Workspace Adapter (P1)
-21. TSK-019 - Text Workspace Adapter (P1)
-22. TSK-020 - Workspace Adapter Factory (P1)
-23. TSK-023 - Pull Request Service (P1)
-24. TSK-027 - Changelog Service (P1)
-25. TSK-005 - Retry Logic Utility (P2)
-26. TSK-015 - Deno Workspace Adapter (P2)
-27. TSK-016 - Go Workspace Adapter (P2)
-28. TSK-017 - Rust Workspace Adapter (P2)
-29. TSK-018 - Zig Workspace Adapter (P2)
-30. TSK-024 - Repository Service (P2)
+16. TSK-031 - Action Outputs Definition (P0)
+17. TSK-004 - Logger Utility (P1)
+18. TSK-008 - Test Fixtures Setup (P1)
+19. TSK-010 - Generic File Parser (P1)
+20. TSK-011 - Generic File Updater (P1)
+21. TSK-014 - Python Workspace Adapter (P1)
+22. TSK-019 - Text Workspace Adapter (P1)
+23. TSK-020 - Workspace Adapter Factory (P1)
+24. TSK-023 - Pull Request Service (P1)
+25. TSK-027 - Changelog Service (P1)
+26. TSK-005 - Retry Logic Utility (P2)
+27. TSK-015 - Deno Workspace Adapter (P2)
+28. TSK-016 - Go Workspace Adapter (P2)
+29. TSK-017 - Rust Workspace Adapter (P2)
+30. TSK-018 - Zig Workspace Adapter (P2)
+31. TSK-024 - Repository Service (P2)
 
 ---
 
-**Plan Status**: ✅ Ready for Implementation
-**Next Action**: Begin TSK-001 (TypeScript Project Setup)
+**Plan Status**: ✅ Completed - All 31 tasks finished
+**Migration Complete**: TypeScript migration 100% complete with comprehensive outputs

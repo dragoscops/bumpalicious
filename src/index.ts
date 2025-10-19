@@ -23,6 +23,8 @@ import { WorkspaceTreeBuilder } from './core/WorkspaceTreeBuilder.js';
 import { WorkspaceManager } from './core/WorkspaceManager.js';
 import { logger } from './utils/logger.js';
 import type { ChangelogPreset } from './core/ChangelogService.js';
+import type { ActionBumpType } from './types/action.js';
+import type { WorkspaceNode } from './types/workspace.js';
 
 /**
  * Read and parse action inputs
@@ -145,16 +147,53 @@ async function run(): Promise<void> {
     core.startGroup('📤 Setting outputs');
     const { tag, allTags, prNumber, tree } = result.value;
 
-    core.setOutput('tag', tag);
-    core.setOutput('version', tree.masterVersion);
-    if (prNumber) {
-      core.setOutput('pr', prNumber.toString());
+    // Extract changed workspace paths from tree
+    const changedWorkspaces = tree.root.children
+      .filter((node: WorkspaceNode) => node.workspace.hasChanges)
+      .map((node: WorkspaceNode) => node.workspace.path);
+
+    // Add root if it has changes
+    if (tree.root.workspace.hasChanges) {
+      changedWorkspaces.unshift(tree.root.workspace.path);
     }
 
+    // Determine bump type by comparing old and new versions
+    const oldVersion = tree.root.workspace.version;
+    const newVersion = tree.root.workspace.newVersion;
+
+    let bumpType: ActionBumpType = 'none';
+    if (oldVersion !== newVersion) {
+      const [oldMajor, oldMinor, oldPatch] = oldVersion.split('-')[0].split('.').map(Number);
+      const [newMajor, newMinor, newPatch] = newVersion.split('-')[0].split('.').map(Number);
+
+      if (newVersion.includes('-')) {
+        bumpType = 'pre-release';
+      } else if (newMajor > oldMajor) {
+        bumpType = 'major';
+      } else if (newMinor > oldMinor) {
+        bumpType = 'minor';
+      } else if (newPatch > oldPatch) {
+        bumpType = 'patch';
+      }
+    }
+
+    // Set all outputs
+    core.setOutput('tag', tag);
+    core.setOutput('version', tree.masterVersion);
+    core.setOutput('pr', prNumber?.toString() ?? '');
+    core.setOutput('all_tags', allTags.join(','));
+    core.setOutput('changed_workspaces', JSON.stringify(changedWorkspaces));
+    core.setOutput('bump_type', bumpType);
+
+    // Log outputs for visibility
     core.info(`✓ Version tag: ${tag}`);
     core.info(`✓ Version: ${tree.masterVersion}`);
+    core.info(`✓ Bump type: ${bumpType}`);
     if (allTags.length > 1) {
-      core.info(`✓ Additional tags: ${allTags.filter((t) => t !== tag).join(', ')}`);
+      core.info(`✓ All tags: ${allTags.join(', ')}`);
+    }
+    if (changedWorkspaces.length > 0) {
+      core.info(`✓ Changed workspaces: ${changedWorkspaces.join(', ')}`);
     }
     if (prNumber) {
       core.info(`✓ Pull Request: #${prNumber}`);

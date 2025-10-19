@@ -110,6 +110,16 @@ jobs:
           git commit -m "fix: patch commit test" --no-verify
           git push origin ${{ steps.prereqs.outputs.test_branch }} --no-verify
 
+          # Wait for GitHub API to sync - verify commit is visible
+          echo "⏳ Waiting for GitHub API to index the commit..."
+          for i in {1..30}; do
+            if gh api repos/${{ github.repository }}/commits/$(git rev-parse HEAD) &>/dev/null; then
+              echo "✓ Commit indexed after $i seconds"
+              break
+            fi
+            sleep 1
+          done
+
       - name: Update Version (${{ matrix.pr }} / ${{ matrix.workspaces }})
         uses: ./
         with:
@@ -134,23 +144,23 @@ jobs:
 
           echo "✅ Version bump validation successful"
 
-      - name: Cleanup
-        if: always()
-        run: |
-          set -e
+      # - name: Cleanup
+      #   if: always()
+      #   run: |
+      #     set -e
 
-          git fetch
-          git checkout -B ${{ steps.prereqs.outputs.test_branch }} || true
-          git pull origin ${{ steps.prereqs.outputs.test_branch }} --ff-only || true
+      #     git fetch
+      #     git checkout -B ${{ steps.prereqs.outputs.test_branch }} || true
+      #     git pull origin ${{ steps.prereqs.outputs.test_branch }} --ff-only || true
 
-          # Cleanup tags
-          git tag -l 'v99*' | xargs -r git tag -d
-          git ls-remote --tags origin 'refs/tags/v99*' | grep -v '\^{}' | cut -f2 | xargs -r git push --delete origin
+      #     # Cleanup tags
+      #     git tag -l 'v99*' | xargs -r git tag -d
+      #     git ls-remote --tags origin 'refs/tags/v99*' | grep -v '\^{}' | cut -f2 | xargs -r git push --delete origin
 
-          # Cleanup version branches
-          git branch | grep '^\s*bump_version_to_' | xargs -r git branch -D
-          git branch -r | grep 'origin/bump_version_to_' | sed 's/origin\///' | xargs -r git push origin --delete
+      #     # Cleanup version branches
+      #     git branch | grep '^\s*bump_version_to_' | xargs -r git branch -D
+      #     git branch -r | grep 'origin/bump_version_to_' | sed 's/origin\///' | xargs -r git push origin --delete
 
-          # Cleanup test branch
-          git checkout ${{ steps.prereqs.outputs.branch }} || git checkout main || git checkout v2
-          git push origin --delete ${{ steps.prereqs.outputs.test_branch }} || true
+      #     # Cleanup test branch
+      #     git checkout ${{ steps.prereqs.outputs.branch }} || git checkout main || git checkout v2
+      #     git push origin --delete ${{ steps.prereqs.outputs.test_branch }} || true
