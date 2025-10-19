@@ -4,8 +4,9 @@
   "description": "GitHub Action for automated version management based on conventional commits",
   "main": "dist/index.js",
   "scripts": {
-    "build": "npm run type-check && ncc build src/index.ts -o dist --target es2020 --minify",
-    "build:dev": "tsc --noEmit && ncc build src/index.ts -o dist --target es2020 --source-map",
+    "build": "npm run type-check && ncc build src/index.ts -o dist --target es2020 --minify && npm run copy-assets",
+    "build:dev": "tsc --noEmit && ncc build src/index.ts -o dist --target es2020 --source-map && npm run copy-assets",
+    "copy-assets": "mkdir -p dist/hosts && cp node_modules/conventional-changelog-core/hosts/*.json dist/hosts/",
     "type-check": "tsc --noEmit",
     "cpd": "jscpd ./src",
     "prebuild": "rimraf ./dist",

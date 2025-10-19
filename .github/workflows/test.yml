@@ -202,6 +202,9 @@ jobs:
         run: |
           set -e
 
+          # Reset any local changes from failed tests
+          git reset --hard HEAD
+
           git fetch
           git checkout -B ${{ steps.prereqs.outputs.test_branch }} || true
           git pull origin ${{ steps.prereqs.outputs.test_branch }} --ff-only || true
