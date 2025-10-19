@@ -92,6 +92,8 @@ export interface WorkflowOptions {
     readonly owner: string;
     readonly repo: string;
   };
+  /** Branch to use for operations (defaults to 'main') */
+  readonly branch?: string;
   /** Changelog preset */
   readonly changelogPreset?: string;
 }
@@ -526,17 +528,49 @@ export class WorkspaceManager {
   /**
    * Create version commit
    *
+   * Creates a Git commit with version changes using local Git commands.
+   * This method stages all changes and commits them with a version bump message.
+   *
    * @param tree - Workspace tree
    * @returns Result with commit SHA
    */
   async createVersionCommit(tree: WorkspaceTree): Promise<Result<string, GitOperationError>> {
     childLogger.debug({ version: tree.masterVersion }, 'Creating version commit');
 
-    // Note: Actual commit creation would require staging files via Git CLI
-    // or using GitHub API to create a tree and commit
-    // For now, return a placeholder - this will be implemented in integration
-    childLogger.warn('Direct commit creation not yet implemented - use PR workflow');
-    return err(new GitOperationError('createVersionCommit', 'Direct commit not implemented - use PR workflow'));
+    try {
+      const exec = await import('@actions/exec');
+
+      // Stage all changes (version files and changelogs)
+      await exec.exec('git', ['add', '-A']);
+
+      // Create commit
+      const commitMessage = `chore: bump version to ${tree.masterVersion}`;
+      await exec.exec('git', ['commit', '-m', commitMessage, '--no-verify']);
+
+      // Get the commit SHA
+      let commitSha = '';
+      await exec.exec('git', ['rev-parse', 'HEAD'], {
+        listeners: {
+          stdout: (data: Buffer) => {
+            commitSha += data.toString().trim();
+          },
+        },
+      });
+
+      // Push the commit
+      await exec.exec('git', ['push', '--no-verify']);
+
+      childLogger.info({ sha: commitSha, message: commitMessage }, 'Version commit created and pushed');
+      return ok(commitSha);
+    } catch (error) {
+      const gitError = new GitOperationError(
+        'createVersionCommit',
+        'Failed to create version commit',
+        error
+      );
+      childLogger.error({ error: gitError }, 'Failed to create version commit');
+      return err(gitError);
+    }
   }
 
   /**
@@ -600,9 +634,18 @@ export class WorkspaceManager {
 
     const createdTags: string[] = [];
 
-    // Get current HEAD SHA from last tag or use placeholder
-    // In real implementation, this would get the actual HEAD SHA
-    const commitSha = 'HEAD'; // Placeholder - will be resolved by Git API
+    // Get current branch HEAD SHA
+    const branch = options.branch || 'main';
+    const branchRef = `heads/${branch}`;
+    const refResult = await this.gitService.getRef(branchRef);
+
+    if (!refResult.ok) {
+      childLogger.error({ branch: branchRef }, 'Failed to get current branch HEAD SHA');
+      return err(refResult.error);
+    }
+
+    const commitSha = refResult.value.sha;
+    childLogger.debug({ commitSha, branch: branchRef }, 'Retrieved current HEAD SHA');
 
     // Create master version tag
     const masterTag = `v${tree.masterVersion}`;

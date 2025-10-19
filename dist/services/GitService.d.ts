@@ -5,6 +5,7 @@ import { GitOperationError } from '../utils/errors.js';
 export declare class GitService {
     private readonly github;
     constructor(github: GitHubService);
+    getRef(ref: string): Promise<Result<GitRef, GitOperationError>>;
     createTag(params: CreateTagParams): Promise<Result<GitTag, GitOperationError>>;
     createCommit(params: CreateCommitParams): Promise<Result<GitCommit, GitOperationError>>;
     updateRef(params: UpdateRefParams): Promise<Result<GitRef, GitOperationError>>;

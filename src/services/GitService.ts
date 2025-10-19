@@ -60,6 +60,47 @@ export class GitService {
   }
 
   /**
+   * Get the current commit SHA for a reference (branch or tag)
+   *
+   * @param ref - Git reference (e.g., 'heads/main', 'tags/v1.0.0')
+   * @returns Result with commit SHA
+   *
+   * @example
+   * ```typescript
+   * const result = await git.getRef('heads/main');
+   * if (result.ok) {
+   *   console.log(`Current HEAD: ${result.value.sha}`);
+   * }
+   * ```
+   */
+  async getRef(ref: string): Promise<Result<GitRef, GitOperationError>> {
+    try {
+      const { owner, repo } = this.github.getRepository();
+
+      logger.debug({ ref }, 'Getting Git reference');
+
+      const reference = await this.github.executeWithRetry('getRef', (octokit) =>
+        octokit.rest.git.getRef({
+          owner,
+          repo,
+          ref,
+        }),
+      );
+
+      logger.info({ ref, sha: reference.data.object.sha }, 'Git reference retrieved successfully');
+
+      return ok({
+        ref: reference.data.ref,
+        sha: reference.data.object.sha,
+      });
+    } catch (error) {
+      const gitError = new GitOperationError('getRef', `Failed to get ref ${ref}`, error);
+      logger.error({ error: gitError, ref }, 'Failed to get Git reference');
+      return err(gitError);
+    }
+  }
+
+  /**
    * Create an annotated Git tag
    *
    * Creates both the tag object and the reference.

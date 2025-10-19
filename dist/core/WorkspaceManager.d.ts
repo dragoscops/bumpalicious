@@ -29,6 +29,7 @@ export interface WorkflowOptions {
         readonly owner: string;
         readonly repo: string;
     };
+    readonly branch?: string;
     readonly changelogPreset?: string;
 }
 export interface WorkflowResult {

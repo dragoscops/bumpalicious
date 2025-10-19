@@ -133,6 +133,7 @@ async function run(): Promise<void> {
         owner,
         repo,
       },
+      branch: inputs.prBaseBranch,
       changelogPreset: inputs.changelogPreset,
     };
 

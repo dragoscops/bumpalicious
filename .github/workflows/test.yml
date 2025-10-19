@@ -175,7 +175,7 @@ jobs:
           cat ./test/package.json || echo "  File not found!"
 
           echo "🔍 Checking for tag v99.0.2..."
-          if git tag -l | grep -q v99.0.2; then
+          if git tag -l | grep -qx 'v99.0.2'; then
             echo "  ✓ Tag v99.0.2 found"
           else
             echo "  ✗ Tag v99.0.2 NOT found"
@@ -185,10 +185,12 @@ jobs:
           fi
 
           echo "🔍 Checking package.json version..."
-          if grep -q 99.0.2 ./test/package.json; then
+          if grep -q '"version": "99.0.2"' ./test/package.json; then
             echo "  ✓ Version 99.0.2 found in package.json"
           else
             echo "  ✗ Version 99.0.2 NOT found in package.json"
+            echo "  Current content:"
+            cat ./test/package.json
             exit 1
           fi
 
