@@ -7,13 +7,18 @@ import type { Logger, LoggerOptions } from 'pino';
 
 /**
  * Log level from environment or default to 'info'
+ * Respects GitHub Actions debug mode (ACTIONS_STEP_DEBUG=true)
+ * Respects explicit LOG_LEVEL setting
+ * Respects DEBUG environment variable for development
  */
-const LOG_LEVEL = process.env.LOG_LEVEL || 'info';
+const isGitHubActionsDebug = process.env.ACTIONS_STEP_DEBUG === 'true';
+const isDebugMode = process.env.DEBUG === 'true' || isGitHubActionsDebug;
+const LOG_LEVEL = process.env.LOG_LEVEL || (isGitHubActionsDebug ? 'debug' : 'info');
 
 /**
  * Determine if running in development mode
  */
-const isDevelopment = process.env.NODE_ENV === 'development' || process.env.DEBUG === 'true';
+const isDevelopment = process.env.NODE_ENV === 'development' || isDebugMode;
 
 /**
  * Pino logger configuration

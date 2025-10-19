@@ -136,7 +136,12 @@ async function run(): Promise<void> {
       changelogPreset: inputs.changelogPreset,
     };
 
+    core.debug(
+      `Workflow options: ${JSON.stringify({ ...workflowOptions, workspaces: workflowOptions.workspaces.length })}`,
+    );
+
     const result = await workspaceManager.execute(workflowOptions);
+    core.debug(`Workflow result: ${result.ok ? 'SUCCESS' : 'FAILURE'}`);
     core.endGroup();
 
     if (!result.ok) {
@@ -147,35 +152,59 @@ async function run(): Promise<void> {
     core.startGroup('📤 Setting outputs');
     const { tag, allTags, prNumber, tree } = result.value;
 
+    core.debug(
+      `Result value structure: ${JSON.stringify({ tag, allTags: allTags.length, prNumber, treeKeys: Object.keys(tree) })}`,
+    );
+    core.debug(
+      `Tree root: ${JSON.stringify({ hasWorkspace: !!tree.root.workspace, hasChildren: !!tree.root.children, childrenCount: tree.root.children?.length })}`,
+    );
+
     // Extract changed workspace paths from tree
     const changedWorkspaces = tree.root.children
       .filter((node: WorkspaceNode) => node.workspace.hasChanges)
       .map((node: WorkspaceNode) => node.workspace.path);
 
+    core.debug(`Changed workspaces from children: ${JSON.stringify(changedWorkspaces)}`);
+
     // Add root if it has changes
     if (tree.root.workspace.hasChanges) {
       changedWorkspaces.unshift(tree.root.workspace.path);
+      core.debug(`Root has changes, prepended: ${tree.root.workspace.path}`);
     }
 
     // Determine bump type by comparing old and new versions
     const oldVersion = tree.root.workspace.version;
     const newVersion = tree.root.workspace.newVersion;
 
+    core.debug(`Version comparison: ${oldVersion} → ${newVersion}`);
+
     let bumpType: ActionBumpType = 'none';
     if (oldVersion !== newVersion) {
       const [oldMajor, oldMinor, oldPatch] = oldVersion.split('-')[0].split('.').map(Number);
       const [newMajor, newMinor, newPatch] = newVersion.split('-')[0].split('.').map(Number);
 
+      core.debug(
+        `Parsed versions: old=[${oldMajor}.${oldMinor}.${oldPatch}] new=[${newMajor}.${newMinor}.${newPatch}]`,
+      );
+
       if (newVersion.includes('-')) {
         bumpType = 'pre-release';
+        core.debug(`Detected pre-release version: ${newVersion}`);
       } else if (newMajor > oldMajor) {
         bumpType = 'major';
+        core.debug(`Major bump detected: ${oldMajor} → ${newMajor}`);
       } else if (newMinor > oldMinor) {
         bumpType = 'minor';
+        core.debug(`Minor bump detected: ${oldMinor} → ${newMinor}`);
       } else if (newPatch > oldPatch) {
         bumpType = 'patch';
+        core.debug(`Patch bump detected: ${oldPatch} → ${newPatch}`);
       }
+    } else {
+      core.debug('No version change detected');
     }
+
+    core.debug(`Final bump type: ${bumpType}`);
 
     // Set all outputs
     core.setOutput('tag', tag);
@@ -184,6 +213,10 @@ async function run(): Promise<void> {
     core.setOutput('all_tags', allTags.join(','));
     core.setOutput('changed_workspaces', JSON.stringify(changedWorkspaces));
     core.setOutput('bump_type', bumpType);
+
+    core.debug(
+      `Outputs set: tag=${tag}, version=${tree.masterVersion}, pr=${prNumber ?? 'none'}, all_tags=${allTags.length}, changed_workspaces=${changedWorkspaces.length}, bump_type=${bumpType}`,
+    );
 
     // Log outputs for visibility
     core.info(`✓ Version tag: ${tag}`);

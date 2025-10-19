@@ -18,6 +18,9 @@
  */
 
 import type { CommitAnalysis, BumpType, PreReleaseIdentifier } from '../types/index.js';
+import { logger } from '../utils/logger.js';
+
+const childLogger = logger.child({ parser: 'ConventionalCommit' });
 
 /**
  * Conventional commit types that trigger version bumps
@@ -162,8 +165,10 @@ export function parseConventionalCommit(message: string): CommitAnalysis | null 
  * // null (no bumping commits)
  * ```
  */
-export function parseCommitMessages(messages: ReadonlyArray<string>): CommitAnalysis | null {
+export function parseCommitMessages(messages: string[]): CommitAnalysis | null {
+  childLogger.debug({ messageCount: messages.length }, 'Parsing commit messages');
   if (messages.length === 0) {
+    childLogger.debug('No messages to parse');
     return null;
   }
 

@@ -314,7 +314,14 @@ export class WorkspaceManager {
     }
 
     const allChangedFiles = changedFilesResult.value.files;
-    childLogger.debug({ fileCount: allChangedFiles.length }, 'Changed files retrieved');
+    childLogger.debug(
+      {
+        fileCount: allChangedFiles.length,
+        files: allChangedFiles.map((f) => f.path),
+        commitMessages: changedFilesResult.value.commits?.map((c) => c.message.split('\n')[0]),
+      },
+      'Changed files retrieved',
+    );
 
     // Map workspaces to changed files
     const updated: Workspace[] = workspaces.map((workspace) => {
@@ -336,7 +343,19 @@ export class WorkspaceManager {
     });
 
     const changedWorkspaces = updated.filter((w) => w.hasChanges);
-    childLogger.debug({ changedCount: changedWorkspaces.length }, 'Changed workspaces identified');
+    childLogger.debug(
+      {
+        changedCount: changedWorkspaces.length,
+        changedWorkspaceNames: changedWorkspaces.map((w) => w.name),
+        totalWorkspaces: workspaces.length,
+        breakdown: changedWorkspaces.map((w) => ({
+          name: w.name,
+          path: w.path,
+          fileCount: w.changedFiles?.length || 0,
+        })),
+      },
+      'Changed workspaces identified',
+    );
 
     return ok(changedWorkspaces);
   }
@@ -363,6 +382,15 @@ export class WorkspaceManager {
 
     const commits = commitsResult.value;
     const commitMessages = commits.map((c) => c.message);
+
+    childLogger.debug(
+      {
+        base,
+        commitCount: commits.length,
+        messages: commitMessages.map((m) => m.split('\n')[0]),
+      },
+      'Commits retrieved for version calculation',
+    );
 
     const workspacesWithVersions: WorkspaceWithVersion[] = [];
 

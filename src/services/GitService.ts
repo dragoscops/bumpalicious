@@ -270,11 +270,26 @@ export class GitService {
         }),
       );
 
+      logger.debug(
+        {
+          status: comparison.data.status,
+          ahead_by: comparison.data.ahead_by,
+          behind_by: comparison.data.behind_by,
+          total_commits: comparison.data.total_commits,
+          files_count: comparison.data.files?.length || 0,
+          commits_count: comparison.data.commits?.length || 0,
+        },
+        'Comparison API response',
+      );
+
       // Filter files by path if specified
       let files = comparison.data.files || [];
+      logger.debug({ totalFiles: files.length, filterPath: path }, 'Files before filtering');
+
       if (path) {
         const normalizedPath = path.endsWith('/') ? path : `${path}/`;
         files = files.filter((file) => file.filename.startsWith(normalizedPath));
+        logger.debug({ filteredFiles: files.length, normalizedPath }, 'Files after path filtering');
       }
 
       const fileChanges: FileChange[] = files.map((file) => ({
@@ -293,6 +308,8 @@ export class GitService {
         },
         date: commit.commit.author?.date || new Date().toISOString(),
       }));
+
+      logger.debug({ commitMessages: commits.map((c) => c.message.split('\n')[0]) }, 'Parsed commit messages');
 
       logger.info(
         { base, head, filesCount: fileChanges.length, commitsCount: commits.length },
