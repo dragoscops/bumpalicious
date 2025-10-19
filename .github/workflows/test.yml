@@ -136,7 +136,8 @@ jobs:
 
       - name: Update Version (${{ matrix.pr }} / ${{ matrix.workspaces }})
         env:
-          ACTIONS_STEP_DEBUG: true
+          # ACTIONS_STEP_DEBUG: true
+          DEBUG: true
         id: bump
         uses: ./
         with:
