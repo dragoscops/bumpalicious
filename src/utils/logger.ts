@@ -12,13 +12,14 @@ import type { Logger, LoggerOptions } from 'pino';
  * Respects DEBUG environment variable for development
  */
 const isGitHubActionsDebug = process.env.ACTIONS_STEP_DEBUG === 'true';
-const isDebugMode = process.env.DEBUG === 'true' || isGitHubActionsDebug;
-const LOG_LEVEL = process.env.LOG_LEVEL || (isGitHubActionsDebug ? 'debug' : 'info');
+const isDebugMode = process.env.DEBUG === 'true';
+const LOG_LEVEL = process.env.LOG_LEVEL || (isGitHubActionsDebug || isDebugMode ? 'debug' : 'info');
 
 /**
  * Determine if running in development mode
+ * Only use pretty printing in actual development (NODE_ENV=development), not in GitHub Actions
  */
-const isDevelopment = process.env.NODE_ENV === 'development' || isDebugMode;
+const isDevelopment = process.env.NODE_ENV === 'development';
 
 /**
  * Pino logger configuration
