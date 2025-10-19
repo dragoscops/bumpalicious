@@ -167,7 +167,8 @@ export class WorkspaceManager {
       childLogger.info({ count: enrichedWorkspaces.length }, 'Workspaces enriched');
 
       // Step 3: Detect changed workspaces
-      const changedResult = await this.detectChangedWorkspaces(enrichedWorkspaces, lastTag);
+      const branch = options.branch || 'main';
+      const changedResult = await this.detectChangedWorkspaces(enrichedWorkspaces, lastTag, branch);
       if (!changedResult.ok) {
         return err(changedResult.error);
       }
@@ -290,15 +291,18 @@ export class WorkspaceManager {
    *
    * @param workspaces - Enriched workspaces
    * @param lastTag - Last git tag
+   * @param branch - Branch to compare against (defaults to 'main')
    * @returns Result with changed workspaces
    */
   async detectChangedWorkspaces(
     workspaces: ReadonlyArray<Workspace>,
     lastTag: string | null,
+    branch: string = 'main',
   ): Promise<Result<ReadonlyArray<Workspace>, GitOperationError>> {
     childLogger.info(
       {
         lastTag,
+        branch,
         workspaceCount: workspaces.length,
         workspaces: workspaces.map((w) => ({ name: w.name, path: w.path, type: w.type })),
       },
@@ -318,7 +322,7 @@ export class WorkspaceManager {
     }
 
     // Get changed files since last tag
-    const changedFilesResult = await this.gitService.getChangedFiles(lastTag, 'HEAD');
+    const changedFilesResult = await this.gitService.getChangedFiles(lastTag, branch);
     if (!changedFilesResult.ok) {
       return err(changedFilesResult.error);
     }

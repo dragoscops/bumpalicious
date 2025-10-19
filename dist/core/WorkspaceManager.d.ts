@@ -47,7 +47,7 @@ export declare class WorkspaceManager {
     constructor(deps: WorkspaceManagerDependencies);
     execute(options: WorkflowOptions): Promise<Result<WorkflowResult, Error>>;
     enrichWorkspaces(configs: ReadonlyArray<WorkspaceConfig>): Promise<Result<ReadonlyArray<Workspace>, WorkspaceDetectionError>>;
-    detectChangedWorkspaces(workspaces: ReadonlyArray<Workspace>, lastTag: string | null): Promise<Result<ReadonlyArray<Workspace>, GitOperationError>>;
+    detectChangedWorkspaces(workspaces: ReadonlyArray<Workspace>, lastTag: string | null, branch?: string): Promise<Result<ReadonlyArray<Workspace>, GitOperationError>>;
     calculateVersions(workspaces: ReadonlyArray<Workspace>, lastTag: string | null): Promise<Result<ReadonlyArray<WorkspaceWithVersion>, Error>>;
     updateVersionFiles(workspaces: ReadonlyArray<WorkspaceWithVersion>): Promise<Result<void, FileOperationError>>;
     generateChangelogs(tree: WorkspaceTree, options: WorkflowOptions): Promise<Result<void, FileOperationError>>;
