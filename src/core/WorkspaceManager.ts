@@ -210,12 +210,14 @@ export class WorkspaceManager {
 
       // Step 8: Create PR or commit
       let prNumber: number | undefined;
+      let branchForTags = options.branch || 'main';
       if (options.createPR) {
         // Create and push branch for PR
         const branchResult = await this.createVersionBranch(tree, options);
         if (!branchResult.ok) {
           return err(branchResult.error);
         }
+        branchForTags = branchResult.value; // Use PR branch for tags
         childLogger.info({ branch: branchResult.value }, 'Version branch created');
 
         const prResult = await this.createVersionPR(tree, options);
@@ -232,8 +234,8 @@ export class WorkspaceManager {
         childLogger.info({ sha: commitResult.value }, 'Version commit created');
       }
 
-      // Step 9: Create tags
-      const tagsResult = await this.createVersionTags(tree, options);
+      // Step 9: Create tags (on PR branch if creating PR, otherwise on current branch)
+      const tagsResult = await this.createVersionTags(tree, { ...options, branch: branchForTags });
       if (!tagsResult.ok) {
         return err(tagsResult.error);
       }
