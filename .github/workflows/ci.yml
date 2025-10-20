@@ -86,6 +86,7 @@ jobs:
           app-id: ${{ vars.GH_APP_PUSH_ID }}
           private-key: ${{ secrets.GH_APP_PUSH_KEY }}
           owner: ${{ github.repository_owner }}
+          repositories: bumpalicious
 
       - name: Checkout repo (using token)
         uses: actions/checkout@v4
