@@ -221,10 +221,14 @@ export class WorkspaceManager {
 
         // Get the commit SHA from the just-pushed branch
         const branchRef = `heads/${branchResult.value}`;
+        childLogger.debug({ branchRef }, 'Looking up branch ref to get commit SHA');
         const refResult = await this.gitService.getRef(branchRef);
-        if (refResult.ok) {
-          commitSha = refResult.value.sha;
+        if (!refResult.ok) {
+          childLogger.error({ error: refResult.error }, 'Failed to get branch ref');
+          return err(refResult.error);
         }
+        commitSha = refResult.value.sha;
+        childLogger.debug({ commitSha }, 'Got commit SHA from branch ref');
 
         const prResult = await this.createVersionPR(tree, options);
         if (!prResult.ok) {
@@ -240,6 +244,8 @@ export class WorkspaceManager {
         commitSha = commitResult.value;
         childLogger.info({ sha: commitResult.value }, 'Version commit created');
       }
+
+      childLogger.debug({ commitSha, hasSha: !!commitSha }, 'About to create tags with commit SHA');
 
       // Step 9: Create tags using the commit SHA
       const tagsResult = await this.createVersionTags(tree, options, commitSha);
