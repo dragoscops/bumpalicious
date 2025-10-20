@@ -104,27 +104,27 @@ jobs:
       - name: Update Version
         uses: dragoscops/bumpalicious@v2
         with:
-          workspaces: '.:node'
-          pr: 'true'
-          changelog_preset: 'conventionalcommits'
+          workspaces: ".:node"
+          pr: "true"
+          changelog_preset: "conventionalcommits"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ## Inputs
 
-| Name                | Description                                                                           | Required       | Default                 |
-| ------------------- | ------------------------------------------------------------------------------------- | -------------- | ----------------------- |
-| `workspaces`        | Comma-separated workspace definitions with format "path:type"                         | No             | `.:text`                |
-| `github_token`      | GitHub token for authentication                                                       | No             | -                       |
-| `token`             | GitHub token for actions like creating pull requests                                  | No             | `${{ github.token }}`   |
-| `pr`                | Whether to create a pull request with version changes                                 | No             | `false`                 |
-| `pr_auto_merge`     | Whether to automatically merge the PR if all checks pass                              | No             | `false`                 |
-| `pr_message`        | Message to use for the pull request                                                   | No             | `chore: version update` |
-| `pr_version_prefix` | Prefix for version PR branch names (e.g., "feature/" creates "feature/version-1.2.3") | No             | `version_bump`          |
-| `branch`            | Target branch for pull requests                                                       | No             | `main`                  |
-| `changelog_preset`  | The conventional-changelog preset to use                                              | No             | `conventionalcommits`   |
-| `short_tag`         | Create short version tags (e.g., v1.2 for v1.2.3)                                     | No             | `false`                 |
+| Name                | Description                                                                           | Required | Default                 |
+| ------------------- | ------------------------------------------------------------------------------------- | -------- | ----------------------- |
+| `workspaces`        | Comma-separated workspace definitions with format "path:type"                         | No       | `.:text`                |
+| `github_token`      | GitHub token for authentication                                                       | No       | -                       |
+| `token`             | GitHub token for actions like creating pull requests                                  | No       | `${{ github.token }}`   |
+| `pr`                | Whether to create a pull request with version changes                                 | No       | `false`                 |
+| `pr_auto_merge`     | Whether to automatically merge the PR if all checks pass                              | No       | `false`                 |
+| `pr_message`        | Message to use for the pull request                                                   | No       | `chore: version update` |
+| `pr_version_prefix` | Prefix for version PR branch names (e.g., "feature/" creates "feature/version-1.2.3") | No       | `version_bump`          |
+| `branch`            | Target branch for pull requests                                                       | No       | `main`                  |
+| `changelog_preset`  | The conventional-changelog preset to use                                              | No       | `conventionalcommits`   |
+| `short_tag`         | Create short version tags (e.g., v1.2 for v1.2.3)                                     | No       | `false`                 |
 
 ### Workspace Types
 
@@ -153,7 +153,7 @@ uses: dragoscops/bumpalicious@v2
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 with:
-  workspaces: '.:version'
+  workspaces: ".:version"
 ```
 
 ### Language-Specific Examples
@@ -165,7 +165,7 @@ uses: dragoscops/bumpalicious@v2
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 with:
-  workspaces: '.:node'
+  workspaces: ".:node"
 ```
 
 #### Python Project
@@ -175,7 +175,7 @@ uses: dragoscops/bumpalicious@v2
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 with:
-  workspaces: '.:python'
+  workspaces: ".:python"
 ```
 
 #### Deno Project
@@ -185,7 +185,7 @@ uses: dragoscops/bumpalicious@v2
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 with:
-  workspaces: '.:deno'
+  workspaces: ".:deno"
 ```
 
 #### Go Project
@@ -195,7 +195,7 @@ uses: dragoscops/bumpalicious@v2
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 with:
-  workspaces: '.:go'
+  workspaces: ".:go"
 ```
 
 #### Rust Project
@@ -205,7 +205,7 @@ uses: dragoscops/bumpalicious@v2
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 with:
-  workspaces: '.:rust'
+  workspaces: ".:rust"
 ```
 
 #### Zig Project
@@ -215,7 +215,7 @@ uses: dragoscops/bumpalicious@v2
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 with:
-  workspaces: '.:zig'
+  workspaces: ".:zig"
 ```
 
 #### Text-based Version Files
@@ -225,7 +225,7 @@ uses: dragoscops/bumpalicious@v2
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 with:
-  workspaces: '.:text'
+  workspaces: ".:text"
 ```
 
 ### Monorepo Examples
@@ -237,7 +237,7 @@ uses: dragoscops/bumpalicious@v2
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 with:
-  workspaces: '.:node,packages/api:python,packages/ui:node,tools/cli:go,libs/core:rust'
+  workspaces: ".:node,packages/api:python,packages/ui:node,tools/cli:go,libs/core:rust"
 ```
 
 ### Advanced Examples
@@ -249,8 +249,8 @@ uses: dragoscops/bumpalicious@v2
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 with:
-  workspaces: '.:node'
-  branch: 'develop'
+  workspaces: ".:node"
+  branch: "develop"
 ```
 
 #### With Custom Changelog Preset
@@ -260,8 +260,8 @@ uses: dragoscops/bumpalicious@v2
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 with:
-  workspaces: '.:node'
-  changelog_preset: 'angular' # or any other conventional-changelog preset
+  workspaces: ".:node"
+  changelog_preset: "angular" # or any other conventional-changelog preset
 ```
 
 #### With Pull Request (with Auto-merge)
@@ -271,9 +271,9 @@ uses: dragoscops/bumpalicious@v2
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 with:
-  workspaces: '.:node'
-  pr: 'true'
-  pr_auto_merge: 'true' # only if you want to enable auto-merge
+  workspaces: ".:node"
+  pr: "true"
+  pr_auto_merge: "true" # only if you want to enable auto-merge
 ```
 
 #### With Custom PR Branch Prefix
@@ -283,10 +283,10 @@ uses: dragoscops/bumpalicious@v2
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 with:
-  workspaces: '.:node'
-  pr: 'true'
-  pr_version_prefix: 'bump_version'
-  changelog_preset: 'angular' # or any other conventional-changelog preset
+  workspaces: ".:node"
+  pr: "true"
+  pr_version_prefix: "bump_version"
+  changelog_preset: "angular" # or any other conventional-changelog preset
 ```
 
 #### With Pull Request (with Auto-merge)
@@ -296,9 +296,9 @@ uses: dragoscops/bumpalicious@v2
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 with:
-  workspaces: '.:node'
-  pr: 'true'
-  pr_auto_merge: 'true' # only if you want to enable auto-merge
+  workspaces: ".:node"
+  pr: "true"
+  pr_auto_merge: "true" # only if you want to enable auto-merge
 ```
 
 #### Pre-release Workflow
@@ -320,10 +320,10 @@ jobs:
       - name: Update Pre-release Version
         uses: dragoscops/bumpalicious@v2
         with:
-          workspaces: '.:node'
-          pr: 'true'
-          pr_message: 'chore: pre-release version update'
-          branch: 'develop'
+          workspaces: ".:node"
+          pr: "true"
+          pr_message: "chore: pre-release version update"
+          branch: "develop"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
@@ -347,11 +347,11 @@ jobs:
       - name: Update Version and Create Release
         uses: dragoscops/bumpalicious@v2
         with:
-          workspaces: '.:node,packages/lib:python,tools:go'
-          pr: 'true'
-          pr_auto_merge: 'true'
-          short_tag: 'true'
-          changelog_preset: 'conventionalcommits'
+          workspaces: ".:node,packages/lib:python,tools:go"
+          pr: "true"
+          pr_auto_merge: "true"
+          short_tag: "true"
+          changelog_preset: "conventionalcommits"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```

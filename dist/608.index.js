@@ -1,6 +1,7 @@
-export const id = 608;
-export const ids = [608];
-export const modules = {
+"use strict";
+exports.id = 608;
+exports.ids = [608];
+exports.modules = {
 
 /***/ 8608:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
@@ -147,3 +148,4 @@ function findPackageSync(cwd) {
 /***/ })
 
 };
+;
