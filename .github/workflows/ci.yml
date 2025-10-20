@@ -97,7 +97,7 @@ jobs:
         id: version_step
         uses: ./
         with:
-          github_token: ${{ secrets.GH_TOKEN_PUSH }}
+          github_token:  ${{ steps.app-token-push.outputs.token || secrets.GH_TOKEN_PUSH }}
           workspaces: .:node
           branch: ${{ github.ref }}
           pr: true
