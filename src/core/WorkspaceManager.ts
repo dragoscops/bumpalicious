@@ -182,26 +182,40 @@ export class WorkspaceManager {
 
       childLogger.info({ count: changedWorkspaces.length }, 'Changed workspaces detected');
 
-      // Step 4: Calculate new versions
+      // Step 4: Calculate new versions for changed workspaces
       const versionsResult = await this.calculateVersions(changedWorkspaces, lastTag);
       if (!versionsResult.ok) {
         return err(versionsResult.error);
       }
-      const workspacesWithVersions = versionsResult.value;
+      const changedWorkspacesWithVersions = versionsResult.value;
       childLogger.info('New versions calculated');
 
-      // Step 5: Build workspace tree
-      const tree = this.treeBuilder.build(workspacesWithVersions);
+      // Step 5: Merge changed workspaces with unchanged workspaces
+      // Unchanged workspaces keep their current version as newVersion
+      const allWorkspacesWithVersions: WorkspaceWithVersion[] = enrichedWorkspaces.map((workspace) => {
+        const changed = changedWorkspacesWithVersions.find((w) => w.path === workspace.path);
+        if (changed) {
+          return changed;
+        }
+        // Workspace hasn't changed, keep current version
+        return {
+          ...workspace,
+          newVersion: workspace.version,
+        };
+      });
+
+      // Step 6: Build workspace tree from all workspaces
+      const tree = this.treeBuilder.build(allWorkspacesWithVersions);
       childLogger.info({ rootVersion: tree.masterVersion }, 'Workspace tree built');
 
-      // Step 6: Update version files
-      const updateResult = await this.updateVersionFiles(workspacesWithVersions);
+      // Step 7: Update version files (only for changed workspaces)
+      const updateResult = await this.updateVersionFiles(changedWorkspacesWithVersions);
       if (!updateResult.ok) {
         return err(updateResult.error);
       }
       childLogger.info('Version files updated');
 
-      // Step 7: Generate changelogs
+      // Step 8: Generate changelogs
       const changelogResult = await this.generateChangelogs(tree, options);
       if (!changelogResult.ok) {
         return err(changelogResult.error);
