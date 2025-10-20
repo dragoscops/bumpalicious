@@ -6,7 +6,7 @@
   "scripts": {
     "build": "npm run type-check && ncc build src/index.ts -o dist --target es2020 --minify && npm run copy-assets",
     "build:dev": "tsc --noEmit && ncc build src/index.ts -o dist --target es2020 --source-map && npm run copy-assets",
-    "copy-assets": "mkdir -p dist/hosts && cp node_modules/conventional-changelog-core/hosts/*.json dist/hosts/",
+    "copy-assets": "mkdir -p dist/hosts dist/templates && cp node_modules/conventional-changelog-core/hosts/*.json dist/hosts/ && cp node_modules/conventional-changelog-conventionalcommits/src/templates/*.hbs dist/templates/",
     "type-check": "tsc --noEmit",
     "cpd": "jscpd ./src",
     "prebuild": "rimraf ./dist",
