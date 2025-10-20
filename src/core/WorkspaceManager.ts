@@ -646,19 +646,21 @@ export class WorkspaceManager {
    * @returns Result with branch name
    */
   async createVersionBranch(tree: WorkspaceTree, options: WorkflowOptions): Promise<Result<string, GitOperationError>> {
-    const branchName = `${options.prOptions?.branchPrefix || 'version-bump'}/v${tree.masterVersion}`;
+    // Add random suffix to avoid branch name collisions on retry
+    const randomSuffix = Math.floor(Math.random() * 10000).toString(36);
+    const branchName = `${options.prOptions?.branchPrefix || 'version-bump'}/v${tree.masterVersion}-${randomSuffix}`;
     childLogger.debug({ branch: branchName, version: tree.masterVersion }, 'Creating version branch');
 
     try {
+      // Create and checkout new branch FIRST (before committing)
+      await exec.exec('git', ['checkout', '-b', branchName]);
+
       // Stage all changes (version files and changelogs)
       await exec.exec('git', ['add', '-A']);
 
-      // Create commit
+      // Create commit on the new branch
       const commitMessage = `chore: bump version to ${tree.masterVersion}`;
       await exec.exec('git', ['commit', '-m', commitMessage, '--no-verify']);
-
-      // Create and checkout new branch
-      await exec.exec('git', ['checkout', '-b', branchName]);
 
       // Push the branch
       await exec.exec('git', ['push', '--set-upstream', 'origin', branchName, '--no-verify']);
@@ -715,6 +717,20 @@ export class WorkspaceManager {
         childLogger.warn({ prNumber: pr.number }, 'Auto-merge failed - PR remains open');
       } else {
         childLogger.info({ prNumber: pr.number }, 'PR auto-merged');
+
+        // Delete the branch after successful merge to avoid collisions on retry
+        try {
+          const { owner, repo } = this.prService['github'].getRepository();
+          const octokit = this.prService['github'].getOctokit();
+          await octokit.rest.git.deleteRef({
+            owner,
+            repo,
+            ref: `heads/${branchName}`,
+          });
+          childLogger.info({ branch: branchName }, 'Version branch deleted after merge');
+        } catch (error) {
+          childLogger.warn({ branch: branchName, error }, 'Failed to delete branch after merge');
+        }
       }
     }
 
@@ -792,26 +808,10 @@ export class WorkspaceManager {
       }
     }
 
-    // Create workspace-specific tags
-    for (const workspace of tree.allWorkspaces) {
-      if (workspace.path !== '.') {
-        const workspaceTag = `${workspace.path}@v${workspace.newVersion}`;
-        const workspaceTagResult = await this.gitService.createTag({
-          tagName: workspaceTag,
-          message: `Release ${workspace.name} ${workspace.newVersion}`,
-          commitSha,
-        });
+    // Only create root/master tag - no workspace-specific tags
+    // Workspace-specific tags should only be created if explicitly requested
 
-        if (!workspaceTagResult.ok) {
-          childLogger.warn({ tag: workspaceTag, workspace: workspace.path }, 'Failed to create workspace tag');
-        } else {
-          createdTags.push(workspaceTag);
-          childLogger.debug({ tag: workspaceTag }, 'Workspace tag created');
-        }
-      }
-    }
-
-    childLogger.info({ tagCount: createdTags.length, tags: createdTags }, 'All tags created');
+    childLogger.info({ tagCount: createdTags.length, tags: createdTags }, 'Tags created');
     return ok(createdTags);
   }
 }
