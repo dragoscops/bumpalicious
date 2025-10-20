@@ -1,3 +1,4 @@
+import { Loggable } from '../Loggable.js';
 import type { WorkspaceWithVersion, WorkspaceNode } from '../types/workspace.js';
 export type ChangelogPreset = 'conventionalcommits' | 'angular' | 'atom' | 'codemirror' | 'ember' | 'eslint' | 'express' | 'jquery' | 'jshint';
 export interface GenerateChangelogOptions {
@@ -15,7 +16,8 @@ export interface ChangelogResult {
     readonly path: string;
     readonly created: boolean;
 }
-export declare class ChangelogService {
+export declare class ChangelogService extends Loggable {
+    constructor();
     generateForWorkspace(options: GenerateChangelogOptions): Promise<ChangelogResult>;
     private generateChangelogContent;
     private loadPresetConfig;

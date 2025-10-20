@@ -21,7 +21,7 @@
 import type { GitHubService } from './GitHubService.js';
 import { GitHubAPIError } from '../utils/errors.js';
 import { ok, err, type Result } from '../types/result.js';
-import { logger } from '../utils/logger.js';
+import { Loggable } from '../Loggable.js';
 import type { WorkspaceTree, WorkspaceNode } from '../types/workspace.js';
 
 /**
@@ -183,7 +183,7 @@ export interface PRExistsResponse {
  * - Merge status polling
  * - PR existence checking
  */
-export class PRService {
+export class PRService extends Loggable {
   private readonly github: GitHubService;
 
   /**
@@ -197,9 +197,15 @@ export class PRService {
    * ```
    */
   constructor(github: GitHubService) {
+    super();
     this.github = github;
 
-    logger.info('PRService initialized');
+    this.log.info(
+      {
+        ...github.getRepository(),
+      },
+      'PRService initialized',
+    );
   }
 
   /**
@@ -219,18 +225,19 @@ export class PRService {
    * ```
    */
   async create(params: CreatePRParams): Promise<Result<PRCreateResponse, GitHubAPIError>> {
+    this.log.debug(
+      {
+        title: params.title,
+        base: params.base,
+        head: params.head,
+        draft: params.draft ?? false,
+        bodyLength: params.body.length,
+      },
+      'Creating pull request',
+    );
+
     try {
       const { owner, repo } = this.github.getRepository();
-
-      logger.info(
-        {
-          title: params.title,
-          base: params.base,
-          head: params.head,
-          draft: params.draft,
-        },
-        'Creating pull request',
-      );
 
       const response = await this.github.executeWithRetry('createPR', (octokit) =>
         octokit.rest.pulls.create({
@@ -250,11 +257,12 @@ export class PRService {
         state: response.data.state,
       };
 
-      logger.info(
+      this.log.info(
         {
           prNumber: result.number,
           htmlUrl: result.htmlUrl,
           state: result.state,
+          title: params.title,
         },
         'Pull request created successfully',
       );
@@ -266,11 +274,14 @@ export class PRService {
           ? error
           : new GitHubAPIError('createPR', 'Failed to create pull request', undefined, error);
 
-      logger.error(
+      this.log.error(
         {
           operation: 'createPR',
           title: params.title,
+          base: params.base,
+          head: params.head,
           error: apiError.message,
+          statusCode: apiError.statusCode,
         },
         'Failed to create pull request',
       );
@@ -294,16 +305,18 @@ export class PRService {
    * ```
    */
   async merge(params: MergePRParams): Promise<Result<PRMergeResponse, GitHubAPIError>> {
+    this.log.debug(
+      {
+        prNumber: params.prNumber,
+        mergeMethod: params.mergeMethod ?? 'merge',
+        hasCommitTitle: !!params.commitTitle,
+        hasCommitMessage: !!params.commitMessage,
+      },
+      'Merging pull request',
+    );
+
     try {
       const { owner, repo } = this.github.getRepository();
-
-      logger.info(
-        {
-          prNumber: params.prNumber,
-          mergeMethod: params.mergeMethod ?? 'merge',
-        },
-        'Merging pull request',
-      );
 
       const response = await this.github.executeWithRetry('mergePR', (octokit) =>
         octokit.rest.pulls.merge({
@@ -322,11 +335,12 @@ export class PRService {
         message: response.data.message,
       };
 
-      logger.info(
+      this.log.info(
         {
           prNumber: params.prNumber,
           merged: result.merged,
           sha: result.sha,
+          mergeMethod: params.mergeMethod ?? 'merge',
         },
         'Pull request merged successfully',
       );
@@ -338,11 +352,13 @@ export class PRService {
           ? error
           : new GitHubAPIError('mergePR', 'Failed to merge pull request', undefined, error);
 
-      logger.error(
+      this.log.error(
         {
           operation: 'mergePR',
           prNumber: params.prNumber,
+          mergeMethod: params.mergeMethod ?? 'merge',
           error: apiError.message,
+          statusCode: apiError.statusCode,
         },
         'Failed to merge pull request',
       );
@@ -373,17 +389,17 @@ export class PRService {
     const interval = params.interval ?? 5000; // Default 5 seconds
     const startTime = Date.now();
 
+    this.log.debug(
+      {
+        prNumber: params.prNumber,
+        timeout,
+        interval,
+      },
+      'Starting merge status polling',
+    );
+
     try {
       const { owner, repo } = this.github.getRepository();
-
-      logger.info(
-        {
-          prNumber: params.prNumber,
-          timeout,
-          interval,
-        },
-        'Checking if pull request has been merged',
-      );
 
       while (Date.now() - startTime < timeout) {
         const response = await this.github.executeWithRetry('getPR', (octokit) =>
@@ -395,7 +411,7 @@ export class PRService {
         );
 
         if (response.data.merged) {
-          logger.info(
+          this.log.info(
             {
               prNumber: params.prNumber,
               mergedAt: response.data.merged_at,
@@ -406,7 +422,7 @@ export class PRService {
         }
 
         if (response.data.state === 'closed' && !response.data.merged) {
-          logger.info(
+          this.log.info(
             {
               prNumber: params.prNumber,
               state: response.data.state,
@@ -421,7 +437,7 @@ export class PRService {
       }
 
       // Timeout reached
-      logger.warn(
+      this.log.warn(
         {
           prNumber: params.prNumber,
           timeout,
@@ -435,15 +451,17 @@ export class PRService {
       const apiError =
         error instanceof GitHubAPIError
           ? error
-          : new GitHubAPIError('hasMerged', 'Failed to check PR merge status', undefined, error);
+          : new GitHubAPIError('hasMerged', 'Failed to check if pull request is merged', undefined, error);
 
-      logger.error(
+      this.log.error(
         {
           operation: 'hasMerged',
           prNumber: params.prNumber,
+          elapsedMs: Date.now() - startTime,
           error: apiError.message,
+          statusCode: apiError.statusCode,
         },
-        'Failed to check if PR has been merged',
+        'Failed to check PR merge status',
       );
 
       return err(apiError);
@@ -469,16 +487,16 @@ export class PRService {
    * ```
    */
   async exists(params: ExistsPRParams): Promise<Result<PRExistsResponse, GitHubAPIError>> {
+    this.log.debug(
+      {
+        base: params.base,
+        head: params.head,
+      },
+      'Checking if pull request exists',
+    );
+
     try {
       const { owner, repo } = this.github.getRepository();
-
-      logger.info(
-        {
-          base: params.base,
-          head: params.head,
-        },
-        'Checking if pull request exists',
-      );
 
       const response = await this.github.executeWithRetry('listPRs', (octokit) =>
         octokit.rest.pulls.list({
@@ -498,7 +516,7 @@ export class PRService {
           state: pr.state,
         };
 
-        logger.info(
+        this.log.info(
           {
             prNumber: result.number,
             state: result.state,
@@ -509,7 +527,7 @@ export class PRService {
         return ok(result);
       }
 
-      logger.info(
+      this.log.info(
         {
           base: params.base,
           head: params.head,
@@ -522,16 +540,17 @@ export class PRService {
       const apiError =
         error instanceof GitHubAPIError
           ? error
-          : new GitHubAPIError('existsPR', 'Failed to check if PR exists', undefined, error);
+          : new GitHubAPIError('existsPR', 'Failed to check if pull request exists', undefined, error);
 
-      logger.error(
+      this.log.error(
         {
           operation: 'existsPR',
           base: params.base,
           head: params.head,
           error: apiError.message,
+          statusCode: apiError.statusCode,
         },
-        'Failed to check if PR exists',
+        'Failed to check PR existence',
       );
 
       return err(apiError);

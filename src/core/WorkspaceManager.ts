@@ -36,6 +36,7 @@ import type { VersionService } from './VersionService.js';
 import type { ChangelogService } from './ChangelogService.js';
 import type { WorkspaceTreeBuilder } from './WorkspaceTreeBuilder.js';
 import { getAdapter } from './adapters/AdapterFactory.js';
+import { Loggable } from '../Loggable.js';
 import * as exec from '@actions/exec';
 import type {
   WorkspaceConfig,
@@ -53,10 +54,7 @@ import {
   GitOperationError,
   FileOperationError,
 } from '../utils/errors.js';
-import { logger } from '../utils/logger.js';
 import { parseCommitMessages } from '../parsers/ConventionalCommitParser.js';
-
-const childLogger = logger.child({ service: 'WorkspaceManager' });
 
 /**
  * Workspace Manager dependencies
@@ -118,7 +116,7 @@ export interface WorkflowResult {
  *
  * Main orchestrator for version bumping workflow
  */
-export class WorkspaceManager {
+export class WorkspaceManager extends Loggable {
   private readonly gitService: GitService;
   private readonly prService: PRService;
   private readonly versionService: VersionService;
@@ -131,13 +129,14 @@ export class WorkspaceManager {
    * @param deps - Service dependencies
    */
   constructor(deps: WorkspaceManagerDependencies) {
+    super();
     this.gitService = deps.gitService;
     this.prService = deps.prService;
     this.versionService = deps.versionService;
     this.changelogService = deps.changelogService;
     this.treeBuilder = deps.treeBuilder;
 
-    childLogger.debug('WorkspaceManager initialized');
+    this.log.info('WorkspaceManager initialized');
   }
 
   /**
@@ -147,7 +146,14 @@ export class WorkspaceManager {
    * @returns Result with workflow outcome
    */
   async execute(options: WorkflowOptions): Promise<Result<WorkflowResult, Error>> {
-    childLogger.info({ workspaceCount: options.workspaces.length }, 'Starting workflow execution');
+    this.log.info(
+      {
+        workspaceCount: options.workspaces.length,
+        createPR: options.createPR,
+        branch: options.branch ?? 'main',
+      },
+      'Starting workflow execution',
+    );
 
     try {
       // Step 1: Get last tag
@@ -156,7 +162,7 @@ export class WorkspaceManager {
         return err(lastTagResult.error);
       }
       const lastTag = lastTagResult.value?.name || null;
-      childLogger.info({ lastTag }, 'Last tag retrieved');
+      this.log.info({ lastTag }, 'Last tag retrieved');
 
       // Step 2: Enrich workspaces
       const enrichResult = await this.enrichWorkspaces(options.workspaces);
@@ -164,7 +170,7 @@ export class WorkspaceManager {
         return err(enrichResult.error);
       }
       const enrichedWorkspaces = enrichResult.value;
-      childLogger.info({ count: enrichedWorkspaces.length }, 'Workspaces enriched');
+      this.log.info({ count: enrichedWorkspaces.length }, 'Workspaces enriched');
 
       // Step 3: Detect changed workspaces
       const branch = options.branch || 'main';
@@ -175,12 +181,12 @@ export class WorkspaceManager {
       const changedWorkspaces = changedResult.value;
 
       if (changedWorkspaces.length === 0) {
-        childLogger.info('No workspaces have changed - skipping version bump');
+        this.log.info('No workspaces have changed - skipping version bump');
         // Return empty result - no work needed
         return err(new WorkspaceValidationError('No workspaces have changed since last tag'));
       }
 
-      childLogger.info({ count: changedWorkspaces.length }, 'Changed workspaces detected');
+      this.log.info({ count: changedWorkspaces.length }, 'Changed workspaces detected');
 
       // Step 4: Calculate new versions for changed workspaces
       const versionsResult = await this.calculateVersions(changedWorkspaces, lastTag);
@@ -188,7 +194,7 @@ export class WorkspaceManager {
         return err(versionsResult.error);
       }
       const changedWorkspacesWithVersions = versionsResult.value;
-      childLogger.info('New versions calculated');
+      this.log.info('New versions calculated');
 
       // Step 5: Merge changed workspaces with unchanged workspaces
       // Unchanged workspaces keep their current version as newVersion
@@ -206,21 +212,21 @@ export class WorkspaceManager {
 
       // Step 6: Build workspace tree from all workspaces
       const tree = this.treeBuilder.build(allWorkspacesWithVersions);
-      childLogger.info({ rootVersion: tree.masterVersion }, 'Workspace tree built');
+      this.log.info({ rootVersion: tree.masterVersion }, 'Workspace tree built');
 
       // Step 7: Update version files (only for changed workspaces)
       const updateResult = await this.updateVersionFiles(changedWorkspacesWithVersions);
       if (!updateResult.ok) {
         return err(updateResult.error);
       }
-      childLogger.info('Version files updated');
+      this.log.info('Version files updated');
 
       // Step 8: Generate changelogs
       const changelogResult = await this.generateChangelogs(tree, options);
       if (!changelogResult.ok) {
         return err(changelogResult.error);
       }
-      childLogger.info('Changelogs generated');
+      this.log.info('Changelogs generated');
 
       // Step 8: Create PR or commit
       let prNumber: number | undefined;
@@ -231,35 +237,35 @@ export class WorkspaceManager {
         if (!branchResult.ok) {
           return err(branchResult.error);
         }
-        childLogger.info({ branch: branchResult.value }, 'Version branch created');
+        this.log.info({ branch: branchResult.value }, 'Version branch created');
 
         // Get the commit SHA from the just-pushed branch
         const branchRef = `heads/${branchResult.value}`;
-        childLogger.debug({ branchRef }, 'Looking up branch ref to get commit SHA');
+        this.log.debug({ branchRef }, 'Looking up branch ref to get commit SHA');
         const refResult = await this.gitService.getRef(branchRef);
         if (!refResult.ok) {
-          childLogger.error({ error: refResult.error }, 'Failed to get branch ref');
+          this.log.error({ error: refResult.error }, 'Failed to get branch ref');
           return err(refResult.error);
         }
         commitSha = refResult.value.sha;
-        childLogger.debug({ commitSha }, 'Got commit SHA from branch ref');
+        this.log.debug({ commitSha }, 'Got commit SHA from branch ref');
 
         const prResult = await this.createVersionPR(tree, options, branchResult.value);
         if (!prResult.ok) {
           return err(prResult.error);
         }
         prNumber = prResult.value;
-        childLogger.info({ prNumber }, 'Pull request created');
+        this.log.info({ prNumber }, 'Pull request created');
       } else {
         const commitResult = await this.createVersionCommit(tree);
         if (!commitResult.ok) {
           return err(commitResult.error);
         }
         commitSha = commitResult.value;
-        childLogger.info({ sha: commitResult.value }, 'Version commit created');
+        this.log.info({ sha: commitResult.value }, 'Version commit created');
       }
 
-      childLogger.debug({ commitSha, hasSha: !!commitSha }, 'About to create tags with commit SHA');
+      this.log.debug({ commitSha, hasSha: !!commitSha }, 'About to create tags with commit SHA');
 
       // Step 9: Create tags using the commit SHA
       const tagsResult = await this.createVersionTags(tree, options, commitSha);
@@ -267,7 +273,7 @@ export class WorkspaceManager {
         return err(tagsResult.error);
       }
       const allTags = tagsResult.value;
-      childLogger.info({ tagCount: allTags.length }, 'Version tags created');
+      this.log.info({ tagCount: allTags.length }, 'Version tags created');
 
       const result: WorkflowResult = {
         tag: `v${tree.masterVersion}`,
@@ -276,10 +282,16 @@ export class WorkspaceManager {
         tree,
       };
 
-      childLogger.info({ tag: result.tag }, 'Workflow completed successfully');
+      this.log.info({ tag: result.tag }, 'Workflow completed successfully');
       return ok(result);
     } catch (error) {
-      childLogger.error({ error }, 'Workflow execution failed');
+      this.log.error(
+        {
+          error,
+          errorMessage: error instanceof Error ? error.message : String(error),
+        },
+        'Workflow execution failed',
+      );
       return err(error instanceof Error ? error : new Error(String(error)));
     }
   }
@@ -293,7 +305,13 @@ export class WorkspaceManager {
   async enrichWorkspaces(
     configs: ReadonlyArray<WorkspaceConfig>,
   ): Promise<Result<ReadonlyArray<Workspace>, WorkspaceDetectionError>> {
-    childLogger.debug({ count: configs.length }, 'Enriching workspaces');
+    this.log.debug(
+      {
+        count: configs.length,
+        workspaces: configs.map((c) => ({ path: c.path, type: c.type })),
+      },
+      'Enriching workspaces',
+    );
 
     const enriched: Workspace[] = [];
 
@@ -302,7 +320,7 @@ export class WorkspaceManager {
       const detectResult = await adapter.detect(config.path);
 
       if (!detectResult.ok) {
-        childLogger.error({ path: config.path, type: config.type }, 'Failed to detect workspace info');
+        this.log.error({ path: config.path, type: config.type }, 'Failed to detect workspace info');
         return err(detectResult.error);
       }
 
@@ -316,7 +334,7 @@ export class WorkspaceManager {
       };
 
       enriched.push(workspace);
-      childLogger.debug({ path: config.path, name: info.name, version: info.version }, 'Workspace enriched');
+      this.log.debug({ path: config.path, name: info.name, version: info.version }, 'Workspace enriched');
     }
 
     return ok(enriched);
@@ -335,7 +353,7 @@ export class WorkspaceManager {
     lastTag: string | null,
     branch: string = 'main',
   ): Promise<Result<ReadonlyArray<Workspace>, GitOperationError>> {
-    childLogger.info(
+    this.log.debug(
       {
         lastTag,
         branch,
@@ -347,7 +365,7 @@ export class WorkspaceManager {
 
     // If no last tag, all workspaces are considered changed
     if (!lastTag) {
-      childLogger.info('No previous tag - all workspaces marked as changed');
+      this.log.info('No previous tag - all workspaces marked as changed');
       return ok(
         workspaces.map((w) => ({
           ...w,
@@ -364,11 +382,11 @@ export class WorkspaceManager {
     }
 
     const allChangedFiles = changedFilesResult.value.files;
-    childLogger.info(
+    this.log.debug(
       {
         fileCount: allChangedFiles.length,
         files: allChangedFiles.map((f) => f.path),
-        commitMessages: changedFilesResult.value.commits?.map((c) => c.message.split('\n')[0]),
+        commitCount: changedFilesResult.value.commits?.length,
       },
       'Changed files retrieved from comparison',
     );
@@ -385,7 +403,7 @@ export class WorkspaceManager {
         return file.path.startsWith(workspacePath + '/') || file.path === workspacePath;
       });
 
-      childLogger.debug(
+      this.log.debug(
         {
           workspace: workspace.name,
           workspacePath,
@@ -404,18 +422,11 @@ export class WorkspaceManager {
     });
 
     const changedWorkspaces = updated.filter((w) => w.hasChanges);
-    childLogger.info(
+    this.log.info(
       {
         changedCount: changedWorkspaces.length,
         changedWorkspaceNames: changedWorkspaces.map((w) => w.name),
         totalWorkspaces: workspaces.length,
-        allWorkspaces: workspaces.map((w) => ({ name: w.name, path: w.path })),
-        breakdown: changedWorkspaces.map((w) => ({
-          name: w.name,
-          path: w.path,
-          fileCount: w.changedFiles?.length || 0,
-          files: w.changedFiles,
-        })),
       },
       'Changed workspaces identified',
     );
@@ -434,7 +445,13 @@ export class WorkspaceManager {
     workspaces: ReadonlyArray<Workspace>,
     lastTag: string | null,
   ): Promise<Result<ReadonlyArray<WorkspaceWithVersion>, Error>> {
-    childLogger.debug('Calculating new versions');
+    this.log.debug(
+      {
+        workspaceCount: workspaces.length,
+        lastTag,
+      },
+      'Calculating new versions',
+    );
 
     // Get commits since last tag (use HEAD^ if no tag to get at least one commit)
     const base = lastTag || 'HEAD^';
@@ -446,11 +463,11 @@ export class WorkspaceManager {
     const commits = commitsResult.value;
     const commitMessages = commits.map((c) => c.message);
 
-    childLogger.debug(
+    this.log.debug(
       {
         base,
         commitCount: commits.length,
-        messages: commitMessages.map((m) => m.split('\n')[0]),
+        firstMessage: commitMessages[0]?.split('\n')[0],
       },
       'Commits retrieved for version calculation',
     );
@@ -475,14 +492,14 @@ export class WorkspaceManager {
       if (analysis) {
         // Calculate version based on commit analysis
         newVersion = this.versionService.calculateNewVersion(workspace.version, analysis);
-        childLogger.debug(
+        this.log.debug(
           { workspace: workspace.path, oldVersion: workspace.version, newVersion, bumpType: analysis.type },
           'Version calculated from commits',
         );
       } else {
         // No conventional commits - default to patch bump
         newVersion = this.versionService.increaseVersion(workspace.version, 'patch');
-        childLogger.debug(
+        this.log.debug(
           { workspace: workspace.path, oldVersion: workspace.version, newVersion },
           'Version bumped (patch - no conventional commits)',
         );
@@ -504,18 +521,24 @@ export class WorkspaceManager {
    * @returns Result indicating success or failure
    */
   async updateVersionFiles(workspaces: ReadonlyArray<WorkspaceWithVersion>): Promise<Result<void, FileOperationError>> {
-    childLogger.debug({ count: workspaces.length }, 'Updating version files');
+    this.log.debug(
+      {
+        count: workspaces.length,
+        workspaces: workspaces.map((w) => ({ name: w.name, version: w.newVersion })),
+      },
+      'Updating version files',
+    );
 
     for (const workspace of workspaces) {
       const adapter = getAdapter(workspace.type);
       const updateResult = await adapter.update(workspace.path, workspace.newVersion);
 
       if (!updateResult.ok) {
-        childLogger.error({ path: workspace.path, version: workspace.newVersion }, 'Failed to update version file');
+        this.log.error({ path: workspace.path, version: workspace.newVersion }, 'Failed to update version file');
         return err(updateResult.error);
       }
 
-      childLogger.debug({ path: workspace.path, version: workspace.newVersion }, 'Version file updated');
+      this.log.debug({ path: workspace.path, version: workspace.newVersion }, 'Version file updated');
     }
 
     return ok(undefined);
@@ -529,7 +552,14 @@ export class WorkspaceManager {
    * @returns Result indicating success or failure
    */
   async generateChangelogs(tree: WorkspaceTree, options: WorkflowOptions): Promise<Result<void, FileOperationError>> {
-    childLogger.debug('Generating changelogs');
+    this.log.debug(
+      {
+        rootWorkspace: tree.root.workspace.name,
+        childrenCount: tree.root.children.length,
+        preset: options.changelogPreset,
+      },
+      'Generating changelogs',
+    );
 
     // Generate changelog for root workspace
     const rootPath = tree.root.workspace.path === '.' ? '.' : tree.root.workspace.path;
@@ -547,7 +577,7 @@ export class WorkspaceManager {
       return err(new FileOperationError(rootChangelogPath, 'generate', 'Failed to generate root changelog'));
     }
 
-    childLogger.debug({ path: rootChangelogPath }, 'Root changelog generated');
+    this.log.debug({ path: rootChangelogPath }, 'Root changelog generated');
 
     // Generate changelogs for child workspaces (recursively)
     await this.generateChangelogsRecursive(tree.root.children, options);
@@ -577,7 +607,7 @@ export class WorkspaceManager {
         repository: options.repository,
       });
 
-      childLogger.debug({ path: changelogPath }, 'Workspace changelog generated');
+      this.log.debug({ path: changelogPath }, 'Workspace changelog generated');
 
       // Recurse to children
       if (node.children.length > 0) {
@@ -596,7 +626,7 @@ export class WorkspaceManager {
    * @returns Result with commit SHA
    */
   async createVersionCommit(tree: WorkspaceTree): Promise<Result<string, GitOperationError>> {
-    childLogger.debug({ version: tree.masterVersion }, 'Creating version commit');
+    this.log.debug({ version: tree.masterVersion }, 'Creating version commit');
 
     try {
       // Stage all changes (version files and changelogs)
@@ -629,11 +659,11 @@ export class WorkspaceManager {
       // Push the commit with upstream tracking
       await exec.exec('git', ['push', '--set-upstream', 'origin', branchName, '--no-verify']);
 
-      childLogger.info({ sha: commitSha, message: commitMessage }, 'Version commit created and pushed');
+      this.log.info({ sha: commitSha, message: commitMessage }, 'Version commit created and pushed');
       return ok(commitSha);
     } catch (error) {
       const gitError = new GitOperationError('createVersionCommit', 'Failed to create version commit', error);
-      childLogger.error({ error: gitError }, 'Failed to create version commit');
+      this.log.error({ error: gitError }, 'Failed to create version commit');
       return err(gitError);
     }
   }
@@ -649,7 +679,7 @@ export class WorkspaceManager {
     // Add random suffix to avoid branch name collisions on retry
     const randomSuffix = Math.floor(Math.random() * 10000).toString(36);
     const branchName = `${options.prOptions?.branchPrefix || 'version-bump'}/v${tree.masterVersion}-${randomSuffix}`;
-    childLogger.debug({ branch: branchName, version: tree.masterVersion }, 'Creating version branch');
+    this.log.debug({ branch: branchName, version: tree.masterVersion }, 'Creating version branch');
 
     try {
       // Create and checkout new branch FIRST (before committing)
@@ -665,11 +695,11 @@ export class WorkspaceManager {
       // Push the branch
       await exec.exec('git', ['push', '--set-upstream', 'origin', branchName, '--no-verify']);
 
-      childLogger.info({ branch: branchName, message: commitMessage }, 'Version branch created and pushed');
+      this.log.info({ branch: branchName, message: commitMessage }, 'Version branch created and pushed');
       return ok(branchName);
     } catch (error) {
       const gitError = new GitOperationError('createVersionBranch', 'Failed to create version branch', error);
-      childLogger.error({ error: gitError }, 'Failed to create version branch');
+      this.log.error({ error: gitError }, 'Failed to create version branch');
       return err(gitError);
     }
   }
@@ -687,7 +717,7 @@ export class WorkspaceManager {
     options: WorkflowOptions,
     branchName: string,
   ): Promise<Result<number, Error>> {
-    childLogger.debug({ version: tree.masterVersion, branch: branchName }, 'Creating version PR');
+    this.log.debug({ version: tree.masterVersion, branch: branchName }, 'Creating version PR');
 
     const title = `chore: bump version to ${tree.masterVersion}`;
 
@@ -708,7 +738,7 @@ export class WorkspaceManager {
     }
 
     const pr = prResult.value;
-    childLogger.info({ prNumber: pr.number, prUrl: pr.htmlUrl }, 'Version PR created');
+    this.log.info({ prNumber: pr.number, prUrl: pr.htmlUrl }, 'Version PR created');
 
     // Auto-merge if requested
     if (options.prOptions?.autoMerge) {
@@ -718,9 +748,9 @@ export class WorkspaceManager {
       });
 
       if (!mergeResult.ok) {
-        childLogger.warn({ prNumber: pr.number }, 'Auto-merge failed - PR remains open');
+        this.log.warn({ prNumber: pr.number }, 'Auto-merge failed - PR remains open');
       } else {
-        childLogger.info({ prNumber: pr.number }, 'PR auto-merged');
+        this.log.info({ prNumber: pr.number }, 'PR auto-merged');
 
         // Delete the branch after successful merge to avoid collisions on retry
         try {
@@ -731,9 +761,9 @@ export class WorkspaceManager {
             repo,
             ref: `heads/${branchName}`,
           });
-          childLogger.info({ branch: branchName }, 'Version branch deleted after merge');
+          this.log.info({ branch: branchName }, 'Version branch deleted after merge');
         } catch (error) {
-          childLogger.warn({ branch: branchName, error }, 'Failed to delete branch after merge');
+          this.log.warn({ branch: branchName, error }, 'Failed to delete branch after merge');
         }
       }
     }
@@ -753,7 +783,7 @@ export class WorkspaceManager {
     options: WorkflowOptions,
     providedCommitSha?: string,
   ): Promise<Result<string[], GitOperationError>> {
-    childLogger.debug('Creating version tags');
+    this.log.debug('Creating version tags');
 
     const createdTags: string[] = [];
 
@@ -761,19 +791,19 @@ export class WorkspaceManager {
     let commitSha: string;
     if (providedCommitSha) {
       commitSha = providedCommitSha;
-      childLogger.debug({ commitSha }, 'Using provided commit SHA');
+      this.log.debug({ commitSha }, 'Using provided commit SHA');
     } else {
       const branch = options.branch || 'main';
       const branchRef = `heads/${branch}`;
       const refResult = await this.gitService.getRef(branchRef);
 
       if (!refResult.ok) {
-        childLogger.error({ branch: branchRef }, 'Failed to get current branch HEAD SHA');
+        this.log.error({ branch: branchRef }, 'Failed to get current branch HEAD SHA');
         return err(refResult.error);
       }
 
       commitSha = refResult.value.sha;
-      childLogger.debug({ commitSha, branch: branchRef }, 'Retrieved current HEAD SHA');
+      this.log.debug({ commitSha, branch: branchRef }, 'Retrieved current HEAD SHA');
     }
 
     // Create master version tag
@@ -789,7 +819,7 @@ export class WorkspaceManager {
     }
 
     createdTags.push(masterTag);
-    childLogger.debug({ tag: masterTag }, 'Master tag created');
+    this.log.debug({ tag: masterTag }, 'Master tag created');
 
     // Create short tag if requested
     if (options.tagOptions?.shortTag) {
@@ -804,10 +834,10 @@ export class WorkspaceManager {
         });
 
         if (!shortTagResult.ok) {
-          childLogger.warn({ tag: shortTag }, 'Failed to create short tag');
+          this.log.warn({ tag: shortTag }, 'Failed to create short tag');
         } else {
           createdTags.push(shortTag);
-          childLogger.debug({ tag: shortTag }, 'Short tag created');
+          this.log.debug({ tag: shortTag }, 'Short tag created');
         }
       }
     }
@@ -815,7 +845,7 @@ export class WorkspaceManager {
     // Only create root/master tag - no workspace-specific tags
     // Workspace-specific tags should only be created if explicitly requested
 
-    childLogger.info({ tagCount: createdTags.length, tags: createdTags }, 'Tags created');
+    this.log.info({ tagCount: createdTags.length, tags: createdTags }, 'Tags created');
     return ok(createdTags);
   }
 }
