@@ -211,6 +211,13 @@ export class WorkspaceManager {
       // Step 8: Create PR or commit
       let prNumber: number | undefined;
       if (options.createPR) {
+        // Create and push branch for PR
+        const branchResult = await this.createVersionBranch(tree, options);
+        if (!branchResult.ok) {
+          return err(branchResult.error);
+        }
+        childLogger.info({ branch: branchResult.value }, 'Version branch created');
+
         const prResult = await this.createVersionPR(tree, options);
         if (!prResult.ok) {
           return err(prResult.error);
@@ -598,6 +605,40 @@ export class WorkspaceManager {
     } catch (error) {
       const gitError = new GitOperationError('createVersionCommit', 'Failed to create version commit', error);
       childLogger.error({ error: gitError }, 'Failed to create version commit');
+      return err(gitError);
+    }
+  }
+
+  /**
+   * Create and push version branch for PR
+   *
+   * @param tree - Workspace tree
+   * @param options - Workflow options
+   * @returns Result with branch name
+   */
+  async createVersionBranch(tree: WorkspaceTree, options: WorkflowOptions): Promise<Result<string, GitOperationError>> {
+    const branchName = `${options.prOptions?.branchPrefix || 'version-bump'}/v${tree.masterVersion}`;
+    childLogger.debug({ branch: branchName, version: tree.masterVersion }, 'Creating version branch');
+
+    try {
+      // Stage all changes (version files and changelogs)
+      await exec.exec('git', ['add', '-A']);
+
+      // Create commit
+      const commitMessage = `chore: bump version to ${tree.masterVersion}`;
+      await exec.exec('git', ['commit', '-m', commitMessage, '--no-verify']);
+
+      // Create and checkout new branch
+      await exec.exec('git', ['checkout', '-b', branchName]);
+
+      // Push the branch
+      await exec.exec('git', ['push', '--set-upstream', 'origin', branchName, '--no-verify']);
+
+      childLogger.info({ branch: branchName, message: commitMessage }, 'Version branch created and pushed');
+      return ok(branchName);
+    } catch (error) {
+      const gitError = new GitOperationError('createVersionBranch', 'Failed to create version branch', error);
+      childLogger.error({ error: gitError }, 'Failed to create version branch');
       return err(gitError);
     }
   }

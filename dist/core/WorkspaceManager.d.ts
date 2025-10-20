@@ -53,6 +53,7 @@ export declare class WorkspaceManager {
     generateChangelogs(tree: WorkspaceTree, options: WorkflowOptions): Promise<Result<void, FileOperationError>>;
     private generateChangelogsRecursive;
     createVersionCommit(tree: WorkspaceTree): Promise<Result<string, GitOperationError>>;
+    createVersionBranch(tree: WorkspaceTree, options: WorkflowOptions): Promise<Result<string, GitOperationError>>;
     createVersionPR(tree: WorkspaceTree, options: WorkflowOptions): Promise<Result<number, Error>>;
     createVersionTags(tree: WorkspaceTree, options: WorkflowOptions): Promise<Result<string[], GitOperationError>>;
 }
