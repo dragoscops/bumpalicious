@@ -210,15 +210,21 @@ export class WorkspaceManager {
 
       // Step 8: Create PR or commit
       let prNumber: number | undefined;
-      let branchForTags = options.branch || 'main';
+      let commitSha: string | undefined;
       if (options.createPR) {
         // Create and push branch for PR
         const branchResult = await this.createVersionBranch(tree, options);
         if (!branchResult.ok) {
           return err(branchResult.error);
         }
-        branchForTags = branchResult.value; // Use PR branch for tags
         childLogger.info({ branch: branchResult.value }, 'Version branch created');
+
+        // Get the commit SHA from the just-pushed branch
+        const branchRef = `heads/${branchResult.value}`;
+        const refResult = await this.gitService.getRef(branchRef);
+        if (refResult.ok) {
+          commitSha = refResult.value.sha;
+        }
 
         const prResult = await this.createVersionPR(tree, options);
         if (!prResult.ok) {
@@ -231,11 +237,12 @@ export class WorkspaceManager {
         if (!commitResult.ok) {
           return err(commitResult.error);
         }
+        commitSha = commitResult.value;
         childLogger.info({ sha: commitResult.value }, 'Version commit created');
       }
 
-      // Step 9: Create tags (on PR branch if creating PR, otherwise on current branch)
-      const tagsResult = await this.createVersionTags(tree, { ...options, branch: branchForTags });
+      // Step 9: Create tags using the commit SHA
+      const tagsResult = await this.createVersionTags(tree, options, commitSha);
       if (!tagsResult.ok) {
         return err(tagsResult.error);
       }
@@ -701,23 +708,33 @@ export class WorkspaceManager {
    * @param options - Workflow options
    * @returns Result with created tag names
    */
-  async createVersionTags(tree: WorkspaceTree, options: WorkflowOptions): Promise<Result<string[], GitOperationError>> {
+  async createVersionTags(
+    tree: WorkspaceTree,
+    options: WorkflowOptions,
+    providedCommitSha?: string,
+  ): Promise<Result<string[], GitOperationError>> {
     childLogger.debug('Creating version tags');
 
     const createdTags: string[] = [];
 
-    // Get current branch HEAD SHA
-    const branch = options.branch || 'main';
-    const branchRef = `heads/${branch}`;
-    const refResult = await this.gitService.getRef(branchRef);
+    // Use provided SHA or get current branch HEAD SHA
+    let commitSha: string;
+    if (providedCommitSha) {
+      commitSha = providedCommitSha;
+      childLogger.debug({ commitSha }, 'Using provided commit SHA');
+    } else {
+      const branch = options.branch || 'main';
+      const branchRef = `heads/${branch}`;
+      const refResult = await this.gitService.getRef(branchRef);
 
-    if (!refResult.ok) {
-      childLogger.error({ branch: branchRef }, 'Failed to get current branch HEAD SHA');
-      return err(refResult.error);
+      if (!refResult.ok) {
+        childLogger.error({ branch: branchRef }, 'Failed to get current branch HEAD SHA');
+        return err(refResult.error);
+      }
+
+      commitSha = refResult.value.sha;
+      childLogger.debug({ commitSha, branch: branchRef }, 'Retrieved current HEAD SHA');
     }
-
-    const commitSha = refResult.value.sha;
-    childLogger.debug({ commitSha, branch: branchRef }, 'Retrieved current HEAD SHA');
 
     // Create master version tag
     const masterTag = `v${tree.masterVersion}`;

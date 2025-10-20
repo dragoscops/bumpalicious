@@ -55,6 +55,6 @@ export declare class WorkspaceManager {
     createVersionCommit(tree: WorkspaceTree): Promise<Result<string, GitOperationError>>;
     createVersionBranch(tree: WorkspaceTree, options: WorkflowOptions): Promise<Result<string, GitOperationError>>;
     createVersionPR(tree: WorkspaceTree, options: WorkflowOptions): Promise<Result<number, Error>>;
-    createVersionTags(tree: WorkspaceTree, options: WorkflowOptions): Promise<Result<string[], GitOperationError>>;
+    createVersionTags(tree: WorkspaceTree, options: WorkflowOptions, providedCommitSha?: string): Promise<Result<string[], GitOperationError>>;
 }
 //# sourceMappingURL=WorkspaceManager.d.ts.map
