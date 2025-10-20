@@ -1,3 +1,14 @@
+# CwAI Files
+.cwai/
+.github/prompts/
+
+# Codacy
+.codacy/
+
+# Env files
+.env*
+!.env.example
+
 .DS_Store
 /.task
 
@@ -5,5 +16,10 @@
 .jscpd/html
 
 /node_modules
+*.tsbuildinfo
 
 /**/tmp.*
+
+
+#Ignore insiders AI rules
+.github/instructions/codacy.instructions.md

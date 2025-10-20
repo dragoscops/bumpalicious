@@ -1,0 +1,10 @@
+{
+  "author": "Test User <dragos.cirjan@gmail.com>",
+  "id": 1,
+  "title": "Version Bump for Mono Repo",
+  "description": "Version Bump for Mono Repo -> Please inspect the current code ( #file:action.yml and the src folder) and draft a nice LLD for a github action that is bumping versions on a multi language monorepo. The LLD should be more under the form of a HLD with lots of technical suggestions. I want to translate the current project from JavaScript to TypeScript; maybe use `@actions/core` module to create the version commits and not git commands; I am trying to move towards a more logical and more api based approach. Draft a document and let's see where it takes us.",
+  "labels": ["low-level-design", "story"],
+  "created_at": "2025-10-17T18:30:30.978Z",
+  "updated_at": "2025-10-17T18:30:30.978Z",
+  "comments": []
+}

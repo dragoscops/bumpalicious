@@ -1,16 +1,19 @@
 {
   "name": "bumpalicious",
-  "version": "2.1.2",
+  "version": "202.1.0-alpha.3",
   "description": "GitHub Action for automated version management based on conventional commits",
   "main": "dist/index.js",
-  "type": "module",
   "scripts": {
-    "build": "ncc build src/index.js -o dist --target es2020",
+    "build": "npm run type-check && ncc build src/index.ts -o dist --target es2020 --minify && npm run copy-assets",
+    "build:dev": "tsc --noEmit && ncc build src/index.ts -o dist --target es2020 --source-map && npm run copy-assets",
+    "copy-assets": "mkdir -p dist/hosts dist/templates && cp node_modules/conventional-changelog-core/hosts/*.json dist/hosts/ && cp node_modules/conventional-changelog-conventionalcommits/src/templates/*.hbs dist/templates/",
+    "type-check": "tsc --noEmit",
     "cpd": "jscpd ./src",
     "prebuild": "rimraf ./dist",
-    "prettify": "npx prettier --write \"./**/*.{js,json}\"",
+    "prettify": "npx prettier --write \"./**/*.{js,json,ts,md}\"",
     "-prepare": "npm run build",
-    "test": "npx vitest run"
+    "test": "npx vitest run",
+    "test:watch": "npx vitest"
   },
   "repository": {
     "type": "git",
@@ -24,30 +27,36 @@
   },
   "homepage": "https://github.com/dragoscops/version-update#readme",
   "dependencies": {
-    "@actions/core": "^1.10.1",
-    "@actions/github": "^6.0.0",
+    "@actions/core": "^1.11.1",
+    "@actions/exec": "^1.1.1",
+    "@actions/github": "^6.0.1",
     "@iarna/toml": "^2.2.5",
-    "@npmcli/git": "^5.0.0",
-    "conventional-changelog": "^6.0.0",
-    "conventional-changelog-conventionalcommits": "^8.0.0",
+    "@npmcli/git": "^7.0.0",
+    "conventional-changelog": "^7.1.1",
+    "conventional-changelog-conventionalcommits": "^9.1.0",
     "conventional-changelog-core": "^9.0.0",
-    "pino": "^9.7.0",
-    "pino-pretty": "^13.0.0",
-    "semver": "^7.6.0",
+    "pino": "^10.0.0",
+    "pino-pretty": "^13.1.2",
+    "semver": "^7.7.3",
     "tiny-jsonc": "^1.0.2",
-    "tinyglobby": "^0.2.13"
+    "tinyglobby": "^0.2.15",
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@jscpd/badge-reporter": "^4.0.1",
     "@jscpd/html-reporter": "^4.0.1",
-    "@templ-project/eslint": "^1.0.3",
-    "@templ-project/prettier": "^1.0.3",
-    "@templ-project/vitest": "^0.1.3",
-    "@vercel/ncc": "^0.38.3",
-    "esbuild": "^0.25.5",
+    "@templ-project/eslint": "^1.2.2",
+    "@templ-project/prettier": "^1.0.6",
+    "@templ-project/tsconfig": "^0.4.2",
+    "@templ-project/vitest": "^0.3.2",
+    "@types/conventional-changelog-core": "^8.0.0",
+    "@types/node": "^24.8.1",
+    "@types/semver": "^7.7.1",
+    "@vercel/ncc": "^0.38.4",
     "husky": "^9.1.7",
     "jscpd": "^4.0.5",
-    "rimraf": "^6.0.1"
+    "rimraf": "^6.0.1",
+    "typescript": "^5.9.3"
   },
   "engines": {
     "node": ">=20"
