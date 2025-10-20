@@ -244,7 +244,7 @@ export class WorkspaceManager {
         commitSha = refResult.value.sha;
         childLogger.debug({ commitSha }, 'Got commit SHA from branch ref');
 
-        const prResult = await this.createVersionPR(tree, options);
+        const prResult = await this.createVersionPR(tree, options, branchResult.value);
         if (!prResult.ok) {
           return err(prResult.error);
         }
@@ -679,12 +679,16 @@ export class WorkspaceManager {
    *
    * @param tree - Workspace tree
    * @param options - Workflow options
+   * @param branchName - The actual branch name (with random suffix)
    * @returns Result with PR number
    */
-  async createVersionPR(tree: WorkspaceTree, options: WorkflowOptions): Promise<Result<number, Error>> {
-    childLogger.debug({ version: tree.masterVersion }, 'Creating version PR');
+  async createVersionPR(
+    tree: WorkspaceTree,
+    options: WorkflowOptions,
+    branchName: string,
+  ): Promise<Result<number, Error>> {
+    childLogger.debug({ version: tree.masterVersion, branch: branchName }, 'Creating version PR');
 
-    const branchName = `${options.prOptions?.branchPrefix || 'version-bump'}/v${tree.masterVersion}`;
     const title = `chore: bump version to ${tree.masterVersion}`;
 
     // Build PR body with workspace tree

@@ -54,7 +54,7 @@ export declare class WorkspaceManager {
     private generateChangelogsRecursive;
     createVersionCommit(tree: WorkspaceTree): Promise<Result<string, GitOperationError>>;
     createVersionBranch(tree: WorkspaceTree, options: WorkflowOptions): Promise<Result<string, GitOperationError>>;
-    createVersionPR(tree: WorkspaceTree, options: WorkflowOptions): Promise<Result<number, Error>>;
+    createVersionPR(tree: WorkspaceTree, options: WorkflowOptions, branchName: string): Promise<Result<number, Error>>;
     createVersionTags(tree: WorkspaceTree, options: WorkflowOptions, providedCommitSha?: string): Promise<Result<string[], GitOperationError>>;
 }
 //# sourceMappingURL=WorkspaceManager.d.ts.map

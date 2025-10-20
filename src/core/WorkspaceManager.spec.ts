@@ -457,7 +457,7 @@ describe('WorkspaceManager', () => {
         },
       };
 
-      const result = await workspaceManager.createVersionPR(mockTree, options);
+      const result = await workspaceManager.createVersionPR(mockTree, options, 'version-bump/v2.0.0-abc');
 
       expect(result.ok).toBe(true);
       if (result.ok) {
@@ -467,7 +467,7 @@ describe('WorkspaceManager', () => {
       expect(mockPRService.create).toHaveBeenCalledWith(
         expect.objectContaining({
           title: 'chore: bump version to 2.0.0',
-          head: 'version-bump/v2.0.0',
+          head: 'version-bump/v2.0.0-abc',
           base: 'main',
           draft: false,
         }),
@@ -493,7 +493,7 @@ describe('WorkspaceManager', () => {
         },
       };
 
-      const result = await workspaceManager.createVersionPR(mockTree, options);
+      const result = await workspaceManager.createVersionPR(mockTree, options, 'version-bump/v2.0.0-xyz');
 
       expect(result.ok).toBe(true);
       expect(mockPRService.create).toHaveBeenCalledWith(
