@@ -580,8 +580,18 @@ export class WorkspaceManager {
         },
       });
 
-      // Push the commit
-      await exec.exec('git', ['push', '--no-verify']);
+      // Get current branch name
+      let branchName = '';
+      await exec.exec('git', ['rev-parse', '--abbrev-ref', 'HEAD'], {
+        listeners: {
+          stdout: (data: Buffer) => {
+            branchName += data.toString().trim();
+          },
+        },
+      });
+
+      // Push the commit with upstream tracking
+      await exec.exec('git', ['push', '--set-upstream', 'origin', branchName, '--no-verify']);
 
       childLogger.info({ sha: commitSha, message: commitMessage }, 'Version commit created and pushed');
       return ok(commitSha);
