@@ -1,6 +1,6 @@
 # Bumpalicious
 
-> A GitHub Action for automated version management based on conventional commits.
+> A type-safe GitHub Action for intelligent version management in multi-language monorepos and single projects.
 
 [![MIT License](https://img.shields.io/github/license/dragoscops/bumpalicious.svg?style=flat-square)](https://github.com/dragoscops/bumpalicious/blob/master/LICENSE)
 [![Marketplace](https://img.shields.io/badge/GitHub%20Actions-Marketplace-blue.svg?style=flat-square)](https://github.com/marketplace/actions/bumpalicious)
@@ -8,7 +8,7 @@
 <!-- [![Downloads](https://img.shields.io/github/downloads/dragoscops/bumpalicious/total.svg?style=flat-square)](https://github.com/dragoscops/bumpalicious/releases) -->
 <!-- [![Used by](https://img.shields.io/github/workflow/status/search?query=uses%3Adragoscops%2Fbumpalicious&style=flat-square&label=used%20by)](https://github.com/search?q=uses%3Adragoscops%2Fbumpalicious&type=code) -->
 
-![Jscpd](https://raw.githubusercontent.com/dragoscops/bumpalicious/v2/.jscpd/jscpd-badge.svg?sanitize=true)
+![Jscpd](https://raw.githubusercontent.com/dragoscops/bumpalicious/v3/.jscpd/jscpd-badge.svg?sanitize=true)
 [![Test Bumpalicious Action](https://github.com/dragoscops/bumpalicious/actions/workflows/ci.yml/badge.svg)](https://github.com/dragoscops/bumpalicious/actions/workflows/ci.yml)
 ![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/dragoscops/version-update?labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit%20Reviews)
 
@@ -17,11 +17,29 @@
 [![Donate to this project using Patreon](https://img.shields.io/badge/patreon-donate-yellow.svg)](https://patreon.com/dragoscirjan)
 [![Donate to this project using Paypal](https://img.shields.io/badge/paypal-donate-yellow.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=QBP6DEBJDEMV2&source=url)
 
+## What's New in v3 🎉
+
+**Major improvements:**
+
+- 🔒 **Type-Safe**: Fully rewritten in TypeScript for compile-time safety
+- 🔐 **Secure**: GitHub API-based operations eliminate shell injection vulnerabilities
+- ✅ **Reliable**: Validates PR status checks before auto-merging
+- 🌳 **Smart Monorepo**: Hierarchical workspace tree with intelligent version propagation
+- 📦 **Better PRs**: Rich PR descriptions with complete workspace version information
+- 🚀 **Performant**: Optimized with parallel processing and caching
+
 ## Table of Contents
 
 - [Bumpalicious](#bumpalicious)
+  - [What's New in v3 🎉](#whats-new-in-v3-)
   - [Table of Contents](#table-of-contents)
   - [Features](#features)
+    - [Supported Languages and Project Types](#supported-languages-and-project-types)
+    - [Additional Features](#additional-features)
+  - [Monorepo Support](#monorepo-support)
+    - [How It Works](#how-it-works)
+    - [Workspace Hierarchy Rules](#workspace-hierarchy-rules)
+    - [Example PR Body](#example-pr-body)
   - [Usage](#usage)
   - [Inputs](#inputs)
     - [Workspace Types](#workspace-types)
@@ -41,29 +59,40 @@
     - [Advanced Examples](#advanced-examples)
       - [With Custom Branch](#with-custom-branch)
       - [With Custom Changelog Preset](#with-custom-changelog-preset)
-      - [With Pull Request (with Auto-merge)](#with-pull-request-with-auto-merge)
+      - [With Pull Request and Auto-merge](#with-pull-request-and-auto-merge)
       - [With Custom PR Branch Prefix](#with-custom-pr-branch-prefix)
-      - [With Pull Request (with Auto-merge)](#with-pull-request-with-auto-merge-1)
       - [Pre-release Workflow](#pre-release-workflow)
       - [Production Release Workflow](#production-release-workflow)
   - [Version Bump Rules](#version-bump-rules)
     - [Pre-release Version Handling](#pre-release-version-handling)
   - [Changelog Generation](#changelog-generation)
-    - [How it works](#how-it-works)
+    - [How it works](#how-it-works-1)
     - [Conventional Commits](#conventional-commits)
     - [Example CHANGELOG.md](#example-changelogmd)
 
 ## Features
 
-- Automatically detects version files in projects
-- Supports multiple languages and project types:
-  - **Deno**: `deno.json`, `deno.jsonc`, `jsr.json`, `package.json`
-  - **Go**: `go.mod` (with version comments), `version.go`, `version.txt`, `VERSION.txt`
-  - **Node.js**: `package.json`, `jsr.json`
-  - **Python**: `pyproject.toml`, `poetry.toml`, `setup.py`, `setup.cfg`, `__init__.py`
-  - **Rust**: `Cargo.toml`
-  - **Zig**: `build.zig`, `build.zig.zon`
-  - **Text-based**: `version`, `version.txt`, `VERSION`, `VERSION.txt`
+- 🎯 **Intelligent Version Detection**: Automatically identifies and updates version files across multiple project types
+- 🔐 **Secure by Design**: GitHub API-based operations prevent shell injection vulnerabilities
+- ✅ **PR Status Validation**: Waits for required checks before auto-merging pull requests
+- 🌍 **Multi-Language Support**: Native support for 7+ programming languages and ecosystems
+- 📦 **Monorepo Ready**: Hierarchical workspace management with smart version propagation
+- 📝 **Rich Changelogs**: Automatically generates detailed CHANGELOG.md from conventional commits
+- 🚀 **Zero Configuration**: Works out-of-the-box with sensible defaults
+- ⚡ **Fast & Efficient**: Parallel processing and intelligent caching
+
+### Supported Languages and Project Types
+
+- **Deno**: `deno.json`, `deno.jsonc`, `jsr.json`, `package.json`
+- **Go**: `go.mod` (with version comments), `version.go`, `version.txt`, `VERSION.txt`
+- **Node.js**: `package.json`, `jsr.json`
+- **Python**: `pyproject.toml`, `poetry.toml`, `setup.py`, `setup.cfg`, `__init__.py`
+- **Rust**: `Cargo.toml`
+- **Zig**: `build.zig`, `build.zig.zon`
+- **Text-based**: `version`, `version.txt`, `VERSION`, `VERSION.txt`
+
+### Additional Features
+
 - Smart pre-release version handling that understands semantic versioning
 - Updates version numbers according to conventional commits
 - Supports monorepos with multiple project types
@@ -71,6 +100,51 @@
 - Creates well-formatted CHANGELOG.md files for each workspace
 - Includes changelog content in pull request descriptions
 - Creates Git tags with optional short version tags (e.g., v1.2 for v1.2.3)
+
+## Monorepo Support
+
+Bumpalicious v3 features advanced monorepo support with **hierarchical workspace trees**:
+
+### How It Works
+
+1. **Root Workspace**: The first workspace in your configuration (typically `.`) acts as the root
+2. **Child Workspaces**: Any workspace with a path nested under the root
+3. **Version Propagation**: Changes in child workspaces automatically propagate to the root
+4. **Master Version Tag**: The root workspace version becomes the primary Git tag
+
+### Workspace Hierarchy Rules
+
+```yaml
+workspaces: ".:node;packages/api:python;packages/ui:node"
+```
+
+- **Root** (`.`): Must be listed first, controls the master version
+- **Children** (`packages/*`): Nested paths inherit from root
+- **Version Propagation**: If ANY child changes, root MUST change
+- **Error Prevention**: Action fails if child changes but root version doesn't
+
+### Example PR Body
+
+When creating a PR in a monorepo, you'll get a rich description:
+
+```markdown
+# Version Update: my-monorepo 2.1.0
+
+## 📦 Workspace Versions
+
+### 🏠 Root: my-monorepo
+
+**Version**: `2.1.0` | **Path**: `.` | **Type**: `node`
+
+### 📁 Child Workspaces
+
+- 🔄 **api-service** `1.5.0` (packages/api) - python
+- 🔄 **ui-components** `3.2.1` (packages/ui) - node
+
+## 📝 Changelogs
+
+[Detailed changelog for each workspace]
+```
 
 ## Usage
 
@@ -102,14 +176,17 @@ jobs:
           fetch-depth: 0
 
       - name: Update Version
-        uses: dragoscops/bumpalicious@v2
+        uses: dragoscops/bumpalicious@v3
         with:
           workspaces: ".:node"
           pr: "true"
+          pr_auto_merge: "true"
           changelog_preset: "conventionalcommits"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
+
+> **Note**: For auto-merge to work, ensure your repository has required status checks configured and that the action has appropriate permissions.
 
 ## Inputs
 
@@ -149,11 +226,11 @@ The following workspace types are supported:
 ### Basic Usage (Single Project)
 
 ```yaml
-uses: dragoscops/bumpalicious@v2
+uses: dragoscops/bumpalicious@v3
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 with:
-  workspaces: ".:version"
+  workspaces: ".:text"
 ```
 
 ### Language-Specific Examples
@@ -161,7 +238,7 @@ with:
 #### Node.js Project
 
 ```yaml
-uses: dragoscops/bumpalicious@v2
+uses: dragoscops/bumpalicious@v3
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 with:
@@ -171,7 +248,7 @@ with:
 #### Python Project
 
 ```yaml
-uses: dragoscops/bumpalicious@v2
+uses: dragoscops/bumpalicious@v3
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 with:
@@ -181,7 +258,7 @@ with:
 #### Deno Project
 
 ```yaml
-uses: dragoscops/bumpalicious@v2
+uses: dragoscops/bumpalicious@v3
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 with:
@@ -191,7 +268,7 @@ with:
 #### Go Project
 
 ```yaml
-uses: dragoscops/bumpalicious@v2
+uses: dragoscops/bumpalicious@v3
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 with:
@@ -201,7 +278,7 @@ with:
 #### Rust Project
 
 ```yaml
-uses: dragoscops/bumpalicious@v2
+uses: dragoscops/bumpalicious@v3
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 with:
@@ -211,7 +288,7 @@ with:
 #### Zig Project
 
 ```yaml
-uses: dragoscops/bumpalicious@v2
+uses: dragoscops/bumpalicious@v3
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 with:
@@ -221,7 +298,7 @@ with:
 #### Text-based Version Files
 
 ```yaml
-uses: dragoscops/bumpalicious@v2
+uses: dragoscops/bumpalicious@v3
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 with:
@@ -233,7 +310,7 @@ with:
 #### Multi-language Monorepo
 
 ```yaml
-uses: dragoscops/bumpalicious@v2
+uses: dragoscops/bumpalicious@v3
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 with:
@@ -245,7 +322,7 @@ with:
 #### With Custom Branch
 
 ```yaml
-uses: dragoscops/bumpalicious@v2
+uses: dragoscops/bumpalicious@v3
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 with:
@@ -256,7 +333,7 @@ with:
 #### With Custom Changelog Preset
 
 ```yaml
-uses: dragoscops/bumpalicious@v2
+uses: dragoscops/bumpalicious@v3
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 with:
@@ -264,22 +341,29 @@ with:
   changelog_preset: "angular" # or any other conventional-changelog preset
 ```
 
-#### With Pull Request (with Auto-merge)
+#### With Pull Request and Auto-merge
 
 ```yaml
-uses: dragoscops/bumpalicious@v2
+uses: dragoscops/bumpalicious@v3
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 with:
   workspaces: ".:node"
   pr: "true"
-  pr_auto_merge: "true" # only if you want to enable auto-merge
+  pr_auto_merge: "true"
 ```
+
+> **⚠️ Auto-merge Requirements**:
+>
+> - Repository must have branch protection rules configured
+> - Required status checks must be defined
+> - Action will wait for all checks to pass before merging
+> - If checks fail or timeout (5 minutes), the PR remains open
 
 #### With Custom PR Branch Prefix
 
 ```yaml
-uses: dragoscops/bumpalicious@v2
+uses: dragoscops/bumpalicious@v3
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 with:
@@ -287,18 +371,6 @@ with:
   pr: "true"
   pr_version_prefix: "bump_version"
   changelog_preset: "angular" # or any other conventional-changelog preset
-```
-
-#### With Pull Request (with Auto-merge)
-
-```yaml
-uses: dragoscops/bumpalicious@v2
-env:
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-with:
-  workspaces: ".:node"
-  pr: "true"
-  pr_auto_merge: "true" # only if you want to enable auto-merge
 ```
 
 #### Pre-release Workflow
@@ -318,7 +390,7 @@ jobs:
           fetch-depth: 0
 
       - name: Update Pre-release Version
-        uses: dragoscops/bumpalicious@v2
+        uses: dragoscops/bumpalicious@v3
         with:
           workspaces: ".:node"
           pr: "true"
@@ -345,7 +417,7 @@ jobs:
           fetch-depth: 0
 
       - name: Update Version and Create Release
-        uses: dragoscops/bumpalicious@v2
+        uses: dragoscops/bumpalicious@v3
         with:
           workspaces: ".:node,packages/lib:python,tools:go"
           pr: "true"
@@ -393,7 +465,7 @@ This action can automatically generate CHANGELOG.md files for each workspace bas
 
 For optimal version management and changelog generation, your commits must follow the [Conventional Commits](https://www.conventionalcommits.org/) specification:
 
-```
+```text
 <type>[optional scope]: <description>
 
 [optional body]
@@ -402,6 +474,16 @@ For optimal version management and changelog generation, your commits must follo
 ```
 
 Common types include:
+
+```text
+<type>(<scope>): <description>
+
+[optional body]
+
+[optional footer]
+```
+
+**Type values**:
 
 - `feat`: A new feature (triggers minor version bump)
 - `fix`: A bug fix (triggers patch version bump)
@@ -416,6 +498,11 @@ Common types include:
 
 Breaking changes are indicated either by adding `BREAKING CHANGE:` in the commit body or by appending a `!` after the type (e.g., `feat!:`). Breaking changes trigger major version bumps.
 
+### Example CHANGELOG.md
+
+The generated changelog will look similar to:
+
+````markdown
 ### Example CHANGELOG.md
 
 The generated changelog will look similar to:
@@ -435,3 +522,4 @@ The generated changelog will look similar to:
 - correct validation logic in form handler ([i7j8k9l](https://github.com/user/repo/commit/i7j8k9l))
 - **ui:** fix button alignment in mobile view ([m1n2o3p](https://github.com/user/repo/commit/m1n2o3p))
 ```
+````
