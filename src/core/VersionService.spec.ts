@@ -2,11 +2,23 @@
  * Unit tests for VersionService
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { VersionService } from './VersionService.js';
 import { toVersion } from '../types/version.js';
 import type { CommitAnalysis, Version } from '../types/version.js';
 import { VersionCalculationError } from '../utils/errors.js';
+
+// Mock logger
+vi.mock('../utils/logger.js', () => ({
+  logger: {
+    child: vi.fn(() => ({
+      debug: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+    })),
+  },
+}));
 
 describe('VersionService', () => {
   let service: VersionService;

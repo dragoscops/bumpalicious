@@ -9,6 +9,18 @@ import { GitHubAPIError } from '../utils/errors.js';
 import type { WorkspaceTree, WorkspaceNode } from '../types/workspace.js';
 import type { Version } from '../types/version.js';
 
+// Mock logger
+vi.mock('../utils/logger.js', () => ({
+  logger: {
+    child: vi.fn(() => ({
+      debug: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+    })),
+  },
+}));
+
 describe('PRService', () => {
   let prService: PRService;
   let mockGitHub: {
@@ -301,7 +313,7 @@ describe('PRService', () => {
       expect(result.ok).toBe(false);
       if (!result.ok) {
         expect(result.error).toBeInstanceOf(GitHubAPIError);
-        expect(result.error.message).toContain('Failed to check PR merge status');
+        expect(result.error.message).toContain('Failed to check if pull request is merged');
       }
     });
   });
@@ -394,7 +406,7 @@ describe('PRService', () => {
       expect(result.ok).toBe(false);
       if (!result.ok) {
         expect(result.error).toBeInstanceOf(GitHubAPIError);
-        expect(result.error.message).toContain('Failed to check if PR exists');
+        expect(result.error.message).toContain('Failed to check if pull request exists');
       }
     });
   });

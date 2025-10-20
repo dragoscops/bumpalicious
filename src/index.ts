@@ -26,6 +26,8 @@ import type { ChangelogPreset } from './core/ChangelogService.js';
 import type { ActionBumpType } from './types/action.js';
 import type { WorkspaceNode } from './types/workspace.js';
 
+const log = logger.child({ module: 'index' });
+
 /**
  * Read and parse action inputs
  *
@@ -245,10 +247,8 @@ async function run(): Promise<void> {
       core.debug(`Stack trace: ${errorStack}`);
     }
 
-    // Log to logger for structured logging
-    logger.error({ error, errorMessage }, 'Action execution failed');
-
-    // Set action as failed
+    // Log to logger for structured logging & set action has failed
+    log.error({ error, errorMessage }, 'Action execution failed');
     core.setFailed(errorMessage);
   }
 }

@@ -1,5 +1,6 @@
 import type { GitHub } from '@actions/github/lib/utils.js';
 import { type RetryOptions } from '../utils/retry.js';
+import { Loggable } from '../Loggable.js';
 export interface RepositoryContext {
     readonly owner: string;
     readonly repo: string;
@@ -9,7 +10,7 @@ export interface GitHubServiceConfig {
     readonly retryOptions?: Partial<RetryOptions>;
 }
 export type OctokitInstance = InstanceType<typeof GitHub>;
-export declare class GitHubService {
+export declare class GitHubService extends Loggable {
     private readonly octokit;
     private readonly repository;
     private readonly retryOptions;

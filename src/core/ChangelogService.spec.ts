@@ -20,6 +20,18 @@ vi.mock('node:fs', () => ({
   },
 }));
 
+// Mock logger
+vi.mock('../utils/logger.js', () => ({
+  logger: {
+    child: vi.fn(() => ({
+      debug: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+    })),
+  },
+}));
+
 // Mock conventional-changelog-core
 vi.mock('conventional-changelog-core', async () => {
   const { Readable } = await import('stream');

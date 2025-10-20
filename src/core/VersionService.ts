@@ -35,14 +35,19 @@ import semver from 'semver';
 import { toVersion, isVersion } from '../types/version.js';
 import type { Version, BumpType, CommitAnalysis, PreReleaseIdentifier } from '../types/version.js';
 import { VersionCalculationError } from '../utils/errors.js';
-import { logger } from '../utils/logger.js';
-
-const childLogger = logger.child({ service: 'VersionService' });
+import { Loggable } from '../Loggable.js';
 
 /**
  * Version Service for semantic version calculations
  */
-export class VersionService {
+export class VersionService extends Loggable {
+  /**
+   * Create a new Version Service instance
+   */
+  constructor() {
+    super();
+    this.log.info('VersionService initialized');
+  }
   /**
    * Calculate new version based on current version and commit analysis
    *
@@ -74,24 +79,25 @@ export class VersionService {
    * ```
    */
   calculateNewVersion(currentVersion: string, analysis: CommitAnalysis): Version {
+    this.log.debug(
+      {
+        currentVersion,
+        bumpType: analysis.type,
+        breaking: analysis.breaking,
+        preRelease: analysis.preRelease,
+        message: analysis.message?.substring(0, 100),
+      },
+      'Calculating new version',
+    );
+
     // Validate input version
     if (!isVersion(currentVersion)) {
-      childLogger.error({ currentVersion }, 'Invalid current version format');
+      this.log.error({ currentVersion }, 'Invalid current version format');
       throw new VersionCalculationError(`Invalid version format: ${currentVersion}`);
     }
 
     const current = toVersion(currentVersion);
     const { type, breaking, preRelease } = analysis;
-
-    childLogger.debug(
-      {
-        current,
-        bumpType: type,
-        breaking,
-        preRelease,
-      },
-      'Calculating new version',
-    );
 
     try {
       // Breaking change always triggers major bump (unless already in pre-release)
@@ -105,7 +111,7 @@ export class VersionService {
       // Standard version bump
       const newVersion = this.increaseVersion(current, effectiveBumpType);
 
-      childLogger.info(
+      this.log.info(
         {
           current,
           new: newVersion,
@@ -116,7 +122,7 @@ export class VersionService {
 
       return newVersion;
     } catch (error) {
-      childLogger.error(
+      this.log.error(
         {
           current,
           bumpType: type,
@@ -149,6 +155,14 @@ export class VersionService {
    * ```
    */
   increaseVersion(currentVersion: Version, bumpType: BumpType): Version {
+    this.log.debug(
+      {
+        currentVersion,
+        bumpType,
+      },
+      'Increasing version',
+    );
+
     // Map 'pre-release' to 'patch' for base version bumping
     const semverBumpType = bumpType === 'pre-release' ? 'patch' : bumpType;
 
@@ -210,12 +224,13 @@ export class VersionService {
     const currentPreReleaseId = hasPreRelease ? currentPreRelease[0] : null;
     const currentPreReleaseNum = hasPreRelease && typeof currentPreRelease[1] === 'number' ? currentPreRelease[1] : -1;
 
-    childLogger.debug(
+    this.log.debug(
       {
         currentVersion,
         currentPreReleaseId,
         currentPreReleaseNum,
         requestedPreReleaseId: preReleaseId,
+        hasPreRelease,
       },
       'Analyzing pre-release version',
     );
@@ -229,7 +244,7 @@ export class VersionService {
         throw new VersionCalculationError(`Generated invalid pre-release version: ${newVersion}`);
       }
 
-      childLogger.info(
+      this.log.info(
         {
           current: currentVersion,
           new: newVersion,
@@ -259,7 +274,7 @@ export class VersionService {
       throw new VersionCalculationError(`Generated invalid pre-release version: ${newVersion}`);
     }
 
-    childLogger.info(
+    this.log.info(
       {
         current: currentVersion,
         new: newVersion,

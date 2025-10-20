@@ -1,6 +1,7 @@
 import type { GitHubService } from './GitHubService.js';
 import { GitHubAPIError } from '../utils/errors.js';
 import { type Result } from '../types/result.js';
+import { Loggable } from '../Loggable.js';
 import type { WorkspaceTree } from '../types/workspace.js';
 export interface CreatePRParams {
     readonly title: string;
@@ -39,7 +40,7 @@ export interface PRExistsResponse {
     readonly number?: number;
     readonly state?: string;
 }
-export declare class PRService {
+export declare class PRService extends Loggable {
     private readonly github;
     constructor(github: GitHubService);
     create(params: CreatePRParams): Promise<Result<PRCreateResponse, GitHubAPIError>>;

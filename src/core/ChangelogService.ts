@@ -26,12 +26,10 @@
 
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
+import { Loggable } from '../Loggable.js';
 import type { WorkspaceWithVersion, WorkspaceNode } from '../types/workspace.js';
 import type { Version } from '../types/version.js';
 import { FileOperationError } from '../utils/errors.js';
-import { logger } from '../utils/logger.js';
-
-const childLogger = logger.child({ service: 'ChangelogService' });
 
 /**
  * Preset formats for conventional-changelog
@@ -81,7 +79,14 @@ export interface ChangelogResult {
 /**
  * Changelog Service for generating CHANGELOG.md files
  */
-export class ChangelogService {
+export class ChangelogService extends Loggable {
+  /**
+   * Create a new Changelog Service instance
+   */
+  constructor() {
+    super();
+    this.log.info('ChangelogService initialized');
+  }
   /**
    * Generate changelog for a workspace
    *
@@ -109,13 +114,14 @@ export class ChangelogService {
   async generateForWorkspace(options: GenerateChangelogOptions): Promise<ChangelogResult> {
     const { workspace, changelogPath, preset = 'conventionalcommits', childWorkspaces = [], repository } = options;
 
-    childLogger.info(
+    this.log.debug(
       {
         workspace: workspace.path,
         version: workspace.newVersion,
         changelogPath,
         preset,
         hasChildWorkspaces: childWorkspaces.length > 0,
+        childWorkspacesCount: childWorkspaces.length,
       },
       'Generating changelog',
     );
@@ -123,11 +129,34 @@ export class ChangelogService {
     try {
       // Check if changelog exists
       const changelogExists = await this.fileExists(changelogPath);
+      this.log.debug(
+        {
+          changelogPath,
+          exists: changelogExists,
+        },
+        'Checked changelog existence',
+      );
 
       // Read existing changelog
       const existingChangelog = changelogExists ? await fs.readFile(changelogPath, 'utf-8') : '';
+      if (changelogExists) {
+        this.log.debug(
+          {
+            changelogPath,
+            existingLength: existingChangelog.length,
+          },
+          'Read existing changelog',
+        );
+      }
 
       // Generate new changelog content
+      this.log.debug(
+        {
+          workspace: workspace.path,
+          preset,
+        },
+        'Generating changelog content',
+      );
       const newContent = await this.generateChangelogContent({
         workspace,
         preset,
@@ -146,7 +175,7 @@ export class ChangelogService {
       // Write changelog to file
       await this.writeChangelog(changelogPath, finalContent);
 
-      childLogger.info(
+      this.log.info(
         {
           workspace: workspace.path,
           changelogPath,
@@ -162,7 +191,7 @@ export class ChangelogService {
         created: !changelogExists,
       };
     } catch (error) {
-      childLogger.error(
+      this.log.error(
         {
           workspace: workspace.path,
           changelogPath,
