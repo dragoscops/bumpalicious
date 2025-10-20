@@ -97,20 +97,48 @@ jobs:
           git push origin v${{ env.TEST_VERSION }}
 
       - name: Create Test Commit
+        env:
+          GH_TOKEN: ${{ steps.app-token-push.outputs.token || secrets.GH_TOKEN_PUSH }}
         run: |
           set -e
           cd ./test
 
           # Make changes to trigger version bump
+          echo "📝 Creating test changes..."
           date > README.md
           date > workspaces1/README.md
 
           # Commit changes
+          echo "💾 Committing changes..."
           git add -A
           git commit -m "fix: patch commit test" --no-verify
+          COMMIT_SHA=$(git rev-parse HEAD)
+          echo "📌 Commit SHA: $COMMIT_SHA"
+
+          echo "🚀 Pushing to origin/${{ steps.prereqs.outputs.test_branch }}..."
           git push origin ${{ steps.prereqs.outputs.test_branch }} --no-verify
 
+          # Wait for GitHub API to sync - verify commit is visible
+          echo "⏳ Waiting for GitHub API to index commit $COMMIT_SHA..."
+          for i in {1..30}; do
+            echo "  Attempt $i/30: Checking API..."
+            if gh api repos/${{ github.repository }}/commits/$COMMIT_SHA > /dev/null 2>&1; then
+              echo "✓ Commit indexed after $i attempts"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "⚠️ Warning: Commit not indexed after 30 seconds, proceeding anyway"
+            fi
+            sleep 1
+          done
+
+          echo "✅ Create Test Commit step completed"
+
       - name: Update Version (${{ matrix.pr }} / ${{ matrix.workspaces }})
+        env:
+          # ACTIONS_STEP_DEBUG: true
+          DEBUG: true
+        id: bump
         uses: ./
         with:
           branch: ${{ steps.prereqs.outputs.test_branch }}
@@ -120,17 +148,52 @@ jobs:
           pr_version_prefix: bump_version_to
           workspaces: ${{ matrix.workspaces }}
 
+      - name: Debug Action Outputs
+        if: always()
+        run: |
+          echo "🔍 Action Outputs:"
+          echo "  tag: ${{ steps.bump.outputs.tag }}"
+          echo "  version: ${{ steps.bump.outputs.version }}"
+          echo "  pr: ${{ steps.bump.outputs.pr }}"
+          echo "  all_tags: ${{ steps.bump.outputs.all_tags }}"
+          echo "  changed_workspaces: ${{ steps.bump.outputs.changed_workspaces }}"
+          echo "  bump_type: ${{ steps.bump.outputs.bump_type }}"
+
       - name: Validate Version Bump
         run: |
           set -e
 
-          git fetch
+          echo "🔄 Fetching latest changes..."
+          git fetch --all --tags
 
-          # Verify tag was created
-          git tag -l | grep -q v99.0.2 || { echo "Expected tag v99.0.2 not found"; exit 1; }
+          echo "📋 Current local tags:"
+          git tag -l 'v99*' || echo "  No v99* tags found locally"
 
-          # Verify package.json was updated
-          grep -q 99.0.2 ./test/package.json || { echo "Package version not updated"; exit 1; }
+          echo "📋 Remote tags:"
+          git ls-remote --tags origin 'refs/tags/v99*' || echo "  No v99* tags found on remote"
+
+          echo "📄 Current package.json content:"
+          cat ./test/package.json || echo "  File not found!"
+
+          echo "🔍 Checking for tag v99.0.2..."
+          if git tag -l | grep -qx 'v99.0.2'; then
+            echo "  ✓ Tag v99.0.2 found"
+          else
+            echo "  ✗ Tag v99.0.2 NOT found"
+            echo "  Available tags:"
+            git tag -l
+            exit 1
+          fi
+
+          echo "🔍 Checking package.json version..."
+          if grep -q '"version": "99.0.2"' ./test/package.json; then
+            echo "  ✓ Version 99.0.2 found in package.json"
+          else
+            echo "  ✗ Version 99.0.2 NOT found in package.json"
+            echo "  Current content:"
+            cat ./test/package.json
+            exit 1
+          fi
 
           echo "✅ Version bump validation successful"
 
@@ -138,6 +201,9 @@ jobs:
         if: always()
         run: |
           set -e
+
+          # Reset any local changes from failed tests
+          git reset --hard HEAD
 
           git fetch
           git checkout -B ${{ steps.prereqs.outputs.test_branch }} || true

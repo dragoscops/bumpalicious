@@ -40,6 +40,20 @@ inputs:
     required: false
     default: ".:text"
 
+outputs:
+  tag:
+    description: "The primary version tag created (e.g., 'v1.2.3')"
+  version:
+    description: "The new version number without prefix (e.g., '1.2.3')"
+  pr:
+    description: "Pull request number if PR was created (empty string if no PR)"
+  all_tags:
+    description: "Comma-separated list of all tags created (includes monorepo workspace tags)"
+  changed_workspaces:
+    description: "JSON array of workspace paths that had version changes"
+  bump_type:
+    description: "The type of version bump performed (major, minor, patch, pre-release, or none)"
+
 runs:
   using: "node20"
   main: "dist/index.js"
