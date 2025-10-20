@@ -13,7 +13,7 @@
 
 import type { WorkspaceWithVersion, WorkspaceNode, WorkspaceTree } from '../types/workspace.js';
 import { WorkspaceValidationError } from '../utils/errors.js';
-import { logger } from '../utils/logger.js';
+import { Loggable } from '../Loggable.js';
 
 /**
  * Internal workspace node with mutable children array for tree building
@@ -34,8 +34,14 @@ interface MutableWorkspaceNode {
  * - Builds recursive parent-child relationships
  * - Validates change propagation (children → root)
  */
-export class WorkspaceTreeBuilder {
-  private readonly logger = logger.child({ service: 'WorkspaceTreeBuilder' });
+export class WorkspaceTreeBuilder extends Loggable {
+  /**
+   * Create a new Workspace Tree Builder instance
+   */
+  constructor() {
+    super();
+    this.log.info('WorkspaceTreeBuilder initialized');
+  }
 
   /**
    * Build workspace tree from flat workspace list
@@ -54,7 +60,13 @@ export class WorkspaceTreeBuilder {
    * ```
    */
   build(workspaces: ReadonlyArray<WorkspaceWithVersion>): WorkspaceTree {
-    this.logger.debug({ count: workspaces.length }, 'Building workspace tree');
+    this.log.debug(
+      {
+        count: workspaces.length,
+        workspaces: workspaces.map((w) => ({ name: w.name, path: w.path, hasChanges: w.hasChanges })),
+      },
+      'Building workspace tree',
+    );
 
     // Validate input
     if (!workspaces || workspaces.length === 0) {
@@ -63,10 +75,26 @@ export class WorkspaceTreeBuilder {
 
     // Identify root workspace (shortest path)
     const root = this.identifyRoot(workspaces);
-    this.logger.debug({ rootPath: root.path, rootName: root.name }, 'Root workspace identified');
+    this.log.debug(
+      {
+        rootPath: root.path,
+        rootName: root.name,
+        rootVersion: root.version,
+        rootHasChanges: root.hasChanges,
+      },
+      'Root workspace identified',
+    );
 
     // Build tree structure
+    this.log.debug('Creating workspace nodes');
     const nodes = this.buildNodes(workspaces);
+
+    this.log.debug(
+      {
+        nodeCount: nodes.length,
+      },
+      'Establishing parent-child relationships',
+    );
     this.establishRelationships(nodes);
 
     // Find root node
@@ -75,9 +103,11 @@ export class WorkspaceTreeBuilder {
       throw new WorkspaceValidationError('Root workspace not found in nodes');
     }
 
+    this.log.debug('Validating single root constraint');
     // Validate single root
     this.validateSingleRoot(nodes);
 
+    this.log.debug('Validating change propagation rule');
     // Validate change propagation
     this.validateChangePropagation(rootNode);
 
@@ -88,7 +118,7 @@ export class WorkspaceTreeBuilder {
       allWorkspaces: [...workspaces],
     };
 
-    this.logger.info(
+    this.log.info(
       {
         rootName: root.name,
         rootVersion: root.newVersion,

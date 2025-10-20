@@ -3,6 +3,7 @@ import { PRService } from '../services/PRService.js';
 import type { VersionService } from './VersionService.js';
 import type { ChangelogService } from './ChangelogService.js';
 import type { WorkspaceTreeBuilder } from './WorkspaceTreeBuilder.js';
+import { Loggable } from '../Loggable.js';
 import type { WorkspaceConfig, Workspace, WorkspaceWithVersion, WorkspaceTree } from '../types/workspace.js';
 import type { Result } from '../types/result.js';
 import { WorkspaceDetectionError, GitOperationError, FileOperationError } from '../utils/errors.js';
@@ -38,7 +39,7 @@ export interface WorkflowResult {
     readonly prNumber?: number;
     readonly tree: WorkspaceTree;
 }
-export declare class WorkspaceManager {
+export declare class WorkspaceManager extends Loggable {
     private readonly gitService;
     private readonly prService;
     private readonly versionService;

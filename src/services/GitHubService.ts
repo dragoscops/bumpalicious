@@ -18,7 +18,7 @@ import { getOctokit } from '@actions/github';
 import type { GitHub } from '@actions/github/lib/utils.js';
 import { retry, type RetryOptions } from '../utils/retry.js';
 import { GitHubAPIError } from '../utils/errors.js';
-import { logger } from '../utils/logger.js';
+import { Loggable } from '../Loggable.js';
 
 /**
  * Repository context information
@@ -64,7 +64,7 @@ export type OctokitInstance = InstanceType<typeof GitHub>;
  * - Type-safe API access
  * - Structured error handling
  */
-export class GitHubService {
+export class GitHubService extends Loggable {
   private readonly octokit: OctokitInstance;
   private readonly repository: RepositoryContext;
   private readonly retryOptions: Partial<RetryOptions>;
@@ -83,11 +83,13 @@ export class GitHubService {
    * ```
    */
   constructor(token: string, config: GitHubServiceConfig) {
+    super();
+
     this.octokit = getOctokit(token);
     this.repository = config.repository;
     this.retryOptions = config.retryOptions ?? {};
 
-    logger.info(
+    this.log.info(
       {
         owner: this.repository.owner,
         repo: this.repository.repo,
@@ -105,6 +107,7 @@ export class GitHubService {
    * @returns Octokit instance
    */
   getOctokit(): OctokitInstance {
+    this.log.debug('Returning Octokit instance for direct API access');
     return this.octokit;
   }
 
@@ -114,6 +117,13 @@ export class GitHubService {
    * @returns Repository owner and name
    */
   getRepository(): RepositoryContext {
+    this.log.debug(
+      {
+        owner: this.repository.owner,
+        repo: this.repository.repo,
+      },
+      'Returning repository context',
+    );
     return { ...this.repository };
   }
 
@@ -140,7 +150,13 @@ export class GitHubService {
    * ```
    */
   async executeWithRetry<T>(operationName: string, operation: (octokit: OctokitInstance) => Promise<T>): Promise<T> {
-    logger.debug(`Executing GitHub API operation: ${operationName}`);
+    this.log.debug(
+      {
+        operation: operationName,
+        retryOptions: this.retryOptions,
+      },
+      'Executing GitHub API operation with retry logic',
+    );
 
     try {
       const result = await retry(
@@ -158,12 +174,17 @@ export class GitHubService {
         },
       );
 
-      logger.debug(`GitHub API operation succeeded: ${operationName}`);
+      this.log.debug(
+        {
+          operation: operationName,
+        },
+        'GitHub API operation succeeded',
+      );
       return result;
     } catch (error) {
       // Error already wrapped by retry logic
       if (error instanceof GitHubAPIError) {
-        logger.error(
+        this.log.error(
           {
             code: error.code,
             statusCode: error.statusCode,
@@ -176,7 +197,7 @@ export class GitHubService {
 
       // Wrap unexpected errors
       const wrapped = this.wrapGitHubError(operationName, error);
-      logger.error(
+      this.log.error(
         {
           code: wrapped.code,
           message: wrapped.message,
@@ -206,14 +227,26 @@ export class GitHubService {
     reset: number;
     used: number;
   }> {
+    this.log.debug('Fetching GitHub API rate limit information');
+
     try {
       const response = await this.octokit.rest.rateLimit.get();
-      return {
+      const rateLimit = {
         limit: response.data.rate.limit,
         remaining: response.data.rate.remaining,
         reset: response.data.rate.reset,
         used: response.data.rate.used,
       };
+
+      this.log.debug(
+        {
+          ...rateLimit,
+          resetAt: new Date(rateLimit.reset * 1000).toISOString(),
+        },
+        'Rate limit information retrieved',
+      );
+
+      return rateLimit;
     } catch (error) {
       throw this.wrapGitHubError('getRateLimit', error);
     }
@@ -231,15 +264,29 @@ export class GitHubService {
    * ```
    */
   async checkRateLimit(threshold: number = 10): Promise<boolean> {
+    this.log.debug(
+      {
+        threshold,
+      },
+      'Checking rate limit against threshold',
+    );
+
     try {
       const rateLimit = await this.getRateLimit();
 
       if (rateLimit.remaining < threshold) {
+        this.log.debug(
+          {
+            remaining: rateLimit.remaining,
+            threshold,
+          },
+          'Rate limit below threshold, calculating wait time',
+        );
         const resetDate = new Date(rateLimit.reset * 1000);
         const waitMs = resetDate.getTime() - Date.now();
 
         if (waitMs > 0) {
-          logger.warn(
+          this.log.warn(
             {
               remaining: rateLimit.remaining,
               resetAt: resetDate.toISOString(),
@@ -249,15 +296,22 @@ export class GitHubService {
           );
 
           await new Promise((resolve) => setTimeout(resolve, waitMs));
-          logger.info('Rate limit reset, continuing');
+          this.log.info('Rate limit reset, continuing');
           return true;
         }
       }
 
+      this.log.debug(
+        {
+          remaining: rateLimit.remaining,
+          threshold,
+        },
+        'Rate limit sufficient, no waiting required',
+      );
       return false;
     } catch (error) {
       // Don't fail on rate limit check errors, just log
-      logger.warn({ error }, 'Failed to check rate limit');
+      this.log.warn({ error }, 'Failed to check rate limit');
       return false;
     }
   }
@@ -274,6 +328,13 @@ export class GitHubService {
   private wrapGitHubError(operation: string, error: unknown): GitHubAPIError {
     // Already wrapped
     if (error instanceof GitHubAPIError) {
+      this.log.debug(
+        {
+          operation,
+          errorCode: error.code,
+        },
+        'Error already wrapped as GitHubAPIError',
+      );
       return error;
     }
 
@@ -290,6 +351,15 @@ export class GitHubService {
     } else {
       message = String(error);
     }
+
+    this.log.debug(
+      {
+        operation,
+        statusCode,
+        errorType: error instanceof Error ? error.constructor.name : typeof error,
+      },
+      'Wrapping error as GitHubAPIError',
+    );
 
     return new GitHubAPIError(operation, message, statusCode, error);
   }

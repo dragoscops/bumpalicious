@@ -2,11 +2,23 @@
  * Workspace Tree Builder Tests
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { WorkspaceTreeBuilder } from './WorkspaceTreeBuilder.js';
 import type { WorkspaceWithVersion } from '../types/workspace.js';
 import { toVersion } from '../types/version.js';
 import { WorkspaceValidationError } from '../utils/errors.js';
+
+// Mock logger
+vi.mock('../utils/logger.js', () => ({
+  logger: {
+    child: vi.fn(() => ({
+      debug: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+    })),
+  },
+}));
 
 describe('WorkspaceTreeBuilder', () => {
   let builder: WorkspaceTreeBuilder;

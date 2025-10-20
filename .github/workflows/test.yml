@@ -80,11 +80,11 @@ jobs:
 
           mkdir -p workspaces1
           echo "This is a workspaces project 1" > workspaces1/README.md
-          echo '{ "version": "99.0.5", "name": "@main-workspace/workspace1" }' > workspaces1/package.json
+          echo '{ "version": "100.0.5", "name": "@main-workspace/workspace1" }' > workspaces1/package.json
 
           mkdir -p workspaces2
           echo "This is a workspaces project 2" > workspaces2/README.md
-          echo '{ "version": "99.0.3", "name": "@main-workspace/workspace2" }' > workspaces2/package.json
+          echo '{ "version": "72.0.3", "name": "@main-workspace/workspace2" }' > workspaces2/package.json
 
           # Commit test data
           cd ..
@@ -196,6 +196,41 @@ jobs:
           fi
 
           echo "✅ Version bump validation successful"
+
+      - name: Validate Sub-Workspace Versions
+        if: matrix.workspaces != 'test:node'
+        run: |
+          set -e
+
+          echo "🔍 Validating sub-workspace versions..."
+
+          echo "📄 Workspace 1 package.json content:"
+          cat ./test/workspaces1/package.json || echo "  File not found!"
+
+          echo "📄 Workspace 2 package.json content:"
+          cat ./test/workspaces2/package.json || echo "  File not found!"
+
+          echo "🔍 Checking workspaces1 version..."
+          if grep -q '"version": "100.0.6"' ./test/workspaces1/package.json; then
+            echo "  ✓ Version 100.0.6 found in workspaces1/package.json"
+          else
+            echo "  ✗ Version 100.0.6 NOT found in workspaces1/package.json"
+            echo "  Current content:"
+            cat ./test/workspaces1/package.json
+            exit 1
+          fi
+
+          echo "🔍 Checking workspaces2 version..."
+          if grep -q '"version": "72.0.3"' ./test/workspaces2/package.json; then
+            echo "  ✓ Version 72.0.3 unchanged in workspaces2/package.json (no changes)"
+          else
+            echo "  ✗ Version mismatch in workspaces2/package.json"
+            echo "  Current content:"
+            cat ./test/workspaces2/package.json
+            exit 1
+          fi
+
+          echo "✅ Sub-workspace version validation successful"
 
       - name: Cleanup
         if: always()

@@ -2,7 +2,8 @@ import type { GitHubService } from './GitHubService.js';
 import type { GitTag, GitCommit, GitRef, GitComparison, CreateTagParams, CreateCommitParams, UpdateRefParams } from '../types/git.js';
 import type { Result } from '../types/result.js';
 import { GitOperationError } from '../utils/errors.js';
-export declare class GitService {
+import { Loggable } from '../Loggable.js';
+export declare class GitService extends Loggable {
     private readonly github;
     constructor(github: GitHubService);
     getRef(ref: string): Promise<Result<GitRef, GitOperationError>>;

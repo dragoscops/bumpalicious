@@ -29,7 +29,7 @@ import type {
 import type { Result } from '../types/result.js';
 import { ok, err } from '../types/result.js';
 import { GitOperationError } from '../utils/errors.js';
-import { logger } from '../utils/logger.js';
+import { Loggable } from '../Loggable.js';
 
 /**
  * Git Operations Service
@@ -40,7 +40,7 @@ import { logger } from '../utils/logger.js';
  * - Branch/ref updates
  * - File change detection
  */
-export class GitService {
+export class GitService extends Loggable {
   private readonly github: GitHubService;
 
   /**
@@ -55,8 +55,14 @@ export class GitService {
    * ```
    */
   constructor(github: GitHubService) {
+    super();
     this.github = github;
-    logger.debug('GitService initialized');
+    this.log.info(
+      {
+        ...github.getRepository(),
+      },
+      'GitService initialized',
+    );
   }
 
   /**
@@ -74,10 +80,15 @@ export class GitService {
    * ```
    */
   async getRef(ref: string): Promise<Result<GitRef, GitOperationError>> {
+    this.log.debug(
+      {
+        ref,
+      },
+      'Getting Git reference',
+    );
+
     try {
       const { owner, repo } = this.github.getRepository();
-
-      logger.debug({ ref }, 'Getting Git reference');
 
       const reference = await this.github.executeWithRetry('getRef', (octokit) =>
         octokit.rest.git.getRef({
@@ -87,7 +98,13 @@ export class GitService {
         }),
       );
 
-      logger.info({ ref, sha: reference.data.object.sha }, 'Git reference retrieved successfully');
+      this.log.info(
+        {
+          ref,
+          ...reference.data.object,
+        },
+        'Git reference retrieved successfully',
+      );
 
       return ok({
         ref: reference.data.ref,
@@ -95,7 +112,7 @@ export class GitService {
       });
     } catch (error) {
       const gitError = new GitOperationError('getRef', `Failed to get ref ${ref}`, error);
-      logger.error({ error: gitError, ref }, 'Failed to get Git reference');
+      this.log.error({ error: gitError, ref }, 'Failed to get Git reference');
       return err(gitError);
     }
   }
@@ -120,13 +137,22 @@ export class GitService {
    * ```
    */
   async createTag(params: CreateTagParams): Promise<Result<GitTag, GitOperationError>> {
+    this.log.debug(
+      {
+        tagName: params.tagName,
+        commitSha: params.commitSha,
+        message: params.message,
+        hasTagger: !!(params.taggerName && params.taggerEmail),
+      },
+      'Creating Git tag',
+    );
+
     try {
       const { tagName, message, commitSha, taggerName, taggerEmail } = params;
       const { owner, repo } = this.github.getRepository();
 
-      logger.debug({ tagName, commitSha }, 'Creating Git tag');
-
       // Create the tag object
+      this.log.debug({ tagName }, 'Creating tag object');
       const tagObject = await this.github.executeWithRetry('createTag', (octokit) =>
         octokit.rest.git.createTag({
           owner,
@@ -146,6 +172,14 @@ export class GitService {
         }),
       );
 
+      this.log.debug(
+        {
+          tagName,
+          tagSha: tagObject.data.sha,
+        },
+        'Tag object created, creating reference',
+      );
+
       // Create the reference
       await this.github.executeWithRetry('createTagRef', (octokit) =>
         octokit.rest.git.createRef({
@@ -156,7 +190,14 @@ export class GitService {
         }),
       );
 
-      logger.info({ tagName, sha: tagObject.data.sha }, 'Git tag created successfully');
+      this.log.info(
+        {
+          tagName,
+          sha: tagObject.data.sha,
+          commitSha,
+        },
+        'Git tag created successfully',
+      );
 
       return ok({
         name: tagName,
@@ -165,7 +206,7 @@ export class GitService {
       });
     } catch (error) {
       const gitError = new GitOperationError('createTag', `Failed to create tag ${params.tagName}`, error);
-      logger.error({ error: gitError, tagName: params.tagName }, 'Failed to create Git tag');
+      this.log.error({ error: gitError, tagName: params.tagName }, 'Failed to create Git tag');
       return err(gitError);
     }
   }
@@ -189,11 +230,19 @@ export class GitService {
    * ```
    */
   async createCommit(params: CreateCommitParams): Promise<Result<GitCommit, GitOperationError>> {
+    this.log.debug(
+      {
+        message: params.message,
+        tree: params.tree,
+        parentsCount: params.parents.length,
+        hasAuthor: !!params.author,
+      },
+      'Creating Git commit',
+    );
+
     try {
       const { message, tree, parents, author } = params;
       const { owner, repo } = this.github.getRepository();
-
-      logger.debug({ message, tree, parentsCount: parents.length }, 'Creating Git commit');
 
       const commit = await this.github.executeWithRetry('createCommit', (octokit) =>
         octokit.rest.git.createCommit({
@@ -212,7 +261,14 @@ export class GitService {
         }),
       );
 
-      logger.info({ sha: commit.data.sha, message }, 'Git commit created successfully');
+      this.log.info(
+        {
+          sha: commit.data.sha,
+          message: commit.data.message,
+          author: commit.data.author.name,
+        },
+        'Git commit created successfully',
+      );
 
       return ok({
         sha: commit.data.sha,
@@ -225,7 +281,7 @@ export class GitService {
       });
     } catch (error) {
       const gitError = new GitOperationError('createCommit', 'Failed to create commit', error);
-      logger.error({ error: gitError, message: params.message }, 'Failed to create Git commit');
+      this.log.error({ error: gitError, message: params.message }, 'Failed to create Git commit');
       return err(gitError);
     }
   }
@@ -248,11 +304,18 @@ export class GitService {
    * ```
    */
   async updateRef(params: UpdateRefParams): Promise<Result<GitRef, GitOperationError>> {
+    this.log.debug(
+      {
+        ref: params.ref,
+        sha: params.sha,
+        force: params.force ?? false,
+      },
+      'Updating Git reference',
+    );
+
     try {
       const { ref, sha, force = false } = params;
       const { owner, repo } = this.github.getRepository();
-
-      logger.debug({ ref, sha, force }, 'Updating Git reference');
 
       const reference = await this.github.executeWithRetry('updateRef', (octokit) =>
         octokit.rest.git.updateRef({
@@ -264,7 +327,14 @@ export class GitService {
         }),
       );
 
-      logger.info({ ref, sha }, 'Git reference updated successfully');
+      this.log.info(
+        {
+          ref,
+          sha,
+          updatedSha: reference.data.object.sha,
+        },
+        'Git reference updated successfully',
+      );
 
       return ok({
         ref: reference.data.ref,
@@ -272,7 +342,7 @@ export class GitService {
       });
     } catch (error) {
       const gitError = new GitOperationError('updateRef', `Failed to update ref ${params.ref}`, error);
-      logger.error({ error: gitError, ref: params.ref }, 'Failed to update Git reference');
+      this.log.error({ error: gitError, ref: params.ref }, 'Failed to update Git reference');
       return err(gitError);
     }
   }
@@ -297,10 +367,17 @@ export class GitService {
    * ```
    */
   async getChangedFiles(base: string, head: string, path?: string): Promise<Result<GitComparison, GitOperationError>> {
+    this.log.debug(
+      {
+        base,
+        head,
+        path: path || 'all',
+      },
+      'Getting changed files between commits',
+    );
+
     try {
       const { owner, repo } = this.github.getRepository();
-
-      logger.debug({ base, head, path }, 'Getting changed files');
 
       const comparison = await this.github.executeWithRetry('compareCommits', (octokit) =>
         octokit.rest.repos.compareCommits({
@@ -315,28 +392,31 @@ export class GitService {
       let files = comparison.data.files || [];
       const rawCommits = comparison.data.commits || [];
 
-      logger.info(
+      this.log.debug(
         {
           base,
           head,
           status: comparison.data.status,
-          ahead_by: comparison.data.ahead_by,
-          behind_by: comparison.data.behind_by,
-          total_commits: comparison.data.total_commits,
-          files_count: files.length,
-          commits_count: rawCommits.length,
-          file_names: files.map((f) => f.filename),
-          commit_messages: rawCommits.map((c) => c.commit.message.split('\n')[0]),
+          aheadBy: comparison.data.ahead_by,
+          behindBy: comparison.data.behind_by,
+          totalCommits: comparison.data.total_commits,
+          totalFiles: files.length,
         },
-        'Comparison API response',
+        'Comparison API response received',
       );
-
-      logger.debug({ totalFiles: files.length, filterPath: path }, 'Files before filtering');
 
       if (path) {
         const normalizedPath = path.endsWith('/') ? path : `${path}/`;
+        const originalCount = files.length;
         files = files.filter((file) => file.filename.startsWith(normalizedPath));
-        logger.debug({ filteredFiles: files.length, normalizedPath }, 'Files after path filtering');
+        this.log.debug(
+          {
+            path: normalizedPath,
+            originalCount,
+            filteredCount: files.length,
+          },
+          'Files filtered by path',
+        );
       }
 
       const fileChanges: FileChange[] = files.map((file) => ({
@@ -356,9 +436,15 @@ export class GitService {
         date: commit.commit.author?.date || new Date().toISOString(),
       }));
 
-      logger.info(
-        { base, head, filesCount: fileChanges.length, commitsCount: commits.length },
-        'Retrieved changed files',
+      this.log.info(
+        {
+          base,
+          head,
+          filesCount: fileChanges.length,
+          commitsCount: commits.length,
+          status: comparison.data.status,
+        },
+        'Changed files retrieved successfully',
       );
 
       return ok({
@@ -373,7 +459,7 @@ export class GitService {
         `Failed to get changed files between ${base} and ${head}`,
         error,
       );
-      logger.error({ error: gitError, base, head }, 'Failed to get changed files');
+      this.log.error({ error: gitError, base, head }, 'Failed to get changed files');
       return err(gitError);
     }
   }
@@ -394,10 +480,10 @@ export class GitService {
    * ```
    */
   async getLastTag(): Promise<Result<GitTag | null, GitOperationError>> {
+    this.log.debug('Getting most recent tag from repository');
+
     try {
       const { owner, repo } = this.github.getRepository();
-
-      logger.debug('Getting last tag');
 
       const tags = await this.github.executeWithRetry('listTags', (octokit) =>
         octokit.rest.repos.listTags({
@@ -408,7 +494,7 @@ export class GitService {
       );
 
       if (tags.data.length === 0) {
-        logger.info('No tags found in repository');
+        this.log.info('No tags found in repository');
         return ok(null);
       }
 
@@ -417,12 +503,18 @@ export class GitService {
         sha: tags.data[0].commit.sha,
       };
 
-      logger.info({ tagName: lastTag.name, sha: lastTag.sha }, 'Retrieved last tag');
+      this.log.info(
+        {
+          tagName: lastTag.name,
+          sha: lastTag.sha,
+        },
+        'Retrieved last tag',
+      );
 
       return ok(lastTag);
     } catch (error) {
       const gitError = new GitOperationError('getLastTag', 'Failed to get last tag', error);
-      logger.error({ error: gitError }, 'Failed to get last tag');
+      this.log.error({ error: gitError }, 'Failed to get last tag');
       return err(gitError);
     }
   }
@@ -445,21 +537,42 @@ export class GitService {
    * ```
    */
   async getCommitsSince(base: string, head: string = 'HEAD'): Promise<Result<readonly GitCommit[], GitOperationError>> {
-    try {
-      logger.debug({ base, head }, 'Getting commits');
+    this.log.debug(
+      {
+        base,
+        head,
+      },
+      'Getting commits between references',
+    );
 
+    try {
       const comparison = await this.getChangedFiles(base, head);
 
       if (!comparison.ok) {
+        this.log.debug(
+          {
+            base,
+            head,
+            error: comparison.error,
+          },
+          'Failed to get comparison for commits',
+        );
         return err(comparison.error);
       }
 
-      logger.info({ base, head, count: comparison.value.commits.length }, 'Retrieved commits');
+      this.log.info(
+        {
+          base,
+          head,
+          count: comparison.value.commits.length,
+        },
+        'Retrieved commits successfully',
+      );
 
       return ok(comparison.value.commits);
     } catch (error) {
       const gitError = new GitOperationError('getCommitsSince', `Failed to get commits since ${base}`, error);
-      logger.error({ error: gitError, base, head }, 'Failed to get commits');
+      this.log.error({ error: gitError, base, head }, 'Failed to get commits');
       return err(gitError);
     }
   }

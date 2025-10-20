@@ -1,4 +1,5 @@
-export declare class Loggable {
-    protected readonly log: import("pino").Logger<never, boolean>;
+import type { Logger } from 'pino';
+export declare abstract class Loggable {
+    protected readonly log: Logger;
     constructor();
 }
