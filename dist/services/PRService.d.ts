@@ -25,6 +25,20 @@ export interface ExistsPRParams {
     readonly base: string;
     readonly head: string;
 }
+export interface WaitForChecksParams {
+    readonly prNumber: number;
+    readonly timeout?: number;
+    readonly interval?: number;
+}
+export interface ChecksStatusResult {
+    readonly allPassed: boolean;
+    readonly pending: boolean;
+    readonly totalChecks: number;
+    readonly passedChecks: number;
+    readonly failedChecks: number;
+    readonly mergeableState: string;
+    readonly failedCheckNames?: string[];
+}
 export interface PRCreateResponse {
     readonly number: number;
     readonly htmlUrl: string;
@@ -47,6 +61,7 @@ export declare class PRService extends Loggable {
     merge(params: MergePRParams): Promise<Result<PRMergeResponse, GitHubAPIError>>;
     hasMerged(params: HasMergedParams): Promise<Result<boolean, GitHubAPIError>>;
     exists(params: ExistsPRParams): Promise<Result<PRExistsResponse, GitHubAPIError>>;
+    waitForChecks(params: WaitForChecksParams): Promise<Result<ChecksStatusResult, GitHubAPIError>>;
     static buildPRBody(tree: WorkspaceTree): string;
     private static formatWorkspaceNode;
 }

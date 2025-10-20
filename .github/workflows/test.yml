@@ -29,19 +29,24 @@ jobs:
     steps:
       - name: Prerequisites
         id: prereqs
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          GITHUB_REF: ${{ github.ref }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
         run: |
           # Extract just the branch name from the ref
-          if [ -n "${{ github.head_ref }}" ]; then
-            BRANCH="${{ github.head_ref }}"
+          if [ -n "$HEAD_REF" ]; then
+            BRANCH="$HEAD_REF"
           else
-            BRANCH="${{ github.ref }}"
+            BRANCH="$GITHUB_REF"
             BRANCH="${BRANCH#refs/heads/}"
           fi
 
           # Create unique test branch name with timestamp
           {
             echo "branch=$BRANCH"
-            echo "test_branch=test-bumpalicious-${{ github.run_id }}-${{ github.run_attempt }}"
+            echo "test_branch=test-bumpalicious-$RUN_ID-$RUN_ATTEMPT"
           } | tee -a $GITHUB_OUTPUT
 
       - name: Github App Token

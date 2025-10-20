@@ -115,6 +115,66 @@ export interface ExistsPRParams {
 }
 
 /**
+ * Parameters for waiting for PR checks
+ */
+export interface WaitForChecksParams {
+  /**
+   * Pull request number
+   */
+  readonly prNumber: number;
+
+  /**
+   * Timeout in milliseconds (default: 300000 = 5 minutes)
+   */
+  readonly timeout?: number;
+
+  /**
+   * Polling interval in milliseconds (default: 10000 = 10 seconds)
+   */
+  readonly interval?: number;
+}
+
+/**
+ * PR checks status result
+ */
+export interface ChecksStatusResult {
+  /**
+   * Whether all checks passed
+   */
+  readonly allPassed: boolean;
+
+  /**
+   * Whether checks are still pending
+   */
+  readonly pending: boolean;
+
+  /**
+   * Total number of checks
+   */
+  readonly totalChecks: number;
+
+  /**
+   * Number of passed checks
+   */
+  readonly passedChecks: number;
+
+  /**
+   * Number of failed checks
+   */
+  readonly failedChecks: number;
+
+  /**
+   * Mergeable state from GitHub
+   */
+  readonly mergeableState: string;
+
+  /**
+   * Failed check details
+   */
+  readonly failedCheckNames?: string[];
+}
+
+/**
  * Pull request creation response
  */
 export interface PRCreateResponse {
@@ -551,6 +611,239 @@ export class PRService extends Loggable {
           statusCode: apiError.statusCode,
         },
         'Failed to check PR existence',
+      );
+
+      return err(apiError);
+    }
+  }
+
+  /**
+   * Wait for PR checks to complete and verify they pass
+   *
+   * Polls the PR status until all checks complete or timeout is reached.
+   * Checks both status checks (legacy) and check runs (modern GitHub checks).
+   *
+   * @param params - Check waiting parameters
+   * @returns Result containing checks status or error
+   *
+   * @example
+   * ```typescript
+   * const result = await prService.waitForChecks({
+   *   prNumber: 123,
+   *   timeout: 300000,  // 5 minutes
+   *   interval: 10000,  // 10 seconds
+   * });
+   *
+   * if (result.ok && result.value.allPassed) {
+   *   // Checks passed, safe to merge
+   * }
+   * ```
+   */
+  async waitForChecks(params: WaitForChecksParams): Promise<Result<ChecksStatusResult, GitHubAPIError>> {
+    const timeout = params.timeout ?? 300000; // 5 minutes default
+    const interval = params.interval ?? 10000; // 10 seconds default
+    const startTime = Date.now();
+
+    this.log.debug(
+      {
+        prNumber: params.prNumber,
+        timeout,
+        interval,
+      },
+      'Waiting for PR checks to complete',
+    );
+
+    try {
+      const { owner, repo } = this.github.getRepository();
+
+      while (Date.now() - startTime < timeout) {
+        // Get PR details to check mergeable state and head SHA
+        const prResponse = await this.github.executeWithRetry('getPR', (octokit) =>
+          octokit.rest.pulls.get({
+            owner,
+            repo,
+            pull_number: params.prNumber,
+          }),
+        );
+
+        const pr = prResponse.data;
+        const headSha = pr.head.sha;
+        const mergeableState = pr.mergeable_state || 'unknown';
+
+        this.log.debug(
+          {
+            prNumber: params.prNumber,
+            mergeableState,
+            mergeable: pr.mergeable,
+            headSha,
+          },
+          'PR status checked',
+        );
+
+        // Get combined status (legacy status checks)
+        const statusResponse = await this.github.executeWithRetry('getCombinedStatus', (octokit) =>
+          octokit.rest.repos.getCombinedStatusForRef({
+            owner,
+            repo,
+            ref: headSha,
+          }),
+        );
+
+        const combinedStatus = statusResponse.data;
+
+        // Get check runs (modern GitHub checks)
+        const checkRunsResponse = await this.github.executeWithRetry('listCheckRuns', (octokit) =>
+          octokit.rest.checks.listForRef({
+            owner,
+            repo,
+            ref: headSha,
+          }),
+        );
+
+        const checkRuns = checkRunsResponse.data.check_runs;
+
+        // Count totals
+        const statusChecks = combinedStatus.statuses;
+        const totalStatusChecks = statusChecks.length;
+        const totalCheckRuns = checkRuns.length;
+        const totalChecks = totalStatusChecks + totalCheckRuns;
+
+        // Count completed and passed
+        const passedStatusChecks = statusChecks.filter((s) => s.state === 'success').length;
+        const failedStatusChecks = statusChecks.filter((s) => s.state === 'failure' || s.state === 'error').length;
+        const pendingStatusChecks = statusChecks.filter((s) => s.state === 'pending').length;
+
+        const passedCheckRuns = checkRuns.filter((c) => c.conclusion === 'success').length;
+        const failedCheckRuns = checkRuns.filter(
+          (c) => c.conclusion === 'failure' || c.conclusion === 'cancelled' || c.conclusion === 'timed_out',
+        ).length;
+        const pendingCheckRuns = checkRuns.filter((c) => c.status !== 'completed').length;
+
+        const passedChecks = passedStatusChecks + passedCheckRuns;
+        const failedChecks = failedStatusChecks + failedCheckRuns;
+        const pendingChecks = pendingStatusChecks + pendingCheckRuns;
+
+        // Collect failed check names for debugging
+        const failedCheckNames = [
+          ...statusChecks.filter((s) => s.state === 'failure' || s.state === 'error').map((s) => s.context),
+          ...checkRuns
+            .filter((c) => c.conclusion === 'failure' || c.conclusion === 'cancelled' || c.conclusion === 'timed_out')
+            .map((c) => c.name),
+        ];
+
+        this.log.debug(
+          {
+            prNumber: params.prNumber,
+            totalChecks,
+            passedChecks,
+            failedChecks,
+            pendingChecks,
+            mergeableState,
+            combinedState: combinedStatus.state,
+          },
+          'Checks status',
+        );
+
+        // If there are no checks at all, consider it ready
+        const noChecks = totalChecks === 0;
+
+        // Check if all checks are complete and passed
+        const allComplete = pendingChecks === 0 && totalChecks > 0;
+        const allPassed = allComplete && failedChecks === 0;
+
+        // Check if we should return (success or failure)
+        if (failedChecks > 0) {
+          // Checks failed - return immediately
+          const result: ChecksStatusResult = {
+            allPassed: false,
+            pending: false,
+            totalChecks,
+            passedChecks,
+            failedChecks,
+            mergeableState,
+            failedCheckNames,
+          };
+
+          this.log.warn(
+            {
+              prNumber: params.prNumber,
+              failedChecks,
+              failedCheckNames,
+            },
+            'PR checks failed',
+          );
+
+          return ok(result);
+        }
+
+        if (allPassed || noChecks) {
+          // All checks passed or no checks required
+          const result: ChecksStatusResult = {
+            allPassed: true,
+            pending: false,
+            totalChecks,
+            passedChecks,
+            failedChecks: 0,
+            mergeableState,
+          };
+
+          this.log.info(
+            {
+              prNumber: params.prNumber,
+              totalChecks,
+              passedChecks,
+              noChecks,
+            },
+            'All PR checks passed',
+          );
+
+          return ok(result);
+        }
+
+        // Checks still pending - wait and retry
+        this.log.debug(
+          {
+            prNumber: params.prNumber,
+            pendingChecks,
+            waitingMs: interval,
+          },
+          'Checks still pending, waiting...',
+        );
+
+        await new Promise((resolve) => setTimeout(resolve, interval));
+      }
+
+      // Timeout reached
+      const apiError = new GitHubAPIError(
+        'waitForChecks',
+        `Timeout waiting for PR checks to complete after ${timeout}ms`,
+        undefined,
+      );
+
+      this.log.error(
+        {
+          operation: 'waitForChecks',
+          prNumber: params.prNumber,
+          timeout,
+        },
+        'Timeout waiting for PR checks',
+      );
+
+      return err(apiError);
+    } catch (error) {
+      const apiError =
+        error instanceof GitHubAPIError
+          ? error
+          : new GitHubAPIError('waitForChecks', 'Failed to check PR status', undefined, error);
+
+      this.log.error(
+        {
+          operation: 'waitForChecks',
+          prNumber: params.prNumber,
+          error: apiError.message,
+          statusCode: apiError.statusCode,
+        },
+        'Failed to wait for PR checks',
       );
 
       return err(apiError);

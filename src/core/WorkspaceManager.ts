@@ -742,6 +742,40 @@ export class WorkspaceManager extends Loggable {
 
     // Auto-merge if requested
     if (options.prOptions?.autoMerge) {
+      // Wait for checks to complete before merging
+      this.log.debug({ prNumber: pr.number }, 'Waiting for PR checks to complete');
+
+      const checksResult = await this.prService.waitForChecks({
+        prNumber: pr.number,
+        timeout: 300000, // 5 minutes
+        interval: 10000, // 10 seconds
+      });
+
+      if (!checksResult.ok) {
+        this.log.error({ prNumber: pr.number, error: checksResult.error.message }, 'Failed to wait for PR checks');
+        return err(checksResult.error);
+      }
+
+      const checksStatus = checksResult.value;
+
+      if (!checksStatus.allPassed) {
+        const checkError = new Error(
+          `PR checks did not pass. Failed checks: ${checksStatus.failedCheckNames?.join(', ') || 'unknown'}`,
+        );
+        this.log.error(
+          {
+            prNumber: pr.number,
+            failedChecks: checksStatus.failedChecks,
+            failedCheckNames: checksStatus.failedCheckNames,
+            mergeableState: checksStatus.mergeableState,
+          },
+          'PR checks failed',
+        );
+        return err(checkError);
+      }
+
+      this.log.info({ prNumber: pr.number }, 'All PR checks passed, proceeding with merge');
+
       const mergeResult = await this.prService.merge({
         prNumber: pr.number,
         mergeMethod: 'squash',
