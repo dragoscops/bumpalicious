@@ -107,17 +107,41 @@ jobs:
         run: |
           set -e
 
+          # Show current state
+          echo "📊 Current git status before changes:"
+          git status
+          echo ""
+          echo "📍 Current commit:"
+          git log -1 --oneline
+          echo ""
+          echo "🏷️  Current tags:"
+          git tag -l 'v99*'
+          echo ""
+
           # Make changes to trigger version bump
           echo "📝 Creating test changes..."
           date > ./test/README.md
           date > ./test/workspaces1/README.md
 
+          echo "📊 Git status after changes:"
+          git status
+          echo ""
+
           # Commit changes
           echo "💾 Committing changes..."
           git add -A
+          git status
+          if git diff-index --quiet HEAD --; then
+            echo "❌ ERROR: No changes detected to commit!"
+            exit 1
+          fi
           git commit -m "fix: patch commit test" --no-verify
           COMMIT_SHA=$(git rev-parse HEAD)
           echo "📌 Commit SHA: $COMMIT_SHA"
+
+          echo "📍 Commits after test commit:"
+          git log -2 --oneline
+          echo ""
 
           echo "🚀 Pushing to origin/${{ steps.prereqs.outputs.test_branch }}..."
           git push origin ${{ steps.prereqs.outputs.test_branch }} --no-verify
