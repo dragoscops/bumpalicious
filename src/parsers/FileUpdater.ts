@@ -4,12 +4,12 @@
 
 import * as fs from 'node:fs/promises';
 import * as toml from '@iarna/toml';
-import type { Version } from '../types/version.js';
+import { parseRegexFile } from './FileParser.js';
 import type { Result } from '../types/result.js';
 import { ok, err } from '../types/result.js';
+import type { Version } from '../types/version.js';
 import { isVersion } from '../types/version.js';
 import { FileOperationError } from '../utils/errors.js';
-import { parseRegexFile } from './FileParser.js';
 
 /**
  * Updater configuration for different file formats

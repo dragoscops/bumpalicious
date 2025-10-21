@@ -2,10 +2,10 @@
  * Tests for RustAdapter
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdir, writeFile, rm } from 'node:fs/promises';
-import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { RustAdapter } from './RustAdapter.js';
 import { isOk, isErr } from '../../types/result.js';
 import { toVersion } from '../../types/version.js';

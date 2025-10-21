@@ -5,9 +5,9 @@
  * Mocks @actions/core and @actions/github to test action execution.
  */
 
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import * as core from '@actions/core';
 import * as github from '@actions/github';
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 
 // Mock modules before importing index
 vi.mock('@actions/core');

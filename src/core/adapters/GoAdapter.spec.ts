@@ -2,10 +2,10 @@
  * Tests for GoAdapter
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { GoAdapter } from './GoAdapter.js';
 import { isOk, isErr } from '../../types/result.js';
 import { toVersion } from '../../types/version.js';

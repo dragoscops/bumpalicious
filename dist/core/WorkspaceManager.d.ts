@@ -1,11 +1,11 @@
-import type { GitService } from '../services/GitService.js';
-import { PRService } from '../services/PRService.js';
-import type { VersionService } from './VersionService.js';
 import type { ChangelogService } from './ChangelogService.js';
+import type { VersionService } from './VersionService.js';
 import type { WorkspaceTreeBuilder } from './WorkspaceTreeBuilder.js';
 import { Loggable } from '../Loggable.js';
-import type { WorkspaceConfig, Workspace, WorkspaceWithVersion, WorkspaceTree } from '../types/workspace.js';
+import type { GitService } from '../services/GitService.js';
+import { PRService } from '../services/PRService.js';
 import type { Result } from '../types/result.js';
+import type { WorkspaceConfig, Workspace, WorkspaceWithVersion, WorkspaceTree } from '../types/workspace.js';
 import { WorkspaceDetectionError, GitOperationError, FileOperationError } from '../utils/errors.js';
 export interface WorkspaceManagerDependencies {
     readonly gitService: GitService;

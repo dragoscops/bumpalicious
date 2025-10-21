@@ -17,8 +17,8 @@
  */
 
 import { mkdir, writeFile, rm } from 'node:fs/promises';
-import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 export type RepoType = 'node' | 'python' | 'monorepo' | 'go' | 'rust' | 'deno' | 'zig' | 'text';
 

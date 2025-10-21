@@ -5,11 +5,11 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { setupTestRepo, type TestRepo } from '../fixtures/repos/setup.js';
 import { getAdapter } from '../../src/core/adapters/AdapterFactory.js';
-import { parseCommitMessages } from '../../src/parsers/ConventionalCommitParser.js';
 import { VersionService } from '../../src/core/VersionService.js';
+import { parseCommitMessages } from '../../src/parsers/ConventionalCommitParser.js';
 import { toVersion } from '../../src/types/version.js';
+import { setupTestRepo, type TestRepo } from '../fixtures/repos/setup.js';
 
 // Mock logger
 vi.mock('../../src/utils/logger.js', () => ({
@@ -54,7 +54,7 @@ describe('Single Workspace E2E', () => {
       const currentVersion = detectResult.ok ? detectResult.value.version : toVersion('1.0.0');
 
       // Step 2: Parse commits and calculate new version
-      const commits = parseCommitMessages(['feat: add new feature']);
+      parseCommitMessages(['feat: add new feature']);
       const newVersion = versionService.calculateNewVersion(currentVersion, {
         type: 'minor',
         breaking: false,

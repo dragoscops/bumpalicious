@@ -4,15 +4,15 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { getAdapter, getSupportedTypes, isTypeSupported, clearAdapterCache } from './AdapterFactory.js';
-import { NodeAdapter } from './NodeAdapter.js';
-import { PythonAdapter } from './PythonAdapter.js';
 import { DenoAdapter } from './DenoAdapter.js';
 import { GoAdapter } from './GoAdapter.js';
+import { NodeAdapter } from './NodeAdapter.js';
+import { PythonAdapter } from './PythonAdapter.js';
 import { RustAdapter } from './RustAdapter.js';
-import { ZigAdapter } from './ZigAdapter.js';
 import { TextAdapter } from './TextAdapter.js';
-import { InvalidConfigurationError } from '../../utils/errors.js';
+import { ZigAdapter } from './ZigAdapter.js';
 import type { WorkspaceType } from '../../types/index.js';
+import { InvalidConfigurationError } from '../../utils/errors.js';
 
 describe('AdapterFactory', () => {
   beforeEach(() => {

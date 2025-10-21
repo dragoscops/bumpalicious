@@ -2,8 +2,8 @@
  * Retry logic with exponential backoff for network operations
  */
 
-import { logger } from './logger.js';
 import { isRecoverableError } from './errors.js';
+import { logger } from './logger.js';
 
 /**
  * Retry configuration options

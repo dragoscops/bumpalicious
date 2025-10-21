@@ -16,6 +16,7 @@
  */
 
 import type { GitHubService } from './GitHubService.js';
+import { Loggable } from '../Loggable.js';
 import type {
   GitTag,
   GitCommit,
@@ -29,7 +30,6 @@ import type {
 import type { Result } from '../types/result.js';
 import { ok, err } from '../types/result.js';
 import { GitOperationError } from '../utils/errors.js';
-import { Loggable } from '../Loggable.js';
 
 /**
  * Git Operations Service

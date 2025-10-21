@@ -1,5 +1,5 @@
-import type { Version } from '../types/version.js';
 import type { Result } from '../types/result.js';
+import type { Version } from '../types/version.js';
 import { FileOperationError } from '../utils/errors.js';
 export interface UpdaterConfig {
     readonly format: 'json' | 'toml' | 'regex';

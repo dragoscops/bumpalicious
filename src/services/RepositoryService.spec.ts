@@ -3,9 +3,9 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { RepositoryService } from './RepositoryService.js';
 import type { GitHubService } from './GitHubService.js';
 import type { OctokitInstance } from './GitHubService.js';
+import { RepositoryService } from './RepositoryService.js';
 import { GitOperationError } from '../utils/errors.js';
 
 describe('RepositoryService', () => {

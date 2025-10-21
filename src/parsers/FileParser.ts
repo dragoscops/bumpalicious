@@ -4,10 +4,10 @@
 
 import * as fs from 'node:fs/promises';
 import * as toml from '@iarna/toml';
-import type { ProjectInfo } from '../types/workspace.js';
 import type { Result } from '../types/result.js';
 import { ok, err } from '../types/result.js';
 import { isVersion, toVersion } from '../types/version.js';
+import type { ProjectInfo } from '../types/workspace.js';
 import { FileOperationError } from '../utils/errors.js';
 
 /**

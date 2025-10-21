@@ -2,10 +2,10 @@
  * Tests for ZigAdapter
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdir, writeFile, rm } from 'node:fs/promises';
-import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { ZigAdapter } from './ZigAdapter.js';
 import { isOk, isErr } from '../../types/result.js';
 import { toVersion } from '../../types/version.js';

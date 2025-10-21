@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { retry } from './retry.js';
 import { BumpaliciousError, GitHubAPIError, WorkspaceValidationError } from './errors.js';
 import { logger } from './logger.js';
+import { retry } from './retry.js';
 
 // Mock logger to prevent console output during tests
 vi.mock('./logger.js', () => ({
@@ -80,6 +80,8 @@ describe('retry', () => {
       const operation = vi.fn().mockRejectedValue(validationError);
 
       const promise = retry(operation);
+
+      /* eslint-disable-next-line */
       const expectation = expect(promise).rejects.toThrow(WorkspaceValidationError);
 
       await vi.runAllTimersAsync();
@@ -97,6 +99,8 @@ describe('retry', () => {
       const operation = vi.fn().mockRejectedValue(networkError);
 
       const promise = retry(operation, { maxAttempts: 3 });
+
+      /* eslint-disable-next-line */
       const expectation = expect(promise).rejects.toThrow(GitHubAPIError);
 
       await vi.runAllTimersAsync();
@@ -234,6 +238,8 @@ describe('retry', () => {
         maxAttempts: 2,
         shouldRetry,
       });
+
+      /* eslint-disable-next-line */
       const expectation = expect(promise).rejects.toThrow('Custom error');
 
       await vi.runAllTimersAsync();
@@ -252,6 +258,8 @@ describe('retry', () => {
       const shouldRetry = vi.fn(() => false);
 
       const promise = retry(operation, { shouldRetry });
+
+      /* eslint-disable-next-line */
       const expectation = expect(promise).rejects.toThrow(GitHubAPIError);
 
       await vi.runAllTimersAsync();
@@ -268,6 +276,8 @@ describe('retry', () => {
       const operation = vi.fn().mockRejectedValue(new GitHubAPIError('fetch', 'Error'));
 
       const promise = retry(operation, { maxAttempts: 1 });
+
+      /* eslint-disable-next-line */
       const expectation = expect(promise).rejects.toThrow(GitHubAPIError);
 
       await vi.runAllTimersAsync();
@@ -286,6 +296,8 @@ describe('retry', () => {
         maxAttempts: 1,
         operationName: 'FetchGitTags',
       });
+
+      /* eslint-disable-next-line */
       const expectation = expect(promise).rejects.toThrow(GitHubAPIError);
 
       await vi.runAllTimersAsync();
@@ -322,6 +334,8 @@ describe('retry', () => {
       const operation = vi.fn().mockRejectedValue(new GitHubAPIError('fetch', 'Error'));
 
       const promise = retry(operation, { maxAttempts: 1 });
+
+      /* eslint-disable-next-line */
       const expectation = expect(promise).rejects.toThrow(GitHubAPIError);
 
       await vi.runAllTimersAsync();
@@ -340,6 +354,8 @@ describe('retry', () => {
         initialDelayMs: 10,
         maxDelayMs: 100,
       });
+
+      /* eslint-disable-next-line */
       const expectation = expect(promise).rejects.toThrow(GitHubAPIError);
 
       await vi.runAllTimersAsync();
@@ -378,6 +394,8 @@ describe('retry', () => {
       const operation = vi.fn().mockRejectedValue(new Error('Standard error'));
 
       const promise = retry(operation);
+
+      /* eslint-disable-next-line */
       const expectation = expect(promise).rejects.toThrow('Standard error');
 
       await vi.runAllTimersAsync();
@@ -390,6 +408,8 @@ describe('retry', () => {
       const operation = vi.fn().mockRejectedValue('string error');
 
       const promise = retry(operation);
+
+      /* eslint-disable-next-line */
       const expectation = expect(promise).rejects.toBe('string error');
 
       await vi.runAllTimersAsync();
@@ -435,6 +455,8 @@ describe('retry', () => {
         maxAttempts: 2,
         operationName: 'FailingOperation',
       });
+
+      /* eslint-disable-next-line */
       const expectation = expect(promise).rejects.toThrow(GitHubAPIError);
 
       await vi.runAllTimersAsync();
@@ -450,6 +472,8 @@ describe('retry', () => {
       const operation = vi.fn().mockRejectedValue(new WorkspaceValidationError('Invalid'));
 
       const promise = retry(operation);
+
+      /* eslint-disable-next-line */
       const expectation = expect(promise).rejects.toThrow(WorkspaceValidationError);
 
       await vi.runAllTimersAsync();

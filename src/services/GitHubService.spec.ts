@@ -2,10 +2,10 @@
  * Tests for GitHub Service
  */
 
+import * as actionsGithub from '@actions/github';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { GitHubService, type RepositoryContext } from './GitHubService.js';
 import { GitHubAPIError } from '../utils/errors.js';
-import * as actionsGithub from '@actions/github';
 
 // Mock @actions/github
 vi.mock('@actions/github', () => ({
@@ -31,7 +31,7 @@ vi.mock('../utils/logger.js', () => ({
 }));
 
 describe('GitHubService', () => {
-  let mockOctokit: any;
+  let mockOctokit: GitHub;
   const testToken = 'ghp_test_token_1234567890';
   const testRepository: RepositoryContext = {
     owner: 'testuser',
@@ -53,7 +53,7 @@ describe('GitHubService', () => {
     };
 
     // Mock getOctokit to return our mock
-    vi.mocked(actionsGithub.getOctokit).mockReturnValue(mockOctokit as any);
+    vi.mocked(actionsGithub.getOctokit).mockReturnValue(mockOctokit as unknown as GitHub);
   });
 
   afterEach(() => {

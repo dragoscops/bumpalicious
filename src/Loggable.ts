@@ -20,8 +20,8 @@
  * ```
  */
 
-import { logger } from './utils/logger.js';
 import type { Logger } from 'pino';
+import { logger } from './utils/logger.js';
 
 /**
  * Base class providing structured logging capabilities

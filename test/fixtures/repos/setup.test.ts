@@ -2,9 +2,9 @@
  * Tests for test repository setup utilities
  */
 
-import { describe, it, expect, afterEach } from 'vitest';
 import { readFile, access } from 'node:fs/promises';
 import { join } from 'node:path';
+import { describe, it, expect, afterEach } from 'vitest';
 import { setupTestRepo, type TestRepo } from './setup.js';
 
 describe('test repository setup', () => {

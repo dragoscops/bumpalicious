@@ -27,8 +27,8 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { Loggable } from '../Loggable.js';
-import type { WorkspaceWithVersion, WorkspaceNode } from '../types/workspace.js';
 import type { Version } from '../types/version.js';
+import type { WorkspaceWithVersion, WorkspaceNode } from '../types/workspace.js';
 import { FileOperationError } from '../utils/errors.js';
 
 /**
@@ -233,7 +233,6 @@ export class ChangelogService extends Loggable {
     return new Promise<string>((resolve, reject) => {
       let changelog = '';
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const changelogStream = conventionalChangelogCore(
         {
           config: presetConfig as any, // eslint-disable-line @typescript-eslint/no-explicit-any

@@ -2,14 +2,14 @@
  * Tests for NodeAdapter
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtemp, rm, writeFile, mkdir } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { NodeAdapter } from './NodeAdapter.js';
 import { isOk } from '../../types/result.js';
 import { toVersion } from '../../types/version.js';
-import { readFile } from 'node:fs/promises';
 
 describe('NodeAdapter', () => {
   let tempDir: string;

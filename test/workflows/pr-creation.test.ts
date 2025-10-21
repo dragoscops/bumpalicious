@@ -5,8 +5,8 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { PRService } from '../../src/services/PRService.js';
 import type { GitHubService } from '../../src/services/GitHubService.js';
+import { PRService } from '../../src/services/PRService.js';
 
 // Mock logger
 vi.mock('../../src/utils/logger.js', () => ({

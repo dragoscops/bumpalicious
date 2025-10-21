@@ -23,9 +23,9 @@ import { BaseWorkspaceAdapter } from './BaseAdapter.js';
 import type { WorkspaceType, ProjectInfo, Version } from '../../types/index.js';
 import type { Result } from '../../types/result.js';
 import { ok, err, isOk } from '../../types/result.js';
+import { isVersion } from '../../types/version.js';
 import type { WorkspaceDetectionError, FileOperationError } from '../../utils/errors.js';
 import { WorkspaceDetectionError as WDError, FileOperationError as FOError } from '../../utils/errors.js';
-import { isVersion } from '../../types/version.js';
 
 /**
  * Configuration for a Go file format
@@ -104,8 +104,6 @@ export class GoAdapter extends BaseWorkspaceAdapter {
         }
 
         // Parse the file
-        let parseResult: Result<ProjectInfo, FileOperationError>;
-
         // Special handling for version.txt (no name pattern)
         if (config.filename === 'version.txt') {
           try {
@@ -121,7 +119,7 @@ export class GoAdapter extends BaseWorkspaceAdapter {
         }
 
         // Standard parsing for go.mod and version.go
-        parseResult = await this.parseFile(filePath, {
+        const parseResult = await this.parseFile(filePath, {
           format: 'regex',
           versionPattern: config.versionPattern,
           namePattern: config.namePattern,

@@ -19,10 +19,10 @@
  */
 
 import type { GitHubService } from './GitHubService.js';
-import { GitHubAPIError } from '../utils/errors.js';
-import { ok, err, type Result } from '../types/result.js';
 import { Loggable } from '../Loggable.js';
+import { ok, err, type Result } from '../types/result.js';
 import type { WorkspaceTree, WorkspaceNode } from '../types/workspace.js';
+import { GitHubAPIError } from '../utils/errors.js';
 
 /**
  * Parameters for creating a pull request

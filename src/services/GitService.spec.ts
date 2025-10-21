@@ -3,8 +3,8 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { GitService } from './GitService.js';
 import type { GitHubService } from './GitHubService.js';
+import { GitService } from './GitService.js';
 import type { CreateTagParams, CreateCommitParams, UpdateRefParams } from '../types/git.js';
 import { GitOperationError } from '../utils/errors.js';
 

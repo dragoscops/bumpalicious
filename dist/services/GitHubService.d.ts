@@ -1,6 +1,6 @@
 import type { GitHub } from '@actions/github/lib/utils.js';
-import { type RetryOptions } from '../utils/retry.js';
 import { Loggable } from '../Loggable.js';
+import { type RetryOptions } from '../utils/retry.js';
 export interface RepositoryContext {
     readonly owner: string;
     readonly repo: string;

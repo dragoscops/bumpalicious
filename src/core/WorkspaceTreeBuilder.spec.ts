@@ -4,8 +4,8 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { WorkspaceTreeBuilder } from './WorkspaceTreeBuilder.js';
-import type { WorkspaceWithVersion } from '../types/workspace.js';
 import { toVersion } from '../types/version.js';
+import type { WorkspaceWithVersion } from '../types/workspace.js';
 import { WorkspaceValidationError } from '../utils/errors.js';
 
 // Mock logger

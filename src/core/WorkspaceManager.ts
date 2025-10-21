@@ -30,14 +30,18 @@
  * ```
  */
 
+import * as exec from '@actions/exec';
+import { getAdapter } from './adapters/AdapterFactory.js';
+import type { ChangelogService, ChangelogPreset } from './ChangelogService.js';
+import type { VersionService } from './VersionService.js';
+import type { WorkspaceTreeBuilder } from './WorkspaceTreeBuilder.js';
+import { Loggable } from '../Loggable.js';
+import { parseCommitMessages } from '../parsers/ConventionalCommitParser.js';
 import type { GitService } from '../services/GitService.js';
 import { PRService } from '../services/PRService.js';
-import type { VersionService } from './VersionService.js';
-import type { ChangelogService } from './ChangelogService.js';
-import type { WorkspaceTreeBuilder } from './WorkspaceTreeBuilder.js';
-import { getAdapter } from './adapters/AdapterFactory.js';
-import { Loggable } from '../Loggable.js';
-import * as exec from '@actions/exec';
+import type { Result } from '../types/result.js';
+import { ok, err } from '../types/result.js';
+import type { Version } from '../types/version.js';
 import type {
   WorkspaceConfig,
   Workspace,
@@ -45,16 +49,12 @@ import type {
   WorkspaceTree,
   WorkspaceNode,
 } from '../types/workspace.js';
-import type { Version } from '../types/version.js';
-import type { Result } from '../types/result.js';
-import { ok, err } from '../types/result.js';
 import {
   WorkspaceDetectionError,
   WorkspaceValidationError,
   GitOperationError,
   FileOperationError,
 } from '../utils/errors.js';
-import { parseCommitMessages } from '../parsers/ConventionalCommitParser.js';
 
 /**
  * Workspace Manager dependencies
@@ -568,7 +568,7 @@ export class WorkspaceManager extends Loggable {
     const rootResult = await this.changelogService.generateForWorkspace({
       workspace: tree.root.workspace,
       changelogPath: rootChangelogPath,
-      preset: (options.changelogPreset as any) || 'conventionalcommits',
+      preset: (options.changelogPreset as ChangelogPreset) || 'conventionalcommits',
       childWorkspaces: tree.root.children,
       repository: options.repository,
     });
@@ -603,7 +603,7 @@ export class WorkspaceManager extends Loggable {
       await this.changelogService.generateForWorkspace({
         workspace: node.workspace,
         changelogPath,
-        preset: (options.changelogPreset as any) || 'conventionalcommits',
+        preset: (options.changelogPreset as ChangelogPreset) || 'conventionalcommits',
         repository: options.repository,
       });
 

@@ -2,14 +2,14 @@
  * Tests for PythonAdapter
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtemp, rm, writeFile, mkdir } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { PythonAdapter } from './PythonAdapter.js';
 import { isOk } from '../../types/result.js';
 import { toVersion } from '../../types/version.js';
-import { readFile } from 'node:fs/promises';
 
 describe('PythonAdapter', () => {
   let tempDir: string;

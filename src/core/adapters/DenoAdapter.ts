@@ -23,9 +23,9 @@ import { BaseWorkspaceAdapter } from './BaseAdapter.js';
 import type { WorkspaceType, ProjectInfo, Version } from '../../types/index.js';
 import type { Result } from '../../types/result.js';
 import { ok, err, isOk } from '../../types/result.js';
+import { isVersion } from '../../types/version.js';
 import type { WorkspaceDetectionError, FileOperationError } from '../../utils/errors.js';
 import { WorkspaceDetectionError as WDError, FileOperationError as FOError } from '../../utils/errors.js';
-import { isVersion } from '../../types/version.js';
 
 /**
  * Configuration for a Deno file format
@@ -57,15 +57,15 @@ export class DenoAdapter extends BaseWorkspaceAdapter {
   /**
    * Lazy-loaded JSONC parser
    */
-  private jsoncParser: any = null;
+  private jsoncParser: { parse: (content: string) => unknown } | null = null;
 
   /**
    * Get JSONC parser (lazy load)
    */
-  private async getJsoncParser(): Promise<any> {
+  private async getJsoncParser(): Promise<{ parse: (content: string) => unknown }> {
     if (!this.jsoncParser) {
       const module = await import('tiny-jsonc');
-      this.jsoncParser = module.default;
+      this.jsoncParser = module.default as { parse: (content: string) => unknown };
     }
     return this.jsoncParser;
   }

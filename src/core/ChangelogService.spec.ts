@@ -2,12 +2,11 @@
  * Tests for ChangelogService
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { promises as fs } from 'node:fs';
-import path from 'node:path';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ChangelogService, type GenerateChangelogOptions, type ChangelogPreset } from './ChangelogService.js';
-import type { WorkspaceWithVersion, WorkspaceNode } from '../types/workspace.js';
 import type { Version } from '../types/version.js';
+import type { WorkspaceWithVersion, WorkspaceNode } from '../types/workspace.js';
 import { FileOperationError } from '../utils/errors.js';
 
 // Mock fs module
@@ -34,7 +33,7 @@ vi.mock('../utils/logger.js', () => ({
 
 // Mock conventional-changelog-core
 vi.mock('conventional-changelog-core', async () => {
-  const { Readable } = await import('stream');
+  const { Readable } = await import('node:stream');
   return {
     default: vi.fn(() => {
       const stream = new Readable();

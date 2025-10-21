@@ -5,12 +5,10 @@
  * Uses real repository structures (in temp directories) and minimal mocking.
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { setupTestRepo, type TestRepo } from '../fixtures/repos/setup.js';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import { getAdapter } from '../../src/core/adapters/AdapterFactory.js';
-import { ok } from '../../src/types/result.js';
 import { toVersion } from '../../src/types/version.js';
-import type { WorkspaceConfig } from '../../src/types/workspace.js';
+import { setupTestRepo, type TestRepo } from '../fixtures/repos/setup.js';
 
 // Mock logger
 vi.mock('../../src/utils/logger.js', () => ({
@@ -197,7 +195,6 @@ describe('Version Bump Workflow Integration', () => {
   describe('Error Handling', () => {
     it('should handle invalid version format', async () => {
       testRepo = await setupTestRepo('node');
-      const adapter = getAdapter('node');
 
       // toVersion throws on invalid input - this is expected behavior
       expect(() => toVersion('invalid-version')).toThrow('Invalid version format');
@@ -205,10 +202,10 @@ describe('Version Bump Workflow Integration', () => {
 
     it('should handle missing workspace files', async () => {
       testRepo = await setupTestRepo('node');
-      const adapter = getAdapter('python');
+      const pythonAdapter = getAdapter('python');
 
       // Try to detect Python workspace in Node.js repo
-      const result = await adapter.detect(testRepo.repoPath);
+      const result = await pythonAdapter.detect(testRepo.repoPath);
       expect(result.ok).toBe(false);
     });
   });

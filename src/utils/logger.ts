@@ -2,8 +2,8 @@
  * Logging utilities with structured logging support using Pino
  */
 
-import { pino } from 'pino';
-import type { Logger, LoggerOptions } from 'pino';
+import pino from 'pino';
+import type { Logger, Level, LoggerOptions } from 'pino';
 
 /**
  * Log level from environment or default to 'info'
@@ -93,7 +93,7 @@ export function formatError(error: Error | unknown): Record<string, unknown> {
       message: error.message,
       name: error.name,
       stack: error.stack,
-      ...(error as any), // Include custom enumerable properties
+      ...(error as unknown as Record<string, unknown>), // Include custom enumerable properties
     };
   }
 
@@ -109,16 +109,12 @@ export function formatError(error: Error | unknown): Record<string, unknown> {
  * @param message - Log message
  * @param data - Additional data to log
  */
-export function logSafe(
-  level: 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal',
-  message: string,
-  data?: Record<string, unknown>,
-): void {
-  if (data) {
-    const masked = maskSensitiveData(data);
-    logger[level](masked, message);
+export function logSafe(level: Level, message: string, data?: unknown): void {
+  if (data && typeof data === 'object' && data !== null) {
+    const masked = maskSensitiveData(data as Record<string, unknown>);
+    (logger[level] as pino.LogFn)(masked, message);
   } else {
-    logger[level](message);
+    (logger[level] as pino.LogFn)(message);
   }
 }
 

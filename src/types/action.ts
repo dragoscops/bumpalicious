@@ -2,8 +2,8 @@
  * GitHub Action input/output type definitions
  */
 
-import type { WorkspaceConfig } from './workspace.js';
 import type { BumpType } from './version.js';
+import type { WorkspaceConfig } from './workspace.js';
 
 /**
  * Action-specific bump type including 'none' for no changes

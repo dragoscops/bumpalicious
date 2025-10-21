@@ -18,16 +18,16 @@
  * ```
  */
 
-import type { WorkspaceType } from '../../types/index.js';
 import type { BaseWorkspaceAdapter } from './BaseAdapter.js';
-import { InvalidConfigurationError } from '../../utils/errors.js';
-import { NodeAdapter } from './NodeAdapter.js';
-import { PythonAdapter } from './PythonAdapter.js';
 import { DenoAdapter } from './DenoAdapter.js';
 import { GoAdapter } from './GoAdapter.js';
+import { NodeAdapter } from './NodeAdapter.js';
+import { PythonAdapter } from './PythonAdapter.js';
 import { RustAdapter } from './RustAdapter.js';
-import { ZigAdapter } from './ZigAdapter.js';
 import { TextAdapter } from './TextAdapter.js';
+import { ZigAdapter } from './ZigAdapter.js';
+import type { WorkspaceType } from '../../types/index.js';
+import { InvalidConfigurationError } from '../../utils/errors.js';
 
 /**
  * Adapter registry type

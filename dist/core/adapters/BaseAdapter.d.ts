@@ -1,8 +1,8 @@
+import type { ParserConfig } from '../../parsers/FileParser.js';
+import type { UpdaterConfig } from '../../parsers/FileUpdater.js';
 import type { WorkspaceType, ProjectInfo, Version } from '../../types/index.js';
 import type { Result } from '../../types/result.js';
 import type { WorkspaceDetectionError, FileOperationError } from '../../utils/errors.js';
-import type { ParserConfig } from '../../parsers/FileParser.js';
-import type { UpdaterConfig } from '../../parsers/FileUpdater.js';
 export declare abstract class BaseWorkspaceAdapter {
     abstract readonly type: WorkspaceType;
     abstract readonly supportedFiles: ReadonlyArray<string>;

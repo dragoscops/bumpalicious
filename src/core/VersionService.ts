@@ -32,10 +32,10 @@
  */
 
 import semver from 'semver';
+import { Loggable } from '../Loggable.js';
 import { toVersion, isVersion } from '../types/version.js';
 import type { Version, BumpType, CommitAnalysis, PreReleaseIdentifier } from '../types/version.js';
 import { VersionCalculationError } from '../utils/errors.js';
-import { Loggable } from '../Loggable.js';
 
 /**
  * Version Service for semantic version calculations

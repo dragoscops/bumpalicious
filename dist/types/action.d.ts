@@ -1,5 +1,5 @@
-import type { WorkspaceConfig } from './workspace.js';
 import type { BumpType } from './version.js';
+import type { WorkspaceConfig } from './workspace.js';
 export type ActionBumpType = BumpType | 'none';
 export interface ActionInputs {
     readonly token: string;

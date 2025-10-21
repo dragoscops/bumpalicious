@@ -6,28 +6,32 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import type { ChangelogService } from './ChangelogService.js';
+import type { VersionService } from './VersionService.js';
 import { WorkspaceManager, type WorkflowOptions } from './WorkspaceManager.js';
-import { ok, err } from '../types/result.js';
-import { GitOperationError } from '../utils/errors.js';
+import type { WorkspaceTreeBuilder } from './WorkspaceTreeBuilder.js';
 import type { GitService } from '../services/GitService.js';
 import type { PRService } from '../services/PRService.js';
-import type { VersionService } from './VersionService.js';
-import type { ChangelogService } from './ChangelogService.js';
-import type { WorkspaceTreeBuilder } from './WorkspaceTreeBuilder.js';
-import type { WorkspaceConfig, Workspace } from '../types/workspace.js';
-import type { Version } from '../types/version.js';
 import type { GitTag, GitComparison, FileChange } from '../types/git.js';
+import { ok, err } from '../types/result.js';
 import { ok as okResult } from '../types/result.js';
+import type { Version } from '../types/version.js';
+import type { WorkspaceConfig, Workspace } from '../types/workspace.js';
+import { GitOperationError } from '../utils/errors.js';
 
 // Mock @actions/exec to prevent real Git commands during tests
 vi.mock('@actions/exec', () => ({
-  exec: vi.fn().mockImplementation(async (command: string, args: string[], options?: any) => {
-    // Simulate git rev-parse HEAD returning a commit SHA
-    if (command === 'git' && args[0] === 'rev-parse' && args[1] === 'HEAD' && options?.listeners?.stdout) {
-      options.listeners.stdout(Buffer.from('abc123def456789\n'));
-    }
-    return 0;
-  }),
+  exec: vi
+    .fn()
+    .mockImplementation(
+      async (command: string, args: string[], options?: { listeners?: { stdout?: (data: Buffer) => void } }) => {
+        // Simulate git rev-parse HEAD returning a commit SHA
+        if (command === 'git' && args[0] === 'rev-parse' && args[1] === 'HEAD' && options?.listeners?.stdout) {
+          options.listeners.stdout(Buffer.from('abc123def456789\n'));
+        }
+        return 0;
+      },
+    ),
 }));
 
 // Mock logger before imports
@@ -49,7 +53,7 @@ vi.mock('./adapters/AdapterFactory.js', () => ({
       const name = path.split('/').pop() || 'test-workspace';
       return okResult({
         name,
-        version: '1.0.0' as any,
+        version: '1.0.0' as unknown as Version,
       });
     }),
     update: vi.fn(async () => okResult(undefined)),

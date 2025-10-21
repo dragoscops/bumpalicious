@@ -3,6 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { InvalidConfigurationError } from './errors.js';
 import {
   WorkspaceTypeSchema,
   WorkspaceConfigSchema,
@@ -11,7 +12,6 @@ import {
   validateWorkspaceConfig,
   validateWorkspaceConfigs,
 } from './validators.js';
-import { InvalidConfigurationError } from './errors.js';
 import type { ActionInputs, WorkspaceConfig } from '../types/index.js';
 
 describe('WorkspaceTypeSchema', () => {

@@ -11,9 +11,9 @@
  * ```
  */
 
+import { Loggable } from '../Loggable.js';
 import type { WorkspaceWithVersion, WorkspaceNode, WorkspaceTree } from '../types/workspace.js';
 import { WorkspaceValidationError } from '../utils/errors.js';
-import { Loggable } from '../Loggable.js';
 
 /**
  * Internal workspace node with mutable children array for tree building

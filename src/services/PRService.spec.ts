@@ -3,11 +3,11 @@
  */
 
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
-import { PRService } from './PRService.js';
 import type { GitHubService, RepositoryContext } from './GitHubService.js';
-import { GitHubAPIError } from '../utils/errors.js';
-import type { WorkspaceTree, WorkspaceNode } from '../types/workspace.js';
+import { PRService } from './PRService.js';
 import type { Version } from '../types/version.js';
+import type { WorkspaceTree } from '../types/workspace.js';
+import { GitHubAPIError } from '../utils/errors.js';
 
 // Mock logger
 vi.mock('../utils/logger.js', () => ({

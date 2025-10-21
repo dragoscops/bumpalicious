@@ -2,10 +2,10 @@
  * Tests for FileParser
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
 import * as os from 'node:os';
+import * as path from 'node:path';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
   parseJsonFile,
   parseTomlFile,
@@ -16,7 +16,6 @@ import {
   type ParserConfig,
 } from './FileParser.js';
 import { isOk, isErr } from '../types/result.js';
-import { toVersion } from '../types/version.js';
 
 describe('FileParser', () => {
   let tempDir: string;

@@ -1,5 +1,5 @@
-import type { ProjectInfo } from '../types/workspace.js';
 import type { Result } from '../types/result.js';
+import type { ProjectInfo } from '../types/workspace.js';
 import { FileOperationError } from '../utils/errors.js';
 export interface ParserConfig {
     readonly format: 'json' | 'toml' | 'regex';

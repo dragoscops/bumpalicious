@@ -3,8 +3,8 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { parseWorkspacesInput } from './workspace-parser.js';
 import { InvalidConfigurationError } from './errors.js';
+import { parseWorkspacesInput } from './workspace-parser.js';
 
 describe('parseWorkspacesInput', () => {
   describe('basic parsing', () => {

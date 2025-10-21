@@ -5,7 +5,7 @@ tasks:
     cmds:
       - |
         export $(cat .env.local | grep -v '^#') && code-insiders .
-    desc: "Run Bumpalicious in edit mode"
+    desc: 'Run Bumpalicious in edit mode'
 
   prepare:
     cmds:
@@ -15,4 +15,4 @@ tasks:
       - go install github.com/isaacphi/mcp-language-server@latest
       # https://github.com/typescript-language-server/typescript-language-server
       - npm install -g typescript-language-server typescript
-    desc: "Install dependencies"
+    desc: 'Install dependencies'

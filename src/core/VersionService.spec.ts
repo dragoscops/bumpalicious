@@ -279,7 +279,7 @@ describe('VersionService', () => {
 
   describe('pre-release logic integration', () => {
     it('should follow correct sequence for alpha releases', () => {
-      let version: Version = toVersion('1.0.0');
+      const version: Version = toVersion('1.0.0');
 
       // First alpha
       const alpha0 = service.calculateNewVersion(version, {

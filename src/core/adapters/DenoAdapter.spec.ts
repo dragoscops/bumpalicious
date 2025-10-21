@@ -2,10 +2,10 @@
  * Tests for DenoAdapter
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtemp, rm, writeFile, mkdir } from 'node:fs/promises';
-import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { DenoAdapter } from './DenoAdapter.js';
 import { isOk, isErr } from '../../types/result.js';
 import { toVersion } from '../../types/version.js';

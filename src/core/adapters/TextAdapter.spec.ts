@@ -2,13 +2,13 @@
  * Tests for Text Workspace Adapter
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdir, writeFile, rm } from 'node:fs/promises';
-import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { detectVersion, updateVersion, hasVersionFile, SUPPORTED_FILES, WORKSPACE_TYPE } from './TextAdapter.js';
-import { toVersion } from '../../types/version.js';
 import { isOk, isErr } from '../../types/result.js';
+import { toVersion } from '../../types/version.js';
 
 describe('TextAdapter', () => {
   let testDir: string;

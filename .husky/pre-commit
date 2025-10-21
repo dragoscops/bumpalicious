@@ -1,6 +1,10 @@
-# npm run prettify
+npx lint-staged
 
-# npm run cpd
+# npm run duplicate-check
+
+npm run license-check
+
+# npm audit --audit-level=moderate
 
 npm run build
 
