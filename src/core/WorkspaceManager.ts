@@ -617,6 +617,51 @@ export class WorkspaceManager extends Loggable {
   }
 
   /**
+   * Configure git user for commits
+   *
+   * Sets git user.name and user.email if not already configured.
+   * Uses github-actions[bot] as default.
+   */
+  private async configureGit(): Promise<void> {
+    try {
+      // Check if user.name is already configured
+      let hasUserName = false;
+      await exec.exec('git', ['config', 'user.name'], {
+        ignoreReturnCode: true,
+        listeners: {
+          stdout: (data: Buffer) => {
+            hasUserName = data.toString().trim().length > 0;
+          },
+        },
+      });
+
+      if (!hasUserName) {
+        await exec.exec('git', ['config', 'user.name', 'github-actions[bot]']);
+        this.log.debug('Configured git user.name');
+      }
+
+      // Check if user.email is already configured
+      let hasUserEmail = false;
+      await exec.exec('git', ['config', 'user.email'], {
+        ignoreReturnCode: true,
+        listeners: {
+          stdout: (data: Buffer) => {
+            hasUserEmail = data.toString().trim().length > 0;
+          },
+        },
+      });
+
+      if (!hasUserEmail) {
+        await exec.exec('git', ['config', 'user.email', 'github-actions[bot]@users.noreply.github.com']);
+        this.log.debug('Configured git user.email');
+      }
+    } catch (error) {
+      // Log but don't fail - let the commit fail if git config is truly broken
+      this.log.warn({ error }, 'Failed to configure git user, will proceed anyway');
+    }
+  }
+
+  /**
    * Create version commit
    *
    * Creates a Git commit with version changes using local Git commands.
@@ -629,6 +674,9 @@ export class WorkspaceManager extends Loggable {
     this.log.debug({ version: tree.masterVersion }, 'Creating version commit');
 
     try {
+      // Ensure git user is configured
+      await this.configureGit();
+
       // Stage all changes (version files and changelogs)
       await exec.exec('git', ['add', '-A']);
 
@@ -682,6 +730,9 @@ export class WorkspaceManager extends Loggable {
     this.log.debug({ branch: branchName, version: tree.masterVersion }, 'Creating version branch');
 
     try {
+      // Ensure git user is configured
+      await this.configureGit();
+
       // Create and checkout new branch FIRST (before committing)
       await exec.exec('git', ['checkout', '-b', branchName]);
 

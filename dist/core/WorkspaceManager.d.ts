@@ -53,6 +53,7 @@ export declare class WorkspaceManager extends Loggable {
     updateVersionFiles(workspaces: ReadonlyArray<WorkspaceWithVersion>): Promise<Result<void, FileOperationError>>;
     generateChangelogs(tree: WorkspaceTree, options: WorkflowOptions): Promise<Result<void, FileOperationError>>;
     private generateChangelogsRecursive;
+    private configureGit;
     createVersionCommit(tree: WorkspaceTree): Promise<Result<string, GitOperationError>>;
     createVersionBranch(tree: WorkspaceTree, options: WorkflowOptions): Promise<Result<string, GitOperationError>>;
     createVersionPR(tree: WorkspaceTree, options: WorkflowOptions, branchName: string): Promise<Result<number, Error>>;
