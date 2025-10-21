@@ -106,12 +106,11 @@ jobs:
           GH_TOKEN: ${{ steps.app-token-push.outputs.token || secrets.GH_TOKEN_PUSH }}
         run: |
           set -e
-          cd ./test
 
           # Make changes to trigger version bump
           echo "📝 Creating test changes..."
-          date > README.md
-          date > workspaces1/README.md
+          date > ./test/README.md
+          date > ./test/workspaces1/README.md
 
           # Commit changes
           echo "💾 Committing changes..."
