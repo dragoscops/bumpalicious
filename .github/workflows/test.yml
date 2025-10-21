@@ -73,8 +73,17 @@ jobs:
         run: |
           set -e
 
+          echo "📊 Initial git state:"
+          git log --oneline -3
+          git status
+          echo ""
+
           # Switch to ${{ steps.prereqs.outputs.test_branch }} branch
           git checkout -b ${{ steps.prereqs.outputs.test_branch }}
+
+          echo "📊 After branch creation:"
+          git status
+          echo ""
 
           # Setup test workspaces in test directory
           mkdir -p ./test
@@ -93,13 +102,29 @@ jobs:
 
           # Commit test data
           cd ..
+          echo "📊 Before commit:"
+          git status
+          echo ""
+          
           git add -A
-          git diff-index --quiet HEAD || git commit -m "chore: auto-update" --no-verify
+          git diff-index --quiet HEAD || git commit -m "chore: setup test workspaces" --no-verify
+          
+          echo "📊 After commit (before tag):"
+          git log --oneline -2
+          echo ""
+          
           git push origin ${{ steps.prereqs.outputs.test_branch }} --no-verify
 
           # Create initial tag
+          TAG_COMMIT=$(git rev-parse HEAD)
+          echo "🏷️  Creating tag v${{ env.TEST_VERSION }} on commit $TAG_COMMIT"
           git tag v${{ env.TEST_VERSION }}
           git push origin v${{ env.TEST_VERSION }}
+          
+          echo "📊 After tag creation:"
+          git tag -l 'v99*'
+          git log --oneline --decorate -3
+          echo ""
 
       - name: Create Test Commit
         env:
