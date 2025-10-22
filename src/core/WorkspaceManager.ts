@@ -279,9 +279,21 @@ export class WorkspaceManager extends Loggable {
       const changedWorkspaces = changedResult.value;
 
       if (changedWorkspaces.length === 0) {
-        this.log.info('No workspaces have changed - skipping version bump');
+        this.log.info(
+          {
+            lastTag,
+            branch,
+            totalWorkspaces: enrichedWorkspaces.length,
+            workspacePaths: enrichedWorkspaces.map((w) => w.path),
+          },
+          'No workspaces have changed - skipping version bump',
+        );
         // Return empty result - no work needed
-        return err(new WorkspaceValidationError('No workspaces have changed since last tag'));
+        return err(
+          new WorkspaceValidationError(
+            `No workspaces have changed since last tag (${lastTag || 'none'}). Branch: ${branch}, Total workspaces: ${enrichedWorkspaces.length}`,
+          ),
+        );
       }
 
       this.log.info({ count: changedWorkspaces.length }, 'Changed workspaces detected');
