@@ -414,9 +414,9 @@ jobs:
           git tag -l 'v202*' | xargs -r git tag -d
           git ls-remote --tags origin 'refs/tags/v202*' | grep -v '\^{}' | cut -f2 | xargs -r git push --delete origin
 
-          # Cleanup version branches
-          git branch | grep '^\s*bump_version_to_' | xargs -r git branch -D
-          git branch -r | grep 'origin/bump_version_to_' | sed 's/origin\///' | xargs -r git push origin --delete
+          # Cleanup version branches (both bump_version_to/ and bump_version/ patterns)
+          git branch -r | grep -E 'origin/(bump_version_to|bump_version)/' | sed 's/origin\///' | xargs -r git push origin --delete || true
+          git branch | grep -E '^\s*(bump_version_to|bump_version)/' | xargs -r git branch -D || true
 
           # Cleanup test branch
           git checkout ${{ steps.prereqs.outputs.branch }} || git checkout main || git checkout v2
