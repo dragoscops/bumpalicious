@@ -379,15 +379,21 @@ export class GitService extends Loggable {
     try {
       const { owner, repo } = this.github.getRepository();
 
-      // Ensure head uses full ref format if it's a branch name (not a SHA or tag)
-      // GitHub's compare API needs refs/heads/ prefix for non-default branches
-      const headRef =
-        head.match(/^[0-9a-f]{40}$/i) || head.startsWith('refs/') || head.startsWith('v') ? head : `refs/heads/${head}`;
+      // Determine if head needs refs/heads/ prefix
+      // Don't add prefix for: SHAs (40 hex chars), refs/* (already qualified), tags (v*), or special refs (HEAD)
+      const needsPrefix =
+        !head.match(/^[0-9a-f]{40}$/i) && // Not a SHA
+        !head.startsWith('refs/') && // Not already qualified
+        !head.startsWith('v') && // Not a tag
+        head !== 'HEAD'; // Not the special HEAD ref
+
+      const headRef = needsPrefix ? `refs/heads/${head}` : head;
 
       this.log.debug(
         {
           originalHead: head,
           resolvedHead: headRef,
+          addedPrefix: needsPrefix,
         },
         'Resolved head reference for comparison',
       );
