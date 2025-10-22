@@ -101,14 +101,28 @@ export interface WorkflowOptions {
  * Workflow execution result
  */
 export interface WorkflowResult {
-  /** Master version tag created */
+  /** Master version tag created (empty if PR not merged) */
   readonly tag: string;
-  /** All tags created (including short tags and workspace tags) */
+  /** All tags created (empty array if PR not merged) */
   readonly allTags: ReadonlyArray<string>;
   /** PR number (if PR was created) */
   readonly prNumber?: number;
+  /** Whether PR was merged (only relevant if createPR=true) */
+  readonly prMerged?: boolean;
   /** Workspace tree structure */
   readonly tree: WorkspaceTree;
+}
+
+/**
+ * PR creation result
+ */
+export interface PRCreationResult {
+  /** PR number */
+  readonly number: number;
+  /** Whether PR was merged */
+  readonly merged: boolean;
+  /** Merge commit SHA (if merged) */
+  readonly mergeCommitSha?: string;
 }
 
 /**
@@ -231,6 +245,8 @@ export class WorkspaceManager extends Loggable {
       // Step 8: Create PR or commit
       let prNumber: number | undefined;
       let commitSha: string | undefined;
+      let allTags: string[] = [];
+
       if (options.createPR) {
         // Create and push branch for PR
         const branchResult = await this.createVersionBranch(tree, options);
@@ -239,50 +255,69 @@ export class WorkspaceManager extends Loggable {
         }
         this.log.info({ branch: branchResult.value }, 'Version branch created');
 
-        // Get the commit SHA from the just-pushed branch
-        const branchRef = `heads/${branchResult.value}`;
-        this.log.debug({ branchRef }, 'Looking up branch ref to get commit SHA');
-        const refResult = await this.gitService.getRef(branchRef);
-        if (!refResult.ok) {
-          this.log.error({ error: refResult.error }, 'Failed to get branch ref');
-          return err(refResult.error);
-        }
-        commitSha = refResult.value.sha;
-        this.log.debug({ commitSha }, 'Got commit SHA from branch ref');
-
+        // Create the PR
         const prResult = await this.createVersionPR(tree, options, branchResult.value);
         if (!prResult.ok) {
           return err(prResult.error);
         }
-        prNumber = prResult.value;
-        this.log.info({ prNumber }, 'Pull request created');
+        prNumber = prResult.value.number;
+        const prMerged = prResult.value.merged;
+        this.log.info({ prNumber, merged: prMerged }, 'Pull request created');
+
+        // Only create tags if PR was auto-merged
+        if (prMerged) {
+          // Get the merge commit SHA from the PR
+          const mergeCommitSha = prResult.value.mergeCommitSha;
+          if (!mergeCommitSha) {
+            return err(new GitOperationError('createVersionTags', 'PR was merged but no merge commit SHA found'));
+          }
+          this.log.debug({ mergeCommitSha }, 'PR was merged, creating tags');
+
+          // Step 9: Create tags using the merge commit SHA
+          const tagsResult = await this.createVersionTags(tree, options, mergeCommitSha);
+          if (!tagsResult.ok) {
+            return err(tagsResult.error);
+          }
+          allTags = tagsResult.value;
+          this.log.info({ tagCount: allTags.length }, 'Version tags created after PR merge');
+        } else {
+          this.log.info({ prNumber }, 'PR created without auto-merge - tags will be created after manual merge');
+        }
       } else {
+        // Direct commit workflow
         const commitResult = await this.createVersionCommit(tree);
         if (!commitResult.ok) {
           return err(commitResult.error);
         }
         commitSha = commitResult.value;
         this.log.info({ sha: commitResult.value }, 'Version commit created');
-      }
 
-      this.log.debug({ commitSha, hasSha: !!commitSha }, 'About to create tags with commit SHA');
-
-      // Step 9: Create tags using the commit SHA
-      const tagsResult = await this.createVersionTags(tree, options, commitSha);
-      if (!tagsResult.ok) {
-        return err(tagsResult.error);
+        // Step 9: Create tags using the commit SHA
+        this.log.debug({ commitSha, hasSha: !!commitSha }, 'About to create tags with commit SHA');
+        const tagsResult = await this.createVersionTags(tree, options, commitSha);
+        if (!tagsResult.ok) {
+          return err(tagsResult.error);
+        }
+        allTags = tagsResult.value;
+        this.log.info({ tagCount: allTags.length }, 'Version tags created');
       }
-      const allTags = tagsResult.value;
-      this.log.info({ tagCount: allTags.length }, 'Version tags created');
 
       const result: WorkflowResult = {
-        tag: `v${tree.masterVersion}`,
+        tag: allTags.length > 0 ? `v${tree.masterVersion}` : '',
         allTags,
         prNumber,
+        prMerged: options.createPR ? allTags.length > 0 : undefined,
         tree,
       };
 
-      this.log.info({ tag: result.tag }, 'Workflow completed successfully');
+      this.log.info(
+        {
+          tag: result.tag || '(none - PR not merged)',
+          prNumber,
+          prMerged: result.prMerged,
+        },
+        'Workflow completed successfully',
+      );
       return ok(result);
     } catch (error) {
       this.log.error(
@@ -761,13 +796,13 @@ export class WorkspaceManager extends Loggable {
    * @param tree - Workspace tree
    * @param options - Workflow options
    * @param branchName - The actual branch name (with random suffix)
-   * @returns Result with PR number
+   * @returns Result with PR creation details
    */
   async createVersionPR(
     tree: WorkspaceTree,
     options: WorkflowOptions,
     branchName: string,
-  ): Promise<Result<number, Error>> {
+  ): Promise<Result<PRCreationResult, Error>> {
     this.log.debug({ version: tree.masterVersion, branch: branchName }, 'Creating version PR');
 
     const title = `chore: bump version to ${tree.masterVersion}`;
@@ -790,6 +825,9 @@ export class WorkspaceManager extends Loggable {
 
     const pr = prResult.value;
     this.log.info({ prNumber: pr.number, prUrl: pr.htmlUrl }, 'Version PR created');
+
+    let merged = false;
+    let mergeCommitSha: string | undefined;
 
     // Auto-merge if requested
     if (options.prOptions?.autoMerge) {
@@ -834,8 +872,11 @@ export class WorkspaceManager extends Loggable {
 
       if (!mergeResult.ok) {
         this.log.warn({ prNumber: pr.number }, 'Auto-merge failed - PR remains open');
+        merged = false;
       } else {
-        this.log.info({ prNumber: pr.number }, 'PR auto-merged');
+        merged = true;
+        mergeCommitSha = mergeResult.value.sha;
+        this.log.info({ prNumber: pr.number, mergeCommitSha }, 'PR auto-merged');
 
         // Delete the branch after successful merge to avoid collisions on retry
         try {
@@ -851,9 +892,15 @@ export class WorkspaceManager extends Loggable {
           this.log.warn({ branch: branchName, error }, 'Failed to delete branch after merge');
         }
       }
+    } else {
+      this.log.info({ prNumber: pr.number }, 'PR created without auto-merge - waiting for manual merge');
     }
 
-    return ok(pr.number);
+    return ok({
+      number: pr.number,
+      merged,
+      mergeCommitSha,
+    });
   }
 
   /**

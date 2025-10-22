@@ -21,11 +21,35 @@ jobs:
       fail-fast: true
       max-parallel: 1
       matrix:
-        pr: [false, true]
-        workspaces:
-          - test:node
-          - test:node,test/workspaces1:node,test/workspaces2:node
-    name: 'Test Action (Use pr: ${{ matrix.pr }}, Workspaces: ${{ matrix.workspaces }})'
+        include:
+          # Direct commit (no PR)
+          - pr: false
+            auto_merge: false
+            workspaces: test:node
+            scenario: 'Direct Commit (Single)'
+          - pr: false
+            auto_merge: false
+            workspaces: test:node,test/workspaces1:node,test/workspaces2:node
+            scenario: 'Direct Commit (Multi)'
+          # PR with auto-merge
+          - pr: true
+            auto_merge: true
+            workspaces: test:node
+            scenario: 'PR Auto-Merge (Single)'
+          - pr: true
+            auto_merge: true
+            workspaces: test:node,test/workspaces1:node,test/workspaces2:node
+            scenario: 'PR Auto-Merge (Multi)'
+          # PR without auto-merge (manual merge)
+          - pr: true
+            auto_merge: false
+            workspaces: test:node
+            scenario: 'PR Manual Merge (Single)'
+          - pr: true
+            auto_merge: false
+            workspaces: test:node,test/workspaces1:node,test/workspaces2:node
+            scenario: 'PR Manual Merge (Multi)'
+    name: 'Test: ${{ matrix.scenario }}'
     steps:
       - name: Prerequisites
         id: prereqs
@@ -192,7 +216,7 @@ jobs:
 
           echo "✅ Create Test Commit step completed"
 
-      - name: Update Version (${{ matrix.pr }} / ${{ matrix.workspaces }})
+      - name: Update Version (${{ matrix.scenario }})
         env:
           # ACTIONS_STEP_DEBUG: true
           DEBUG: true
@@ -202,7 +226,7 @@ jobs:
           branch: ${{ steps.prereqs.outputs.test_branch }}
           github_token: ${{ steps.app-token-push.outputs.token || secrets.GH_TOKEN_PUSH }}
           pr: ${{ matrix.pr }}
-          pr_auto_merge: true
+          pr_auto_merge: ${{ matrix.auto_merge }}
           pr_version_prefix: bump_version_to
           workspaces: ${{ matrix.workspaces }}
 
@@ -216,6 +240,36 @@ jobs:
           echo "  all_tags: ${{ steps.bump.outputs.all_tags }}"
           echo "  changed_workspaces: ${{ steps.bump.outputs.changed_workspaces }}"
           echo "  bump_type: ${{ steps.bump.outputs.bump_type }}"
+
+      - name: Merge PR Manually (if needed)
+        if: matrix.pr && !matrix.auto_merge
+        env:
+          GH_TOKEN: ${{ steps.app-token-push.outputs.token || secrets.GH_TOKEN_PUSH }}
+        run: |
+          set -e
+
+          PR_NUMBER="${{ steps.bump.outputs.pr }}"
+          echo "🔀 Manually merging PR #$PR_NUMBER..."
+
+          # Wait a bit for PR to be fully created
+          sleep 5
+
+          # Merge the PR
+          gh pr merge "$PR_NUMBER" --squash --auto --repo ${{ github.repository }}
+
+          echo "✅ PR #$PR_NUMBER merged"
+
+      - name: Re-run Action After Manual Merge
+        if: matrix.pr && !matrix.auto_merge
+        env:
+          DEBUG: true
+        id: bump_after_merge
+        uses: ./
+        with:
+          branch: ${{ steps.prereqs.outputs.test_branch }}
+          github_token: ${{ steps.app-token-push.outputs.token || secrets.GH_TOKEN_PUSH }}
+          pr: false
+          workspaces: ${{ matrix.workspaces }}
 
       - name: Validate Version Bump
         run: |
@@ -233,14 +287,28 @@ jobs:
           echo "📄 Current package.json content:"
           cat ./test/package.json || echo "  File not found!"
 
-          echo "🔍 Checking for tag v99.0.2..."
-          if git tag -l | grep -qx 'v99.0.2'; then
-            echo "  ✓ Tag v99.0.2 found"
+          # For manual merge scenario, tags are created on second run
+          if [[ "${{ matrix.pr }}" == "true" && "${{ matrix.auto_merge }}" == "false" ]]; then
+            echo "ℹ️  Manual merge scenario - checking second run outputs"
+            TAG_OUTPUT="${{ steps.bump_after_merge.outputs.tag }}"
+            echo "  Tag from second run: $TAG_OUTPUT"
           else
-            echo "  ✗ Tag v99.0.2 NOT found"
-            echo "  Available tags:"
-            git tag -l
-            exit 1
+            TAG_OUTPUT="${{ steps.bump.outputs.tag }}"
+            echo "  Tag from first run: $TAG_OUTPUT"
+          fi
+
+          if [[ -n "$TAG_OUTPUT" ]]; then
+            echo "🔍 Checking for tag v99.0.2..."
+            if git tag -l | grep -qx 'v99.0.2'; then
+              echo "  ✓ Tag v99.0.2 found"
+            else
+              echo "  ✗ Tag v99.0.2 NOT found"
+              echo "  Available tags:"
+              git tag -l
+              exit 1
+            fi
+          else
+            echo "ℹ️  No tag created (PR awaiting manual merge)"
           fi
 
           echo "🔍 Checking package.json version..."

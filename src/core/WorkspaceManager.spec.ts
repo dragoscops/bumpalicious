@@ -17,7 +17,7 @@ import { ok, err } from '../types/result.js';
 import { ok as okResult } from '../types/result.js';
 import type { Version } from '../types/version.js';
 import type { WorkspaceConfig, Workspace } from '../types/workspace.js';
-import { GitOperationError } from '../utils/errors.js';
+import { GitOperationError, GitHubAPIError } from '../utils/errors.js';
 
 // Mock @actions/exec to prevent real Git commands during tests
 vi.mock('@actions/exec', () => ({
@@ -111,6 +111,8 @@ describe('WorkspaceManager', () => {
     mockPRService = {
       create: vi.fn(),
       hasMerged: vi.fn(),
+      waitForChecks: vi.fn(),
+      merge: vi.fn(),
     } as unknown as PRService;
 
     mockVersionService = {
@@ -442,7 +444,7 @@ describe('WorkspaceManager', () => {
       allWorkspaces: [],
     };
 
-    it('should create version PR successfully', async () => {
+    it('should create version PR successfully without auto-merge', async () => {
       vi.mocked(mockPRService.create).mockResolvedValue(
         ok({ number: 123, htmlUrl: 'https://github.com/test/repo/pull/123', state: 'open' }),
       );
@@ -465,7 +467,11 @@ describe('WorkspaceManager', () => {
 
       expect(result.ok).toBe(true);
       if (result.ok) {
-        expect(result.value).toBe(123);
+        expect(result.value).toEqual({
+          number: 123,
+          merged: false,
+          mergeCommitSha: undefined,
+        });
       }
 
       expect(mockPRService.create).toHaveBeenCalledWith(
@@ -476,6 +482,49 @@ describe('WorkspaceManager', () => {
           draft: false,
         }),
       );
+    });
+
+    it('should create version PR with auto-merge', async () => {
+      vi.mocked(mockPRService.create).mockResolvedValue(
+        ok({ number: 456, htmlUrl: 'https://github.com/test/repo/pull/456', state: 'open' }),
+      );
+      vi.mocked(mockPRService.waitForChecks).mockResolvedValue(ok({ allPassed: true, mergeableState: 'ready' }));
+      vi.mocked(mockPRService.merge).mockResolvedValue(ok({ sha: 'merge-sha-123', merged: true, message: 'Merged' }));
+
+      const options: WorkflowOptions = {
+        workspaces: [mockWorkspaceConfig],
+        createPR: true,
+        prOptions: {
+          branchPrefix: 'version-bump',
+          draft: false,
+          autoMerge: true,
+        },
+        repository: {
+          owner: 'test',
+          repo: 'test-repo',
+        },
+      };
+
+      const result = await workspaceManager.createVersionPR(mockTree, options, 'version-bump/v2.0.0-auto');
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value).toEqual({
+          number: 456,
+          merged: true,
+          mergeCommitSha: 'merge-sha-123',
+        });
+      }
+
+      expect(mockPRService.waitForChecks).toHaveBeenCalledWith({
+        prNumber: 456,
+        timeout: 300000,
+        interval: 10000,
+      });
+      expect(mockPRService.merge).toHaveBeenCalledWith({
+        prNumber: 456,
+        mergeMethod: 'squash',
+      });
     });
 
     it('should create draft PR when specified', async () => {
@@ -505,6 +554,75 @@ describe('WorkspaceManager', () => {
           draft: true,
         }),
       );
+    });
+
+    it('should handle auto-merge failure gracefully', async () => {
+      vi.mocked(mockPRService.create).mockResolvedValue(
+        ok({ number: 789, htmlUrl: 'https://github.com/test/repo/pull/789', state: 'open' }),
+      );
+      vi.mocked(mockPRService.waitForChecks).mockResolvedValue(ok({ allPassed: true, mergeableState: 'ready' }));
+      vi.mocked(mockPRService.merge).mockResolvedValue(err(new GitHubAPIError('merge', 'Merge failed', 422)));
+
+      const options: WorkflowOptions = {
+        workspaces: [mockWorkspaceConfig],
+        createPR: true,
+        prOptions: {
+          branchPrefix: 'version-bump',
+          draft: false,
+          autoMerge: true,
+        },
+        repository: {
+          owner: 'test',
+          repo: 'test-repo',
+        },
+      };
+
+      const result = await workspaceManager.createVersionPR(mockTree, options, 'version-bump/v2.0.0-fail');
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value).toEqual({
+          number: 789,
+          merged: false,
+          mergeCommitSha: undefined,
+        });
+      }
+    });
+
+    it('should fail when checks do not pass', async () => {
+      vi.mocked(mockPRService.create).mockResolvedValue(
+        ok({ number: 999, htmlUrl: 'https://github.com/test/repo/pull/999', state: 'open' }),
+      );
+      vi.mocked(mockPRService.waitForChecks).mockResolvedValue(
+        ok({
+          allPassed: false,
+          mergeableState: 'blocked',
+          failedChecks: 1,
+          failedCheckNames: ['lint'],
+        }),
+      );
+
+      const options: WorkflowOptions = {
+        workspaces: [mockWorkspaceConfig],
+        createPR: true,
+        prOptions: {
+          branchPrefix: 'version-bump',
+          draft: false,
+          autoMerge: true,
+        },
+        repository: {
+          owner: 'test',
+          repo: 'test-repo',
+        },
+      };
+
+      const result = await workspaceManager.createVersionPR(mockTree, options, 'version-bump/v2.0.0-checks-fail');
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.message).toContain('PR checks did not pass');
+        expect(result.error.message).toContain('lint');
+      }
     });
   });
 

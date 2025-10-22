@@ -37,7 +37,13 @@ export interface WorkflowResult {
     readonly tag: string;
     readonly allTags: ReadonlyArray<string>;
     readonly prNumber?: number;
+    readonly prMerged?: boolean;
     readonly tree: WorkspaceTree;
+}
+export interface PRCreationResult {
+    readonly number: number;
+    readonly merged: boolean;
+    readonly mergeCommitSha?: string;
 }
 export declare class WorkspaceManager extends Loggable {
     private readonly gitService;
@@ -56,7 +62,7 @@ export declare class WorkspaceManager extends Loggable {
     private configureGit;
     createVersionCommit(tree: WorkspaceTree): Promise<Result<string, GitOperationError>>;
     createVersionBranch(tree: WorkspaceTree, options: WorkflowOptions): Promise<Result<string, GitOperationError>>;
-    createVersionPR(tree: WorkspaceTree, options: WorkflowOptions, branchName: string): Promise<Result<number, Error>>;
+    createVersionPR(tree: WorkspaceTree, options: WorkflowOptions, branchName: string): Promise<Result<PRCreationResult, Error>>;
     createVersionTags(tree: WorkspaceTree, options: WorkflowOptions, providedCommitSha?: string): Promise<Result<string[], GitOperationError>>;
 }
 //# sourceMappingURL=WorkspaceManager.d.ts.map

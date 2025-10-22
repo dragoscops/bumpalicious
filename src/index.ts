@@ -153,7 +153,7 @@ async function run(): Promise<void> {
 
     // Step 7: Set outputs
     core.startGroup('📤 Setting outputs');
-    const { tag, allTags, prNumber, tree } = result.value;
+    const { tag, allTags, prNumber, prMerged, tree } = result.value;
 
     core.debug(
       `Result value structure: ${JSON.stringify({ tag, allTags: allTags.length, prNumber, treeKeys: Object.keys(tree) })}`,
@@ -222,7 +222,9 @@ async function run(): Promise<void> {
     );
 
     // Log outputs for visibility
-    core.info(`✓ Version tag: ${tag}`);
+    if (tag) {
+      core.info(`✓ Version tag: ${tag}`);
+    }
     core.info(`✓ Version: ${tree.masterVersion}`);
     core.info(`✓ Bump type: ${bumpType}`);
     if (allTags.length > 1) {
@@ -233,10 +235,21 @@ async function run(): Promise<void> {
     }
     if (prNumber) {
       core.info(`✓ Pull Request: #${prNumber}`);
+      if (prMerged === false) {
+        core.info('  ℹ️  PR created - tags will be created after manual merge');
+      } else if (prMerged === true) {
+        core.info('  ✓ PR auto-merged - tags created');
+      }
     }
     core.endGroup();
 
-    core.notice(`✨ Version bump successful: ${tree.masterVersion} (${tag})`);
+    if (tag) {
+      core.notice(`✨ Version bump successful: ${tree.masterVersion} (${tag})`);
+    } else if (prNumber && !prMerged) {
+      core.notice(`✨ Version PR #${prNumber} created: ${tree.masterVersion} - awaiting merge`);
+    } else {
+      core.notice(`✨ Version bump successful: ${tree.masterVersion}`);
+    }
   } catch (error) {
     // Handle errors
     const errorMessage = error instanceof Error ? error.message : String(error);
