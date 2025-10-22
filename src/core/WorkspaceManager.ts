@@ -633,7 +633,10 @@ export class WorkspaceManager extends Loggable {
               return true; // For now, include all commits
             });
 
-      this.log.debug({ workspace: workspace.path, commits: workspaceCommits }, 'Workspace commit analysis');
+      this.log.debug(
+        { workspace: workspace.path, commits: workspaceCommits, commitsNumber: workspaceCommits.length },
+        'Workspace commit analysis',
+      );
 
       // Parse commits to get bump type
       const analysis = parseCommitMessages(workspaceCommits);
