@@ -176,7 +176,9 @@ export class WorkspaceManager extends Loggable {
       const lastCommitResult = await this.gitService.getLastCommit(targetBranch);
       if (lastCommitResult.ok && lastCommitResult.value) {
         const commitMessage = lastCommitResult.value.message;
-        const isPRMerge = commitMessage.startsWith('chore: bump version to');
+        // Check for both the generated PR title and the default user-facing title
+        const isPRMerge =
+          commitMessage.startsWith('chore: bump version to') || commitMessage.startsWith('chore: version update');
 
         if (isPRMerge) {
           this.log.info({ commitMessage }, 'Detected merged version bump PR - creating tags only');
