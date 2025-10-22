@@ -181,6 +181,10 @@ export class WorkspaceManager extends Loggable {
         if (isPRMerge) {
           this.log.info({ commitMessage }, 'Detected merged version bump PR - creating tags only');
 
+          // Extract PR number from commit message (format: "chore: bump version to X.Y.Z (#123)")
+          const prNumberMatch = commitMessage.match(/#(\d+)\)/);
+          const prNumber = prNumberMatch ? parseInt(prNumberMatch[1], 10) : undefined;
+
           // Enrich workspaces to get current versions
           const enrichResult = await this.enrichWorkspaces(options.workspaces);
           if (!enrichResult.ok) {
@@ -210,10 +214,38 @@ export class WorkspaceManager extends Loggable {
           const allTags = tagsResult.value;
           this.log.info({ tagCount: allTags.length }, 'Tags created for merged PR');
 
+          // Delete the PR branch if we have a PR number and branch prefix
+          if (prNumber && options.prOptions?.branchPrefix) {
+            try {
+              const { owner, repo } = options.repository;
+              const octokit = this.prService['github'].getOctokit();
+
+              // Get PR details to find the head branch
+              const prResult = await octokit.rest.pulls.get({
+                owner,
+                repo,
+                pull_number: prNumber,
+              });
+
+              const branchName = prResult.data.head.ref;
+
+              // Delete the branch
+              await octokit.rest.git.deleteRef({
+                owner,
+                repo,
+                ref: `heads/${branchName}`,
+              });
+
+              this.log.info({ branch: branchName, prNumber }, 'Version branch deleted after manual merge');
+            } catch (error) {
+              this.log.warn({ prNumber, error }, 'Failed to delete branch after manual merge - branch may not exist');
+            }
+          }
+
           const result: WorkflowResult = {
             tag: allTags.length > 0 ? `v${tree.masterVersion}` : '',
             allTags,
-            prNumber: undefined,
+            prNumber,
             prMerged: true,
             tree,
           };

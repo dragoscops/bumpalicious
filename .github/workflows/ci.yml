@@ -94,13 +94,13 @@ jobs:
           token: ${{ steps.app-token-push.outputs.token || secrets.GH_TOKEN_PUSH }}
           fetch-depth: 0
 
-      # - name: Increase Version
-      #   id: version_step
-      #   uses: ./
-      #   with:
-      #     github_token:  ${{ steps.app-token-push.outputs.token || secrets.GH_TOKEN_PUSH }}
-      #     workspaces: .:node
-      #     branch: ${{ github.ref }}
-      #     pr: true
-      #     pr_version_prefix: bump_version
-      #     short_tag: true
+      - name: Increase Version
+        id: version_step
+        uses: ./
+        with:
+          github_token:  ${{ steps.app-token-push.outputs.token || secrets.GH_TOKEN_PUSH }}
+          workspaces: .:node
+          branch: ${{ github.ref }}
+          pr: true
+          pr_version_prefix: bump_version
+          short_tag: true
