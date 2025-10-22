@@ -379,12 +379,25 @@ export class GitService extends Loggable {
     try {
       const { owner, repo } = this.github.getRepository();
 
+      // Ensure head uses full ref format if it's a branch name (not a SHA or tag)
+      // GitHub's compare API needs refs/heads/ prefix for non-default branches
+      const headRef =
+        head.match(/^[0-9a-f]{40}$/i) || head.startsWith('refs/') || head.startsWith('v') ? head : `refs/heads/${head}`;
+
+      this.log.debug(
+        {
+          originalHead: head,
+          resolvedHead: headRef,
+        },
+        'Resolved head reference for comparison',
+      );
+
       const comparison = await this.github.executeWithRetry('compareCommits', (octokit) =>
         octokit.rest.repos.compareCommits({
           owner,
           repo,
           base,
-          head,
+          head: headRef,
         }),
       );
 
