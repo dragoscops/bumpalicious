@@ -174,6 +174,7 @@ export class WorkspaceManager extends Loggable {
       // If so, we only need to create tags, not do a new version bump
       const targetBranch = options.branch || 'main';
       const lastCommitResult = await this.gitService.getLastCommit(targetBranch);
+      // TODO: Analyze this part after making sure pr=false and pr_auto_merge=true works as expected
       if (lastCommitResult.ok && lastCommitResult.value) {
         const commitMessage = lastCommitResult.value.message;
 
@@ -188,6 +189,7 @@ export class WorkspaceManager extends Loggable {
         );
 
         // Check for both the generated PR title and the default user-facing title
+        // TODO: This message should be found in the config options
         const isPRMerge =
           commitMessage.startsWith('chore: bump version to') || commitMessage.startsWith('chore: version update');
 
@@ -275,6 +277,7 @@ export class WorkspaceManager extends Loggable {
       const lastTag = lastTagResult.value?.name || null;
       this.log.info({ lastTag }, 'Last tag retrieved');
 
+      // TODO: 1
       // Step 2: Enrich workspaces
       const enrichResult = await this.enrichWorkspaces(options.workspaces);
       if (!enrichResult.ok) {
@@ -629,6 +632,8 @@ export class WorkspaceManager extends Loggable {
               // In practice, we'd check commit file changes
               return true; // For now, include all commits
             });
+
+      this.log.debug({ workspace: workspace.path, commits: workspaceCommits }, 'Workspace commit analysis');
 
       // Parse commits to get bump type
       const analysis = parseCommitMessages(workspaceCommits);
