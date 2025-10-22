@@ -41,6 +41,8 @@
     - [Workspace Hierarchy Rules](#workspace-hierarchy-rules)
     - [Example PR Body](#example-pr-body)
   - [Usage](#usage)
+    - [Using with Pull Requests](#using-with-pull-requests)
+    - [Manual PR Merge Workflow](#manual-pr-merge-workflow)
   - [Inputs](#inputs)
     - [Workspace Types](#workspace-types)
   - [Outputs](#outputs)
@@ -64,11 +66,20 @@
       - [Pre-release Workflow](#pre-release-workflow)
       - [Production Release Workflow](#production-release-workflow)
   - [Version Bump Rules](#version-bump-rules)
+    - [Breaking Changes](#breaking-changes)
     - [Pre-release Version Handling](#pre-release-version-handling)
   - [Changelog Generation](#changelog-generation)
-    - [How it works](#how-it-works-1)
-    - [Conventional Commits](#conventional-commits)
+    - [Changelog Features](#changelog-features)
+    - [Changelog Generation Process](#changelog-generation-process)
+    - [Conventional Commits Format](#conventional-commits-format)
     - [Example CHANGELOG.md](#example-changelogmd)
+    - [Monorepo Changelogs](#monorepo-changelogs)
+  - [Troubleshooting](#troubleshooting)
+    - ["No workspaces have changed" Error](#no-workspaces-have-changed-error)
+    - [PR Not Auto-Merging](#pr-not-auto-merging)
+    - [Double Version Bump After PR Merge](#double-version-bump-after-pr-merge)
+    - [Workspace Not Detected](#workspace-not-detected)
+    - [Permission Errors](#permission-errors)
 
 ## Features
 
@@ -148,7 +159,7 @@ When creating a PR in a monorepo, you'll get a rich description:
 
 ## Usage
 
-Add the following to your GitHub Actions workflow:
+Add Bumpalicious to your GitHub Actions workflow:
 
 ```yaml
 name: Version Update
@@ -162,46 +173,83 @@ jobs:
   version-update:
     runs-on: ubuntu-latest
     steps:
-      # If you wish to use Github App, generate Token before checkout
-      - name: Github App Token
-        id: app-token-push
-        uses: actions/create-github-app-token@v2
-        with: ...
-
-      # Checkout repo (using PAT or App Token)
-      - name: Checkout repo (using token)
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          token: ${{ steps.app-token-push.outputs.token || secrets.GITHUB_TOKEN }}
-          fetch-depth: 0
+          fetch-depth: 0 # Required for changelog generation
 
       - name: Update Version
         uses: dragoscops/bumpalicious@v3
         with:
           workspaces: ".:node"
-          pr: "true"
-          pr_auto_merge: "true"
-          changelog_preset: "conventionalcommits"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-> **Note**: For auto-merge to work, ensure your repository has required status checks configured and that the action has appropriate permissions.
+### Using with Pull Requests
+
+For safer version updates with review and CI validation:
+
+```yaml
+- name: Update Version with PR
+  uses: dragoscops/bumpalicious@v3
+  with:
+    workspaces: ".:node"
+    pr: "true"
+    pr_auto_merge: "true"
+    github_token: ${{ secrets.GITHUB_TOKEN }}
+```
+
+> **⚠️ Important Requirements**:
+>
+> - **Full Git History**: Always use `fetch-depth: 0` in checkout to enable proper changelog generation and change detection
+> - **Token Permissions**: For PR creation, use a token with `contents: write` and `pull-requests: write` permissions
+> - **Auto-merge**: Requires branch protection rules with required status checks configured
+> - **Branch/Tag Names**: GitHub's Compare API requires fully qualified references. The action automatically handles this by prefixing branches with `refs/heads/` and tags with `refs/tags/`
+
+### Manual PR Merge Workflow
+
+If you manually merge a PR created by Bumpalicious, you can re-run the action to create the version tags:
+
+1. **First Run**: Action creates PR with version changes (e.g., `v1.2.3`)
+2. **Manual Review**: You review and merge the PR via GitHub UI
+3. **Second Run**: Action detects the merged PR commit and creates tags without bumping the version again
+
+**How Detection Works:**
+
+When a PR is merged via squash merge, GitHub uses the PR title as the commit message. The action recognizes merged PRs by detecting commit messages starting with:
+
+- `chore: bump version to X.Y.Z` (internally generated PR title format)
+- `chore: version update` (matches the default `pr_message` input)
+
+If you use a custom `pr_message` input, ensure your commit messages match that pattern to enable proper detection.
+
+**Why This Matters:**
+
+Without proper detection, the action would:
+
+- See the merged PR commit as a new change
+- Calculate and apply another version bump (e.g., 1.2.3 → 1.2.4)
+- Create incorrect version tags
+
+With detection, the action:
+
+- Recognizes the commit as a merged version bump
+- Skips version calculation
+- Simply creates the appropriate tags for the already-bumped version
 
 ## Inputs
 
-| Name                | Description                                                                           | Required | Default                 |
-| ------------------- | ------------------------------------------------------------------------------------- | -------- | ----------------------- |
-| `workspaces`        | Comma-separated workspace definitions with format "path:type"                         | No       | `.:text`                |
-| `github_token`      | GitHub token for authentication                                                       | No       | -                       |
-| `token`             | GitHub token for actions like creating pull requests                                  | No       | `${{ github.token }}`   |
-| `pr`                | Whether to create a pull request with version changes                                 | No       | `false`                 |
-| `pr_auto_merge`     | Whether to automatically merge the PR if all checks pass                              | No       | `false`                 |
-| `pr_message`        | Message to use for the pull request                                                   | No       | `chore: version update` |
-| `pr_version_prefix` | Prefix for version PR branch names (e.g., "feature/" creates "feature/version-1.2.3") | No       | `version_bump`          |
-| `branch`            | Target branch for pull requests                                                       | No       | `main`                  |
-| `changelog_preset`  | The conventional-changelog preset to use                                              | No       | `conventionalcommits`   |
-| `short_tag`         | Create short version tags (e.g., v1.2 for v1.2.3)                                     | No       | `false`                 |
+| Name                | Description                                                                    | Required | Default                 |
+| ------------------- | ------------------------------------------------------------------------------ | -------- | ----------------------- |
+| `workspaces`        | Workspace definitions with format `path:type` (comma or semicolon separated)   | Yes      | `.:text`                |
+| `github_token`      | GitHub token for API operations (PR creation, tagging)                         | Yes      | `${{ github.token }}`   |
+| `pr`                | Create a pull request instead of direct commit                                 | No       | `false`                 |
+| `pr_auto_merge`     | Enable auto-merge when all required checks pass                                | No       | `false`                 |
+| `pr_message`        | Custom message for PR title and commit message                                 | No       | `chore: version update` |
+| `pr_version_prefix` | Branch name prefix for version PRs (e.g., `bump_version_to`)                   | No       | `version_bump`          |
+| `branch`            | Target branch for version updates                                              | No       | `main`                  |
+| `changelog_preset`  | Conventional-changelog preset (`conventionalcommits`, `angular`, `atom`, etc.) | No       | `conventionalcommits`   |
+| `short_tag`         | Create short version tags (e.g., `v1.2` for `v1.2.3`)                          | No       | `false`                 |
 
 ### Workspace Types
 
@@ -217,20 +265,24 @@ The following workspace types are supported:
 
 ## Outputs
 
-| Name  | Description                      |
-| ----- | -------------------------------- |
-| `tag` | The version tag that was created |
+| Name                 | Description                                                |
+| -------------------- | ---------------------------------------------------------- |
+| `tag`                | The primary version tag created (e.g., `v1.2.3`)           |
+| `version`            | The version number without prefix (e.g., `1.2.3`)          |
+| `pr`                 | Pull request number if PR was created                      |
+| `all_tags`           | Comma-separated list of all tags created                   |
+| `changed_workspaces` | Comma-separated list of workspace paths that were updated  |
+| `bump_type`          | Type of version bump performed (`major`, `minor`, `patch`) |
 
 ## Examples
 
 ### Basic Usage (Single Project)
 
 ```yaml
-uses: dragoscops/bumpalicious@v3
-env:
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-with:
-  workspaces: ".:text"
+- uses: dragoscops/bumpalicious@v3
+  with:
+    workspaces: ".:node"
+    github_token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ### Language-Specific Examples
@@ -238,71 +290,64 @@ with:
 #### Node.js Project
 
 ```yaml
-uses: dragoscops/bumpalicious@v3
-env:
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-with:
-  workspaces: ".:node"
+- uses: dragoscops/bumpalicious@v3
+  with:
+    workspaces: ".:node"
+    github_token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 #### Python Project
 
 ```yaml
-uses: dragoscops/bumpalicious@v3
-env:
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-with:
-  workspaces: ".:python"
+- uses: dragoscops/bumpalicious@v3
+  with:
+    workspaces: ".:python"
+    github_token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 #### Deno Project
 
 ```yaml
-uses: dragoscops/bumpalicious@v3
-env:
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-with:
-  workspaces: ".:deno"
+- uses: dragoscops/bumpalicious@v3
+  with:
+    workspaces: ".:deno"
+    github_token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 #### Go Project
 
 ```yaml
-uses: dragoscops/bumpalicious@v3
-env:
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-with:
-  workspaces: ".:go"
+- uses: dragoscops/bumpalicious@v3
+  with:
+    workspaces: ".:go"
+    github_token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 #### Rust Project
 
 ```yaml
-uses: dragoscops/bumpalicious@v3
-env:
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-with:
-  workspaces: ".:rust"
+- uses: dragoscops/bumpalicious@v3
+  with:
+    workspaces: ".:rust"
+    github_token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 #### Zig Project
 
 ```yaml
-uses: dragoscops/bumpalicious@v3
-env:
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-with:
-  workspaces: ".:zig"
+- uses: dragoscops/bumpalicious@v3
+  with:
+    workspaces: ".:zig"
+    github_token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 #### Text-based Version Files
 
 ```yaml
-uses: dragoscops/bumpalicious@v3
-env:
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-with:
-  workspaces: ".:text"
+- uses: dragoscops/bumpalicious@v3
+  with:
+    workspaces: ".:text"
+    github_token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ### Monorepo Examples
@@ -310,73 +355,75 @@ with:
 #### Multi-language Monorepo
 
 ```yaml
-uses: dragoscops/bumpalicious@v3
-env:
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-with:
-  workspaces: ".:node,packages/api:python,packages/ui:node,tools/cli:go,libs/core:rust"
+- uses: dragoscops/bumpalicious@v3
+  with:
+    workspaces: ".:node;packages/api:python;packages/ui:node;tools/cli:go"
+    github_token: ${{ secrets.GITHUB_TOKEN }}
 ```
+
+> **Note**: Use either comma (`,`) or semicolon (`;`) as separators. The root workspace (`.`) should be listed first.
 
 ### Advanced Examples
 
 #### With Custom Branch
 
 ```yaml
-uses: dragoscops/bumpalicious@v3
-env:
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-with:
-  workspaces: ".:node"
-  branch: "develop"
+- uses: dragoscops/bumpalicious@v3
+  with:
+    workspaces: ".:node"
+    branch: "develop"
+    github_token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 #### With Custom Changelog Preset
 
+Available presets: `conventionalcommits` (default), `angular`, `atom`, `codemirror`, `ember`, `eslint`, `express`, `jquery`, `jshint`
+
 ```yaml
-uses: dragoscops/bumpalicious@v3
-env:
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-with:
-  workspaces: ".:node"
-  changelog_preset: "angular" # or any other conventional-changelog preset
+- uses: dragoscops/bumpalicious@v3
+  with:
+    workspaces: ".:node"
+    changelog_preset: "angular"
+    github_token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 #### With Pull Request and Auto-merge
 
 ```yaml
-uses: dragoscops/bumpalicious@v3
-env:
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-with:
-  workspaces: ".:node"
-  pr: "true"
-  pr_auto_merge: "true"
+- uses: dragoscops/bumpalicious@v3
+  with:
+    workspaces: ".:node"
+    pr: "true"
+    pr_auto_merge: "true"
+    github_token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-> **⚠️ Auto-merge Requirements**:
->
-> - Repository must have branch protection rules configured
-> - Required status checks must be defined
-> - Action will wait for all checks to pass before merging
-> - If checks fail or timeout (5 minutes), the PR remains open
+**Auto-merge Requirements:**
+
+- Branch protection rules must be enabled
+- Required status checks must be configured
+- Action waits up to 5 minutes for checks to pass
+- If checks fail, PR remains open for manual review
 
 #### With Custom PR Branch Prefix
 
 ```yaml
-uses: dragoscops/bumpalicious@v3
-env:
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-with:
-  workspaces: ".:node"
-  pr: "true"
-  pr_version_prefix: "bump_version"
-  changelog_preset: "angular" # or any other conventional-changelog preset
+- uses: dragoscops/bumpalicious@v3
+  with:
+    workspaces: ".:node"
+    pr: "true"
+    pr_version_prefix: "release"
+    github_token: ${{ secrets.GITHUB_TOKEN }}
 ```
+
+This creates PR branches like `release/1.2.3` instead of the default `version_bump/1.2.3`.
 
 #### Pre-release Workflow
 
+Create alpha/beta releases for your development branch:
+
 ```yaml
-name: Pre-release Version Update
+name: Pre-release Version
 on:
   push:
     branches: [develop]
@@ -396,11 +443,14 @@ jobs:
           pr: "true"
           pr_message: "chore: pre-release version update"
           branch: "develop"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
+Use commits like `feat: new feature pre-release:alpha` to trigger pre-release versions.
+
 #### Production Release Workflow
+
+Complete workflow with PR, auto-merge, and multiple workspaces:
 
 ```yaml
 name: Production Release
@@ -411,6 +461,9 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -419,51 +472,106 @@ jobs:
       - name: Update Version and Create Release
         uses: dragoscops/bumpalicious@v3
         with:
-          workspaces: ".:node,packages/lib:python,tools:go"
+          workspaces: ".:node;packages/lib:python;tools:go"
           pr: "true"
           pr_auto_merge: "true"
           short_tag: "true"
           changelog_preset: "conventionalcommits"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 ```
+
+This workflow:
+
+- Creates version tags for all changed workspaces
+- Generates changelogs with conventional commits
+- Creates a PR with detailed version information
+- Auto-merges after CI checks pass
+- Creates both full (`v1.2.3`) and short (`v1.2`) tags
 
 ## Version Bump Rules
 
-This action follows [Conventional Commits](https://www.conventionalcommits.org/) for version bumping:
+Bumpalicious follows the [Conventional Commits](https://www.conventionalcommits.org/) specification:
 
-- `fix:` - Patch version bump (1.0.0 -> 1.0.1)
-- `feat:` - Minor version bump (1.0.0 -> 1.1.0)
-- `BREAKING CHANGE:` or `feat!:` - Major version bump (1.0.0 -> 2.0.0)
+| Commit Type              | Version Bump | Example           |
+| ------------------------ | ------------ | ----------------- |
+| `fix:` or `perf:`        | Patch        | `1.0.0` → `1.0.1` |
+| `feat:`                  | Minor        | `1.0.0` → `1.1.0` |
+| `BREAKING CHANGE:`, `!:` | Major        | `1.0.0` → `2.0.0` |
+
+### Breaking Changes
+
+Breaking changes can be indicated in two ways:
+
+1. **Exclamation mark**: `feat!: remove deprecated API`
+2. **Footer**: Add `BREAKING CHANGE:` in the commit body
+
+```text
+feat: add new authentication method
+
+BREAKING CHANGE: Old auth tokens are no longer supported
+```
 
 ### Pre-release Version Handling
 
-For pre-release versions, include `pre-release:identifier` in your commit message:
+Create pre-release versions by adding `pre-release:identifier` to your commit:
 
-- `feat: add new feature pre-release:alpha` - Creates a pre-minor release (1.0.0 -> 1.1.0-alpha.0)
-- `fix: bug fix pre-release:beta` - Creates a pre-patch release (1.0.0 -> 1.0.1-beta.0)
+```bash
+# Create alpha pre-release
+git commit -m "feat: new feature pre-release:alpha"
+# Result: 1.0.0 → 1.1.0-alpha.0
 
-When updating an existing pre-release version with the same identifier, the action intelligently increments just the pre-release number:
+# Create beta pre-release
+git commit -m "fix: bug fix pre-release:beta"
+# Result: 1.0.0 → 1.0.1-beta.0
+```
 
-- If current version is `1.2.0-alpha.0` and commit is `feat: update pre-release:alpha`, the version becomes `1.2.0-alpha.1` (not `1.3.0-alpha.0`)
+**Smart Pre-release Incrementing:**
+
+When updating an existing pre-release with the same identifier, only the pre-release number increments:
+
+```bash
+# Current version: 1.2.0-alpha.0
+git commit -m "feat: another feature pre-release:alpha"
+# Result: 1.2.0-alpha.1 (not 1.3.0-alpha.0)
+```
+
+**Graduating to Stable:**
+
+Omit the `pre-release:` marker to create a stable release:
+
+```bash
+# Current version: 1.2.0-alpha.5
+git commit -m "feat: finalize features"
+# Result: 1.2.0
+```
 
 ## Changelog Generation
 
-This action can automatically generate CHANGELOG.md files for each workspace based on conventional commits in your repository. The changelog generation uses the [conventional-changelog](https://github.com/conventional-changelog/conventional-changelog) library.
+Bumpalicious automatically generates `CHANGELOG.md` files for each workspace based on conventional commits.
 
-### How it works
+### Changelog Features
 
-1. When a version update is triggered, the action will:
-   - Identify workspaces that have changed since the last tag
-   - Update the version numbers according to conventional commit messages
-   - Intelligently handle pre-release versions (alpha, beta, etc.)
-   - Generate or update CHANGELOG.md files in each workspace
-   - Create a PR with changelog content (if `pr: true`)
-   - Create Git tags for the new version (if `short_tag: true`, will also create shorter tags like v1.2)
+- **Automatic Generation**: Creates or updates CHANGELOG.md in each changed workspace
+- **Rich Formatting**: Includes commit links, issue references, and categorized changes
+- **Monorepo Support**: Separate changelogs for each workspace with root workspace summary
+- **PR Integration**: Changelog content is included in pull request descriptions
+- **Customizable Presets**: Choose from multiple conventional-changelog presets
 
-### Conventional Commits
+### Changelog Generation Process
 
-For optimal version management and changelog generation, your commits must follow the [Conventional Commits](https://www.conventionalcommits.org/) specification:
+1. **Detects Changes**: Identifies which workspaces have changed since the last tag
+2. **Analyzes Commits**: Parses conventional commits to determine version bump type
+3. **Generates Changelog**: Creates formatted changelog entries with:
+   - Commit type grouping (Features, Bug Fixes, etc.)
+   - Commit messages and authors
+   - Links to commits and compare views
+   - Breaking change callouts
+4. **Updates Files**: Prepends new entries to existing CHANGELOG.md files
+5. **Creates Tags**: Tags the repository with new version numbers
+
+### Conventional Commits Format
+
+Use this format for all commits to enable automatic changelog generation:
 
 ```text
 <type>[optional scope]: <description>
@@ -473,53 +581,124 @@ For optimal version management and changelog generation, your commits must follo
 [optional footer(s)]
 ```
 
-Common types include:
+**Common Types:**
 
-```text
-<type>(<scope>): <description>
+- `feat:` New features (appears in "Features" section)
+- `fix:` Bug fixes (appears in "Bug Fixes" section)
+- `docs:` Documentation changes
+- `style:` Code style/formatting changes
+- `refactor:` Code refactoring without feature changes
+- `perf:` Performance improvements (appears in "Performance Improvements")
+- `test:` Test additions or corrections
+- `build:` Build system or dependency changes
+- `ci:` CI configuration changes
+- `chore:` Maintenance tasks
 
-[optional body]
+**Examples:**
 
-[optional footer]
+```bash
+feat(api): add user authentication endpoint
+fix(ui): correct button alignment on mobile devices
+perf(database): optimize query performance
+docs: update installation instructions
 ```
 
-**Type values**:
-
-- `feat`: A new feature (triggers minor version bump)
-- `fix`: A bug fix (triggers patch version bump)
-- `docs`: Documentation changes
-- `style`: Code style changes (formatting, etc.)
-- `refactor`: Code changes that neither fix bugs nor add features
-- `perf`: Performance improvements
-- `test`: Adding or correcting tests
-- `build`: Changes to build system or dependencies
-- `ci`: Changes to CI configuration
-- `chore`: Other changes that don't modify src or test files
-
-Breaking changes are indicated either by adding `BREAKING CHANGE:` in the commit body or by appending a `!` after the type (e.g., `feat!:`). Breaking changes trigger major version bumps.
-
 ### Example CHANGELOG.md
-
-The generated changelog will look similar to:
-
-````markdown
-### Example CHANGELOG.md
-
-The generated changelog will look similar to:
 
 ```markdown
 # Changelog
 
-## [1.2.0](https://github.com/user/repo/compare/v1.1.0...v1.2.0) (2025-04-27)
+## [1.2.0](https://github.com/user/repo/compare/v1.1.0...v1.2.0) (2025-10-22)
 
 ### Features
 
-- **api:** add new endpoint for user preferences ([a1b2c3d](https://github.com/user/repo/commit/a1b2c3d))
+- **api:** add user authentication endpoint ([a1b2c3d](https://github.com/user/repo/commit/a1b2c3d))
 - add support for configuration files ([e4f5g6h](https://github.com/user/repo/commit/e4f5g6h))
 
 ### Bug Fixes
 
-- correct validation logic in form handler ([i7j8k9l](https://github.com/user/repo/commit/i7j8k9l))
-- **ui:** fix button alignment in mobile view ([m1n2o3p](https://github.com/user/repo/commit/m1n2o3p))
+- **ui:** correct button alignment on mobile ([i7j8k9l](https://github.com/user/repo/commit/i7j8k9l))
+- fix validation logic in form handler ([m1n2o3p](https://github.com/user/repo/commit/m1n2o3p))
+
+### Performance Improvements
+
+- **database:** optimize query execution time ([q4r5s6t](https://github.com/user/repo/commit/q4r5s6t))
+
+## [1.1.0](https://github.com/user/repo/compare/v1.0.0...v1.1.0) (2025-10-15)
+
+### Features
+
+- initial release with core functionality
 ```
-````
+
+### Monorepo Changelogs
+
+In monorepos, the root workspace CHANGELOG.md includes a summary of all child workspace changes:
+
+```markdown
+## [2.1.0] - 2025-10-22
+
+### Root Changes
+
+- feat: update shared configuration
+
+### Child Workspace Updates
+
+#### 🔄 Changed Workspaces
+
+- **api-service** `1.5.0` (packages/api) - Added authentication
+- **ui-components** `3.2.1` (packages/ui) - Fixed mobile layout
+
+#### ⚪ Unchanged Workspaces
+
+- **utils** `2.0.0` (packages/utils)
+```
+
+## Troubleshooting
+
+### "No workspaces have changed" Error
+
+If you see this error despite having commits, check:
+
+1. **Fetch Depth**: Ensure you're using `fetch-depth: 0` in your checkout step
+2. **Tag Format**: Tags must start with 'v' (e.g., `v1.0.0`) for proper detection
+3. **Branch References**: The action automatically qualifies branch and tag references for GitHub's Compare API
+
+### PR Not Auto-Merging
+
+Auto-merge requires:
+
+1. **Branch Protection**: Enable required status checks in repository settings
+2. **Check Status**: All required checks must pass within 5 minutes
+3. **Token Permissions**: Use a token with `contents: write` and `pull-requests: write`
+
+### Double Version Bump After PR Merge
+
+If versions are bumped twice (e.g., 1.2.3 in PR, then 1.2.4 after merge):
+
+1. **Check PR Message**: Ensure `pr_message` matches the commit message pattern
+2. **Default Pattern**: Use the default `chore: version update` or `chore: bump version to`
+3. **Custom Pattern**: If using custom messages, they must start with `chore: bump version to` or match your `pr_message` input
+
+### Workspace Not Detected
+
+If a workspace isn't being updated:
+
+1. **Path Format**: Use `.` for root, relative paths for children (e.g., `packages/api`)
+2. **File Existence**: Ensure version files exist (e.g., `package.json` for Node.js)
+3. **Type Match**: Verify the workspace type matches the project (e.g., `node` for `package.json`)
+
+### Permission Errors
+
+If you encounter permission errors:
+
+1. **Workflow Permissions**: Add `permissions` block to your workflow:
+
+   ```yaml
+   permissions:
+     contents: write
+     pull-requests: write
+   ```
+
+2. **Token Scope**: Ensure your GitHub token has appropriate scopes
+3. **Branch Protection**: Check if branch protection rules allow the action to push
