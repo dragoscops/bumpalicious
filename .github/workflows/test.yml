@@ -7,6 +7,8 @@ on:
 env:
   GIT_USER_NAME: 'github-actions[bot]'
   GIT_USER_EMAIL: 'github-actions[bot]@users.noreply.github.com'
+  # ACTIONS_STEP_DEBUG: true
+  DEBUG: true
 
 concurrency:
   group: bumpalicious-test-global
@@ -246,9 +248,6 @@ jobs:
           echo "✅ Create Test Commit step completed"
 
       - name: Update Version (${{ matrix.scenario }})
-        env:
-          # ACTIONS_STEP_DEBUG: true
-          DEBUG: true
         id: bump
         uses: ./
         with:

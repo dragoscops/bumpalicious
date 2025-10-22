@@ -30,6 +30,8 @@ permissions:
 
 env:
   NODE_VERSION: '20'
+  # ACTIONS_STEP_DEBUG: true
+  DEBUG: true
 
 jobs:
   tests:

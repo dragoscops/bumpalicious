@@ -611,7 +611,8 @@ export class WorkspaceManager extends Loggable {
       {
         base,
         commitCount: commits.length,
-        firstMessage: commitMessages[0]?.split('\n')[0],
+        firstMessage: commitMessages[0],
+        lastMessage: commitMessages[commitMessages.length - 1],
       },
       'Commits retrieved for version calculation',
     );
