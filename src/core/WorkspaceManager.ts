@@ -172,7 +172,8 @@ export class WorkspaceManager extends Loggable {
     try {
       // Step 0: Check if last commit is a merged version bump PR
       // If so, we only need to create tags, not do a new version bump
-      const lastCommitResult = await this.gitService.getLastCommit();
+      const targetBranch = options.branch || 'main';
+      const lastCommitResult = await this.gitService.getLastCommit(targetBranch);
       if (lastCommitResult.ok && lastCommitResult.value) {
         const commitMessage = lastCommitResult.value.message;
         const isPRMerge = commitMessage.startsWith('chore: bump version to');

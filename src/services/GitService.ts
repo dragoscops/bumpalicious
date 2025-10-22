@@ -467,10 +467,11 @@ export class GitService extends Loggable {
   /**
    * Get the last commit in the repository
    *
+   * @param branch - Optional branch name to get commits from (defaults to repository default branch)
    * @returns Result with commit info or null if no commits exist
    */
-  async getLastCommit(): Promise<Result<{ sha: string; message: string } | null, GitOperationError>> {
-    this.log.debug('Getting last commit');
+  async getLastCommit(branch?: string): Promise<Result<{ sha: string; message: string } | null, GitOperationError>> {
+    this.log.debug({ branch }, 'Getting last commit');
 
     try {
       const { owner, repo } = this.github.getRepository();
@@ -479,6 +480,7 @@ export class GitService extends Loggable {
         octokit.rest.repos.listCommits({
           owner,
           repo,
+          sha: branch,
           per_page: 1,
         }),
       );

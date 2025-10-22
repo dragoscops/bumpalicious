@@ -11,7 +11,7 @@ export declare class GitService extends Loggable {
     createCommit(params: CreateCommitParams): Promise<Result<GitCommit, GitOperationError>>;
     updateRef(params: UpdateRefParams): Promise<Result<GitRef, GitOperationError>>;
     getChangedFiles(base: string, head: string, path?: string): Promise<Result<GitComparison, GitOperationError>>;
-    getLastCommit(): Promise<Result<{
+    getLastCommit(branch?: string): Promise<Result<{
         sha: string;
         message: string;
     } | null, GitOperationError>>;
