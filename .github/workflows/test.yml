@@ -50,6 +50,31 @@ jobs:
             scenario: 'PR Manual Merge (Multi)'
     name: 'Test: ${{ matrix.scenario }}'
     steps:
+      - name: Cleanup Old Tags (First Test Only)
+        if: strategy.job-index == 0
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "🧹 Cleaning up old v99* tags from previous runs..."
+
+          # Delete all remote v99* tags
+          TAGS=$(gh api repos/${{ github.repository }}/git/refs/tags --jq '.[] | select(.ref | contains("refs/tags/v99")) | .ref')
+
+          if [ -n "$TAGS" ]; then
+            echo "Found tags to delete:"
+            echo "$TAGS"
+
+            for TAG_REF in $TAGS; do
+              TAG_NAME="${TAG_REF#refs/tags/}"
+              echo "  Deleting tag: $TAG_NAME"
+              gh api -X DELETE "repos/${{ github.repository }}/git/$TAG_REF" || echo "    Failed to delete (may not exist)"
+            done
+          else
+            echo "No v99* tags found to clean up"
+          fi
+
+          echo "✅ Cleanup complete"
+
       - name: Prerequisites
         id: prereqs
         env:
@@ -70,7 +95,7 @@ jobs:
           # Create unique test branch name and version with matrix index
           # Using matrix index ensures each parallel test has unique tags
           TEST_VERSION="99.${MATRIX_INDEX}.1"
-          
+
           {
             echo "branch=$BRANCH"
             echo "test_branch=test-bumpalicious-$RUN_ID-$RUN_ATTEMPT-$MATRIX_INDEX"
