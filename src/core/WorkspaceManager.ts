@@ -176,6 +176,17 @@ export class WorkspaceManager extends Loggable {
       const lastCommitResult = await this.gitService.getLastCommit(targetBranch);
       if (lastCommitResult.ok && lastCommitResult.value) {
         const commitMessage = lastCommitResult.value.message;
+
+        // DEBUG: Always log the last commit message to see what we're checking
+        this.log.info(
+          {
+            commitMessage,
+            sha: lastCommitResult.value.sha,
+            branch: targetBranch,
+          },
+          'DEBUG: Checking last commit for merged PR detection',
+        );
+
         // Check for both the generated PR title and the default user-facing title
         const isPRMerge =
           commitMessage.startsWith('chore: bump version to') || commitMessage.startsWith('chore: version update');
