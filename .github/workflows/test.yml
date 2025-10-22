@@ -5,7 +5,6 @@ on:
   workflow_call: {}
 
 env:
-  TEST_VERSION: '99.0.1'
   GIT_USER_NAME: 'github-actions[bot]'
   GIT_USER_EMAIL: 'github-actions[bot]@users.noreply.github.com'
 
@@ -58,6 +57,7 @@ jobs:
           GITHUB_REF: ${{ github.ref }}
           RUN_ID: ${{ github.run_id }}
           RUN_ATTEMPT: ${{ github.run_attempt }}
+          MATRIX_INDEX: ${{ strategy.job-index }}
         run: |
           # Extract just the branch name from the ref
           if [ -n "$HEAD_REF" ]; then
@@ -67,10 +67,14 @@ jobs:
             BRANCH="${BRANCH#refs/heads/}"
           fi
 
-          # Create unique test branch name with timestamp
+          # Create unique test branch name and version with matrix index
+          # Using matrix index ensures each parallel test has unique tags
+          TEST_VERSION="99.${MATRIX_INDEX}.1"
+          
           {
             echo "branch=$BRANCH"
-            echo "test_branch=test-bumpalicious-$RUN_ID-$RUN_ATTEMPT"
+            echo "test_branch=test-bumpalicious-$RUN_ID-$RUN_ATTEMPT-$MATRIX_INDEX"
+            echo "test_version=$TEST_VERSION"
           } | tee -a $GITHUB_OUTPUT
 
       - name: Github App Token
@@ -114,7 +118,7 @@ jobs:
           cd ./test
 
           echo "This is the main workspace" > README.md
-          echo '{ "version": "${{ env.TEST_VERSION }}", "name": "main-workspace" }' > package.json
+          echo '{ "version": "${{ steps.prereqs.outputs.test_version }}", "name": "main-workspace" }' > package.json
 
           mkdir -p workspaces1
           echo "This is a workspaces project 1" > workspaces1/README.md
@@ -141,9 +145,9 @@ jobs:
 
           # Create initial tag
           TAG_COMMIT=$(git rev-parse HEAD)
-          echo "🏷️  Creating tag v${{ env.TEST_VERSION }} on commit $TAG_COMMIT"
-          git tag v${{ env.TEST_VERSION }}
-          git push origin v${{ env.TEST_VERSION }}
+          echo "🏷️  Creating tag v${{ steps.prereqs.outputs.test_version }} on commit $TAG_COMMIT"
+          git tag v${{ steps.prereqs.outputs.test_version }}
+          git push origin v${{ steps.prereqs.outputs.test_version }}
 
           echo "📊 After tag creation:"
           git tag -l 'v99*'
@@ -287,6 +291,12 @@ jobs:
           echo "📄 Current package.json content:"
           cat ./test/package.json || echo "  File not found!"
 
+          # Calculate expected version (patch bump from test_version)
+          EXPECTED_VERSION="${{ steps.prereqs.outputs.test_version }}"
+          # Change last digit from 1 to 2 (patch bump)
+          EXPECTED_VERSION="${EXPECTED_VERSION%1}2"
+          echo "ℹ️  Expected version after patch bump: $EXPECTED_VERSION"
+
           # For manual merge scenario, tags are created on second run
           if [[ "${{ matrix.pr }}" == "true" && "${{ matrix.auto_merge }}" == "false" ]]; then
             echo "ℹ️  Manual merge scenario - checking second run outputs"
@@ -298,11 +308,11 @@ jobs:
           fi
 
           if [[ -n "$TAG_OUTPUT" ]]; then
-            echo "🔍 Checking for tag v99.0.2..."
-            if git tag -l | grep -qx 'v99.0.2'; then
-              echo "  ✓ Tag v99.0.2 found"
+            echo "🔍 Checking for tag v${EXPECTED_VERSION}..."
+            if git tag -l | grep -qx "v${EXPECTED_VERSION}"; then
+              echo "  ✓ Tag v${EXPECTED_VERSION} found"
             else
-              echo "  ✗ Tag v99.0.2 NOT found"
+              echo "  ✗ Tag v${EXPECTED_VERSION} NOT found"
               echo "  Available tags:"
               git tag -l
               exit 1
@@ -312,10 +322,10 @@ jobs:
           fi
 
           echo "🔍 Checking package.json version..."
-          if grep -q '"version": "99.0.2"' ./test/package.json; then
-            echo "  ✓ Version 99.0.2 found in package.json"
+          if grep -q "\"version\": \"${EXPECTED_VERSION}\"" ./test/package.json; then
+            echo "  ✓ Version ${EXPECTED_VERSION} found in package.json"
           else
-            echo "  ✗ Version 99.0.2 NOT found in package.json"
+            echo "  ✗ Version ${EXPECTED_VERSION} NOT found in package.json"
             echo "  Current content:"
             cat ./test/package.json
             exit 1
