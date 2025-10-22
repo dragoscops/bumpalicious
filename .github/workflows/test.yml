@@ -105,14 +105,14 @@ jobs:
           echo "📊 Before commit:"
           git status
           echo ""
-          
+
           git add -A
           git diff-index --quiet HEAD || git commit -m "chore: setup test workspaces" --no-verify
-          
+
           echo "📊 After commit (before tag):"
           git log --oneline -2
           echo ""
-          
+
           git push origin ${{ steps.prereqs.outputs.test_branch }} --no-verify
 
           # Create initial tag
@@ -120,7 +120,12 @@ jobs:
           echo "🏷️  Creating tag v${{ env.TEST_VERSION }} on commit $TAG_COMMIT"
           git tag v${{ env.TEST_VERSION }}
           git push origin v${{ env.TEST_VERSION }}
-          
+
+          echo "📊 After tag creation:"
+          git tag -l 'v99*'
+          git log --oneline --decorate -3
+          echo ""
+
           echo "📊 After tag creation:"
           git tag -l 'v99*'
           git log --oneline --decorate -3
@@ -300,6 +305,11 @@ jobs:
           # Cleanup tags
           git tag -l 'v99*' | xargs -r git tag -d
           git ls-remote --tags origin 'refs/tags/v99*' | grep -v '\^{}' | cut -f2 | xargs -r git push --delete origin
+
+          # TODO: this should not exist, investigate what creates the 202 tags
+          # Cleanup tags
+          git tag -l 'v202*' | xargs -r git tag -d
+          git ls-remote --tags origin 'refs/tags/v202*' | grep -v '\^{}' | cut -f2 | xargs -r git push --delete origin
 
           # Cleanup version branches
           git branch | grep '^\s*bump_version_to_' | xargs -r git branch -D
