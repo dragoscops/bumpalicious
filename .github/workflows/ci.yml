@@ -32,7 +32,6 @@ env:
   NODE_VERSION: '20'
   # ACTIONS_STEP_DEBUG: true
   DEBUG: true
-  NODE_ENV: development
 
 jobs:
   tests:
