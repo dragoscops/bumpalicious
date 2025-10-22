@@ -315,7 +315,7 @@ export class WorkspaceManager extends Loggable {
       this.log.info({ count: changedWorkspaces.length }, 'Changed workspaces detected');
 
       // Step 4: Calculate new versions for changed workspaces
-      const versionsResult = await this.calculateVersions(changedWorkspaces, lastTag);
+      const versionsResult = await this.calculateVersions(changedWorkspaces, lastTag, branch);
       if (!versionsResult.ok) {
         return err(versionsResult.error);
       }
@@ -586,23 +586,26 @@ export class WorkspaceManager extends Loggable {
    *
    * @param workspaces - Changed workspaces
    * @param lastTag - Last git tag
+   * @param branch - Current branch name for commit comparison
    * @returns Result with workspaces with new versions
    */
   async calculateVersions(
     workspaces: ReadonlyArray<Workspace>,
     lastTag: string | null,
+    branch: string,
   ): Promise<Result<ReadonlyArray<WorkspaceWithVersion>, Error>> {
     this.log.debug(
       {
         workspaceCount: workspaces.length,
         lastTag,
+        branch,
       },
       'Calculating new versions',
     );
 
     // Get commits since last tag (use HEAD^ if no tag to get at least one commit)
     const base = lastTag || 'HEAD^';
-    const commitsResult = await this.gitService.getCommitsSince(base);
+    const commitsResult = await this.gitService.getCommitsSince(base, branch);
     if (!commitsResult.ok) {
       return err(commitsResult.error);
     }

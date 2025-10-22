@@ -317,7 +317,7 @@ describe('WorkspaceManager', () => {
       vi.mocked(mockGitService.getCommitsSince).mockResolvedValue(ok([mockCommit]));
       vi.mocked(mockVersionService.calculateNewVersion).mockReturnValue(mockNewVersion);
 
-      const result = await workspaceManager.calculateVersions([mockWorkspace], 'v1.0.0');
+      const result = await workspaceManager.calculateVersions([mockWorkspace], 'v1.0.0', 'main');
 
       expect(result.ok).toBe(true);
       if (result.ok) {
@@ -325,7 +325,7 @@ describe('WorkspaceManager', () => {
         expect(result.value[0].newVersion).toBe(mockNewVersion);
       }
 
-      expect(mockGitService.getCommitsSince).toHaveBeenCalledWith('v1.0.0');
+      expect(mockGitService.getCommitsSince).toHaveBeenCalledWith('v1.0.0', 'main');
     });
 
     it('should handle no last tag by using HEAD^', async () => {
@@ -340,10 +340,10 @@ describe('WorkspaceManager', () => {
       vi.mocked(mockGitService.getCommitsSince).mockResolvedValue(ok([mockCommit]));
       vi.mocked(mockVersionService.calculateNewVersion).mockReturnValue(mockNewVersion);
 
-      const result = await workspaceManager.calculateVersions([mockWorkspace], null);
+      const result = await workspaceManager.calculateVersions([mockWorkspace], null, 'main');
 
       expect(result.ok).toBe(true);
-      expect(mockGitService.getCommitsSince).toHaveBeenCalledWith('HEAD^');
+      expect(mockGitService.getCommitsSince).toHaveBeenCalledWith('HEAD^', 'main');
     });
 
     it('should handle error from getCommitsSince', async () => {
@@ -351,7 +351,7 @@ describe('WorkspaceManager', () => {
         err(new GitOperationError('getCommitsSince', 'Failed to get commits')),
       );
 
-      const result = await workspaceManager.calculateVersions([mockWorkspace], 'v1.0.0');
+      const result = await workspaceManager.calculateVersions([mockWorkspace], 'v1.0.0', 'main');
 
       expect(result.ok).toBe(false);
       if (!result.ok) {
@@ -363,7 +363,7 @@ describe('WorkspaceManager', () => {
       vi.mocked(mockGitService.getCommitsSince).mockResolvedValue(ok([]));
       vi.mocked(mockVersionService.increaseVersion).mockReturnValue(mockVersion);
 
-      const result = await workspaceManager.calculateVersions([mockWorkspace], 'v1.0.0');
+      const result = await workspaceManager.calculateVersions([mockWorkspace], 'v1.0.0', 'main');
 
       expect(result.ok).toBe(true);
       if (result.ok) {
