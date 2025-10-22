@@ -379,30 +379,35 @@ export class GitService extends Loggable {
     try {
       const { owner, repo } = this.github.getRepository();
 
-      // Determine if head needs refs/heads/ prefix
-      // Don't add prefix for: SHAs (40 hex chars), refs/* (already qualified), tags (v*), or special refs (HEAD)
-      const needsPrefix =
+      // GitHub's compare API needs fully qualified refs for non-default branches
+      // Qualify base ref if it's a tag (starts with 'v') and not already qualified
+      const baseRef = base.startsWith('v') && !base.startsWith('refs/') ? `refs/tags/${base}` : base;
+
+      // Qualify head ref if it's a branch name (not SHA, not already qualified, not special ref)
+      const needsHeadPrefix =
         !head.match(/^[0-9a-f]{40}$/i) && // Not a SHA
         !head.startsWith('refs/') && // Not already qualified
-        !head.startsWith('v') && // Not a tag
+        !head.startsWith('v') && // Not a tag (tags don't need refs/heads/)
         head !== 'HEAD'; // Not the special HEAD ref
 
-      const headRef = needsPrefix ? `refs/heads/${head}` : head;
+      const headRef = needsHeadPrefix ? `refs/heads/${head}` : head;
 
       this.log.debug(
         {
+          originalBase: base,
+          resolvedBase: baseRef,
           originalHead: head,
           resolvedHead: headRef,
-          addedPrefix: needsPrefix,
+          addedHeadPrefix: needsHeadPrefix,
         },
-        'Resolved head reference for comparison',
+        'Resolved references for comparison',
       );
 
       const comparison = await this.github.executeWithRetry('compareCommits', (octokit) =>
         octokit.rest.repos.compareCommits({
           owner,
           repo,
-          base,
+          base: baseRef,
           head: headRef,
         }),
       );
