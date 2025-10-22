@@ -341,6 +341,7 @@ describe('ConventionalCommitParser', () => {
       it('should not have scope when none present', () => {
         const result = parseCommitMessages([mockConventionalCommits.feat, mockConventionalCommits.fix]);
         expect(result).not.toBeNull();
+        expect(result?.type).toBe('minor');
         expect(result?.scope).toBeUndefined();
       });
     });
@@ -349,6 +350,7 @@ describe('ConventionalCommitParser', () => {
       it('should mark as breaking when any commit is breaking', () => {
         const result = parseCommitMessages([mockConventionalCommits.feat, mockConventionalCommits.featBreaking]);
         expect(result).not.toBeNull();
+        expect(result?.type).toBe('major');
         expect(result?.breaking).toBe(true);
       });
 
@@ -375,6 +377,7 @@ describe('ConventionalCommitParser', () => {
       it('should include commit count in message', () => {
         const result = parseCommitMessages([mockConventionalCommits.feat, mockConventionalCommits.fix]);
         expect(result).not.toBeNull();
+        expect(result?.type).toBe('minor');
         expect(result?.message).toContain('2 commit');
       });
     });

@@ -563,7 +563,7 @@ export class GitService extends Loggable {
       );
 
       if (tags.data.length === 0) {
-        this.log.info('No tags found in repository');
+        this.log.warn('No tags found in repository');
         return ok(null);
       }
 
