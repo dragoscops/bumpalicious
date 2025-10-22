@@ -170,6 +170,57 @@ export class WorkspaceManager extends Loggable {
     );
 
     try {
+      // Step 0: Check if last commit is a merged version bump PR
+      // If so, we only need to create tags, not do a new version bump
+      const lastCommitResult = await this.gitService.getLastCommit();
+      if (lastCommitResult.ok && lastCommitResult.value) {
+        const commitMessage = lastCommitResult.value.message;
+        const isPRMerge = commitMessage.startsWith('chore: bump version to');
+
+        if (isPRMerge) {
+          this.log.info({ commitMessage }, 'Detected merged version bump PR - creating tags only');
+
+          // Enrich workspaces to get current versions
+          const enrichResult = await this.enrichWorkspaces(options.workspaces);
+          if (!enrichResult.ok) {
+            return err(enrichResult.error);
+          }
+          const enrichedWorkspaces = enrichResult.value;
+
+          // For merged PRs, the current version IS the new version (no bump needed)
+          // Add newVersion field matching current version for tree building
+          const workspacesWithVersion = enrichedWorkspaces.map((ws) => ({
+            ...ws,
+            newVersion: ws.version,
+            hasChanges: true, // Mark as changed to include in tree
+          }));
+
+          // Build tree from enriched workspaces
+          const tree = this.treeBuilder.build(workspacesWithVersion);
+          this.log.info({ version: tree.masterVersion }, 'Creating tags for merged PR version');
+
+          // Create tags using the merge commit SHA
+          const commitSha = lastCommitResult.value.sha;
+          const tagsResult = await this.createVersionTags(tree, options, commitSha);
+          if (!tagsResult.ok) {
+            return err(tagsResult.error);
+          }
+
+          const allTags = tagsResult.value;
+          this.log.info({ tagCount: allTags.length }, 'Tags created for merged PR');
+
+          const result: WorkflowResult = {
+            tag: allTags.length > 0 ? `v${tree.masterVersion}` : '',
+            allTags,
+            prNumber: undefined,
+            prMerged: true,
+            tree,
+          };
+
+          return ok(result);
+        }
+      }
+
       // Step 1: Get last tag
       const lastTagResult = await this.gitService.getLastTag();
       if (!lastTagResult.ok) {

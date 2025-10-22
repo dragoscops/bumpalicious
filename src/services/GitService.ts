@@ -465,6 +465,49 @@ export class GitService extends Loggable {
   }
 
   /**
+   * Get the last commit in the repository
+   *
+   * @returns Result with commit info or null if no commits exist
+   */
+  async getLastCommit(): Promise<Result<{ sha: string; message: string } | null, GitOperationError>> {
+    this.log.debug('Getting last commit');
+
+    try {
+      const { owner, repo } = this.github.getRepository();
+
+      const commits = await this.github.executeWithRetry('listCommits', (octokit) =>
+        octokit.rest.repos.listCommits({
+          owner,
+          repo,
+          per_page: 1,
+        }),
+      );
+
+      if (commits.data.length === 0) {
+        this.log.info('No commits found in repository');
+        return ok(null);
+      }
+
+      const commit = commits.data[0];
+      const result = {
+        sha: commit.sha,
+        message: commit.commit.message,
+      };
+
+      this.log.debug({ sha: result.sha, messageStart: result.message.substring(0, 50) }, 'Last commit retrieved');
+      return ok(result);
+    } catch (error) {
+      const gitError = new GitOperationError(
+        'getLastCommit',
+        `Failed to retrieve last commit: ${error instanceof Error ? error.message : String(error)}`,
+        error,
+      );
+      this.log.error({ error: gitError }, 'Failed to get last commit');
+      return err(gitError);
+    }
+  }
+
+  /**
    * Get the most recent tag in the repository
    *
    * Returns the first tag from the list (most recent by creation).
