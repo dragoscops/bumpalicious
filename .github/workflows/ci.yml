@@ -94,6 +94,7 @@ jobs:
           token: ${{ steps.app-token-push.outputs.token || secrets.GH_TOKEN_PUSH }}
           fetch-depth: 0
 
+      # debug
       - name: Increase Version
         id: version_step
         uses: ./
