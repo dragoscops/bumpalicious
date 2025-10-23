@@ -79,7 +79,7 @@ jobs:
     needs:
       - tests
       - tests-integration
-    if: ${{ ! contains(github.actor, '[bot]') }}
+    if: ${{ always() && needs.tests.result == 'success' && (needs.tests-integration.result == 'success' || needs.tests-integration.result == 'skipped') }}
     runs-on: ubuntu-latest
     steps:
       - name: Github App Token
