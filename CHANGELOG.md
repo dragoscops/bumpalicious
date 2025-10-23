@@ -203,6 +203,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - - ([8081f85](https://github.com/dragoscops/bumpalicious/commit/8081f85))
 - - ([9ed998a](https://github.com/dragoscops/bumpalicious/commit/9ed998a))
 
+## [3.1.0]() (2025-10-23)
+
+### feat
+
+* add skipChangelog option for test isolation ([]())
+
+### fix
+
+* use configurable prTitle for merged PR detection and fix Loggable imports ([]())
+
 ## [3.0.0]() (2025-10-23)
 
 ### fix
