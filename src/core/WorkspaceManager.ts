@@ -96,6 +96,8 @@ export interface WorkflowOptions {
   readonly branch?: string;
   /** Changelog preset */
   readonly changelogPreset?: string;
+  /** Skip changelog generation (useful for tests) */
+  readonly skipChangelog?: boolean;
 }
 
 /**
@@ -346,12 +348,16 @@ export class WorkspaceManager extends Loggable {
       }
       this.log.info('Version files updated');
 
-      // Step 8: Generate changelogs
-      const changelogResult = await this.generateChangelogs(tree, options);
-      if (!changelogResult.ok) {
-        return err(changelogResult.error);
+      // Step 8: Generate changelogs (skip if requested)
+      if (!options.skipChangelog) {
+        const changelogResult = await this.generateChangelogs(tree, options);
+        if (!changelogResult.ok) {
+          return err(changelogResult.error);
+        }
+        this.log.info('Changelogs generated');
+      } else {
+        this.log.debug('Skipping changelog generation (skipChangelog=true)');
       }
-      this.log.info('Changelogs generated');
 
       // Step 8: Create PR or commit
       let prNumber: number | undefined;

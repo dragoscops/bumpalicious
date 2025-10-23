@@ -138,6 +138,7 @@ async function run(): Promise<void> {
       },
       branch: inputs.prBaseBranch,
       changelogPreset: inputs.changelogPreset,
+      skipChangelog: process.env.SKIP_CHANGELOG_GENERATION === 'true' || false,
     };
 
     core.debug(
