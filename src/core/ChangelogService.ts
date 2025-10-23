@@ -230,27 +230,52 @@ export class ChangelogService extends Loggable {
 
     const tagPrefix = workspace.path === '.' ? 'v' : `${workspace.path}@v`;
 
+    // Configure repository context for link generation
+    const context = repository
+      ? {
+          version: workspace.newVersion,
+          currentTag: `${tagPrefix}${workspace.newVersion}`,
+          previousTag: `${tagPrefix}${workspace.version}`,
+          host: 'https://github.com',
+          owner: repository.owner,
+          repository: repository.repo,
+          repoUrl: `https://github.com/${repository.owner}/${repository.repo}`,
+          linkCompare: true,
+          linkReferences: true,
+        }
+      : {
+          version: workspace.newVersion,
+          currentTag: `${tagPrefix}${workspace.newVersion}`,
+          previousTag: `${tagPrefix}${workspace.version}`,
+        };
+
+    this.log.debug({ context }, 'Changelog generation context');
+
+    // Resolve preset configuration
+    const resolvedConfig = await presetConfig();
+
+    // Override writerOpts to include URL formats if repository is provided
+    if (repository && typeof resolvedConfig === 'object' && resolvedConfig !== null) {
+      const config = resolvedConfig as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+      if (!config.writerOpts) {
+        config.writerOpts = {};
+      }
+      // Set URL format templates
+      config.writerOpts.commitUrlFormat = `https://github.com/${repository.owner}/${repository.repo}/commit/{{hash}}`;
+      config.writerOpts.compareUrlFormat = `https://github.com/${repository.owner}/${repository.repo}/compare/{{previousTag}}...{{currentTag}}`;
+      config.writerOpts.issueUrlFormat = `https://github.com/${repository.owner}/${repository.repo}/issues/{{id}}`;
+      config.writerOpts.userUrlFormat = 'https://github.com/{{user}}';
+    }
+
     return new Promise<string>((resolve, reject) => {
       let changelog = '';
 
       const changelogStream = conventionalChangelogCore(
         {
-          config: presetConfig as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+          config: resolvedConfig as any, // eslint-disable-line @typescript-eslint/no-explicit-any
           releaseCount: 1,
         },
-        {
-          version: workspace.newVersion,
-          currentTag: `${tagPrefix}${workspace.newVersion}`,
-          previousTag: `${tagPrefix}${workspace.version}`,
-          // Repository URL context for generating commit and comparison links
-          ...(repository
-            ? {
-                repoUrl: `https://github.com/${repository.owner}/${repository.repo}`,
-              }
-            : {}),
-          linkCompare: true,
-          linkReferences: true,
-        },
+        context,
         {
           path: workspace.path === '.' ? undefined : workspace.path,
           from: `${tagPrefix}${workspace.version}`,
