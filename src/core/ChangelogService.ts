@@ -233,6 +233,18 @@ export class ChangelogService extends Loggable {
     return new Promise<string>((resolve, reject) => {
       let changelog = '';
 
+      // Debug: Log repository context
+      this.log.debug(
+        {
+          repositoryOwner: repository?.owner,
+          repositoryRepo: repository?.repo,
+          hasRepository: !!repository,
+          version: workspace.newVersion,
+          previousVersion: workspace.version,
+        },
+        'DEBUG: Repository context for changelog generation',
+      );
+
       const changelogStream = conventionalChangelogCore(
         {
           config: presetConfig as any, // eslint-disable-line @typescript-eslint/no-explicit-any
