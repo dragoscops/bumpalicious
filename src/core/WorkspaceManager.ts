@@ -656,11 +656,11 @@ export class WorkspaceManager extends Loggable {
           'Version calculated from commits',
         );
       } else {
-        // No conventional commits - default to patch bump
-        newVersion = this.versionService.increaseVersion(workspace.version, 'patch');
+        // No conventional commits found - keep current version (no bump)
+        newVersion = workspace.version;
         this.log.debug(
-          { workspace: workspace.path, oldVersion: workspace.version, newVersion },
-          'Version bumped (patch - no conventional commits)',
+          { workspace: workspace.path, version: workspace.version },
+          'No version bump - only non-bumping commits (chore, docs, etc.)',
         );
       }
 
