@@ -1,1 +1,4 @@
-{ "version": "100.0.5", "name": "@main-workspace/workspace1" }
+{
+  "version": "100.0.5",
+  "name": "@main-workspace/workspace1"
+}
