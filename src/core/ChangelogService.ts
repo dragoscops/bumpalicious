@@ -230,6 +230,24 @@ export class ChangelogService extends Loggable {
 
     const tagPrefix = workspace.path === '.' ? 'v' : `${workspace.path}@v`;
 
+    // Configure repository context for link generation
+    const context = repository
+      ? {
+          version: workspace.newVersion,
+          currentTag: `${tagPrefix}${workspace.newVersion}`,
+          previousTag: `${tagPrefix}${workspace.version}`,
+          host: 'https://github.com',
+          owner: repository.owner,
+          repository: repository.repo,
+          linkCompare: true,
+          linkReferences: true,
+        }
+      : {
+          version: workspace.newVersion,
+          currentTag: `${tagPrefix}${workspace.newVersion}`,
+          previousTag: `${tagPrefix}${workspace.version}`,
+        };
+
     return new Promise<string>((resolve, reject) => {
       let changelog = '';
 
@@ -238,19 +256,7 @@ export class ChangelogService extends Loggable {
           config: presetConfig as any, // eslint-disable-line @typescript-eslint/no-explicit-any
           releaseCount: 1,
         },
-        {
-          version: workspace.newVersion,
-          currentTag: `${tagPrefix}${workspace.newVersion}`,
-          previousTag: `${tagPrefix}${workspace.version}`,
-          // Repository URL context for generating commit and comparison links
-          ...(repository
-            ? {
-                repoUrl: `https://github.com/${repository.owner}/${repository.repo}`,
-              }
-            : {}),
-          linkCompare: true,
-          linkReferences: true,
-        },
+        context,
         {
           path: workspace.path === '.' ? undefined : workspace.path,
           from: `${tagPrefix}${workspace.version}`,
