@@ -7,6 +7,8 @@ export declare class GitService extends Loggable {
     private readonly github;
     constructor(github: GitHubService);
     getRef(ref: string): Promise<Result<GitRef, GitOperationError>>;
+    tagExists(tagName: string): Promise<Result<boolean, GitOperationError>>;
+    deleteTag(tagName: string): Promise<Result<void, GitOperationError>>;
     createTag(params: CreateTagParams): Promise<Result<GitTag, GitOperationError>>;
     createCommit(params: CreateCommitParams): Promise<Result<GitCommit, GitOperationError>>;
     updateRef(params: UpdateRefParams): Promise<Result<GitRef, GitOperationError>>;

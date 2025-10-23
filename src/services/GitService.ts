@@ -118,6 +118,85 @@ export class GitService extends Loggable {
   }
 
   /**
+   * Check if a Git tag exists
+   *
+   * @param tagName - Name of the tag to check
+   * @returns Result with boolean indicating if tag exists
+   *
+   * @example
+   * ```typescript
+   * const result = await git.tagExists('v1.0.0');
+   * if (result.ok && result.value) {
+   *   console.log('Tag exists');
+   * }
+   * ```
+   */
+  async tagExists(tagName: string): Promise<Result<boolean, GitOperationError>> {
+    this.log.debug({ tagName }, 'Checking if tag exists');
+
+    try {
+      const { owner, repo } = this.github.getRepository();
+
+      await this.github.executeWithRetry('getRef', (octokit) =>
+        octokit.rest.git.getRef({
+          owner,
+          repo,
+          ref: `tags/${tagName}`,
+        }),
+      );
+
+      this.log.debug({ tagName }, 'Tag exists');
+      return ok(true);
+    } catch (error: unknown) {
+      if ((error as { status?: number })?.status === 404) {
+        this.log.debug({ tagName }, 'Tag does not exist');
+        return ok(false);
+      }
+
+      const gitError = new GitOperationError('tagExists', `Failed to check if tag ${tagName} exists`, error);
+      this.log.error({ error: gitError, tagName }, 'Failed to check if tag exists');
+      return err(gitError);
+    }
+  }
+
+  /**
+   * Delete a Git tag
+   *
+   * @param tagName - Name of the tag to delete
+   * @returns Result indicating success or failure
+   *
+   * @example
+   * ```typescript
+   * const result = await git.deleteTag('v1.0.0');
+   * if (result.ok) {
+   *   console.log('Tag deleted successfully');
+   * }
+   * ```
+   */
+  async deleteTag(tagName: string): Promise<Result<void, GitOperationError>> {
+    this.log.debug({ tagName }, 'Deleting tag');
+
+    try {
+      const { owner, repo } = this.github.getRepository();
+
+      await this.github.executeWithRetry('deleteRef', (octokit) =>
+        octokit.rest.git.deleteRef({
+          owner,
+          repo,
+          ref: `tags/${tagName}`,
+        }),
+      );
+
+      this.log.info({ tagName }, 'Tag deleted successfully');
+      return ok(undefined);
+    } catch (error) {
+      const gitError = new GitOperationError('deleteTag', `Failed to delete tag ${tagName}`, error);
+      this.log.error({ error: gitError, tagName }, 'Failed to delete tag');
+      return err(gitError);
+    }
+  }
+
+  /**
    * Create an annotated Git tag
    *
    * Creates both the tag object and the reference.

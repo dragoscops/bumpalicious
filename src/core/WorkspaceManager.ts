@@ -1077,23 +1077,39 @@ export class WorkspaceManager extends Loggable {
     createdTags.push(masterTag);
     this.log.debug({ tag: masterTag }, 'Master tag created');
 
-    // Create short tag if requested
+    // Create short tag if requested (force update to always point to latest version)
     if (options.tagOptions?.shortTag) {
       const parts = tree.masterVersion.split('.');
       const shortTag = parts.length >= 2 ? `v${parts[0]}` : masterTag;
 
       if (shortTag !== masterTag) {
+        const shortTagExists = await this.gitService.tagExists(shortTag);
+        if (shortTagExists.ok && shortTagExists.value) {
+          this.log.debug({ tag: shortTag }, 'Short tag already exists and will be updated to latest version');
+          // Delete existing short tag if it exists (to force update to latest version)
+          const deleteResult = await this.gitService.deleteTag(shortTag);
+          if (!deleteResult.ok) {
+            this.log.warn({ tag: shortTag, error: deleteResult.error }, 'Failed to delete existing short tag');
+          }
+        } else {
+          this.log.debug({ tag: shortTag }, 'Short tag does not exist and will be created');
+        }
+
+        // Create the short tag pointing to the latest version
         const shortTagResult = await this.gitService.createTag({
           tagName: shortTag,
-          message: `Release ${shortTag}`,
+          message: `Release ${shortTag} (latest: ${tree.masterVersion})`,
           commitSha,
         });
 
         if (!shortTagResult.ok) {
-          this.log.warn({ tag: shortTag }, 'Failed to create short tag');
+          this.log.warn({ tag: shortTag, version: tree.masterVersion }, 'Failed to create/update short tag');
         } else {
           createdTags.push(shortTag);
-          this.log.debug({ tag: shortTag }, 'Short tag created');
+          this.log.info(
+            { tag: shortTag, pointsTo: tree.masterVersion },
+            'Short tag created/updated to point to latest version',
+          );
         }
       }
     }

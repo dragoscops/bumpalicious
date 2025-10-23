@@ -50,6 +50,79 @@ describe('GitService', () => {
     });
   });
 
+  describe('tagExists', () => {
+    it('should return true when tag exists', async () => {
+      (mockGitHub.executeWithRetry as ReturnType<typeof vi.fn>).mockResolvedValue({
+        data: {
+          ref: 'refs/tags/v1.0.0',
+          object: { sha: 'abc123' },
+        },
+      });
+
+      const result = await gitService.tagExists('v1.0.0');
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value).toBe(true);
+      }
+      expect(mockGitHub.executeWithRetry).toHaveBeenCalledWith('getRef', expect.any(Function));
+    });
+
+    it('should return false when tag does not exist (404)', async () => {
+      const error = new Error('Not Found');
+      (error as Error & { status: number }).status = 404;
+
+      (mockGitHub.executeWithRetry as ReturnType<typeof vi.fn>).mockRejectedValue(error);
+
+      const result = await gitService.tagExists('v1.0.0');
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value).toBe(false);
+      }
+    });
+
+    it('should return error for other failures', async () => {
+      const error = new Error('API Error');
+      (error as Error & { status: number }).status = 500;
+
+      (mockGitHub.executeWithRetry as ReturnType<typeof vi.fn>).mockRejectedValue(error);
+
+      const result = await gitService.tagExists('v1.0.0');
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error).toBeInstanceOf(GitOperationError);
+        expect(result.error.message).toContain('tagExists');
+      }
+    });
+  });
+
+  describe('deleteTag', () => {
+    it('should successfully delete a tag', async () => {
+      (mockGitHub.executeWithRetry as ReturnType<typeof vi.fn>).mockResolvedValue({ data: {} });
+
+      const result = await gitService.deleteTag('v1.0.0');
+
+      expect(result.ok).toBe(true);
+      expect(mockGitHub.executeWithRetry).toHaveBeenCalledWith('deleteRef', expect.any(Function));
+    });
+
+    it('should return error when delete fails', async () => {
+      const error = new Error('Delete failed');
+      (mockGitHub.executeWithRetry as ReturnType<typeof vi.fn>).mockRejectedValue(error);
+
+      const result = await gitService.deleteTag('v1.0.0');
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error).toBeInstanceOf(GitOperationError);
+        expect(result.error.message).toContain('deleteTag');
+        expect(result.error.message).toContain('Failed to delete tag v1.0.0');
+      }
+    });
+  });
+
   describe('createTag', () => {
     const tagParams: CreateTagParams = {
       tagName: 'v1.0.0',
