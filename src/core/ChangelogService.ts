@@ -233,18 +233,6 @@ export class ChangelogService extends Loggable {
     return new Promise<string>((resolve, reject) => {
       let changelog = '';
 
-      // Debug: Log repository context
-      this.log.debug(
-        {
-          repositoryOwner: repository?.owner,
-          repositoryRepo: repository?.repo,
-          hasRepository: !!repository,
-          version: workspace.newVersion,
-          previousVersion: workspace.version,
-        },
-        'DEBUG: Repository context for changelog generation',
-      );
-
       const changelogStream = conventionalChangelogCore(
         {
           config: presetConfig as any, // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -254,9 +242,12 @@ export class ChangelogService extends Loggable {
           version: workspace.newVersion,
           currentTag: `${tagPrefix}${workspace.newVersion}`,
           previousTag: `${tagPrefix}${workspace.version}`,
-          host: 'https://github.com',
-          owner: repository?.owner,
-          repository: repository?.repo,
+          // Repository URL context for generating commit and comparison links
+          ...(repository
+            ? {
+                repoUrl: `https://github.com/${repository.owner}/${repository.repo}`,
+              }
+            : {}),
           linkCompare: true,
           linkReferences: true,
         },
