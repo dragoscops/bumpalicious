@@ -1,6 +1,6 @@
 {
   "name": "bumpalicious",
-  "version": "2.1.2",
+  "version": "3.0.0",
   "description": "GitHub Action for automated version management based on conventional commits",
   "main": "dist/index.js",
   "scripts": {
