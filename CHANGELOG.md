@@ -203,6 +203,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - - ([8081f85](https://github.com/dragoscops/bumpalicious/commit/8081f85))
 - - ([9ed998a](https://github.com/dragoscops/bumpalicious/commit/9ed998a))
 
+## [3.1.1]() (2025-10-23)
+
+### chore
+
+* fix integration tests not to run after merge anymore ([]())
+
 ## [3.1.0]() (2025-10-23)
 
 ### feat
