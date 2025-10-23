@@ -203,6 +203,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - - ([8081f85](https://github.com/dragoscops/bumpalicious/commit/8081f85))
 - - ([9ed998a](https://github.com/dragoscops/bumpalicious/commit/9ed998a))
 
+## [3.1.3]() (2025-10-23)
+
+### fix
+
+* add short tag force-update support with tagExists and deleteTag methods ([]())
+* fixed previous version (was not updated) ([]())
+* fixing ci order elements ([]())
+
+### chore
+
+* bump version to 3.1.2 (#598) ([]()), closes [#598]()
+* skip integration tests when commit author is a bot ([]())
+
 ## [3.1.2]() (2025-10-23)
 
 ### fix
