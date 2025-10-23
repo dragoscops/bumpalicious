@@ -125,6 +125,7 @@ async function run(): Promise<void> {
             branchPrefix: inputs.prHeadBranch,
             autoMerge: inputs.autoMerge,
             draft: false,
+            title: inputs.prTitle,
           }
         : undefined,
       tagOptions: {

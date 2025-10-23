@@ -1,12 +1,12 @@
 import type { ChangelogService } from './ChangelogService.js';
 import type { VersionService } from './VersionService.js';
 import type { WorkspaceTreeBuilder } from './WorkspaceTreeBuilder.js';
-import { Loggable } from '../Loggable.js';
 import type { GitService } from '../services/GitService.js';
 import { PRService } from '../services/PRService.js';
 import type { Result } from '../types/result.js';
 import type { WorkspaceConfig, Workspace, WorkspaceWithVersion, WorkspaceTree } from '../types/workspace.js';
 import { WorkspaceDetectionError, GitOperationError, FileOperationError } from '../utils/errors.js';
+import { Loggable } from '../utils/Loggable.js';
 export interface WorkspaceManagerDependencies {
     readonly gitService: GitService;
     readonly prService: PRService;
@@ -21,6 +21,7 @@ export interface WorkflowOptions {
         readonly branchPrefix: string;
         readonly autoMerge: boolean;
         readonly draft: boolean;
+        readonly title?: string;
     };
     readonly tagOptions?: {
         readonly shortTag: boolean;

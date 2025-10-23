@@ -1,5 +1,5 @@
-import { Loggable } from '../Loggable.js';
 import type { WorkspaceWithVersion, WorkspaceTree } from '../types/workspace.js';
+import { Loggable } from '../utils/Loggable.js';
 export declare class WorkspaceTreeBuilder extends Loggable {
     constructor();
     build(workspaces: ReadonlyArray<WorkspaceWithVersion>): WorkspaceTree;

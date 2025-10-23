@@ -1,8 +1,8 @@
 import type { GitHubService } from './GitHubService.js';
-import { Loggable } from '../Loggable.js';
 import { type Result } from '../types/result.js';
 import type { WorkspaceTree } from '../types/workspace.js';
 import { GitHubAPIError } from '../utils/errors.js';
+import { Loggable } from '../utils/Loggable.js';
 export interface CreatePRParams {
     readonly title: string;
     readonly body: string;

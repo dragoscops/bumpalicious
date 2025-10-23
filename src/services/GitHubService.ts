@@ -16,8 +16,8 @@
 
 import { getOctokit } from '@actions/github';
 import type { GitHub } from '@actions/github/lib/utils.js';
-import { Loggable } from '../Loggable.js';
 import { GitHubAPIError } from '../utils/errors.js';
+import { Loggable } from '../utils/Loggable.js';
 import { retry, type RetryOptions } from '../utils/retry.js';
 
 /**

@@ -21,7 +21,7 @@
  */
 
 import type { Logger } from 'pino';
-import { logger } from './utils/logger.js';
+import { logger } from './logger.js';
 
 /**
  * Base class providing structured logging capabilities

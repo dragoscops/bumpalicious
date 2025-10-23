@@ -26,10 +26,10 @@
 
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import { Loggable } from '../Loggable.js';
 import type { Version } from '../types/version.js';
 import type { WorkspaceWithVersion, WorkspaceNode } from '../types/workspace.js';
 import { FileOperationError } from '../utils/errors.js';
+import { Loggable } from '../utils/Loggable.js';
 
 /**
  * Preset formats for conventional-changelog

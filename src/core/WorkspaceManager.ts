@@ -35,7 +35,6 @@ import { getAdapter } from './adapters/AdapterFactory.js';
 import type { ChangelogService, ChangelogPreset } from './ChangelogService.js';
 import type { VersionService } from './VersionService.js';
 import type { WorkspaceTreeBuilder } from './WorkspaceTreeBuilder.js';
-import { Loggable } from '../Loggable.js';
 import { parseCommitMessages } from '../parsers/ConventionalCommitParser.js';
 import type { GitService } from '../services/GitService.js';
 import { PRService } from '../services/PRService.js';
@@ -55,6 +54,7 @@ import {
   GitOperationError,
   FileOperationError,
 } from '../utils/errors.js';
+import { Loggable } from '../utils/Loggable.js';
 
 /**
  * Workspace Manager dependencies
@@ -80,6 +80,7 @@ export interface WorkflowOptions {
     readonly branchPrefix: string;
     readonly autoMerge: boolean;
     readonly draft: boolean;
+    readonly title?: string;
   };
   /** Tag options */
   readonly tagOptions?: {
@@ -188,10 +189,9 @@ export class WorkspaceManager extends Loggable {
           'DEBUG: Checking last commit for merged PR detection',
         );
 
-        // Check for both the generated PR title and the default user-facing title
-        // TODO: This message should be found in the config options
-        const isPRMerge =
-          commitMessage.startsWith('chore: bump version to') || commitMessage.startsWith('chore: version update');
+        // Check for both the generated PR title and the configured PR title
+        const prTitle = options.prOptions?.title || 'chore: version update';
+        const isPRMerge = commitMessage.startsWith('chore: bump version to') || commitMessage.startsWith(prTitle);
 
         if (isPRMerge) {
           this.log.info({ commitMessage }, 'Detected merged version bump PR - creating tags only');
@@ -277,7 +277,6 @@ export class WorkspaceManager extends Loggable {
       const lastTag = lastTagResult.value?.name || null;
       this.log.info({ lastTag }, 'Last tag retrieved');
 
-      // TODO: 1
       // Step 2: Enrich workspaces
       const enrichResult = await this.enrichWorkspaces(options.workspaces);
       if (!enrichResult.ok) {
@@ -1075,7 +1074,7 @@ export class WorkspaceManager extends Loggable {
     // Create short tag if requested
     if (options.tagOptions?.shortTag) {
       const parts = tree.masterVersion.split('.');
-      const shortTag = parts.length >= 2 ? `v${parts[0]}.${parts[1]}` : masterTag;
+      const shortTag = parts.length >= 2 ? `v${parts[0]}` : masterTag;
 
       if (shortTag !== masterTag) {
         const shortTagResult = await this.gitService.createTag({
