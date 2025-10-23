@@ -5,7 +5,77 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## <small>2.0.1 (2025-06-22)</small>
+## [3.1.0]() (2025-10-23)
+
+### feat
+
+- add skipChangelog option for test isolation ([]())
+
+### fix
+
+- use configurable prTitle for merged PR detection and fix Loggable imports ([]())
+
+## [3.0.0]() (2025-10-23)
+
+### fix
+
+- add debug logging to show last commit during merged PR detection ([]())
+- add pre-cleanup step to delete old v99 tags before first test ([]())
+- allows tag.lastCreated to detect either tag either commit hash ([]())
+- allows tag.lastCreated to detect either tag either commit hash ([]())
+- allows tag.lastCreated to detect either tag either commit hash ([]())
+- allows tag.lastCreated to detect either tag either commit hash ([]())
+- configure git user before creating commits ([]())
+- correct branch cleanup pattern to match actual branch names (slash not underscore) ([]())
+- detect merged PR by checking both commit message patterns ([]())
+- handle HEAD special ref properly in comparison API ([]())
+- pass branch parameter to getCommitsSince for correct cross-branch comparison ([]())
+- pass branch parameter to getLastCommit for correct PR merge detection ([]())
+- qualify tag refs with refs/tags/ prefix in comparison API ([]())
+- should have fixed short tag to trigger before main tag ([]())
+- use refs/heads/ prefix for branch names in comparison API ([]())
+- use unique test versions per matrix job to avoid tag conflicts ([]())
+
+- 00001 version bump for mono repo (#432) ([]()), closes [#432]()
+- 360 | fixed github.hasMerged infinite loop (#372) ([]()), closes [#372]()
+- 367 : fixing git tag remote remove (#401) ([]()), closes [#401]()
+- feat!: activated self version bump ([]())
+- feat!: activated self version bump ([]())
+- feat!: activated self version bump ([]())
+- feat!: comprehensive README update with troubleshooting and API details ([]())
+- feat!: preparing v3 release ([]())
+- feat!: preparing v3 release $(date) ([]())
+- featpreparing v3 release Thu Oct 23 00:26:31 EEST 2025 ([]())
+- featpreparing v3 release Thu Oct 23 00:36:45 EEST 2025 ([]())
+- featpreparing v3 release Wed Oct 22 23:54:34 EEST 2025 (#538) ([]()), closes [#538]()
+
+### chore
+
+- add more detailed error logging for workspace detection ([]())
+- createVersionTags to await for git.tag.createAndPush (#351) ([]()), closes [#351]()
+- fixing 329 (#330) ([]()), closes [#330]()
+- fixing changedWorkspacesTrees empty array errors (#339) ([]()), closes [#339]()
+- fixing error handling for PR actions when auto merging (#387) ([]()), closes [#387]()
+- fixing nested array possible error in listWorkspacesVersions (#394) ([]()), closes [#394]()
+- hard stop if no workspaces are detected (#416) ([]()), closes [#416]()
+- introduced eslint ([]())
+- introduced eslint ([]())
+- version update 2.1.2 (#321) ([]()), closes [#321]()
+
+### feat
+
+- delete PR branch after manual merge detection ([]())
+- detect merged version bump PRs and only create tags ([]())
+
+### refactor
+
+- fix PR workflow to create tags only after merge ([]())
+
+### debug
+
+- add extensive logging to test workflow ([]())
+
+## [2.0.1]() (2025-06-22)
 
 - fix: brought code to a functional state (#161) ([c449dca](https://github.com/dragoscops/bumpalicious/commit/c449dca)), closes [#161](https://github.com/dragoscops/bumpalicious/issues/161)
 - fix: pre-release:alpha debug 1749480227 ([fd6b1bd](https://github.com/dragoscops/bumpalicious/commit/fd6b1bd))
@@ -66,7 +136,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - chore: updated mode of mocking logs ([5b232f2](https://github.com/dragoscops/bumpalicious/commit/5b232f2))
 - chore: updated types ([d66fc3a](https://github.com/dragoscops/bumpalicious/commit/d66fc3a))
 
-## <small>2.0.1-alpha.2 (2025-06-09)</small>
+## [2.0.1-alpha.2]() (2025-06-09)
 
 - chore: version update 2.0.1-alpha.1 ([12ec103](https://github.com/dragoscops/bumpalicious/commit/12ec103))
 - chore: version update 2.0.1-alpha.2 (#156) ([9b1b168](https://github.com/dragoscops/bumpalicious/commit/9b1b168)), closes [#156](https://github.com/dragoscops/bumpalicious/issues/156)
@@ -77,7 +147,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fix: pre-release:alpha debug 1749475873 ([77748a1](https://github.com/dragoscops/bumpalicious/commit/77748a1))
 - fix: pre-release:alpha debug 1749479738 ([322aebe](https://github.com/dragoscops/bumpalicious/commit/322aebe))
 
-## <small>2.0.1-alpha.0 (2025-06-09)</small>
+## [2.0.1-alpha.0]() (2025-06-09)
 
 - chore: activating update version for changed workspaces; still inspecting ([4e6243c](https://github.com/dragoscops/bumpalicious/commit/4e6243c))
 - chore: activating update version for changed workspaces; still inspecting ([df2306b](https://github.com/dragoscops/bumpalicious/commit/df2306b))
@@ -202,73 +272,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fix: pre-release:alpha debug 1749464801 ([fb0d008](https://github.com/dragoscops/bumpalicious/commit/fb0d008))
 - - ([8081f85](https://github.com/dragoscops/bumpalicious/commit/8081f85))
 - - ([9ed998a](https://github.com/dragoscops/bumpalicious/commit/9ed998a))
-
-## [3.1.0]() (2025-10-23)
-
-### feat
-
-* add skipChangelog option for test isolation ([]())
-
-### fix
-
-* use configurable prTitle for merged PR detection and fix Loggable imports ([]())
-
-## [3.0.0]() (2025-10-23)
-
-### fix
-
-- add debug logging to show last commit during merged PR detection ([]())
-- add pre-cleanup step to delete old v99 tags before first test ([]())
-- allows tag.lastCreated to detect either tag either commit hash ([]())
-- allows tag.lastCreated to detect either tag either commit hash ([]())
-- allows tag.lastCreated to detect either tag either commit hash ([]())
-- allows tag.lastCreated to detect either tag either commit hash ([]())
-- configure git user before creating commits ([]())
-- correct branch cleanup pattern to match actual branch names (slash not underscore) ([]())
-- detect merged PR by checking both commit message patterns ([]())
-- handle HEAD special ref properly in comparison API ([]())
-- pass branch parameter to getCommitsSince for correct cross-branch comparison ([]())
-- pass branch parameter to getLastCommit for correct PR merge detection ([]())
-- qualify tag refs with refs/tags/ prefix in comparison API ([]())
-- should have fixed short tag to trigger before main tag ([]())
-- use refs/heads/ prefix for branch names in comparison API ([]())
-- use unique test versions per matrix job to avoid tag conflicts ([]())
-
-- 00001 version bump for mono repo (#432) ([]()), closes [#432]()
-- 360 | fixed github.hasMerged infinite loop (#372) ([]()), closes [#372]()
-- 367 : fixing git tag remote remove (#401) ([]()), closes [#401]()
-- feat!: activated self version bump ([]())
-- feat!: activated self version bump ([]())
-- feat!: activated self version bump ([]())
-- feat!: comprehensive README update with troubleshooting and API details ([]())
-- feat!: preparing v3 release ([]())
-- feat!: preparing v3 release $(date) ([]())
-- featpreparing v3 release Thu Oct 23 00:26:31 EEST 2025 ([]())
-- featpreparing v3 release Thu Oct 23 00:36:45 EEST 2025 ([]())
-- featpreparing v3 release Wed Oct 22 23:54:34 EEST 2025 (#538) ([]()), closes [#538]()
-
-### chore
-
-- add more detailed error logging for workspace detection ([]())
-- createVersionTags to await for git.tag.createAndPush (#351) ([]()), closes [#351]()
-- fixing 329 (#330) ([]()), closes [#330]()
-- fixing changedWorkspacesTrees empty array errors (#339) ([]()), closes [#339]()
-- fixing error handling for PR actions when auto merging (#387) ([]()), closes [#387]()
-- fixing nested array possible error in listWorkspacesVersions (#394) ([]()), closes [#394]()
-- hard stop if no workspaces are detected (#416) ([]()), closes [#416]()
-- introduced eslint ([]())
-- introduced eslint ([]())
-- version update 2.1.2 (#321) ([]()), closes [#321]()
-
-### feat
-
-- delete PR branch after manual merge detection ([]())
-- detect merged version bump PRs and only create tags ([]())
-
-### refactor
-
-- fix PR workflow to create tags only after merge ([]())
-
-### debug
-
-- add extensive logging to test workflow ([]())

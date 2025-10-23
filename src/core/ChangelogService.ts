@@ -245,9 +245,12 @@ export class ChangelogService extends Loggable {
           host: repository ? 'https://github.com' : undefined,
           owner: repository?.owner,
           repository: repository?.repo,
+          linkCompare: true,
+          linkReferences: true,
         },
         {
           path: workspace.path === '.' ? undefined : workspace.path,
+          from: `${tagPrefix}${workspace.version}`,
         },
       );
 
