@@ -251,23 +251,15 @@ export class ChangelogService extends Loggable {
 
     this.log.debug({ context }, 'Changelog generation context');
 
-    // Resolve preset configuration with URL format options
-    // Type assertion needed because preset config accepts optional config parameter
-    const presetConfig = repository
-      ? await (presetConfigFn as (config?: unknown) => Promise<unknown>)({
-          commitUrlFormat: '{{host}}/{{owner}}/{{repository}}/commit/{{hash}}',
-          compareUrlFormat: '{{host}}/{{owner}}/{{repository}}/compare/{{previousTag}}...{{currentTag}}',
-          issueUrlFormat: '{{host}}/{{owner}}/{{repository}}/issues/{{id}}',
-          userUrlFormat: '{{host}}/{{user}}',
-        })
-      : await presetConfigFn();
+    // Call preset config function - it returns a promise of the config
+    const resolvedConfig = await presetConfigFn();
 
     return new Promise<string>((resolve, reject) => {
       let changelog = '';
 
       const changelogStream = conventionalChangelogCore(
         {
-          config: presetConfig as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+          config: resolvedConfig as any, // eslint-disable-line @typescript-eslint/no-explicit-any
           releaseCount: 1,
         },
         context,
