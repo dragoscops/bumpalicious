@@ -46,6 +46,20 @@ export type ChangelogPreset =
   | 'jshint';
 
 /**
+ * Parsed commit for changelog generation
+ */
+export interface ParsedCommit {
+  /** Commit message */
+  readonly message: string;
+  /** Commit SHA */
+  readonly sha: string;
+  /** Commit author name */
+  readonly author?: string;
+  /** Commit date */
+  readonly date?: string;
+}
+
+/**
  * Options for changelog generation
  */
 export interface GenerateChangelogOptions {
@@ -62,6 +76,10 @@ export interface GenerateChangelogOptions {
     readonly owner: string;
     readonly repo: string;
   };
+  /** Last git tag to generate changelog from (optional, for incremental changelogs) */
+  readonly lastTag?: string | null;
+  /** Commits to include in changelog (instead of reading from git) */
+  readonly commits?: ReadonlyArray<ParsedCommit>;
 }
 
 /**
@@ -154,6 +172,9 @@ export class ChangelogService extends Loggable {
         {
           workspace: workspace.path,
           preset,
+          lastTag: options.lastTag,
+          hasCommits: !!options.commits,
+          commitCount: options.commits?.length || 0,
         },
         'Generating changelog content',
       );
@@ -161,6 +182,8 @@ export class ChangelogService extends Loggable {
         workspace,
         preset,
         repository,
+        lastTag: options.lastTag,
+        commits: options.commits,
       });
 
       // Merge new content with existing changelog
@@ -191,25 +214,35 @@ export class ChangelogService extends Loggable {
         created: !changelogExists,
       };
     } catch (error) {
-      this.log.error(
-        {
-          workspace: workspace.path,
-          changelogPath,
-          error,
-        },
-        'Failed to generate changelog',
-      );
+      const errorDetails = {
+        workspace: workspace.path,
+        changelogPath,
+        error,
+        errorMessage: error instanceof Error ? error.message : String(error),
+        errorStack: error instanceof Error ? error.stack : undefined,
+        commitCount: options.commits?.length || 0,
+        hasRepository: !!repository,
+        preset,
+      };
+      this.log.error(errorDetails, 'Failed to generate changelog');
       throw new FileOperationError(
         changelogPath,
         'generate',
-        `Failed to generate changelog for ${workspace.path}`,
+        `Failed to generate changelog for ${workspace.path}: ${error instanceof Error ? error.message : String(error)}`,
         error,
       );
     }
   }
 
   /**
-   * Generate changelog content using conventional-changelog-core
+   * Generate changelog content using conventional-changelog ecosystem
+   *
+   * Modular approach:
+   * 1. Takes commits from GitService (you control the data)
+   * 2. Parses them with conventional-commits-parser
+   * 3. Formats with conventional-changelog-writer
+   *
+   * No git access needed - everything is controlled by you!
    *
    * @param options - Generation options
    * @returns Generated changelog content
@@ -219,64 +252,119 @@ export class ChangelogService extends Loggable {
     workspace: WorkspaceWithVersion;
     preset: ChangelogPreset;
     repository?: { owner: string; repo: string };
+    lastTag?: string | null;
+    commits?: ReadonlyArray<ParsedCommit>;
   }): Promise<string> {
-    const { workspace, preset, repository } = options;
+    const { workspace, preset, repository, lastTag, commits = [] } = options;
 
-    // Dynamically import conventional-changelog-core (ESM module)
-    const { default: conventionalChangelogCore } = await import('conventional-changelog-core');
+    this.log.debug(
+      {
+        workspace: workspace.path,
+        preset,
+        lastTag,
+        commitCount: commits.length,
+      },
+      'Generating changelog with modular approach',
+    );
 
-    const tagPrefix = workspace.path === '.' ? 'v' : `${workspace.path}@v`;
+    // If no commits provided, generate a basic changelog entry
+    if (commits.length === 0) {
+      this.log.debug({ workspace: workspace.path }, 'No commits provided, generating basic changelog entry');
+      const date = new Date().toISOString().split('T')[0];
+      return `\n## ${workspace.newVersion} (${date})\n\n`;
+    }
 
-    // Configure repository context for link generation
-    const context = repository
-      ? {
-          version: workspace.newVersion,
-          currentTag: `${tagPrefix}${workspace.newVersion}`,
-          previousTag: `${tagPrefix}${workspace.version}`,
-          host: 'https://github.com',
-          owner: repository.owner,
-          repository: repository.repo,
-          repoUrl: `https://github.com/${repository.owner}/${repository.repo}`,
-          linkCompare: true,
-          linkReferences: true,
-        }
-      : {
-          version: workspace.newVersion,
-          currentTag: `${tagPrefix}${workspace.newVersion}`,
-          previousTag: `${tagPrefix}${workspace.version}`,
-        };
+    // Import the modules we need
+    const { writeChangelogString } = await import('conventional-changelog-writer');
+    const { parseCommits } = await import('conventional-commits-parser');
+    const getPresetConfig = await import('conventional-changelog-conventionalcommits');
 
-    this.log.debug({ context }, 'Changelog generation context');
+    // Get preset configuration (writer options + parser options)
+    const presetConfig = await getPresetConfig.default();
 
-    return new Promise<string>((resolve, reject) => {
-      let changelog = '';
+    // In production (GitHub Actions), templates are copied to dist/templates
+    // In development, they're in node_modules
+    const isProduction = process.env.NODE_ENV === 'production' || process.env.GITHUB_ACTIONS === 'true';
+    const templatesPath = isProduction
+      ? path.join(process.cwd(), 'dist', 'templates')
+      : path.join(process.cwd(), 'node_modules', 'conventional-changelog-conventionalcommits', 'src', 'templates');
 
-      const changelogStream = conventionalChangelogCore(
-        {
-          preset,
-          releaseCount: 0,
-          pkg: { path: workspace.path },
-          cwd: workspace.path === '.' ? process.cwd() : workspace.path,
-          from: `${tagPrefix}${workspace.version}`,
-        } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
-        context,
-      );
+    this.log.debug({ templatesPath, isProduction, cwd: process.cwd() }, 'Using templates path');
 
-      changelogStream.on('data', (chunk: Buffer) => {
-        changelog += chunk.toString();
-      });
+    // Load template files as strings to avoid file path resolution issues in bundled code
+    const mainTemplate = await fs.readFile(path.join(templatesPath, 'template.hbs'), 'utf-8');
+    const headerPartial = await fs.readFile(path.join(templatesPath, 'header.hbs'), 'utf-8');
+    const commitPartial = await fs.readFile(path.join(templatesPath, 'commit.hbs'), 'utf-8');
+    const footerPartial = await fs.readFile(path.join(templatesPath, 'footer.hbs'), 'utf-8');
+    this.log.debug('Templates loaded as strings');
 
-      changelogStream.on('end', () => {
-        resolve(changelog);
-      });
+    // Override writerOpts completely - provide templates as strings, not file paths
+    if (presetConfig?.writerOpts) {
+      presetConfig.writerOpts.mainTemplate = mainTemplate;
+      presetConfig.writerOpts.headerPartial = headerPartial;
+      presetConfig.writerOpts.commitPartial = commitPartial;
+      presetConfig.writerOpts.footerPartial = footerPartial;
+      // Remove any file path references that might be in the preset
+      delete (presetConfig.writerOpts as Record<string, unknown>).templatePath;
+      this.log.debug('Templates injected into writer options');
+    }
 
-      changelogStream.on('error', (error: Error) => {
-        reject(error);
-      });
-    });
-  }
+    // Build context for link generation
+    const context = {
+      version: workspace.newVersion,
+      ...(repository && {
+        host: 'https://github.com',
+        owner: repository.owner,
+        repository: repository.repo,
+        linkCompare: true,
+      }),
+    };
 
-  /**
+    this.log.debug({ context, commitCount: commits.length }, 'Context prepared');
+
+    // Parse commits using parseCommits which accepts an array of strings
+    const commitMessages = commits.map((c) => c.message);
+    this.log.debug({ commitMessages, commitCount: commitMessages.length }, 'Commit messages extracted');
+
+    // parseCommits() returns a parser function that accepts an array and returns an async iterable
+    const parser = parseCommits();
+    this.log.debug('Parser function created');
+
+    const parsedCommitsIterable = parser(commitMessages);
+    this.log.debug({ iterableType: typeof parsedCommitsIterable }, 'Parser iterable created');
+
+    // Collect parsed commits and enrich with SHA/date
+    const parsedCommits: any[] = []; // eslint-disable-line @typescript-eslint/no-explicit-any
+    let index = 0;
+
+    try {
+      for await (const parsed of parsedCommitsIterable) {
+        this.log.debug({ index, parsed, originalCommit: commits[index] }, 'Processing parsed commit');
+        parsedCommits.push({
+          ...parsed,
+          hash: commits[index].sha,
+          committerDate: commits[index].date,
+        });
+        index++;
+      }
+    } catch (parseError) {
+      this.log.error({ parseError, index, commitCount: commits.length }, 'Error parsing commits');
+      throw parseError;
+    }
+
+    this.log.debug({ parsedCount: parsedCommits.length }, 'Commits parsed');
+
+    // Generate markdown using writer
+    this.log.debug({ parsedCommits, context, hasPresetConfig: !!presetConfig }, 'About to generate changelog string');
+    try {
+      const changelog = await writeChangelogString(parsedCommits, context, presetConfig);
+      this.log.debug({ length: changelog.length, preview: changelog.substring(0, 200) }, 'Changelog generated');
+      return changelog;
+    } catch (writeError) {
+      this.log.error({ writeError, parsedCommits, context }, 'Error writing changelog string');
+      throw writeError;
+    }
+  } /**
    * Merge new changelog content with existing content
    *
    * Prepends new content to existing changelog, preserving header.
