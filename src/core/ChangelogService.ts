@@ -225,9 +225,6 @@ export class ChangelogService extends Loggable {
     // Dynamically import conventional-changelog-core (ESM module)
     const { default: conventionalChangelogCore } = await import('conventional-changelog-core');
 
-    // Dynamically import preset config function
-    const presetConfigFn = await this.loadPresetConfig(preset);
-
     const tagPrefix = workspace.path === '.' ? 'v' : `${workspace.path}@v`;
 
     // Configure repository context for link generation
@@ -256,15 +253,13 @@ export class ChangelogService extends Loggable {
 
       const changelogStream = conventionalChangelogCore(
         {
-          config: presetConfigFn, // Pass the function, not the resolved config
-          releaseCount: 1,
-          cwd: process.cwd(), // Working directory for git commands - extracted and passed to git-raw-commits
+          preset,
+          releaseCount: 0,
+          pkg: { path: workspace.path },
+          cwd: workspace.path === '.' ? process.cwd() : workspace.path,
+          from: `${tagPrefix}${workspace.version}`,
         } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
         context,
-        {
-          path: workspace.path === '.' ? undefined : workspace.path,
-          from: `${tagPrefix}${workspace.version}`,
-        },
       );
 
       changelogStream.on('data', (chunk: Buffer) => {
@@ -279,27 +274,6 @@ export class ChangelogService extends Loggable {
         reject(error);
       });
     });
-  }
-
-  /**
-   * Load preset configuration dynamically
-   *
-   * @param preset - Preset name
-   * @returns Preset configuration
-   * @private
-   */
-  private async loadPresetConfig(preset: ChangelogPreset): Promise<() => Promise<unknown>> {
-    try {
-      // Import preset module dynamically
-      const presetModule = (await import(`conventional-changelog-${preset}`)) as { default: () => Promise<unknown> };
-      return presetModule.default;
-    } catch {
-      // Fallback to conventionalcommits if preset not found
-      const conventionalcommits = (await import('conventional-changelog-conventionalcommits')) as {
-        default: () => Promise<unknown>;
-      };
-      return conventionalcommits.default;
-    }
   }
 
   /**

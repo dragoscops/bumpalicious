@@ -20,7 +20,6 @@ export declare class ChangelogService extends Loggable {
     constructor();
     generateForWorkspace(options: GenerateChangelogOptions): Promise<ChangelogResult>;
     private generateChangelogContent;
-    private loadPresetConfig;
     private mergeChangelogs;
     private ensureChangelogHeader;
     private generateChildWorkspaceSummary;
