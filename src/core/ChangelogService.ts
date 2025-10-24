@@ -254,6 +254,18 @@ export class ChangelogService extends Loggable {
     // Call preset config function - it returns a promise of the config
     const resolvedConfig = await presetConfigFn();
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const configAny = resolvedConfig as any;
+    this.log.debug(
+      {
+        configKeys: resolvedConfig ? Object.keys(resolvedConfig) : [],
+        configType: typeof resolvedConfig,
+        hasWriter: !!configAny?.writer,
+        hasParser: !!configAny?.parser,
+      },
+      'Resolved preset config structure',
+    );
+
     return new Promise<string>((resolve, reject) => {
       let changelog = '';
 
