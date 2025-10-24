@@ -1,15 +1,32 @@
+import { Readable } from 'node:stream';
+import { GitCommit } from '../types/git.js';
 import type { WorkspaceWithVersion, WorkspaceNode } from '../types/workspace.js';
 import { Loggable } from '../utils/Loggable.js';
 export type ChangelogPreset = 'conventionalcommits' | 'angular' | 'atom' | 'codemirror' | 'ember' | 'eslint' | 'express' | 'jquery' | 'jshint';
+interface ParsedCommit {
+    type?: string;
+    scope?: string;
+    subject?: string;
+    body?: string;
+    footer?: string;
+    hash?: string;
+    notes?: Array<{
+        title: string;
+        text: string;
+    }>;
+    [key: string]: unknown;
+}
 export interface GenerateChangelogOptions {
     readonly workspace: WorkspaceWithVersion;
     readonly changelogPath: string;
     readonly preset?: ChangelogPreset;
     readonly childWorkspaces?: ReadonlyArray<WorkspaceNode>;
-    readonly repository?: {
+    readonly repository: {
         readonly owner: string;
         readonly repo: string;
     };
+    readonly lastTag?: string | null;
+    readonly commits?: ReadonlyArray<GitCommit>;
 }
 export interface ChangelogResult {
     readonly content: string;
@@ -18,8 +35,11 @@ export interface ChangelogResult {
 }
 export declare class ChangelogService extends Loggable {
     constructor();
+    protected commitsToParseStream(commits: ReadonlyArray<GitCommit>): Readable;
+    protected parseGitCommits(commits: ReadonlyArray<GitCommit>, parserOpts: any): Promise<ReadonlyArray<ParsedCommit>>;
+    protected commitsToWriteStream(commits: ReadonlyArray<ParsedCommit>): Readable;
+    protected parsedCommitsToChangelog(commits: ReadonlyArray<ParsedCommit>, writerOpts: any, context: any): Promise<ReadonlyArray<string>>;
     generateForWorkspace(options: GenerateChangelogOptions): Promise<ChangelogResult>;
-    private generateChangelogContent;
     private mergeChangelogs;
     private ensureChangelogHeader;
     private generateChildWorkspaceSummary;
@@ -27,4 +47,5 @@ export declare class ChangelogService extends Loggable {
     private writeChangelog;
     private fileExists;
 }
+export {};
 //# sourceMappingURL=ChangelogService.d.ts.map

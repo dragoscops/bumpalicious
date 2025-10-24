@@ -106,6 +106,7 @@ async function run(): Promise<void> {
 
     const workspaceManager = new WorkspaceManager({
       gitService,
+      githubService,
       prService,
       versionService,
       changelogService,
@@ -137,8 +138,10 @@ async function run(): Promise<void> {
         repo,
       },
       branch: inputs.prBaseBranch,
-      changelogPreset: inputs.changelogPreset,
-      skipChangelog: process.env.SKIP_CHANGELOG_GENERATION === 'true' || false,
+      changelog: {
+        preset: inputs.changelogPreset,
+        skip: process.env.SKIP_CHANGELOG_GENERATION === 'true' || false,
+      },
     };
 
     core.debug(
