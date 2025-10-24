@@ -317,6 +317,51 @@ export class GitHubService extends Loggable {
   }
 
   /**
+   * Delete a branch from the repository
+   *
+   * @param branchName - Name of the branch to delete (without 'refs/heads/' prefix)
+   * @returns Promise that resolves when branch is deleted
+   * @throws {GitHubAPIError} If deletion fails
+   *
+   * @example
+   * ```typescript
+   * await github.deleteBranch('feature-branch');
+   * ```
+   */
+  async deleteBranch(branchName: string): Promise<void> {
+    this.log.debug({ branchName }, 'Deleting branch');
+
+    try {
+      await this.executeWithRetry('deleteBranch', (octokit) =>
+        octokit.rest.git.deleteRef({
+          owner: this.repository.owner,
+          repo: this.repository.repo,
+          ref: `heads/${branchName}`,
+        }),
+      );
+
+      this.log.info({ branchName }, 'Branch deleted successfully');
+    } catch (error) {
+      const apiError =
+        error instanceof GitHubAPIError
+          ? error
+          : new GitHubAPIError('deleteBranch', 'Failed to delete branch', undefined, error);
+
+      this.log.error(
+        {
+          operation: 'deleteBranch',
+          branchName,
+          error: apiError.message,
+          statusCode: apiError.statusCode,
+        },
+        'Failed to delete branch',
+      );
+
+      throw apiError;
+    }
+  }
+
+  /**
    * Wrap GitHub API errors into GitHubAPIError
    *
    * Extracts status code and message from various error formats.
