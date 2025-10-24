@@ -1,6 +1,8 @@
 # CwAI Files
 .cwai/
 .github/prompts/
+#Ignore insiders AI rules
+.github/instructions/codacy.instructions.md
 
 # Codacy
 .codacy/
@@ -19,7 +21,3 @@
 *.tsbuildinfo
 
 /**/tmp.*
-
-
-#Ignore insiders AI rules
-.github/instructions/codacy.instructions.md
