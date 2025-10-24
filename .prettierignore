@@ -17,3 +17,4 @@ coverage/
 .nvmrc
 *.yml
 *.yaml
+Dockerfile

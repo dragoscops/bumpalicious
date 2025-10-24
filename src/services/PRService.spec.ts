@@ -411,6 +411,82 @@ describe('PRService', () => {
     });
   });
 
+  describe('getPullRequest', () => {
+    it('gets pull request details successfully', async () => {
+      const mockPRResponse = {
+        data: {
+          head: { ref: 'version_bump_v1.0.0' },
+          base: { ref: 'main' },
+          merged: false,
+          state: 'open',
+        },
+      };
+
+      mockGitHub.executeWithRetry.mockResolvedValueOnce(mockPRResponse);
+
+      const result = await prService.getPullRequest(123);
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.headRef).toBe('version_bump_v1.0.0');
+        expect(result.value.baseRef).toBe('main');
+        expect(result.value.merged).toBe(false);
+        expect(result.value.state).toBe('open');
+      }
+
+      expect(mockGitHub.executeWithRetry).toHaveBeenCalledWith('getPullRequest', expect.any(Function));
+    });
+
+    it('returns merged PR details', async () => {
+      const mockPRResponse = {
+        data: {
+          head: { ref: 'feature-branch' },
+          base: { ref: 'develop' },
+          merged: true,
+          state: 'closed',
+        },
+      };
+
+      mockGitHub.executeWithRetry.mockResolvedValueOnce(mockPRResponse);
+
+      const result = await prService.getPullRequest(456);
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.headRef).toBe('feature-branch');
+        expect(result.value.baseRef).toBe('develop');
+        expect(result.value.merged).toBe(true);
+        expect(result.value.state).toBe('closed');
+      }
+    });
+
+    it('returns error when PR not found', async () => {
+      const mockError = new GitHubAPIError('getPullRequest', 'Not Found', 404);
+      mockGitHub.executeWithRetry.mockRejectedValueOnce(mockError);
+
+      const result = await prService.getPullRequest(999);
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error).toBeInstanceOf(GitHubAPIError);
+        expect(result.error.statusCode).toBe(404);
+      }
+    });
+
+    it('returns error when API call fails', async () => {
+      const mockError = new Error('Network error');
+      mockGitHub.executeWithRetry.mockRejectedValueOnce(mockError);
+
+      const result = await prService.getPullRequest(123);
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error).toBeInstanceOf(GitHubAPIError);
+        expect(result.error.message).toContain('Failed to get pull request details');
+      }
+    });
+  });
+
   describe('buildPRBody', () => {
     it('formats root workspace only', () => {
       const tree: WorkspaceTree = {
