@@ -62,6 +62,8 @@ export interface GenerateChangelogOptions {
     readonly owner: string;
     readonly repo: string;
   };
+  /** Last git tag to generate changelog from (optional, for incremental changelogs) */
+  readonly lastTag?: string | null;
 }
 
 /**
@@ -154,6 +156,7 @@ export class ChangelogService extends Loggable {
         {
           workspace: workspace.path,
           preset,
+          lastTag: options.lastTag,
         },
         'Generating changelog content',
       );
@@ -161,6 +164,7 @@ export class ChangelogService extends Loggable {
         workspace,
         preset,
         repository,
+        lastTag: options.lastTag,
       });
 
       // Merge new content with existing changelog
@@ -219,8 +223,9 @@ export class ChangelogService extends Loggable {
     workspace: WorkspaceWithVersion;
     preset: ChangelogPreset;
     repository?: { owner: string; repo: string };
+    lastTag?: string | null;
   }): Promise<string> {
-    const { workspace, preset, repository } = options;
+    const { workspace, preset, repository, lastTag } = options;
 
     // Dynamically import conventional-changelog-core (ESM module)
     const { default: conventionalChangelogCore } = await import('conventional-changelog-core');
@@ -257,7 +262,7 @@ export class ChangelogService extends Loggable {
           releaseCount: 0,
           pkg: { path: workspace.path },
           cwd: workspace.path === '.' ? process.cwd() : workspace.path,
-          from: `${tagPrefix}${workspace.version}`,
+          from: lastTag || undefined,
         } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
         context,
       );

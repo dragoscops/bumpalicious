@@ -10,6 +10,7 @@ export interface GenerateChangelogOptions {
         readonly owner: string;
         readonly repo: string;
     };
+    readonly lastTag?: string | null;
 }
 export interface ChangelogResult {
     readonly content: string;

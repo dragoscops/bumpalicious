@@ -98,6 +98,8 @@ export interface WorkflowOptions {
   readonly changelogPreset?: string;
   /** Skip changelog generation (useful for tests) */
   readonly skipChangelog?: boolean;
+  /** Last git tag (for incremental changelog generation) */
+  readonly lastTag?: string | null;
 }
 
 /**
@@ -350,7 +352,7 @@ export class WorkspaceManager extends Loggable {
 
       // Step 8: Generate changelogs (skip if requested)
       if (!options.skipChangelog) {
-        const changelogResult = await this.generateChangelogs(tree, options);
+        const changelogResult = await this.generateChangelogs(tree, { ...options, lastTag });
         if (!changelogResult.ok) {
           return err(changelogResult.error);
         }
@@ -730,6 +732,7 @@ export class WorkspaceManager extends Loggable {
       preset: (options.changelogPreset as ChangelogPreset) || 'conventionalcommits',
       childWorkspaces: tree.root.children,
       repository: options.repository,
+      lastTag: options.lastTag,
     });
 
     if (!rootResult) {
@@ -764,6 +767,7 @@ export class WorkspaceManager extends Loggable {
         changelogPath,
         preset: (options.changelogPreset as ChangelogPreset) || 'conventionalcommits',
         repository: options.repository,
+        lastTag: options.lastTag,
       });
 
       this.log.debug({ path: changelogPath }, 'Workspace changelog generated');

@@ -34,6 +34,7 @@ export interface WorkflowOptions {
     readonly branch?: string;
     readonly changelogPreset?: string;
     readonly skipChangelog?: boolean;
+    readonly lastTag?: string | null;
 }
 export interface WorkflowResult {
     readonly tag: string;
