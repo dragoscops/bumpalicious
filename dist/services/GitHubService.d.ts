@@ -25,6 +25,7 @@ export declare class GitHubService extends Loggable {
         used: number;
     }>;
     checkRateLimit(threshold?: number): Promise<boolean>;
+    deleteBranch(branchName: string): Promise<void>;
     private wrapGitHubError;
 }
 //# sourceMappingURL=GitHubService.d.ts.map
