@@ -13,12 +13,11 @@ on:
     tags-ignore:
       - 'v*'
   pull_request:
-    branches: [main, v1, v2, v3]
+    branches: [main, main2, main3]
     paths-ignore:
       - 'test/**'
       - package.json
       - CHANGELOG.md
-      - CHANGELOG.new.md
 
 concurrency:
   group: bumpalicious-ci-global
