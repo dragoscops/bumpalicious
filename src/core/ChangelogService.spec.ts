@@ -52,6 +52,14 @@ vi.mock('conventional-changelog-conventionalcommits', () => ({
 }));
 
 /**
+ * Mock repository for tests
+ */
+const mockRepository = {
+  owner: 'test-owner',
+  repo: 'test-repo',
+};
+
+/**
  * Helper to create mock workspace
  */
 function createMockWorkspace(overrides: Partial<WorkspaceWithVersion> = {}): WorkspaceWithVersion {
@@ -94,6 +102,7 @@ describe('ChangelogService', () => {
       const options: GenerateChangelogOptions = {
         workspace: mockWorkspace,
         changelogPath: '/test/CHANGELOG.md',
+        repository: mockRepository,
         preset: 'conventionalcommits',
       };
 
@@ -104,7 +113,7 @@ describe('ChangelogService', () => {
       expect(result.created).toBe(true);
       expect(result.path).toBe('/test/CHANGELOG.md');
       expect(result.content).toContain('# Changelog');
-      expect(result.content).toContain('## [1.2.0]');
+      expect(result.content).toContain('## 1.2.0');
       expect(fs.mkdir).toHaveBeenCalledWith('/test', { recursive: true });
       expect(fs.writeFile).toHaveBeenCalled();
     });
@@ -120,15 +129,46 @@ describe('ChangelogService', () => {
 * old feature
 `;
 
+      // Import actual fs for reading template files
+      const { promises: actualFs } = await vi.importActual<typeof import('node:fs')>('node:fs');
+
       vi.mocked(fs.access).mockResolvedValue();
-      vi.mocked(fs.readFile).mockResolvedValue(existingChangelog);
+
+      // Mock fs.readFile to return different content based on the file path
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      vi.mocked(fs.readFile).mockImplementation(async (path: any) => {
+        const pathStr = path.toString();
+        if (pathStr.includes('CHANGELOG')) {
+          return existingChangelog;
+        }
+        // For template files, read them from the actual filesystem
+        return actualFs.readFile(path, 'utf-8');
+      });
+
       vi.mocked(fs.writeFile).mockResolvedValue();
       vi.mocked(fs.mkdir).mockResolvedValue(undefined);
+
+      const mockCommits = [
+        {
+          message: 'feat: add new feature',
+          sha: 'abc123',
+          author: {
+            name: 'Test Author',
+            email: 'test@example.com',
+          },
+          date: '2024-01-15T10:00:00Z',
+        },
+      ];
 
       const options: GenerateChangelogOptions = {
         workspace: mockWorkspace,
         changelogPath: '/test/CHANGELOG.md',
         preset: 'conventionalcommits',
+        commits: mockCommits,
+        repository: {
+          owner: 'test-owner',
+          repo: 'test-repo',
+        },
       };
 
       // Act
@@ -137,7 +177,7 @@ describe('ChangelogService', () => {
       // Assert
       expect(result.created).toBe(false);
       expect(result.content).toContain('# Changelog');
-      expect(result.content).toContain('## [1.2.0]');
+      expect(result.content).toContain('## 1.2.0'); // Preset generates without brackets
       expect(result.content).toContain('## [1.1.0]');
       expect(result.content).toContain('add new feature');
       expect(result.content).toContain('old feature');
@@ -157,6 +197,7 @@ describe('ChangelogService', () => {
         workspace: workspaceWithPath,
         changelogPath: '/test/packages/core/CHANGELOG.md',
         preset: 'conventionalcommits',
+        repository: mockRepository,
       };
 
       // Act
@@ -164,7 +205,7 @@ describe('ChangelogService', () => {
 
       // Assert
       expect(result.created).toBe(true);
-      expect(result.content).toContain('## [1.2.0]');
+      expect(result.content).toContain('## 1.2.0');
     });
 
     it('should append child workspace summary for root workspace', async () => {
@@ -207,6 +248,7 @@ describe('ChangelogService', () => {
       const options: GenerateChangelogOptions = {
         workspace: mockWorkspace,
         changelogPath: '/test/CHANGELOG.md',
+        repository: mockRepository,
         preset: 'conventionalcommits',
         childWorkspaces: childNodes,
       };
@@ -265,6 +307,7 @@ describe('ChangelogService', () => {
       const options: GenerateChangelogOptions = {
         workspace: mockWorkspace,
         changelogPath: '/test/CHANGELOG.md',
+        repository: mockRepository,
         preset: 'conventionalcommits',
         childWorkspaces: childNodes,
       };
@@ -293,6 +336,7 @@ describe('ChangelogService', () => {
         const options: GenerateChangelogOptions = {
           workspace: mockWorkspace,
           changelogPath: '/test/CHANGELOG.md',
+          repository: mockRepository,
           preset,
         };
 
@@ -300,7 +344,7 @@ describe('ChangelogService', () => {
         const result = await service.generateForWorkspace(options);
 
         // Assert
-        expect(result.content).toContain('## [1.2.0]');
+        expect(result.content).toContain('# 1.2.0'); // Angular uses single #
       }
     });
 
@@ -324,7 +368,7 @@ describe('ChangelogService', () => {
       const result = await service.generateForWorkspace(options);
 
       // Assert
-      expect(result.content).toContain('## [1.2.0]');
+      expect(result.content).toContain('## 1.2.0');
     });
 
     it('should throw FileOperationError on write failure', async () => {
@@ -336,6 +380,7 @@ describe('ChangelogService', () => {
       const options: GenerateChangelogOptions = {
         workspace: mockWorkspace,
         changelogPath: '/test/CHANGELOG.md',
+        repository: mockRepository,
         preset: 'conventionalcommits',
       };
 
@@ -353,6 +398,7 @@ describe('ChangelogService', () => {
         workspace: mockWorkspace,
         changelogPath: '/test/nested/dir/CHANGELOG.md',
         preset: 'conventionalcommits',
+        repository: mockRepository,
       };
 
       // Act
@@ -375,15 +421,43 @@ All notable changes to this project will be documented in this file.
 * old feature
 `;
 
+      // Import actual fs for reading template files
+      const { promises: actualFs } = await vi.importActual<typeof import('node:fs')>('node:fs');
+
       vi.mocked(fs.access).mockResolvedValue();
-      vi.mocked(fs.readFile).mockResolvedValue(existingChangelog);
+
+      // Mock fs.readFile to return different content based on the file path
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      vi.mocked(fs.readFile).mockImplementation(async (path: any) => {
+        const pathStr = path.toString();
+        if (pathStr.includes('CHANGELOG')) {
+          return existingChangelog;
+        }
+        // For template files, read them from the actual filesystem
+        return actualFs.readFile(path, 'utf-8');
+      });
+
       vi.mocked(fs.writeFile).mockResolvedValue();
       vi.mocked(fs.mkdir).mockResolvedValue(undefined);
+
+      const mockCommits = [
+        {
+          message: 'feat: new feature for 1.2.0',
+          sha: 'def456',
+          author: {
+            name: 'Test Author',
+            email: 'test@example.com',
+          },
+          date: '2024-01-20T10:00:00Z',
+        },
+      ];
 
       const options: GenerateChangelogOptions = {
         workspace: mockWorkspace,
         changelogPath: '/test/CHANGELOG.md',
+        repository: mockRepository,
         preset: 'conventionalcommits',
+        commits: mockCommits,
       };
 
       // Act
@@ -391,21 +465,49 @@ All notable changes to this project will be documented in this file.
 
       // Assert
       expect(result.content).toContain('All notable changes to this project');
-      expect(result.content).toContain('## [1.2.0]');
+      expect(result.content).toContain('## 1.2.0');
       expect(result.content).toContain('## [1.1.0]');
     });
 
     it('should handle empty changelog file', async () => {
       // Arrange
+      // Import actual fs for reading template files
+      const { promises: actualFs } = await vi.importActual<typeof import('node:fs')>('node:fs');
+
       vi.mocked(fs.access).mockResolvedValue();
-      vi.mocked(fs.readFile).mockResolvedValue('');
+
+      // Mock fs.readFile to return different content based on the file path
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      vi.mocked(fs.readFile).mockImplementation(async (path: any) => {
+        const pathStr = path.toString();
+        if (pathStr.includes('CHANGELOG')) {
+          return '';
+        }
+        // For template files, read them from the actual filesystem
+        return actualFs.readFile(path, 'utf-8');
+      });
+
       vi.mocked(fs.writeFile).mockResolvedValue();
       vi.mocked(fs.mkdir).mockResolvedValue(undefined);
+
+      const mockCommits = [
+        {
+          message: 'feat: initial feature',
+          sha: 'ghi789',
+          author: {
+            name: 'Test Author',
+            email: 'test@example.com',
+          },
+          date: '2024-01-20T10:00:00Z',
+        },
+      ];
 
       const options: GenerateChangelogOptions = {
         workspace: mockWorkspace,
         changelogPath: '/test/CHANGELOG.md',
+        repository: mockRepository,
         preset: 'conventionalcommits',
+        commits: mockCommits,
       };
 
       // Act
@@ -414,7 +516,7 @@ All notable changes to this project will be documented in this file.
       // Assert
       expect(result.created).toBe(false);
       expect(result.content).toContain('# Changelog');
-      expect(result.content).toContain('## [1.2.0]');
+      expect(result.content).toContain('## 1.2.0');
     });
 
     it('should default to conventionalcommits preset', async () => {
@@ -426,13 +528,14 @@ All notable changes to this project will be documented in this file.
       const options: Omit<GenerateChangelogOptions, 'preset'> = {
         workspace: mockWorkspace,
         changelogPath: '/test/CHANGELOG.md',
+        repository: mockRepository,
       };
 
       // Act
       const result = await service.generateForWorkspace(options as GenerateChangelogOptions);
 
       // Assert
-      expect(result.content).toContain('## [1.2.0]');
+      expect(result.content).toContain('## 1.2.0');
     });
   });
 
@@ -477,6 +580,7 @@ All notable changes to this project will be documented in this file.
       const options: GenerateChangelogOptions = {
         workspace: mockWorkspace,
         changelogPath: '/test/CHANGELOG.md',
+        repository: mockRepository,
         preset: 'conventionalcommits',
         childWorkspaces: childNodes,
       };
@@ -530,6 +634,7 @@ All notable changes to this project will be documented in this file.
       const options: GenerateChangelogOptions = {
         workspace: mockWorkspace,
         changelogPath: '/test/CHANGELOG.md',
+        repository: mockRepository,
         preset: 'conventionalcommits',
         childWorkspaces: childNodes,
       };
@@ -549,7 +654,7 @@ All notable changes to this project will be documented in this file.
 
   describe('Error handling', () => {
     it('should handle preset loading failure gracefully', async () => {
-      // Arrange - the mock will fallback to conventionalcommits
+      // Arrange
       vi.mocked(fs.access).mockRejectedValue(new Error('File not found'));
       vi.mocked(fs.writeFile).mockResolvedValue();
       vi.mocked(fs.mkdir).mockResolvedValue(undefined);
@@ -557,14 +662,13 @@ All notable changes to this project will be documented in this file.
       const options: GenerateChangelogOptions = {
         workspace: mockWorkspace,
         changelogPath: '/test/CHANGELOG.md',
+        repository: mockRepository,
         preset: 'invalid-preset' as ChangelogPreset,
       };
 
-      // Act
-      const result = await service.generateForWorkspace(options);
-
-      // Assert
-      expect(result.content).toContain('## [1.2.0]');
+      // Act & Assert - should throw FileOperationError for invalid preset
+      await expect(service.generateForWorkspace(options)).rejects.toThrow(FileOperationError);
+      await expect(service.generateForWorkspace(options)).rejects.toThrow('Cannot find package');
     });
 
     it('should throw FileOperationError with correct parameters', async () => {
@@ -577,6 +681,7 @@ All notable changes to this project will be documented in this file.
       const options: GenerateChangelogOptions = {
         workspace: mockWorkspace,
         changelogPath: '/test/CHANGELOG.md',
+        repository: mockRepository,
         preset: 'conventionalcommits',
       };
 
