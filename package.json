@@ -30,14 +30,7 @@
     "type": "git",
     "url": "git+https://github.com/dragoscops/version-update.git"
   },
-  "keywords": [
-    "github",
-    "actions",
-    "version",
-    "semver",
-    "release",
-    "conventional-commits"
-  ],
+  "keywords": ["github", "actions", "version", "semver", "release", "conventional-commits"],
   "author": "dragoscops",
   "license": "MIT",
   "bugs": {
@@ -51,8 +44,18 @@
     "@iarna/toml": "^2.2.5",
     "@npmcli/git": "^7.0.0",
     "conventional-changelog": "^7.1.1",
+    "conventional-changelog-angular": "^8.1.0",
+    "conventional-changelog-atom": "^5.0.0",
+    "conventional-changelog-codemirror": "^5.0.0",
     "conventional-changelog-conventionalcommits": "^9.1.0",
     "conventional-changelog-core": "^9.0.0",
+    "conventional-changelog-ember": "^5.0.0",
+    "conventional-changelog-eslint": "^6.0.0",
+    "conventional-changelog-express": "^5.0.0",
+    "conventional-changelog-jquery": "^6.0.0",
+    "conventional-changelog-jshint": "^5.0.0",
+    "conventional-changelog-writer": "^8.0.0",
+    "conventional-commits-parser": "^6.0.0",
     "pino": "^10.0.0",
     "pino-pretty": "^13.1.2",
     "semver": "^7.7.3",
@@ -76,20 +79,17 @@
     "jscpd": "^4.0.5",
     "licensee": "^11.1.1",
     "lint-staged": "^16.2.5",
-    "rimraf": "^6.0.1",
     "npm-run-all2": "^8.0.4",
+    "rimraf": "^6.0.1",
+    "tsx": "^4.20.6",
     "typescript": "^5.9.3"
   },
   "engines": {
     "node": ">=20"
   },
   "lint-staged": {
-    "*.{js,mjs,cjs,ts,json,jsonc,md}": [
-      "prettier --write",
-      "eslint --fix"
-    ],
-    "*.{yml,yaml}": [
-      "eslint --fix"
-    ]
+    "*.{js,mjs,cjs,ts,json,jsonc,md}": ["prettier --write", "eslint --fix"],
+    "*.{yml,yaml}": ["eslint --fix"],
+    "node_modules/**": []
   }
 }

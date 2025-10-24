@@ -851,6 +851,82 @@ export class PRService extends Loggable {
   }
 
   /**
+   * Get pull request details
+   *
+   * @param prNumber - Pull request number
+   * @returns Result containing PR details or error
+   *
+   * @example
+   * ```typescript
+   * const result = await prService.getPullRequest(123);
+   * if (result.ok) {
+   *   console.log('Head branch:', result.value.headRef);
+   * }
+   * ```
+   */
+  async getPullRequest(prNumber: number): Promise<
+    Result<
+      {
+        headRef: string;
+        baseRef: string;
+        merged: boolean;
+        state: string;
+      },
+      GitHubAPIError
+    >
+  > {
+    this.log.debug({ prNumber }, 'Getting pull request details');
+
+    try {
+      const { owner, repo } = this.github.getRepository();
+
+      const response = await this.github.executeWithRetry('getPullRequest', (octokit) =>
+        octokit.rest.pulls.get({
+          owner,
+          repo,
+          pull_number: prNumber,
+        }),
+      );
+
+      const result = {
+        headRef: response.data.head.ref,
+        baseRef: response.data.base.ref,
+        merged: response.data.merged,
+        state: response.data.state,
+      };
+
+      this.log.info(
+        {
+          prNumber,
+          headRef: result.headRef,
+          merged: result.merged,
+          state: result.state,
+        },
+        'Pull request details retrieved',
+      );
+
+      return ok(result);
+    } catch (error) {
+      const apiError =
+        error instanceof GitHubAPIError
+          ? error
+          : new GitHubAPIError('getPullRequest', 'Failed to get pull request details', undefined, error);
+
+      this.log.error(
+        {
+          operation: 'getPullRequest',
+          prNumber,
+          error: apiError.message,
+          statusCode: apiError.statusCode,
+        },
+        'Failed to get pull request details',
+      );
+
+      return err(apiError);
+    }
+  }
+
+  /**
    * Build PR body from workspace tree
    *
    * Formats workspace tree into markdown PR body with:

@@ -16,6 +16,8 @@
 .jscpd/html
 
 /node_modules
+!/node_modules/conventional-changelog*
+!/node_modules/@conventional-changelog*
 *.tsbuildinfo
 
 /**/tmp.*

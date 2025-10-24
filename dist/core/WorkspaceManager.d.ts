@@ -1,6 +1,7 @@
 import type { ChangelogService } from './ChangelogService.js';
 import type { VersionService } from './VersionService.js';
 import type { WorkspaceTreeBuilder } from './WorkspaceTreeBuilder.js';
+import type { GitHubService } from '../services/GitHubService.js';
 import type { GitService } from '../services/GitService.js';
 import { PRService } from '../services/PRService.js';
 import type { Result } from '../types/result.js';
@@ -9,6 +10,7 @@ import { WorkspaceDetectionError, GitOperationError, FileOperationError } from '
 import { Loggable } from '../utils/Loggable.js';
 export interface WorkspaceManagerDependencies {
     readonly gitService: GitService;
+    readonly githubService: GitHubService;
     readonly prService: PRService;
     readonly versionService: VersionService;
     readonly changelogService: ChangelogService;
@@ -32,8 +34,11 @@ export interface WorkflowOptions {
         readonly repo: string;
     };
     readonly branch?: string;
-    readonly changelogPreset?: string;
-    readonly skipChangelog?: boolean;
+    readonly changelog?: {
+        readonly preset?: string;
+        readonly skip?: boolean;
+    };
+    readonly lastTag?: string | null;
 }
 export interface WorkflowResult {
     readonly tag: string;
@@ -49,6 +54,7 @@ export interface PRCreationResult {
 }
 export declare class WorkspaceManager extends Loggable {
     private readonly gitService;
+    private readonly githubService;
     private readonly prService;
     private readonly versionService;
     private readonly changelogService;
@@ -60,7 +66,6 @@ export declare class WorkspaceManager extends Loggable {
     calculateVersions(workspaces: ReadonlyArray<Workspace>, lastTag: string | null, branch: string): Promise<Result<ReadonlyArray<WorkspaceWithVersion>, Error>>;
     updateVersionFiles(workspaces: ReadonlyArray<WorkspaceWithVersion>): Promise<Result<void, FileOperationError>>;
     generateChangelogs(tree: WorkspaceTree, options: WorkflowOptions): Promise<Result<void, FileOperationError>>;
-    private generateChangelogsRecursive;
     private configureGit;
     createVersionCommit(tree: WorkspaceTree): Promise<Result<string, GitOperationError>>;
     createVersionBranch(tree: WorkspaceTree, options: WorkflowOptions): Promise<Result<string, GitOperationError>>;
