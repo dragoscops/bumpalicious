@@ -26,9 +26,10 @@
 
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
+import { Readable } from 'node:stream';
+import { GitCommit } from '../types/git.js';
 import type { Version } from '../types/version.js';
 import type { WorkspaceWithVersion, WorkspaceNode } from '../types/workspace.js';
-import { FileOperationError } from '../utils/errors.js';
 import { Loggable } from '../utils/Loggable.js';
 
 /**
@@ -46,6 +47,28 @@ export type ChangelogPreset =
   | 'jshint';
 
 /**
+ * TODO: make all readonly
+ * The commits that come out of conventional-commits-parser have a known-ish shape,
+ * but types aren't exported in a super helpful way from that package.
+ *
+ * We'll declare a minimal interface for what writer() cares about.
+ * (writer() expects objects with fields like type, scope, subject, notes, etc.)
+ */
+interface ParsedCommit {
+  type?: string;
+  scope?: string;
+  subject?: string;
+  body?: string;
+  footer?: string;
+  hash?: string;
+  notes?: Array<{
+    title: string;
+    text: string;
+  }>;
+  [key: string]: unknown;
+}
+
+/**
  * Options for changelog generation
  */
 export interface GenerateChangelogOptions {
@@ -58,10 +81,14 @@ export interface GenerateChangelogOptions {
   /** Child workspace nodes (for root workspace summary) */
   readonly childWorkspaces?: ReadonlyArray<WorkspaceNode>;
   /** Repository context (owner/repo) */
-  readonly repository?: {
+  readonly repository: {
     readonly owner: string;
     readonly repo: string;
   };
+  /** Last git tag to generate changelog from (optional, for incremental changelogs) */
+  readonly lastTag?: string | null;
+  /** Commits to include in changelog (instead of reading from git) */
+  readonly commits?: ReadonlyArray<GitCommit>;
 }
 
 /**
@@ -87,6 +114,100 @@ export class ChangelogService extends Loggable {
     super();
     this.log.info('ChangelogService initialized');
   }
+
+  /**
+   * Converts GitCommit array to a stream format expected by conventional-commits-parser
+   *
+   * The parser expects commits in this format (matching git log output):
+   * ```
+   * <commit message>
+   *
+   * -hash-
+   * <sha>
+   * -----------------------
+   *
+   * ```
+   * Each commit must END with the separator line.
+   *
+   * @param commits - Array of git commits
+   * @returns Readable stream of formatted commit strings
+   */
+  protected commitsToParseStream(commits: ReadonlyArray<GitCommit>): Readable {
+    // Each commit must be emitted as a separate chunk for the parser to recognize boundaries
+    const chunks = commits.map((c) => `${c.message}\n\n-hash-\n${c.sha}\n-----------------------\n`);
+
+    return Readable.from(chunks);
+  }
+
+  /**
+   * TODO: add comment
+   * @param commits
+   * @param parserOpts
+   * @returns
+   */
+  protected async parseGitCommits(
+    commits: ReadonlyArray<GitCommit>,
+    parserOpts: any, // eslint-disable-line @typescript-eslint/no-explicit-any
+  ): Promise<ReadonlyArray<ParsedCommit>> {
+    const { parseCommitsStream } = await import('conventional-commits-parser');
+
+    return new Promise((resolve, reject) => {
+      const acc: ParsedCommit[] = [];
+      this.commitsToParseStream(commits)
+        .pipe(parseCommitsStream(parserOpts))
+        .on('data', (commit: ParsedCommit) => {
+          acc.push(commit);
+        })
+        .on('end', () => resolve(acc))
+        .on('error', (err: unknown) => reject(err));
+    });
+  }
+
+  /**
+   * TODO: add comment
+   */
+  protected commitsToWriteStream(commits: ReadonlyArray<ParsedCommit>): Readable {
+    const queue = [...commits];
+    return new Readable({
+      objectMode: true,
+      read() {
+        if (queue.length === 0) {
+          this.push(null);
+          return;
+        }
+        this.push(queue.shift());
+      },
+    });
+  }
+
+  /**
+   * Converts parsed commits to changelog markdown using conventional-changelog-writer
+   *
+   * @param commits - Array of parsed commits from conventional-commits-parser
+   * @param writerOpts - Writer options from the preset (includes templates, transform functions, etc.)
+   * @param context - Context object with version, date, repository info for link generation
+   * @returns Array of markdown chunks representing the changelog
+   */
+  protected async parsedCommitsToChangelog(
+    commits: ReadonlyArray<ParsedCommit>,
+    writerOpts: any, // eslint-disable-line @typescript-eslint/no-explicit-any
+    context: any, // eslint-disable-line @typescript-eslint/no-explicit-any
+  ): Promise<ReadonlyArray<string>> {
+    const { writeChangelogStream } = await import('conventional-changelog-writer');
+
+    return new Promise((resolve, reject) => {
+      const chunks: string[] = [];
+      this.commitsToWriteStream(commits)
+        .pipe(writeChangelogStream(context, writerOpts))
+        .on('data', (buf: Buffer | string) => {
+          // writer() may emit Buffer or string
+          chunks.push(typeof buf === 'string' ? buf : buf.toString('utf8'));
+        })
+        .on('end', () => resolve(chunks))
+        .on('error', (err: unknown) => reject(err));
+    });
+  }
+
   /**
    * Generate changelog for a workspace
    *
@@ -112,73 +233,86 @@ export class ChangelogService extends Loggable {
    * ```
    */
   async generateForWorkspace(options: GenerateChangelogOptions): Promise<ChangelogResult> {
-    const { workspace, changelogPath, preset = 'conventionalcommits', childWorkspaces = [], repository } = options;
-
-    this.log.debug(
-      {
-        workspace: workspace.path,
-        version: workspace.newVersion,
-        changelogPath,
-        preset,
-        hasChildWorkspaces: childWorkspaces.length > 0,
-        childWorkspacesCount: childWorkspaces.length,
-      },
-      'Generating changelog',
-    );
+    const { commits = [], preset = 'conventionalcommits', workspace, repository } = options;
 
     try {
+      // Load the preset configuration using dynamic import
+      const { default: createPreset } = await import(`conventional-changelog-${preset}`);
+      const presetConfig = await createPreset();
+
+      // The preset returns { parser, writer, commits } - not parserOpts/writerOpts!
+      const parserOpts = presetConfig.parser || {};
+      const writerOpts = presetConfig.writer || {};
+
+      // Check if we're in bundled mode and override templates if needed
+      const { isBundledMode, loadTemplates } = await import('./template-loader.js');
+      const bundled = await isBundledMode();
+
+      if (bundled) {
+        this.log.debug({ preset }, 'Running in bundled mode, loading templates from dist/');
+        const templates = await loadTemplates(preset);
+        writerOpts.mainTemplate = templates.template;
+        writerOpts.headerPartial = templates.header;
+        writerOpts.commitPartial = templates.commit;
+        if (templates.footer) {
+          writerOpts.footerPartial = templates.footer;
+        }
+      }
+
+      // Parse the commits using conventional-commits-parser
+      const parsedCommits = await this.parseGitCommits(commits, parserOpts);
+
+      // Build context for the writer (needed for link generation)
+      const date = new Date().toISOString().split('T')[0];
+      const context = {
+        version: workspace.newVersion,
+        date,
+        host: 'https://github.com',
+        owner: repository.owner,
+        repository: repository.repo,
+        linkReferences: true,
+        commitUrlFormat: `https://github.com/${repository.owner}/${repository.repo}/commit/{{hash}}`,
+        compareUrlFormat: `https://github.com/${repository.owner}/${repository.repo}/compare/{{previousTag}}...{{currentTag}}`,
+        issueUrlFormat: `https://github.com/${repository.owner}/${repository.repo}/issues/{{id}}`,
+        userUrlFormat: 'https://github.com/{{user}}',
+      };
+
+      // Convert parsed commits to changelog markdown
+      const changelogChunks = await this.parsedCommitsToChangelog(parsedCommits, writerOpts, context);
+      const newContent = changelogChunks.join('');
+
+      this.log.debug({ contentLength: newContent.length }, 'Changelog content generated');
+
       // Check if changelog exists
-      const changelogExists = await this.fileExists(changelogPath);
-      this.log.debug(
-        {
-          changelogPath,
-          exists: changelogExists,
-        },
-        'Checked changelog existence',
-      );
+      const changelogExists = await this.fileExists(options.changelogPath);
+      this.log.debug({ changelogPath: options.changelogPath, exists: changelogExists }, 'Checked changelog existence');
 
       // Read existing changelog
-      const existingChangelog = changelogExists ? await fs.readFile(changelogPath, 'utf-8') : '';
+      const existingChangelog = changelogExists ? await fs.readFile(options.changelogPath, 'utf-8') : '';
       if (changelogExists) {
         this.log.debug(
-          {
-            changelogPath,
-            existingLength: existingChangelog.length,
-          },
+          { changelogPath: options.changelogPath, existingLength: existingChangelog.length },
           'Read existing changelog',
         );
       }
-
-      // Generate new changelog content
-      this.log.debug(
-        {
-          workspace: workspace.path,
-          preset,
-        },
-        'Generating changelog content',
-      );
-      const newContent = await this.generateChangelogContent({
-        workspace,
-        preset,
-        repository,
-      });
 
       // Merge new content with existing changelog
       let finalContent = this.mergeChangelogs(newContent, existingChangelog);
 
       // Append child workspace summary for root workspace
-      if (childWorkspaces.length > 0) {
-        const childSummary = this.generateChildWorkspaceSummary(childWorkspaces);
+      if (options.childWorkspaces && options.childWorkspaces.length > 0) {
+        const childSummary = this.generateChildWorkspaceSummary(options.childWorkspaces);
         finalContent = this.appendChildSummary(finalContent, childSummary, workspace.newVersion);
+        this.log.debug({ childCount: options.childWorkspaces.length }, 'Appended child workspace summary');
       }
 
       // Write changelog to file
-      await this.writeChangelog(changelogPath, finalContent);
+      await this.writeChangelog(options.changelogPath, finalContent);
 
       this.log.info(
         {
           workspace: workspace.path,
-          changelogPath,
+          changelogPath: options.changelogPath,
           created: !changelogExists,
           contentLength: finalContent.length,
         },
@@ -187,93 +321,28 @@ export class ChangelogService extends Loggable {
 
       return {
         content: finalContent,
-        path: changelogPath,
+        path: options.changelogPath,
         created: !changelogExists,
       };
     } catch (error) {
+      const { FileOperationError } = await import('../utils/errors.js');
+      const errorMessage = error instanceof Error ? error.message : String(error);
       this.log.error(
         {
           workspace: workspace.path,
-          changelogPath,
+          changelogPath: options.changelogPath,
           error,
+          errorMessage,
         },
         'Failed to generate changelog',
       );
       throw new FileOperationError(
-        changelogPath,
+        options.changelogPath,
         'generate',
-        `Failed to generate changelog for ${workspace.path}`,
+        `Failed to generate changelog for ${workspace.path}: ${errorMessage}`,
         error,
       );
     }
-  }
-
-  /**
-   * Generate changelog content using conventional-changelog-core
-   *
-   * @param options - Generation options
-   * @returns Generated changelog content
-   * @private
-   */
-  private async generateChangelogContent(options: {
-    workspace: WorkspaceWithVersion;
-    preset: ChangelogPreset;
-    repository?: { owner: string; repo: string };
-  }): Promise<string> {
-    const { workspace, preset, repository } = options;
-
-    // Dynamically import conventional-changelog-core (ESM module)
-    const { default: conventionalChangelogCore } = await import('conventional-changelog-core');
-
-    const tagPrefix = workspace.path === '.' ? 'v' : `${workspace.path}@v`;
-
-    // Configure repository context for link generation
-    const context = repository
-      ? {
-          version: workspace.newVersion,
-          currentTag: `${tagPrefix}${workspace.newVersion}`,
-          previousTag: `${tagPrefix}${workspace.version}`,
-          host: 'https://github.com',
-          owner: repository.owner,
-          repository: repository.repo,
-          repoUrl: `https://github.com/${repository.owner}/${repository.repo}`,
-          linkCompare: true,
-          linkReferences: true,
-        }
-      : {
-          version: workspace.newVersion,
-          currentTag: `${tagPrefix}${workspace.newVersion}`,
-          previousTag: `${tagPrefix}${workspace.version}`,
-        };
-
-    this.log.debug({ context }, 'Changelog generation context');
-
-    return new Promise<string>((resolve, reject) => {
-      let changelog = '';
-
-      const changelogStream = conventionalChangelogCore(
-        {
-          preset,
-          releaseCount: 0,
-          pkg: { path: workspace.path },
-          cwd: workspace.path === '.' ? process.cwd() : workspace.path,
-          from: `${tagPrefix}${workspace.version}`,
-        } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
-        context,
-      );
-
-      changelogStream.on('data', (chunk: Buffer) => {
-        changelog += chunk.toString();
-      });
-
-      changelogStream.on('end', () => {
-        resolve(changelog);
-      });
-
-      changelogStream.on('error', (error: Error) => {
-        reject(error);
-      });
-    });
   }
 
   /**
