@@ -104,7 +104,7 @@ describe('ChangelogService', () => {
       expect(result.created).toBe(true);
       expect(result.path).toBe('/test/CHANGELOG.md');
       expect(result.content).toContain('# Changelog');
-      expect(result.content).toContain('## [1.2.0]');
+      expect(result.content).toContain('## 1.2.0');
       expect(fs.mkdir).toHaveBeenCalledWith('/test', { recursive: true });
       expect(fs.writeFile).toHaveBeenCalled();
     });
@@ -120,15 +120,39 @@ describe('ChangelogService', () => {
 * old feature
 `;
 
+      // Import actual fs for reading template files
+      const { promises: actualFs } = await vi.importActual<typeof import('node:fs')>('node:fs');
+
       vi.mocked(fs.access).mockResolvedValue();
-      vi.mocked(fs.readFile).mockResolvedValue(existingChangelog);
+
+      // Mock fs.readFile to return different content based on the file path
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      vi.mocked(fs.readFile).mockImplementation(async (path: any) => {
+        const pathStr = path.toString();
+        if (pathStr.includes('CHANGELOG')) {
+          return existingChangelog;
+        }
+        // For template files, read them from the actual filesystem
+        return actualFs.readFile(path, 'utf-8');
+      });
+
       vi.mocked(fs.writeFile).mockResolvedValue();
       vi.mocked(fs.mkdir).mockResolvedValue(undefined);
+
+      const mockCommits = [
+        {
+          message: 'feat: add new feature',
+          sha: 'abc123',
+          author: 'Test Author',
+          date: '2024-01-15T10:00:00Z',
+        },
+      ];
 
       const options: GenerateChangelogOptions = {
         workspace: mockWorkspace,
         changelogPath: '/test/CHANGELOG.md',
         preset: 'conventionalcommits',
+        commits: mockCommits,
       };
 
       // Act
@@ -137,7 +161,7 @@ describe('ChangelogService', () => {
       // Assert
       expect(result.created).toBe(false);
       expect(result.content).toContain('# Changelog');
-      expect(result.content).toContain('## [1.2.0]');
+      expect(result.content).toContain('## 1.2.0');
       expect(result.content).toContain('## [1.1.0]');
       expect(result.content).toContain('add new feature');
       expect(result.content).toContain('old feature');
@@ -164,7 +188,7 @@ describe('ChangelogService', () => {
 
       // Assert
       expect(result.created).toBe(true);
-      expect(result.content).toContain('## [1.2.0]');
+      expect(result.content).toContain('## 1.2.0');
     });
 
     it('should append child workspace summary for root workspace', async () => {
@@ -300,7 +324,7 @@ describe('ChangelogService', () => {
         const result = await service.generateForWorkspace(options);
 
         // Assert
-        expect(result.content).toContain('## [1.2.0]');
+        expect(result.content).toContain('## 1.2.0');
       }
     });
 
@@ -324,7 +348,7 @@ describe('ChangelogService', () => {
       const result = await service.generateForWorkspace(options);
 
       // Assert
-      expect(result.content).toContain('## [1.2.0]');
+      expect(result.content).toContain('## 1.2.0');
     });
 
     it('should throw FileOperationError on write failure', async () => {
@@ -391,7 +415,7 @@ All notable changes to this project will be documented in this file.
 
       // Assert
       expect(result.content).toContain('All notable changes to this project');
-      expect(result.content).toContain('## [1.2.0]');
+      expect(result.content).toContain('## 1.2.0');
       expect(result.content).toContain('## [1.1.0]');
     });
 
@@ -414,7 +438,7 @@ All notable changes to this project will be documented in this file.
       // Assert
       expect(result.created).toBe(false);
       expect(result.content).toContain('# Changelog');
-      expect(result.content).toContain('## [1.2.0]');
+      expect(result.content).toContain('## 1.2.0');
     });
 
     it('should default to conventionalcommits preset', async () => {
@@ -432,7 +456,7 @@ All notable changes to this project will be documented in this file.
       const result = await service.generateForWorkspace(options as GenerateChangelogOptions);
 
       // Assert
-      expect(result.content).toContain('## [1.2.0]');
+      expect(result.content).toContain('## 1.2.0');
     });
   });
 
@@ -564,7 +588,7 @@ All notable changes to this project will be documented in this file.
       const result = await service.generateForWorkspace(options);
 
       // Assert
-      expect(result.content).toContain('## [1.2.0]');
+      expect(result.content).toContain('## 1.2.0');
     });
 
     it('should throw FileOperationError with correct parameters', async () => {
