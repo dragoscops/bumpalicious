@@ -62,6 +62,12 @@ export declare class PRService extends Loggable {
     hasMerged(params: HasMergedParams): Promise<Result<boolean, GitHubAPIError>>;
     exists(params: ExistsPRParams): Promise<Result<PRExistsResponse, GitHubAPIError>>;
     waitForChecks(params: WaitForChecksParams): Promise<Result<ChecksStatusResult, GitHubAPIError>>;
+    getPullRequest(prNumber: number): Promise<Result<{
+        headRef: string;
+        baseRef: string;
+        merged: boolean;
+        state: string;
+    }, GitHubAPIError>>;
     static buildPRBody(tree: WorkspaceTree): string;
     private static formatWorkspaceNode;
 }
