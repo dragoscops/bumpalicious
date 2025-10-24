@@ -446,4 +446,104 @@ describe('GitHubService', () => {
       expect(mockOctokit.rest.repos.listTags).toHaveBeenCalledTimes(3);
     });
   });
+
+  describe('deleteBranch', () => {
+    it('should delete a branch successfully', async () => {
+      const service = new GitHubService(testToken, {
+        repository: testRepository,
+      });
+
+      mockOctokit.rest.git = {
+        deleteRef: vi.fn().mockResolvedValueOnce({ status: 204 }),
+      } as unknown as typeof mockOctokit.rest.git;
+
+      await service.deleteBranch('feature-branch');
+
+      expect(mockOctokit.rest.git.deleteRef).toHaveBeenCalledWith({
+        owner: testRepository.owner,
+        repo: testRepository.repo,
+        ref: 'heads/feature-branch',
+      });
+    });
+
+    it('should format branch reference correctly', async () => {
+      const service = new GitHubService(testToken, {
+        repository: testRepository,
+      });
+
+      let capturedParams: { ref: string; owner: string; repo: string } | undefined;
+      mockOctokit.rest.git = {
+        deleteRef: vi.fn().mockImplementation((params) => {
+          capturedParams = params;
+          return Promise.resolve({ status: 204 });
+        }),
+      } as unknown as typeof mockOctokit.rest.git;
+
+      await service.deleteBranch('version_bump_v1.0.0');
+
+      expect(capturedParams).toBeDefined();
+      expect(capturedParams!.ref).toBe('heads/version_bump_v1.0.0');
+      expect(capturedParams!.owner).toBe(testRepository.owner);
+      expect(capturedParams!.repo).toBe(testRepository.repo);
+    });
+
+    it('should handle branch names with special characters', async () => {
+      const service = new GitHubService(testToken, {
+        repository: testRepository,
+      });
+
+      mockOctokit.rest.git = {
+        deleteRef: vi.fn().mockResolvedValueOnce({ status: 204 }),
+      } as unknown as typeof mockOctokit.rest.git;
+
+      await service.deleteBranch('feature/user-auth');
+
+      expect(mockOctokit.rest.git.deleteRef).toHaveBeenCalledWith({
+        owner: testRepository.owner,
+        repo: testRepository.repo,
+        ref: 'heads/feature/user-auth',
+      });
+    });
+
+    it('should throw GitHubAPIError when branch not found', async () => {
+      const service = new GitHubService(testToken, {
+        repository: testRepository,
+        retryOptions: { maxAttempts: 1 }, // Disable retries for test
+      });
+
+      const error = { status: 422, message: 'Reference does not exist' };
+      mockOctokit.rest.git = {
+        deleteRef: vi.fn().mockRejectedValueOnce(error),
+      } as unknown as typeof mockOctokit.rest.git;
+
+      await expect(service.deleteBranch('non-existent-branch')).rejects.toThrow(GitHubAPIError);
+    });
+
+    it('should throw GitHubAPIError when permission denied', async () => {
+      const service = new GitHubService(testToken, {
+        repository: testRepository,
+        retryOptions: { maxAttempts: 1 }, // Disable retries for test
+      });
+
+      const error = { status: 403, message: 'Forbidden' };
+      mockOctokit.rest.git = {
+        deleteRef: vi.fn().mockRejectedValueOnce(error),
+      } as unknown as typeof mockOctokit.rest.git;
+
+      await expect(service.deleteBranch('protected-branch')).rejects.toThrow(GitHubAPIError);
+    });
+
+    it('should wrap generic errors as GitHubAPIError', async () => {
+      const service = new GitHubService(testToken, {
+        repository: testRepository,
+        retryOptions: { maxAttempts: 1 }, // Disable retries for test
+      });
+
+      mockOctokit.rest.git = {
+        deleteRef: vi.fn().mockRejectedValueOnce(new Error('Network error')),
+      } as unknown as typeof mockOctokit.rest.git;
+
+      await expect(service.deleteBranch('feature-branch')).rejects.toThrow(GitHubAPIError);
+    });
+  });
 });
