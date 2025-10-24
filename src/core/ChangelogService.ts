@@ -62,6 +62,8 @@ export interface GenerateChangelogOptions {
     readonly owner: string;
     readonly repo: string;
   };
+  /** Last git tag to generate changelog from (optional, for incremental changelogs) */
+  readonly lastTag?: string | null;
 }
 
 /**
@@ -154,6 +156,7 @@ export class ChangelogService extends Loggable {
         {
           workspace: workspace.path,
           preset,
+          lastTag: options.lastTag,
         },
         'Generating changelog content',
       );
@@ -161,6 +164,7 @@ export class ChangelogService extends Loggable {
         workspace,
         preset,
         repository,
+        lastTag: options.lastTag,
       });
 
       // Merge new content with existing changelog
@@ -219,13 +223,17 @@ export class ChangelogService extends Loggable {
     workspace: WorkspaceWithVersion;
     preset: ChangelogPreset;
     repository?: { owner: string; repo: string };
+    lastTag?: string | null;
   }): Promise<string> {
-    const { workspace, preset, repository } = options;
+    const { workspace, preset, repository, lastTag } = options;
 
     // Dynamically import conventional-changelog-core (ESM module)
     const { default: conventionalChangelogCore } = await import('conventional-changelog-core');
 
-    const tagPrefix = workspace.path === '.' ? 'v' : `${workspace.path}@v`;
+    // Check if workspace is root by comparing with cwd
+    const cwd = process.cwd();
+    const isRootWorkspace = workspace.path === cwd;
+    const tagPrefix = isRootWorkspace ? 'v' : `${workspace.path.replace(`${cwd}/`, '')}@v`;
 
     // Configure repository context for link generation
     const context = repository
@@ -246,7 +254,7 @@ export class ChangelogService extends Loggable {
           previousTag: `${tagPrefix}${workspace.version}`,
         };
 
-    this.log.debug({ context }, 'Changelog generation context');
+    this.log.debug({ context, workspacePath: workspace.path, cwd, isRootWorkspace }, 'Changelog generation context');
 
     return new Promise<string>((resolve, reject) => {
       let changelog = '';
@@ -256,8 +264,8 @@ export class ChangelogService extends Loggable {
           preset,
           releaseCount: 0,
           pkg: { path: workspace.path },
-          cwd: workspace.path === '.' ? process.cwd() : workspace.path,
-          from: `${tagPrefix}${workspace.version}`,
+          cwd: workspace.path,
+          from: lastTag || undefined,
         } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
         context,
       );
