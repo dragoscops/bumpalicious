@@ -4,7 +4,24 @@
 
 declare module 'conventional-changelog-conventionalcommits' {
   import type { Options } from 'conventional-changelog-core';
-  const config: () => Promise<Options.Config>;
+
+  interface PresetConfig {
+    commitUrlFormat?: string;
+    compareUrlFormat?: string;
+    issueUrlFormat?: string;
+    userUrlFormat?: string;
+    types?: Array<{
+      type: string;
+      section?: string;
+      hidden?: boolean;
+      scope?: string;
+    }>;
+    issuePrefixes?: string[];
+    ignoreCommits?: (commit: unknown) => boolean;
+    scope?: string;
+  }
+
+  const config: (config?: PresetConfig) => Promise<Options.Config>;
   export default config;
 }
 

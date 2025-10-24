@@ -225,8 +225,8 @@ export class ChangelogService extends Loggable {
     // Dynamically import conventional-changelog-core (ESM module)
     const { default: conventionalChangelogCore } = await import('conventional-changelog-core');
 
-    // Dynamically import preset config
-    const presetConfig = await this.loadPresetConfig(preset);
+    // Dynamically import preset config function
+    const presetConfigFn = await this.loadPresetConfig(preset);
 
     const tagPrefix = workspace.path === '.' ? 'v' : `${workspace.path}@v`;
 
@@ -251,28 +251,23 @@ export class ChangelogService extends Loggable {
 
     this.log.debug({ context }, 'Changelog generation context');
 
-    // Resolve preset configuration
-    const resolvedConfig = await presetConfig();
-
-    // Override writerOpts to include URL formats if repository is provided
-    if (repository && typeof resolvedConfig === 'object' && resolvedConfig !== null) {
-      const config = resolvedConfig as any; // eslint-disable-line @typescript-eslint/no-explicit-any
-      if (!config.writerOpts) {
-        config.writerOpts = {};
-      }
-      // Set URL format templates
-      config.writerOpts.commitUrlFormat = `https://github.com/${repository.owner}/${repository.repo}/commit/{{hash}}`;
-      config.writerOpts.compareUrlFormat = `https://github.com/${repository.owner}/${repository.repo}/compare/{{previousTag}}...{{currentTag}}`;
-      config.writerOpts.issueUrlFormat = `https://github.com/${repository.owner}/${repository.repo}/issues/{{id}}`;
-      config.writerOpts.userUrlFormat = 'https://github.com/{{user}}';
-    }
+    // Resolve preset configuration with URL format options
+    // Type assertion needed because preset config accepts optional config parameter
+    const presetConfig = repository
+      ? await (presetConfigFn as (config?: unknown) => Promise<unknown>)({
+          commitUrlFormat: '{{host}}/{{owner}}/{{repository}}/commit/{{hash}}',
+          compareUrlFormat: '{{host}}/{{owner}}/{{repository}}/compare/{{previousTag}}...{{currentTag}}',
+          issueUrlFormat: '{{host}}/{{owner}}/{{repository}}/issues/{{id}}',
+          userUrlFormat: '{{host}}/{{user}}',
+        })
+      : await presetConfigFn();
 
     return new Promise<string>((resolve, reject) => {
       let changelog = '';
 
       const changelogStream = conventionalChangelogCore(
         {
-          config: resolvedConfig as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+          config: presetConfig as any, // eslint-disable-line @typescript-eslint/no-explicit-any
           releaseCount: 1,
         },
         context,
