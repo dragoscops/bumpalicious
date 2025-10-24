@@ -36,6 +36,7 @@ import type { ChangelogService, ChangelogPreset } from './ChangelogService.js';
 import type { VersionService } from './VersionService.js';
 import type { WorkspaceTreeBuilder } from './WorkspaceTreeBuilder.js';
 import { parseCommitMessages } from '../parsers/ConventionalCommitParser.js';
+import type { GitHubService } from '../services/GitHubService.js';
 import type { GitService } from '../services/GitService.js';
 import { PRService } from '../services/PRService.js';
 import type { Result } from '../types/result.js';
@@ -61,6 +62,7 @@ import { Loggable } from '../utils/Loggable.js';
  */
 export interface WorkspaceManagerDependencies {
   readonly gitService: GitService;
+  readonly githubService: GitHubService;
   readonly prService: PRService;
   readonly versionService: VersionService;
   readonly changelogService: ChangelogService;
@@ -94,10 +96,13 @@ export interface WorkflowOptions {
   };
   /** Branch to use for operations (defaults to 'main') */
   readonly branch?: string;
-  /** Changelog preset */
-  readonly changelogPreset?: string;
-  /** Skip changelog generation (useful for tests) */
-  readonly skipChangelog?: boolean;
+  /** Changelog options */
+  readonly changelog?: {
+    readonly preset?: string;
+    readonly skip?: boolean;
+  };
+  /** Last git tag (for incremental changelog generation) */
+  readonly lastTag?: string | null;
 }
 
 /**
@@ -135,6 +140,7 @@ export interface PRCreationResult {
  */
 export class WorkspaceManager extends Loggable {
   private readonly gitService: GitService;
+  private readonly githubService: GitHubService;
   private readonly prService: PRService;
   private readonly versionService: VersionService;
   private readonly changelogService: ChangelogService;
@@ -148,6 +154,7 @@ export class WorkspaceManager extends Loggable {
   constructor(deps: WorkspaceManagerDependencies) {
     super();
     this.gitService = deps.gitService;
+    this.githubService = deps.githubService;
     this.prService = deps.prService;
     this.versionService = deps.versionService;
     this.changelogService = deps.changelogService;
@@ -177,7 +184,6 @@ export class WorkspaceManager extends Loggable {
       // If so, we only need to create tags, not do a new version bump
       const targetBranch = options.branch || 'main';
       const lastCommitResult = await this.gitService.getLastCommit(targetBranch);
-      // TODO: Analyze this part after making sure pr=false and pr_auto_merge=true works as expected
       if (lastCommitResult.ok && lastCommitResult.value) {
         const commitMessage = lastCommitResult.value.message;
 
@@ -233,29 +239,24 @@ export class WorkspaceManager extends Loggable {
 
           // Delete the PR branch if we have a PR number and branch prefix
           if (prNumber && options.prOptions?.branchPrefix) {
-            try {
-              const { owner, repo } = options.repository;
-              const octokit = this.prService['github'].getOctokit();
+            // Get PR details to find the head branch
+            const prDetailsResult = await this.prService.getPullRequest(prNumber);
 
-              // Get PR details to find the head branch
-              const prResult = await octokit.rest.pulls.get({
-                owner,
-                repo,
-                pull_number: prNumber,
-              });
-
-              const branchName = prResult.data.head.ref;
+            if (!prDetailsResult.ok) {
+              this.log.warn(
+                { prNumber, error: prDetailsResult.error.message },
+                'Failed to get PR details for branch deletion',
+              );
+            } else {
+              const branchName = prDetailsResult.value.headRef;
 
               // Delete the branch
-              await octokit.rest.git.deleteRef({
-                owner,
-                repo,
-                ref: `heads/${branchName}`,
-              });
-
-              this.log.info({ branch: branchName, prNumber }, 'Version branch deleted after manual merge');
-            } catch (error) {
-              this.log.warn({ prNumber, error }, 'Failed to delete branch after manual merge - branch may not exist');
+              try {
+                await this.githubService.deleteBranch(branchName);
+                this.log.info({ branch: branchName, prNumber }, 'Version branch deleted after manual merge');
+              } catch (error) {
+                this.log.warn({ prNumber, branchName, error }, 'Failed to delete branch after manual merge');
+              }
             }
           }
 
@@ -349,14 +350,15 @@ export class WorkspaceManager extends Loggable {
       this.log.info('Version files updated');
 
       // Step 8: Generate changelogs (skip if requested)
-      if (!options.skipChangelog) {
-        const changelogResult = await this.generateChangelogs(tree, options);
+      if (!options.changelog?.skip) {
+        // TODO: this operation needs to be done for each workspace, not the only root
+        const changelogResult = await this.generateChangelogs(tree, { ...options, lastTag });
         if (!changelogResult.ok) {
           return err(changelogResult.error);
         }
         this.log.info('Changelogs generated');
       } else {
-        this.log.debug('Skipping changelog generation (skipChangelog=true)');
+        this.log.debug('Skipping changelog generation (changelog.skip=true)');
       }
 
       // Step 8: Create PR or commit
@@ -477,8 +479,19 @@ export class WorkspaceManager extends Loggable {
       }
 
       const info = detectResult.value;
+
+      // Resolve absolute path for the workspace
+      // '.' becomes process.cwd(), relative paths are resolved against cwd
+      const absolutePath =
+        config.path === '.'
+          ? process.cwd()
+          : config.path.startsWith('/')
+            ? config.path
+            : `${process.cwd()}/${config.path}`;
+
       const workspace: Workspace = {
         ...config,
+        path: absolutePath,
         name: info.name,
         version: info.version,
         hasChanges: false, // Will be set in detectChangedWorkspaces
@@ -486,7 +499,15 @@ export class WorkspaceManager extends Loggable {
       };
 
       enriched.push(workspace);
-      this.log.debug({ path: config.path, name: info.name, version: info.version }, 'Workspace enriched');
+      this.log.debug(
+        {
+          originalPath: config.path,
+          absolutePath,
+          name: info.name,
+          version: info.version,
+        },
+        'Workspace enriched',
+      );
     }
 
     return ok(enriched);
@@ -544,8 +565,12 @@ export class WorkspaceManager extends Loggable {
     );
 
     // Map workspaces to changed files
+    const cwd = process.cwd();
     const updated: Workspace[] = workspaces.map((workspace) => {
-      const workspacePath = workspace.path === '.' ? '' : workspace.path;
+      // Convert absolute workspace path to relative path for git comparison
+      const relativePath = workspace.path === cwd ? '.' : workspace.path.replace(`${cwd}/`, '');
+      const workspacePath = relativePath === '.' ? '' : relativePath;
+
       const changedInWorkspace = allChangedFiles.filter((file) => {
         if (workspacePath === '') {
           // Root workspace - all files belong to it
@@ -627,6 +652,10 @@ export class WorkspaceManager extends Loggable {
       },
       'Commits retrieved for version calculation',
     );
+    commits.forEach((c, index) => {
+      const { sha, message } = c;
+      this.log.debug({ sha, message }, `Commit #${index + 1} detail`);
+    });
 
     const workspacesWithVersions: WorkspaceWithVersion[] = [];
 
@@ -715,22 +744,60 @@ export class WorkspaceManager extends Loggable {
       {
         rootWorkspace: tree.root.workspace.name,
         childrenCount: tree.root.children.length,
-        preset: options.changelogPreset,
+        preset: options.changelog?.preset,
       },
       'Generating changelogs',
     );
 
-    // Generate changelog for root workspace
-    const rootPath = tree.root.workspace.path === '.' ? '.' : tree.root.workspace.path;
-    const rootChangelogPath = rootPath === '.' ? 'CHANGELOG.md' : `${rootPath}/CHANGELOG.md`;
+    // Get commits for changelog generation
+    const branch = options.branch || 'main';
+    const base = options.lastTag || 'HEAD^';
+    const commitsResult = await this.gitService.getCommitsSince(base, branch);
 
-    const rootResult = await this.changelogService.generateForWorkspace({
+    if (!commitsResult.ok) {
+      this.log.error({ error: commitsResult.error }, 'Failed to get commits for changelog');
+      return err(
+        new FileOperationError(
+          'CHANGELOG.md',
+          'generate',
+          'Failed to get commits for changelog generation',
+          commitsResult.error,
+        ),
+      );
+    }
+
+    // Convert commits to ParsedCommit format for ChangelogService
+    const commits = commitsResult.value.map((c) => ({
+      message: c.message,
+      sha: c.sha,
+      author: c.author?.name,
+      date: c.date, // Use the top-level date field from GitCommit
+    }));
+
+    this.log.debug(
+      {
+        commitCount: commits.length,
+        firstCommit: commits[0]?.message,
+      },
+      'Retrieved commits for changelog generation',
+    );
+
+    // Generate changelog for root workspace
+    const rootChangelogPath = `${tree.root.workspace.path}/CHANGELOG.md`;
+
+    const generateOptions = {
       workspace: tree.root.workspace,
       changelogPath: rootChangelogPath,
-      preset: (options.changelogPreset as ChangelogPreset) || 'conventionalcommits',
+      preset: (options.changelog?.preset as ChangelogPreset) || 'conventionalcommits',
       childWorkspaces: tree.root.children,
       repository: options.repository,
-    });
+      lastTag: options.lastTag,
+      commits, // Pass commits data!
+    };
+
+    this.log.debug({ path: rootChangelogPath }, 'Generating root changelog');
+
+    const rootResult = await this.changelogService.generateForWorkspace(generateOptions);
 
     if (!rootResult) {
       return err(new FileOperationError(rootChangelogPath, 'generate', 'Failed to generate root changelog'));
@@ -739,7 +806,7 @@ export class WorkspaceManager extends Loggable {
     this.log.debug({ path: rootChangelogPath }, 'Root changelog generated');
 
     // Generate changelogs for child workspaces (recursively)
-    await this.generateChangelogsRecursive(tree.root.children, options);
+    await this.generateChangelogsRecursive(tree.root.children, options, commits);
 
     return ok(undefined);
   }
@@ -749,11 +816,13 @@ export class WorkspaceManager extends Loggable {
    *
    * @param nodes - Workspace nodes
    * @param options - Workflow options
+   * @param commits - Commits to include in changelog
    * @private
    */
   private async generateChangelogsRecursive(
     nodes: ReadonlyArray<WorkspaceNode>,
     options: WorkflowOptions,
+    commits: ReadonlyArray<{ message: string; sha: string; author?: string; date?: string }>,
   ): Promise<void> {
     for (const node of nodes) {
       const path = node.workspace.path;
@@ -762,15 +831,17 @@ export class WorkspaceManager extends Loggable {
       await this.changelogService.generateForWorkspace({
         workspace: node.workspace,
         changelogPath,
-        preset: (options.changelogPreset as ChangelogPreset) || 'conventionalcommits',
+        preset: (options.changelog?.preset as ChangelogPreset) || 'conventionalcommits',
         repository: options.repository,
+        lastTag: options.lastTag,
+        commits, // Pass commits data!
       });
 
       this.log.debug({ path: changelogPath }, 'Workspace changelog generated');
 
       // Recurse to children
       if (node.children.length > 0) {
-        await this.generateChangelogsRecursive(node.children, options);
+        await this.generateChangelogsRecursive(node.children, options, commits);
       }
     }
   }
@@ -1004,13 +1075,7 @@ export class WorkspaceManager extends Loggable {
 
         // Delete the branch after successful merge to avoid collisions on retry
         try {
-          const { owner, repo } = this.prService['github'].getRepository();
-          const octokit = this.prService['github'].getOctokit();
-          await octokit.rest.git.deleteRef({
-            owner,
-            repo,
-            ref: `heads/${branchName}`,
-          });
+          await this.githubService.deleteBranch(branchName);
           this.log.info({ branch: branchName }, 'Version branch deleted after merge');
         } catch (error) {
           this.log.warn({ branch: branchName, error }, 'Failed to delete branch after merge');

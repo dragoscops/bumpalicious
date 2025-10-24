@@ -130,6 +130,7 @@ describe('WorkspaceManager', () => {
 
     workspaceManager = new WorkspaceManager({
       gitService: mockGitService,
+      githubService: {} as unknown as GitHubService,
       prService: mockPRService,
       versionService: mockVersionService,
       changelogService: mockChangelogService,
@@ -150,8 +151,10 @@ describe('WorkspaceManager', () => {
       expect(result.ok).toBe(true);
       if (result.ok) {
         expect(result.value).toHaveLength(1);
+        // Path should be converted to absolute
+        const expectedAbsolutePath = `${process.cwd()}/${mockWorkspaceConfig.path}`;
         expect(result.value[0]).toMatchObject({
-          path: mockWorkspaceConfig.path,
+          path: expectedAbsolutePath,
           type: mockWorkspaceConfig.type,
           hasChanges: false,
           changedFiles: [],
