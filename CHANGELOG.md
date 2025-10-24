@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.4](https://github.com/dragoscops/bumpalicious/compare/{{previousTag}}...{{currentTag}}) (2025-10-24)
+
+### Bug Fixes
+
+*  changelog to generate commit references ([82036ad]())
+* add cwd option to conventional-changelog-core to ensure git commands run in correct directory ([f2e58b9]())
+* correct cwd placement - belongs in options (1st param) not gitRawCommitsOpts ([18dc57e]())
+* correct repository context format for conventional-changelog ([ece4427]())
+* move cwd to gitRawCommitsOpts (3rd parameter) instead of options ([214a3cb]())
+* pass lastTag to changelog generation for proper commit links ([1fa46bc]())
+* pass preset config function to conventional-changelog-core instead of resolved config ([d8d55a6]())
+* pass URL format configuration to conventional-changelog preset ([b865fbf]())
+* properly resolve preset config before passing to changelog core ([5413190]())
+* use repoUrl for changelog commit link generation ([3e24abc]())
+* use v2-style conventional-changelog configuration ([66bbc7b]())
+
+### debug
+
+* add logging to inspect resolved preset config structure ([b2e0c7d]())
+* add logging to see repository context in changelog generation ([e551a50]())
+
 ## [3.1.3]() (2025-10-23)
 
 ### fix
