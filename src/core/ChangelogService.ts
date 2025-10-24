@@ -258,12 +258,12 @@ export class ChangelogService extends Loggable {
         {
           config: presetConfigFn, // Pass the function, not the resolved config
           releaseCount: 1,
-          cwd: process.cwd(), // Ensure git commands run in correct directory
         } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
         context,
         {
           path: workspace.path === '.' ? undefined : workspace.path,
           from: `${tagPrefix}${workspace.version}`,
+          cwd: process.cwd(), // Working directory for git commands
         },
       );
 
