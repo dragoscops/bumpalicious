@@ -19,24 +19,24 @@ export interface ChangelogResult {
 export declare class ChangelogService extends Loggable {
     constructor();
     generateForWorkspace(options: GenerateChangelogOptions): Promise<ChangelogResult>;
-    private generateNewContent;
+    private generateNew;
     private loadPreset;
-    private parseGitCommits;
-    private commitsToParseStream;
+    private parseCommits;
+    private createCommitStream;
     private buildContext;
-    private parsedCommitsToChangelog;
-    private commitsToWriteStream;
-    private readExistingChangelog;
-    private buildFinalContent;
-    private mergeChangelogs;
-    private splitChangelog;
-    private ensureChangelogHeader;
-    private generateChildWorkspaceSummary;
-    private collectAllWorkspaces;
-    private appendChildSummary;
     private writeChangelog;
-    private buildResult;
-    private handleError;
+    private createParsedCommitStream;
+    private buildFinal;
+    private merge;
+    private splitChangelog;
+    private ensureHeader;
+    private buildChildSummary;
+    private flattenWorkspaces;
+    private insertChildSummary;
+    private readExisting;
+    private write;
     private fileExists;
+    private createResult;
+    private handleError;
 }
 //# sourceMappingURL=ChangelogService.d.ts.map

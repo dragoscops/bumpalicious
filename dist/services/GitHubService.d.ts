@@ -18,6 +18,7 @@ export declare class GitHubService extends Loggable {
     getOctokit(): OctokitInstance;
     getRepository(): RepositoryContext;
     executeWithRetry<T>(operationName: string, operation: (octokit: OctokitInstance) => Promise<T>): Promise<T>;
+    deleteBranch(branchName: string): Promise<void>;
     getRateLimit(): Promise<{
         limit: number;
         remaining: number;
@@ -25,7 +26,11 @@ export declare class GitHubService extends Loggable {
         used: number;
     }>;
     checkRateLimit(threshold?: number): Promise<boolean>;
-    deleteBranch(branchName: string): Promise<void>;
+    private waitForRateLimitReset;
+    private executeOperation;
+    private handleOperationError;
     private wrapGitHubError;
+    private wrapDeleteBranchError;
+    private extractStatusCode;
 }
 //# sourceMappingURL=GitHubService.d.ts.map

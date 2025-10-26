@@ -16,22 +16,22 @@ class ChangelogService extends Loggable_js_1.Loggable {
     async generateForWorkspace(options) {
         try {
             const fileExisted = await this.fileExists(options.changelogPath);
-            const existingContent = await this.readExistingChangelog(options.changelogPath);
-            const newContent = await this.generateNewContent(options);
-            const finalContent = await this.buildFinalContent(newContent, existingContent, options);
-            await this.writeChangelog(options.changelogPath, finalContent);
-            return this.buildResult(options.changelogPath, finalContent, !fileExisted);
+            const existingContent = await this.readExisting(options.changelogPath);
+            const newContent = await this.generateNew(options);
+            const finalContent = this.buildFinal(newContent, existingContent, options);
+            await this.write(options.changelogPath, finalContent);
+            return this.createResult(options.changelogPath, finalContent, !fileExisted);
         }
         catch (error) {
             throw await this.handleError(error, options);
         }
     }
-    async generateNewContent(options) {
+    async generateNew(options) {
         const { commits = [], preset = 'conventionalcommits', workspace, repository } = options;
         const { parserOpts, writerOpts } = await this.loadPreset(preset);
-        const parsedCommits = await this.parseGitCommits(commits, parserOpts);
-        const context = this.buildContext({ workspace, repository });
-        const chunks = await this.parsedCommitsToChangelog(parsedCommits, writerOpts, context);
+        const parsedCommits = await this.parseCommits(commits, parserOpts);
+        const context = this.buildContext(workspace, repository);
+        const chunks = await this.writeChangelog(parsedCommits, writerOpts, context);
         return chunks.join('');
     }
     async loadPreset(preset) {
@@ -42,22 +42,22 @@ class ChangelogService extends Loggable_js_1.Loggable {
             writerOpts: config.writer || {},
         };
     }
-    async parseGitCommits(commits, parserOpts) {
+    async parseCommits(commits, parserOpts) {
         const { parseCommitsStream } = await import('conventional-commits-parser');
         const acc = [];
         return new Promise((resolve, reject) => {
-            this.commitsToParseStream(commits)
+            this.createCommitStream(commits)
                 .pipe(parseCommitsStream(parserOpts))
                 .on('data', (commit) => acc.push(commit))
                 .on('end', () => resolve(acc))
                 .on('error', reject);
         });
     }
-    commitsToParseStream(commits) {
+    createCommitStream(commits) {
         const chunks = commits.map((c) => `${c.message}\n\n-hash-\n${c.sha}\n-----------------------\n`);
         return node_stream_1.Readable.from(chunks);
     }
-    buildContext({ workspace, repository }) {
+    buildContext(workspace, repository) {
         const baseUrl = `https://github.com/${repository.owner}/${repository.repo}`;
         return {
             version: workspace.newVersion,
@@ -72,18 +72,18 @@ class ChangelogService extends Loggable_js_1.Loggable {
             userUrlFormat: 'https://github.com/{{user}}',
         };
     }
-    async parsedCommitsToChangelog(commits, writerOpts, context) {
+    async writeChangelog(commits, writerOpts, context) {
         const { writeChangelogStream } = await import('conventional-changelog-writer');
         const chunks = [];
         return new Promise((resolve, reject) => {
-            this.commitsToWriteStream(commits)
+            this.createParsedCommitStream(commits)
                 .pipe(writeChangelogStream(context, writerOpts))
                 .on('data', (buf) => chunks.push(typeof buf === 'string' ? buf : buf.toString('utf8')))
                 .on('end', () => resolve(chunks))
                 .on('error', reject);
         });
     }
-    commitsToWriteStream(commits) {
+    createParsedCommitStream(commits) {
         const queue = [...commits];
         return new node_stream_1.Readable({
             objectMode: true,
@@ -92,21 +92,17 @@ class ChangelogService extends Loggable_js_1.Loggable {
             },
         });
     }
-    async readExistingChangelog(changelogPath) {
-        const exists = await this.fileExists(changelogPath);
-        return exists ? await node_fs_1.promises.readFile(changelogPath, 'utf-8') : '';
-    }
-    async buildFinalContent(newContent, existingContent, options) {
-        let content = this.mergeChangelogs(newContent, existingContent);
+    buildFinal(newContent, existingContent, options) {
+        let content = this.merge(newContent, existingContent);
         if (options.childWorkspaces?.length) {
-            const summary = this.generateChildWorkspaceSummary(options.childWorkspaces);
-            content = this.appendChildSummary(content, summary, options.workspace.newVersion);
+            const summary = this.buildChildSummary(options.childWorkspaces);
+            content = this.insertChildSummary(content, summary, options.workspace.newVersion);
         }
         return content;
     }
-    mergeChangelogs(newContent, existingContent) {
+    merge(newContent, existingContent) {
         if (!existingContent)
-            return this.ensureChangelogHeader(newContent);
+            return this.ensureHeader(newContent);
         const { header, body } = this.splitChangelog(existingContent);
         const newWithoutHeader = newContent.replace(/^#\s+.*?\n+/m, '').trim();
         return `${header}\n\n${newWithoutHeader}\n\n${body}`.trim() + '\n';
@@ -120,11 +116,11 @@ class ChangelogService extends Loggable_js_1.Loggable {
             body: bodyMatch?.[1] || content,
         };
     }
-    ensureChangelogHeader(content) {
+    ensureHeader(content) {
         return content.match(/^# CHANGELOG/i) ? content : `# Changelog\n\n${content}`;
     }
-    generateChildWorkspaceSummary(childWorkspaces) {
-        const workspaces = this.collectAllWorkspaces(childWorkspaces).sort((a, b) => a.path.localeCompare(b.path));
+    buildChildSummary(childWorkspaces) {
+        const workspaces = this.flattenWorkspaces(childWorkspaces).sort((a, b) => a.path.localeCompare(b.path));
         const lines = [
             '### Child Workspaces',
             '',
@@ -135,17 +131,17 @@ class ChangelogService extends Loggable_js_1.Loggable {
         ];
         return lines.join('\n');
     }
-    collectAllWorkspaces(nodes) {
+    flattenWorkspaces(nodes) {
         const result = [];
         for (const node of nodes) {
             result.push(node.workspace);
             if (node.children.length) {
-                result.push(...this.collectAllWorkspaces(node.children));
+                result.push(...this.flattenWorkspaces(node.children));
             }
         }
         return result;
     }
-    appendChildSummary(content, summary, version) {
+    insertChildSummary(content, summary, version) {
         const regex = new RegExp(`^(#{1,3}\\s+\\[?${version.replace(/\./g, '\\.')}[^\\n]*\\n)`, 'm');
         const match = content.match(regex);
         if (!match)
@@ -153,19 +149,13 @@ class ChangelogService extends Loggable_js_1.Loggable {
         const insertPos = match.index + match[0].length;
         return content.slice(0, insertPos) + '\n' + summary + '\n' + content.slice(insertPos);
     }
-    async writeChangelog(changelogPath, content) {
+    async readExisting(changelogPath) {
+        const exists = await this.fileExists(changelogPath);
+        return exists ? await node_fs_1.promises.readFile(changelogPath, 'utf-8') : '';
+    }
+    async write(changelogPath, content) {
         await node_fs_1.promises.mkdir(node_path_1.default.dirname(changelogPath), { recursive: true });
         await node_fs_1.promises.writeFile(changelogPath, content, 'utf-8');
-    }
-    buildResult(path, content, created) {
-        this.log.info({ path, created, contentLength: content.length }, 'Changelog generated');
-        return { content, path, created };
-    }
-    async handleError(error, options) {
-        const { FileOperationError } = await import('../utils/errors.js');
-        const message = error instanceof Error ? error.message : String(error);
-        this.log.error({ workspace: options.workspace.path, error }, 'Changelog generation failed');
-        throw new FileOperationError(options.changelogPath, 'generate', `Failed to generate changelog for ${options.workspace.path}: ${message}`, error);
     }
     async fileExists(filePath) {
         try {
@@ -175,6 +165,16 @@ class ChangelogService extends Loggable_js_1.Loggable {
         catch {
             return false;
         }
+    }
+    createResult(path, content, created) {
+        this.log.info({ path, created, contentLength: content.length }, 'Changelog generated');
+        return { content, path, created };
+    }
+    async handleError(error, options) {
+        const { FileOperationError } = await import('../utils/errors.js');
+        const message = error instanceof Error ? error.message : String(error);
+        this.log.error({ workspace: options.workspace.path, error }, 'Changelog generation failed');
+        throw new FileOperationError(options.changelogPath, 'generate', `Failed to generate changelog for ${options.workspace.path}: ${message}`, error);
     }
 }
 exports.ChangelogService = ChangelogService;

@@ -8,16 +8,29 @@ export declare class GitService extends Loggable {
     constructor(github: GitHubService);
     getRef(ref: string): Promise<Result<GitRef, GitOperationError>>;
     tagExists(tagName: string): Promise<Result<boolean, GitOperationError>>;
-    deleteTag(tagName: string): Promise<Result<void, GitOperationError>>;
+    getLastTag(): Promise<Result<GitTag | null, GitOperationError>>;
     createTag(params: CreateTagParams): Promise<Result<GitTag, GitOperationError>>;
-    createCommit(params: CreateCommitParams): Promise<Result<GitCommit, GitOperationError>>;
+    deleteTag(tagName: string): Promise<Result<void, GitOperationError>>;
     updateRef(params: UpdateRefParams): Promise<Result<GitRef, GitOperationError>>;
-    getChangedFiles(base: string, head: string, path?: string): Promise<Result<GitComparison, GitOperationError>>;
     getLastCommit(branch?: string): Promise<Result<{
         sha: string;
         message: string;
     } | null, GitOperationError>>;
-    getLastTag(): Promise<Result<GitTag | null, GitOperationError>>;
     getCommitsSince(base: string, head?: string): Promise<Result<readonly GitCommit[], GitOperationError>>;
+    createCommit(params: CreateCommitParams): Promise<Result<GitCommit, GitOperationError>>;
+    getChangedFiles(base: string, head: string, path?: string): Promise<Result<GitComparison, GitOperationError>>;
+    private fetchRef;
+    private fetchTags;
+    private fetchCommits;
+    private createTagObject;
+    private createTagRef;
+    private deleteRef;
+    private compareCommits;
+    private resolveRefs;
+    private filterFilesByPath;
+    private mapFileChanges;
+    private mapCommits;
+    private isNotFoundError;
+    private handleError;
 }
 //# sourceMappingURL=GitService.d.ts.map
