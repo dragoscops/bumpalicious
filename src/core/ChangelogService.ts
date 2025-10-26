@@ -131,6 +131,61 @@ export interface ChangelogResult {
 }
 
 /**
+ * Load template files for a preset
+ * Automatically detects whether to use bundled templates or node_modules templates
+ *
+ * @param preset - The conventional-changelog preset name
+ * @returns Template strings for main, header, commit, and footer
+ */
+async function loadTemplates(preset: ChangelogPreset): Promise<{
+  template: string;
+  header: string;
+  commit: string;
+  footer?: string;
+}> {
+  // Try bundled path first (GitHub Actions / production)
+  const bundledPath = path.join(__dirname, 'templates', preset);
+
+  // Fallback to node_modules path (development)
+  const devPath = path.join(
+    __dirname,
+    '..',
+    '..',
+    'node_modules',
+    `conventional-changelog-${preset}`,
+    'src',
+    'templates',
+  );
+
+  // Try bundled path first, fallback to dev path
+  let template: string;
+  let header: string;
+  let commit: string;
+  let footer: string = '';
+
+  try {
+    // Try reading from bundled location
+    const results = await Promise.all([
+      fs.readFile(path.join(bundledPath, 'template.hbs'), 'utf-8'),
+      fs.readFile(path.join(bundledPath, 'header.hbs'), 'utf-8'),
+      fs.readFile(path.join(bundledPath, 'commit.hbs'), 'utf-8'),
+      fs.readFile(path.join(bundledPath, 'footer.hbs'), 'utf-8').catch(() => ''),
+    ]);
+    [template, header, commit, footer] = results;
+  } catch {
+    // Bundled templates don't exist, try development path
+    const results = await Promise.all([
+      fs.readFile(path.join(devPath, 'template.hbs'), 'utf-8'),
+      fs.readFile(path.join(devPath, 'header.hbs'), 'utf-8'),
+      fs.readFile(path.join(devPath, 'commit.hbs'), 'utf-8'),
+      fs.readFile(path.join(devPath, 'footer.hbs'), 'utf-8').catch(() => ''),
+    ]);
+    [template, header, commit, footer] = results;
+  }
+  return { template, header, commit, footer: footer || undefined };
+}
+
+/**
  * Changelog Service for generating CHANGELOG.md files
  */
 export class ChangelogService extends Loggable {
@@ -274,19 +329,15 @@ export class ChangelogService extends Loggable {
       const parserOpts = presetConfig.parser || {};
       const writerOpts = presetConfig.writer || {};
 
-      // Check if we're in bundled mode and override templates if needed
-      const { isBundledMode, loadTemplates } = await import('./template-loader.js');
-      const bundled = await isBundledMode();
-
-      if (bundled) {
-        this.log.debug({ preset }, 'Running in bundled mode, loading templates from dist/');
-        const templates = await loadTemplates(preset);
-        writerOpts.mainTemplate = templates.template;
-        writerOpts.headerPartial = templates.header;
-        writerOpts.commitPartial = templates.commit;
-        if (templates.footer) {
-          writerOpts.footerPartial = templates.footer;
-        }
+      // Always load templates as strings to ensure they work in both dev and bundled modes
+      // In dev mode, templates are in node_modules; in bundled mode, they're in dist/templates
+      this.log.debug({ preset }, 'Loading templates as strings');
+      const templates = await loadTemplates(preset);
+      writerOpts.mainTemplate = templates.template;
+      writerOpts.headerPartial = templates.header;
+      writerOpts.commitPartial = templates.commit;
+      if (templates.footer) {
+        writerOpts.footerPartial = templates.footer;
       }
 
       // Parse the commits using conventional-commits-parser
