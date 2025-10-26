@@ -1,9 +1,4 @@
-/**
- * Tag Service
- *
- * Handles creation and management of version tags.
- * Supports both full version tags and short version tags.
- */
+/** Tag service for version tag creation and management */
 
 import type { GitService } from './GitService.js';
 import type { Result } from '../types/result.js';
@@ -12,23 +7,12 @@ import type { Version } from '../types/version.js';
 import { GitOperationError } from '../utils/errors.js';
 import { Loggable } from '../utils/Loggable.js';
 
-/**
- * Tag creation options
- */
 export interface TagOptions {
-  /** Create short version tag (e.g., v1) that points to latest */
   readonly shortTag?: boolean;
-  /** Optional tag prefix */
   readonly tagPrefix?: string;
 }
 
-/**
- * Tag Service
- *
- * Creates and manages version tags:
- * - Full version tags (v1.2.3)
- * - Short version tags (v1) that auto-update
- */
+/** Tag service for version tag creation and management */
 export class TagService extends Loggable {
   private readonly gitService: GitService;
 
@@ -38,10 +22,11 @@ export class TagService extends Loggable {
     this.log.info('TagService initialized');
   }
 
-  /**
-   * Create version tags for a release
-   * Creates master version tag and optionally a short version tag
-   */
+  // ====================
+  // Public API
+  // ====================
+
+  /** Create version tags for commit */
   async createVersionTags(
     version: Version,
     commitSha: string,
@@ -51,24 +36,15 @@ export class TagService extends Loggable {
 
     const createdTags: string[] = [];
 
-    // Create master version tag
-    const masterTag = `v${version}`;
-    const masterTagResult = await this.gitService.createTag({
-      tagName: masterTag,
-      message: `Release ${version}`,
-      commitSha,
-    });
-
+    const masterTagResult = await this.createMasterTag(version, commitSha);
     if (!masterTagResult.ok) {
       return err(masterTagResult.error);
     }
 
-    createdTags.push(masterTag);
-    this.log.debug({ tag: masterTag }, 'Master tag created');
+    createdTags.push(masterTagResult.value);
 
-    // Create short tag if requested
     if (options?.shortTag) {
-      const shortTagResult = await this.createShortTag(version, commitSha, masterTag);
+      const shortTagResult = await this.createShortTag(version, commitSha, masterTagResult.value);
       if (shortTagResult.ok && shortTagResult.value) {
         createdTags.push(shortTagResult.value);
       }
@@ -78,9 +54,7 @@ export class TagService extends Loggable {
     return ok(createdTags);
   }
 
-  /**
-   * Create version tags using branch HEAD if no commit SHA provided
-   */
+  /** Create version tags for branch HEAD */
   async createVersionTagsForBranch(
     version: Version,
     branch: string,
@@ -88,6 +62,70 @@ export class TagService extends Loggable {
   ): Promise<Result<string[], GitOperationError>> {
     this.log.debug({ version, branch }, 'Getting branch HEAD for tags');
 
+    const commitSha = await this.getBranchHead(branch);
+    if (!commitSha.ok) {
+      return err(commitSha.error);
+    }
+
+    return this.createVersionTags(version, commitSha.value, options);
+  }
+
+  // ====================
+  // Tag Creation
+  // ====================
+
+  /** Create master version tag */
+  private async createMasterTag(version: Version, commitSha: string): Promise<Result<string, GitOperationError>> {
+    const masterTag = `v${version}`;
+    const result = await this.gitService.createTag({
+      tagName: masterTag,
+      message: `Release ${version}`,
+      commitSha,
+    });
+
+    if (!result.ok) {
+      return err(result.error);
+    }
+
+    this.log.debug({ tag: masterTag }, 'Master tag created');
+    return ok(masterTag);
+  }
+
+  /** Create or update short version tag */
+  private async createShortTag(
+    version: Version,
+    commitSha: string,
+    masterTag: string,
+  ): Promise<Result<string | null, GitOperationError>> {
+    const shortTag = this.calculateShortTag(version, masterTag);
+
+    if (shortTag === masterTag) {
+      return ok(null);
+    }
+
+    await this.deleteExistingShortTag(shortTag);
+
+    const result = await this.gitService.createTag({
+      tagName: shortTag,
+      message: `Release ${shortTag} (latest: ${version})`,
+      commitSha,
+    });
+
+    if (!result.ok) {
+      this.log.warn({ tag: shortTag, version }, 'Failed to create/update short tag');
+      return ok(null);
+    }
+
+    this.log.info({ tag: shortTag, pointsTo: version }, 'Short tag created/updated');
+    return ok(shortTag);
+  }
+
+  // ====================
+  // Helpers
+  // ====================
+
+  /** Get branch HEAD commit SHA */
+  private async getBranchHead(branch: string): Promise<Result<string, GitOperationError>> {
     const branchRef = `heads/${branch}`;
     const refResult = await this.gitService.getRef(branchRef);
 
@@ -96,30 +134,21 @@ export class TagService extends Loggable {
       return err(refResult.error);
     }
 
-    const commitSha = refResult.value.sha;
-    this.log.debug({ commitSha, branch: branchRef }, 'Retrieved branch HEAD SHA');
-
-    return await this.createVersionTags(version, commitSha, options);
+    this.log.debug({ commitSha: refResult.value.sha, branch: branchRef }, 'Retrieved branch HEAD SHA');
+    return ok(refResult.value.sha);
   }
 
-  /**
-   * Create or update short version tag (e.g., v1) to point to latest version
-   */
-  private async createShortTag(
-    version: Version,
-    commitSha: string,
-    masterTag: string,
-  ): Promise<Result<string | null, GitOperationError>> {
+  /** Calculate short tag name from version */
+  private calculateShortTag(version: Version, masterTag: string): string {
     const parts = version.split('.');
-    const shortTag = parts.length >= 2 ? `v${parts[0]}` : masterTag;
+    return parts.length >= 2 ? `v${parts[0]}` : masterTag;
+  }
 
-    if (shortTag === masterTag) {
-      return ok(null);
-    }
+  /** Delete existing short tag if present */
+  private async deleteExistingShortTag(shortTag: string): Promise<void> {
+    const exists = await this.gitService.tagExists(shortTag);
 
-    // Check if short tag exists and delete it (to force update)
-    const shortTagExists = await this.gitService.tagExists(shortTag);
-    if (shortTagExists.ok && shortTagExists.value) {
+    if (exists.ok && exists.value) {
       this.log.debug({ tag: shortTag }, 'Short tag exists, updating to latest version');
       const deleteResult = await this.gitService.deleteTag(shortTag);
       if (!deleteResult.ok) {
@@ -128,20 +157,5 @@ export class TagService extends Loggable {
     } else {
       this.log.debug({ tag: shortTag }, 'Creating new short tag');
     }
-
-    // Create the short tag pointing to the latest version
-    const shortTagResult = await this.gitService.createTag({
-      tagName: shortTag,
-      message: `Release ${shortTag} (latest: ${version})`,
-      commitSha,
-    });
-
-    if (!shortTagResult.ok) {
-      this.log.warn({ tag: shortTag, version }, 'Failed to create/update short tag');
-      return ok(null);
-    }
-
-    this.log.info({ tag: shortTag, pointsTo: version }, 'Short tag created/updated to point to latest version');
-    return ok(shortTag);
   }
 }
