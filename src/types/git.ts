@@ -133,3 +133,8 @@ export interface FileUpdateResponse {
     readonly message: string;
   };
 }
+
+export interface RepositoryInfo {
+  readonly owner: string;
+  readonly repo: string;
+}

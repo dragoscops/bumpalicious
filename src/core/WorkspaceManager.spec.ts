@@ -6,13 +6,16 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import type { ChangelogService } from './ChangelogService.js';
-import type { VersionService } from './VersionService.js';
 import { WorkspaceManager, type WorkflowOptions } from './WorkspaceManager.js';
 import type { WorkspaceTreeBuilder } from './WorkspaceTreeBuilder.js';
+import type { ChangelogService } from '../services/ChangelogService.js';
+import type { GitHubService } from '../services/GitHubService.js';
 import type { GitService } from '../services/GitService.js';
+import { LocalGitService } from '../services/LocalGitService.js';
 import type { PRService } from '../services/PRService.js';
-import type { GitTag, GitComparison, FileChange } from '../types/git.js';
+import { TagService } from '../services/TagService.js';
+import type { VersionService } from '../services/VersionService.js';
+import { WorkspaceService } from '../services/WorkspaceService.js';
 import { ok, err } from '../types/result.js';
 import { ok as okResult } from '../types/result.js';
 import type { Version } from '../types/version.js';
@@ -63,6 +66,9 @@ vi.mock('./adapters/AdapterFactory.js', () => ({
 describe('WorkspaceManager', () => {
   let workspaceManager: WorkspaceManager;
   let mockGitService: GitService;
+  let mockLocalGitService: LocalGitService;
+  let mockTagService: TagService;
+  let mockWorkspaceService: WorkspaceService;
   let mockPRService: PRService;
   let mockVersionService: VersionService;
   let mockChangelogService: ChangelogService;
@@ -73,26 +79,6 @@ describe('WorkspaceManager', () => {
   const mockWorkspaceConfig: WorkspaceConfig = {
     path: 'packages/test',
     type: 'node',
-  };
-
-  const mockGitTag: GitTag = {
-    name: 'v1.0.0',
-    sha: 'abc123',
-    message: 'Release v1.0.0',
-  };
-
-  const mockFileChange: FileChange = {
-    path: 'packages/test/src/index.ts',
-    status: 'modified',
-    additions: 10,
-    deletions: 5,
-  };
-
-  const mockGitComparison: GitComparison = {
-    base: 'v1.0.0',
-    head: 'HEAD',
-    files: [mockFileChange],
-    commits: [],
   };
 
   beforeEach(() => {
@@ -108,6 +94,34 @@ describe('WorkspaceManager', () => {
       getRef: vi.fn(),
     } as unknown as GitService;
 
+    mockLocalGitService = {
+      createVersionCommit: vi.fn().mockResolvedValue(ok('abc123def456')),
+      createVersionBranch: vi.fn().mockResolvedValue(ok('version-bump/v2.0.0-abc')),
+    } as unknown as LocalGitService;
+
+    mockTagService = {
+      createVersionTags: vi.fn().mockResolvedValue(ok(['v2.0.0'])),
+      createVersionTagsForBranch: vi.fn().mockResolvedValue(ok(['v2.0.0'])),
+    } as unknown as TagService;
+
+    mockWorkspaceService = {
+      enrichWorkspaces: vi.fn().mockImplementation(async (configs: WorkspaceConfig[]) => {
+        return ok(
+          configs.map((config) => ({
+            ...config,
+            path: config.path === '.' ? process.cwd() : `${process.cwd()}/${config.path}`,
+            name: config.path.split('/').pop() || 'test-workspace',
+            version: '1.0.0' as Version,
+            hasChanges: false,
+            changedFiles: [],
+          })),
+        );
+      }),
+      detectChangedWorkspaces: vi.fn().mockImplementation(async (workspaces: Workspace[]) => {
+        return ok(workspaces.map((w) => ({ ...w, hasChanges: true, changedFiles: ['*'] })));
+      }),
+    } as unknown as WorkspaceService;
+
     mockPRService = {
       create: vi.fn(),
       hasMerged: vi.fn(),
@@ -118,6 +132,7 @@ describe('WorkspaceManager', () => {
     mockVersionService = {
       calculateNewVersion: vi.fn(),
       increaseVersion: vi.fn(),
+      calculateVersionsForWorkspaces: vi.fn(),
     } as unknown as VersionService;
 
     mockChangelogService = {
@@ -131,6 +146,9 @@ describe('WorkspaceManager', () => {
     workspaceManager = new WorkspaceManager({
       gitService: mockGitService,
       githubService: {} as unknown as GitHubService,
+      localGitService: mockLocalGitService,
+      tagService: mockTagService,
+      workspaceService: mockWorkspaceService,
       prService: mockPRService,
       versionService: mockVersionService,
       changelogService: mockChangelogService,
@@ -199,8 +217,9 @@ describe('WorkspaceManager', () => {
       changedFiles: [],
     };
 
-    it('should detect changed workspaces with last tag', async () => {
-      vi.mocked(mockGitService.getChangedFiles).mockResolvedValue(ok(mockGitComparison));
+    it('should delegate to workspaceService.detectChangedWorkspaces', async () => {
+      const changedWorkspace = { ...mockWorkspace, hasChanges: true, changedFiles: ['file.ts'] };
+      vi.mocked(mockWorkspaceService.detectChangedWorkspaces).mockResolvedValue(ok([changedWorkspace]));
 
       const result = await workspaceManager.detectChangedWorkspaces([mockWorkspace], 'v1.0.0', 'main');
 
@@ -208,25 +227,13 @@ describe('WorkspaceManager', () => {
       if (result.ok) {
         expect(result.value).toHaveLength(1);
         expect(result.value[0].hasChanges).toBe(true);
-        expect(result.value[0].changedFiles.length).toBeGreaterThan(0);
       }
 
-      expect(mockGitService.getChangedFiles).toHaveBeenCalledWith('v1.0.0', 'main');
+      expect(mockWorkspaceService.detectChangedWorkspaces).toHaveBeenCalledWith([mockWorkspace], 'v1.0.0', 'main');
     });
 
-    it('should detect changed workspaces without last tag', async () => {
-      const result = await workspaceManager.detectChangedWorkspaces([mockWorkspace], null);
-
-      expect(result.ok).toBe(true);
-      if (result.ok) {
-        // When no last tag, all workspaces are marked as changed
-        expect(result.value[0].hasChanges).toBe(true);
-        expect(result.value[0].changedFiles).toEqual(['*']);
-      }
-    });
-
-    it('should handle error from getChangedFiles', async () => {
-      vi.mocked(mockGitService.getChangedFiles).mockResolvedValue(
+    it('should handle error from workspaceService', async () => {
+      vi.mocked(mockWorkspaceService.detectChangedWorkspaces).mockResolvedValue(
         err(new GitOperationError('getChangedFiles', 'Failed to get changed files')),
       );
 
@@ -235,65 +242,6 @@ describe('WorkspaceManager', () => {
       expect(result.ok).toBe(false);
       if (!result.ok) {
         expect(result.error).toBeInstanceOf(GitOperationError);
-      }
-    });
-
-    it('should mark root workspace as having changes when any file changed', async () => {
-      const rootWorkspace: Workspace = {
-        name: 'root',
-        path: '.',
-        type: 'node',
-        version: mockVersion,
-        hasChanges: false,
-        changedFiles: [],
-      };
-
-      vi.mocked(mockGitService.getChangedFiles).mockResolvedValue(ok(mockGitComparison));
-
-      const result = await workspaceManager.detectChangedWorkspaces([rootWorkspace], 'v1.0.0');
-
-      expect(result.ok).toBe(true);
-      if (result.ok) {
-        expect(result.value[0].hasChanges).toBe(true);
-      }
-    });
-
-    it('should only mark workspace as changed if file is in its path', async () => {
-      const workspace1: Workspace = {
-        name: 'workspace1',
-        path: 'packages/workspace1',
-        type: 'node',
-        version: mockVersion,
-        hasChanges: false,
-        changedFiles: [],
-      };
-
-      const workspace2: Workspace = {
-        name: 'workspace2',
-        path: 'packages/workspace2',
-        type: 'node',
-        version: mockVersion,
-        hasChanges: false,
-        changedFiles: [],
-      };
-
-      const fileChange: FileChange = {
-        path: 'packages/workspace1/src/index.ts',
-        status: 'modified',
-        additions: 10,
-        deletions: 5,
-      };
-
-      vi.mocked(mockGitService.getChangedFiles).mockResolvedValue(ok({ ...mockGitComparison, files: [fileChange] }));
-
-      const result = await workspaceManager.detectChangedWorkspaces([workspace1, workspace2], 'v1.0.0');
-
-      expect(result.ok).toBe(true);
-      if (result.ok) {
-        // Only workspaces with changes are returned
-        expect(result.value.length).toBe(1);
-        expect(result.value[0].hasChanges).toBe(true);
-        expect(result.value[0].path).toBe('packages/workspace1');
       }
     });
   });
@@ -310,15 +258,9 @@ describe('WorkspaceManager', () => {
 
     it('should calculate versions for changed workspaces', async () => {
       const mockNewVersion: Version = '1.1.0' as Version;
-      const mockCommit = {
-        sha: 'def456',
-        message: 'feat: add new feature',
-        author: { name: 'Test', email: 'test@example.com' },
-        date: '2024-01-01T00:00:00Z',
-      };
+      const workspaceWithVersion = { ...mockWorkspace, newVersion: mockNewVersion };
 
-      vi.mocked(mockGitService.getCommitsSince).mockResolvedValue(ok([mockCommit]));
-      vi.mocked(mockVersionService.calculateNewVersion).mockReturnValue(mockNewVersion);
+      vi.mocked(mockVersionService.calculateVersionsForWorkspaces).mockResolvedValue(ok([workspaceWithVersion]));
 
       const result = await workspaceManager.calculateVersions([mockWorkspace], 'v1.0.0', 'main');
 
@@ -328,29 +270,23 @@ describe('WorkspaceManager', () => {
         expect(result.value[0].newVersion).toBe(mockNewVersion);
       }
 
-      expect(mockGitService.getCommitsSince).toHaveBeenCalledWith('v1.0.0', 'main');
+      expect(mockVersionService.calculateVersionsForWorkspaces).toHaveBeenCalledWith([mockWorkspace], 'v1.0.0', 'main');
     });
 
     it('should handle no last tag by using HEAD^', async () => {
       const mockNewVersion: Version = '1.1.0' as Version;
-      const mockCommit = {
-        sha: 'def456',
-        message: 'feat: add new feature',
-        author: { name: 'Test', email: 'test@example.com' },
-        date: '2024-01-01T00:00:00Z',
-      };
+      const workspaceWithVersion = { ...mockWorkspace, newVersion: mockNewVersion };
 
-      vi.mocked(mockGitService.getCommitsSince).mockResolvedValue(ok([mockCommit]));
-      vi.mocked(mockVersionService.calculateNewVersion).mockReturnValue(mockNewVersion);
+      vi.mocked(mockVersionService.calculateVersionsForWorkspaces).mockResolvedValue(ok([workspaceWithVersion]));
 
       const result = await workspaceManager.calculateVersions([mockWorkspace], null, 'main');
 
       expect(result.ok).toBe(true);
-      expect(mockGitService.getCommitsSince).toHaveBeenCalledWith('HEAD^', 'main');
+      expect(mockVersionService.calculateVersionsForWorkspaces).toHaveBeenCalledWith([mockWorkspace], null, 'main');
     });
 
     it('should handle error from getCommitsSince', async () => {
-      vi.mocked(mockGitService.getCommitsSince).mockResolvedValue(
+      vi.mocked(mockVersionService.calculateVersionsForWorkspaces).mockResolvedValue(
         err(new GitOperationError('getCommitsSince', 'Failed to get commits')),
       );
 
@@ -363,8 +299,9 @@ describe('WorkspaceManager', () => {
     });
 
     it('should handle no commits (keep same version)', async () => {
-      vi.mocked(mockGitService.getCommitsSince).mockResolvedValue(ok([]));
-      vi.mocked(mockVersionService.increaseVersion).mockReturnValue(mockVersion);
+      const workspaceWithVersion = { ...mockWorkspace, newVersion: mockVersion };
+
+      vi.mocked(mockVersionService.calculateVersionsForWorkspaces).mockResolvedValue(ok([workspaceWithVersion]));
 
       const result = await workspaceManager.calculateVersions([mockWorkspace], 'v1.0.0', 'main');
 
@@ -396,35 +333,6 @@ describe('WorkspaceManager', () => {
       const result = await workspaceManager.updateVersionFiles([]);
 
       expect(result.ok).toBe(true);
-    });
-  });
-
-  describe('createVersionCommit', () => {
-    it('should use @actions/exec to create and push commit', async () => {
-      const mockTree = {
-        root: {
-          workspace: {
-            path: '.',
-            type: 'node' as const,
-            name: 'root',
-            version: mockVersion,
-            hasChanges: true,
-            changedFiles: [],
-            newVersion: '2.0.0' as Version,
-          },
-          children: [],
-          isRoot: true,
-        },
-        masterVersion: '2.0.0' as Version,
-        allWorkspaces: [],
-      };
-
-      const result = await workspaceManager.createVersionCommit(mockTree);
-
-      expect(result.ok).toBe(true);
-      if (result.ok) {
-        expect(result.value).toBe('abc123def456789');
-      }
     });
   });
 
@@ -491,7 +399,16 @@ describe('WorkspaceManager', () => {
       vi.mocked(mockPRService.create).mockResolvedValue(
         ok({ number: 456, htmlUrl: 'https://github.com/test/repo/pull/456', state: 'open' }),
       );
-      vi.mocked(mockPRService.waitForChecks).mockResolvedValue(ok({ allPassed: true, mergeableState: 'ready' }));
+      vi.mocked(mockPRService.waitForChecks).mockResolvedValue(
+        ok({
+          allPassed: true,
+          mergeableState: 'ready',
+          pending: false,
+          totalChecks: 1,
+          passedChecks: 1,
+          failedChecks: 0,
+        }),
+      );
       vi.mocked(mockPRService.merge).mockResolvedValue(ok({ sha: 'merge-sha-123', merged: true, message: 'Merged' }));
 
       const options: WorkflowOptions = {
@@ -563,7 +480,16 @@ describe('WorkspaceManager', () => {
       vi.mocked(mockPRService.create).mockResolvedValue(
         ok({ number: 789, htmlUrl: 'https://github.com/test/repo/pull/789', state: 'open' }),
       );
-      vi.mocked(mockPRService.waitForChecks).mockResolvedValue(ok({ allPassed: true, mergeableState: 'ready' }));
+      vi.mocked(mockPRService.waitForChecks).mockResolvedValue(
+        ok({
+          allPassed: true,
+          mergeableState: 'ready',
+          pending: false,
+          totalChecks: 1,
+          passedChecks: 1,
+          failedChecks: 0,
+        }),
+      );
       vi.mocked(mockPRService.merge).mockResolvedValue(err(new GitHubAPIError('merge', 'Merge failed', 422)));
 
       const options: WorkflowOptions = {
@@ -600,6 +526,9 @@ describe('WorkspaceManager', () => {
         ok({
           allPassed: false,
           mergeableState: 'blocked',
+          pending: false,
+          totalChecks: 2,
+          passedChecks: 1,
           failedChecks: 1,
           failedCheckNames: ['lint'],
         }),
@@ -625,79 +554,6 @@ describe('WorkspaceManager', () => {
       if (!result.ok) {
         expect(result.error.message).toContain('PR checks did not pass');
         expect(result.error.message).toContain('lint');
-      }
-    });
-  });
-
-  describe('createVersionTags', () => {
-    const mockTree = {
-      root: {
-        workspace: {
-          path: '.',
-          type: 'node' as const,
-          name: 'root',
-          version: mockVersion,
-          hasChanges: true,
-          changedFiles: [],
-          newVersion: '2.0.0' as Version,
-        },
-        children: [],
-        isRoot: true,
-      },
-      masterVersion: '2.0.0' as Version,
-      allWorkspaces: [],
-    };
-
-    it('should create master version tag', async () => {
-      vi.mocked(mockGitService.getRef).mockResolvedValue(ok({ ref: 'refs/heads/main', sha: 'abc123def456' }));
-      vi.mocked(mockGitService.createTag).mockResolvedValue(ok(mockGitTag));
-
-      const options: WorkflowOptions = {
-        workspaces: [mockWorkspaceConfig],
-        createPR: false,
-        repository: {
-          owner: 'test',
-          repo: 'test-repo',
-        },
-      };
-
-      const result = await workspaceManager.createVersionTags(mockTree, options);
-
-      expect(result.ok).toBe(true);
-      if (result.ok) {
-        expect(result.value).toContain('v2.0.0');
-      }
-
-      expect(mockGitService.getRef).toHaveBeenCalledWith('heads/main');
-      expect(mockGitService.createTag).toHaveBeenCalledWith(
-        expect.objectContaining({
-          tagName: 'v2.0.0',
-          message: expect.stringContaining('Release'),
-          commitSha: 'abc123def456',
-        }),
-      );
-    });
-
-    it('should handle error from tag creation', async () => {
-      vi.mocked(mockGitService.getRef).mockResolvedValue(ok({ ref: 'refs/heads/main', sha: 'abc123def456' }));
-      vi.mocked(mockGitService.createTag).mockResolvedValue(
-        err(new GitOperationError('createTag', 'Failed to create tag')),
-      );
-
-      const options: WorkflowOptions = {
-        workspaces: [mockWorkspaceConfig],
-        createPR: false,
-        repository: {
-          owner: 'test',
-          repo: 'test-repo',
-        },
-      };
-
-      const result = await workspaceManager.createVersionTags(mockTree, options);
-
-      expect(result.ok).toBe(false);
-      if (!result.ok) {
-        expect(result.error).toBeInstanceOf(GitOperationError);
       }
     });
   });

@@ -1,47 +1,22 @@
 /**
  * Workspace Manager
  *
- * Orchestrates the complete version bumping workflow:
- * 1. Enrich workspaces with detected metadata
- * 2. Detect changed workspaces since last tag
- * 3. Build and validate workspace tree
- * 4. Calculate new versions
- * 5. Update version files
- * 6. Generate changelogs
- * 7. Create PR or commit
- * 8. Create version tags
- *
- * Usage:
- * ```typescript
- * const manager = new WorkspaceManager({
- *   gitService,
- *   prService,
- *   versionService,
- *   changelogService,
- *   treeBuilder,
- *   adapterFactory
- * });
- *
- * await manager.execute({
- *   workspaces: configs,
- *   createPR: true,
- *   ...
- * });
- * ```
+ * Orchestrates version bumping workflow from detection to release
  */
 
-import * as exec from '@actions/exec';
 import { getAdapter } from './adapters/AdapterFactory.js';
-import type { ChangelogService, ChangelogPreset } from './ChangelogService.js';
-import type { VersionService } from './VersionService.js';
 import type { WorkspaceTreeBuilder } from './WorkspaceTreeBuilder.js';
-import { parseCommitMessages } from '../parsers/ConventionalCommitParser.js';
+import type { ChangelogService, ChangelogPreset } from '../services/ChangelogService.js';
 import type { GitHubService } from '../services/GitHubService.js';
 import type { GitService } from '../services/GitService.js';
+import { LocalGitService } from '../services/LocalGitService.js';
 import { PRService } from '../services/PRService.js';
+import { TagService } from '../services/TagService.js';
+import type { VersionService } from '../services/VersionService.js';
+import { WorkspaceService } from '../services/WorkspaceService.js';
+import { RepositoryInfo, GitCommit } from '../types/git.js';
 import type { Result } from '../types/result.js';
 import { ok, err } from '../types/result.js';
-import type { Version } from '../types/version.js';
 import type { WorkspaceConfig, Workspace, WorkspaceWithVersion, WorkspaceTree } from '../types/workspace.js';
 import {
   WorkspaceDetectionError,
@@ -52,103 +27,80 @@ import {
 import { Loggable } from '../utils/Loggable.js';
 
 /**
- * Workspace Manager dependencies
+ * Service dependencies required by WorkspaceManager
  */
 export interface WorkspaceManagerDependencies {
   readonly gitService: GitService;
   readonly githubService: GitHubService;
+  readonly localGitService: LocalGitService;
+  readonly tagService: TagService;
+  readonly workspaceService: WorkspaceService;
   readonly prService: PRService;
   readonly versionService: VersionService;
   readonly changelogService: ChangelogService;
   readonly treeBuilder: WorkspaceTreeBuilder;
 }
 
-/**
- * Workflow execution options
- */
+/** Options for workflow execution */
 export interface WorkflowOptions {
-  /** Workspace configurations to process */
   readonly workspaces: ReadonlyArray<WorkspaceConfig>;
-  /** Whether to create a PR instead of direct commit */
   readonly createPR: boolean;
-  /** PR options (if createPR is true) */
   readonly prOptions?: {
     readonly branchPrefix: string;
     readonly autoMerge: boolean;
     readonly draft: boolean;
     readonly title?: string;
   };
-  /** Tag options */
   readonly tagOptions?: {
     readonly shortTag: boolean;
     readonly tagPrefix?: string;
   };
-  /** Repository context */
-  readonly repository: {
-    readonly owner: string;
-    readonly repo: string;
-  };
-  /** Branch to use for operations (defaults to 'main') */
+  readonly repository: RepositoryInfo;
   readonly branch?: string;
-  /** Changelog options */
   readonly changelog?: {
     readonly preset?: string;
     readonly skip?: boolean;
   };
-  /** Last git tag (for incremental changelog generation) */
   readonly lastTag?: string | null;
 }
 
-/**
- * Workflow execution result
- */
+/** Result of workflow execution */
 export interface WorkflowResult {
-  /** Master version tag created (empty if PR not merged) */
   readonly tag: string;
-  /** All tags created (empty array if PR not merged) */
   readonly allTags: ReadonlyArray<string>;
-  /** PR number (if PR was created) */
   readonly prNumber?: number;
-  /** Whether PR was merged (only relevant if createPR=true) */
   readonly prMerged?: boolean;
-  /** Workspace tree structure */
   readonly tree: WorkspaceTree;
 }
 
-/**
- * PR creation result
- */
+/** Result of PR creation */
 export interface PRCreationResult {
-  /** PR number */
   readonly number: number;
-  /** Whether PR was merged */
   readonly merged: boolean;
-  /** Merge commit SHA (if merged) */
   readonly mergeCommitSha?: string;
 }
 
 /**
- * Workspace Manager
- *
  * Main orchestrator for version bumping workflow
  */
 export class WorkspaceManager extends Loggable {
   private readonly gitService: GitService;
   private readonly githubService: GitHubService;
+  private readonly localGitService: LocalGitService;
+  private readonly tagService: TagService;
+  private readonly workspaceService: WorkspaceService;
   private readonly prService: PRService;
   private readonly versionService: VersionService;
   private readonly changelogService: ChangelogService;
   private readonly treeBuilder: WorkspaceTreeBuilder;
 
-  /**
-   * Create a new Workspace Manager
-   *
-   * @param deps - Service dependencies
-   */
   constructor(deps: WorkspaceManagerDependencies) {
     super();
     this.gitService = deps.gitService;
     this.githubService = deps.githubService;
+    this.localGitService = deps.localGitService;
+    this.tagService = deps.tagService;
+    this.workspaceService = deps.workspaceService;
     this.prService = deps.prService;
     this.versionService = deps.versionService;
     this.changelogService = deps.changelogService;
@@ -157,12 +109,11 @@ export class WorkspaceManager extends Loggable {
     this.log.info('WorkspaceManager initialized');
   }
 
-  /**
-   * Execute complete version bumping workflow
-   *
-   * @param options - Workflow options
-   * @returns Result with workflow outcome
-   */
+  // ====================
+  // Public API
+  // ====================
+
+  /** Execute complete version bumping workflow */
   async execute(options: WorkflowOptions): Promise<Result<WorkflowResult, Error>> {
     this.log.info(
       {
@@ -174,264 +125,12 @@ export class WorkspaceManager extends Loggable {
     );
 
     try {
-      // Step 0: Check if last commit is a merged version bump PR
-      // If so, we only need to create tags, not do a new version bump
-      const targetBranch = options.branch || 'main';
-      const lastCommitResult = await this.gitService.getLastCommit(targetBranch);
-      if (lastCommitResult.ok && lastCommitResult.value) {
-        const commitMessage = lastCommitResult.value.message;
-
-        // DEBUG: Always log the last commit message to see what we're checking
-        this.log.info(
-          {
-            commitMessage,
-            sha: lastCommitResult.value.sha,
-            branch: targetBranch,
-          },
-          'DEBUG: Checking last commit for merged PR detection',
-        );
-
-        // Check for both the generated PR title and the configured PR title
-        const prTitle = options.prOptions?.title || 'chore: version update';
-        const isPRMerge = commitMessage.startsWith('chore: bump version to') || commitMessage.startsWith(prTitle);
-
-        if (isPRMerge) {
-          this.log.info({ commitMessage }, 'Detected merged version bump PR - creating tags only');
-
-          // Extract PR number from commit message (format: "chore: bump version to X.Y.Z (#123)")
-          const prNumberMatch = commitMessage.match(/#(\d+)\)/);
-          const prNumber = prNumberMatch ? parseInt(prNumberMatch[1], 10) : undefined;
-
-          // Enrich workspaces to get current versions
-          const enrichResult = await this.enrichWorkspaces(options.workspaces);
-          if (!enrichResult.ok) {
-            return err(enrichResult.error);
-          }
-          const enrichedWorkspaces = enrichResult.value;
-
-          // For merged PRs, the current version IS the new version (no bump needed)
-          // Add newVersion field matching current version for tree building
-          const workspacesWithVersion = enrichedWorkspaces.map((ws) => ({
-            ...ws,
-            newVersion: ws.version,
-            hasChanges: true, // Mark as changed to include in tree
-          }));
-
-          // Build tree from enriched workspaces
-          const tree = this.treeBuilder.build(workspacesWithVersion);
-          this.log.info({ version: tree.masterVersion }, 'Creating tags for merged PR version');
-
-          // Create tags using the merge commit SHA
-          const commitSha = lastCommitResult.value.sha;
-          const tagsResult = await this.createVersionTags(tree, options, commitSha);
-          if (!tagsResult.ok) {
-            return err(tagsResult.error);
-          }
-
-          const allTags = tagsResult.value;
-          this.log.info({ tagCount: allTags.length }, 'Tags created for merged PR');
-
-          // Delete the PR branch if we have a PR number and branch prefix
-          if (prNumber && options.prOptions?.branchPrefix) {
-            // Get PR details to find the head branch
-            const prDetailsResult = await this.prService.getPullRequest(prNumber);
-
-            if (!prDetailsResult.ok) {
-              this.log.warn(
-                { prNumber, error: prDetailsResult.error.message },
-                'Failed to get PR details for branch deletion',
-              );
-            } else {
-              const branchName = prDetailsResult.value.headRef;
-
-              // Delete the branch
-              try {
-                await this.githubService.deleteBranch(branchName);
-                this.log.info({ branch: branchName, prNumber }, 'Version branch deleted after manual merge');
-              } catch (error) {
-                this.log.warn({ prNumber, branchName, error }, 'Failed to delete branch after manual merge');
-              }
-            }
-          }
-
-          const result: WorkflowResult = {
-            tag: allTags.length > 0 ? `v${tree.masterVersion}` : '',
-            allTags,
-            prNumber,
-            prMerged: true,
-            tree,
-          };
-
-          return ok(result);
-        }
+      const mergedPRResult = await this.handleMergedPR(options);
+      if (mergedPRResult) {
+        return mergedPRResult;
       }
 
-      // Step 1: Get last tag
-      const lastTagResult = await this.gitService.getLastTag();
-      if (!lastTagResult.ok) {
-        return err(lastTagResult.error);
-      }
-      const lastTag = lastTagResult.value?.name || null;
-      this.log.info({ lastTag }, 'Last tag retrieved');
-
-      // Step 2: Enrich workspaces
-      const enrichResult = await this.enrichWorkspaces(options.workspaces);
-      if (!enrichResult.ok) {
-        return err(enrichResult.error);
-      }
-      const enrichedWorkspaces = enrichResult.value;
-      this.log.info({ count: enrichedWorkspaces.length }, 'Workspaces enriched');
-
-      // Step 3: Detect changed workspaces
-      const branch = options.branch || 'main';
-      const changedResult = await this.detectChangedWorkspaces(enrichedWorkspaces, lastTag, branch);
-      if (!changedResult.ok) {
-        return err(changedResult.error);
-      }
-      const changedWorkspaces = changedResult.value;
-
-      if (changedWorkspaces.length === 0) {
-        this.log.info(
-          {
-            lastTag,
-            branch,
-            totalWorkspaces: enrichedWorkspaces.length,
-            workspacePaths: enrichedWorkspaces.map((w) => w.path),
-          },
-          'No workspaces have changed - skipping version bump',
-        );
-        // Return empty result - no work needed
-        return err(
-          new WorkspaceValidationError(
-            `No workspaces have changed since last tag (${lastTag || 'none'}). Branch: ${branch}, Total workspaces: ${enrichedWorkspaces.length}`,
-          ),
-        );
-      }
-
-      this.log.info({ count: changedWorkspaces.length }, 'Changed workspaces detected');
-
-      // Step 4: Calculate new versions for changed workspaces
-      const versionsResult = await this.calculateVersions(changedWorkspaces, lastTag, branch);
-      if (!versionsResult.ok) {
-        return err(versionsResult.error);
-      }
-      const changedWorkspacesWithVersions = versionsResult.value;
-      this.log.info('New versions calculated');
-
-      // Step 5: Merge changed workspaces with unchanged workspaces
-      // Unchanged workspaces keep their current version as newVersion
-      const allWorkspacesWithVersions: WorkspaceWithVersion[] = enrichedWorkspaces.map((workspace) => {
-        const changed = changedWorkspacesWithVersions.find((w) => w.path === workspace.path);
-        if (changed) {
-          return changed;
-        }
-        // Workspace hasn't changed, keep current version
-        return {
-          ...workspace,
-          newVersion: workspace.version,
-        };
-      });
-
-      // Step 6: Build workspace tree from all workspaces
-      const tree = this.treeBuilder.build(allWorkspacesWithVersions);
-      this.log.info({ rootVersion: tree.masterVersion }, 'Workspace tree built');
-
-      // Step 7: Update version files (only for changed workspaces)
-      const updateResult = await this.updateVersionFiles(changedWorkspacesWithVersions);
-      if (!updateResult.ok) {
-        return err(updateResult.error);
-      }
-      this.log.info('Version files updated');
-
-      // Step 8: Generate changelogs (skip if requested)
-      if (!options.changelog?.skip) {
-        // TODO: this operation needs to be done for each workspace, not the only root
-        const changelogResult = await this.generateChangelogs(tree, { ...options, lastTag });
-        if (!changelogResult.ok) {
-          return err(changelogResult.error);
-        }
-        this.log.info('Changelogs generated');
-      } else {
-        this.log.debug('Skipping changelog generation (changelog.skip=true)');
-      }
-
-      // Step 8: Create PR or commit
-      let prNumber: number | undefined;
-      let commitSha: string | undefined;
-      let allTags: string[] = [];
-
-      if (options.createPR) {
-        // Create and push branch for PR
-        const branchResult = await this.createVersionBranch(tree, options);
-        if (!branchResult.ok) {
-          return err(branchResult.error);
-        }
-        this.log.info({ branch: branchResult.value }, 'Version branch created');
-
-        // Create the PR
-        const prResult = await this.createVersionPR(tree, options, branchResult.value);
-        if (!prResult.ok) {
-          return err(prResult.error);
-        }
-        prNumber = prResult.value.number;
-        const prMerged = prResult.value.merged;
-        this.log.info({ prNumber, merged: prMerged }, 'Pull request created');
-
-        // Only create tags if PR was auto-merged
-        if (prMerged) {
-          // Get the merge commit SHA from the PR
-          const mergeCommitSha = prResult.value.mergeCommitSha;
-          if (!mergeCommitSha) {
-            return err(new GitOperationError('createVersionTags', 'PR was merged but no merge commit SHA found'));
-          }
-          this.log.debug({ mergeCommitSha }, 'PR was merged, creating tags');
-
-          // Step 9: Create tags using the merge commit SHA
-          const tagsResult = await this.createVersionTags(tree, options, mergeCommitSha);
-          if (!tagsResult.ok) {
-            return err(tagsResult.error);
-          }
-          allTags = tagsResult.value;
-          this.log.info({ tagCount: allTags.length }, 'Version tags created after PR merge');
-        } else {
-          this.log.info({ prNumber }, 'PR created without auto-merge - tags will be created after manual merge');
-        }
-      } else {
-        // Direct commit workflow
-        const commitResult = await this.createVersionCommit(tree);
-        if (!commitResult.ok) {
-          return err(commitResult.error);
-        }
-        commitSha = commitResult.value;
-        this.log.info({ sha: commitResult.value }, 'Version commit created');
-
-        // Step 9: Create tags using the commit SHA
-        this.log.debug({ commitSha, hasSha: !!commitSha }, 'About to create tags with commit SHA');
-        const tagsResult = await this.createVersionTags(tree, options, commitSha);
-        if (!tagsResult.ok) {
-          return err(tagsResult.error);
-        }
-        allTags = tagsResult.value;
-        this.log.info({ tagCount: allTags.length }, 'Version tags created');
-      }
-
-      const result: WorkflowResult = {
-        tag: allTags.length > 0 ? `v${tree.masterVersion}` : '',
-        allTags,
-        prNumber,
-        prMerged: options.createPR ? allTags.length > 0 : undefined,
-        tree,
-      };
-
-      this.log.info(
-        {
-          tag: result.tag || '(none - PR not merged)',
-          prNumber,
-          prMerged: result.prMerged,
-        },
-        'Workflow completed successfully',
-      );
-      return ok(result);
+      return await this.executeVersionBump(options);
     } catch (error) {
       this.log.error(
         {
@@ -444,264 +143,32 @@ export class WorkspaceManager extends Loggable {
     }
   }
 
-  /**
-   * Enrich workspaces with detected name and version
-   *
-   * @param configs - Workspace configurations
-   * @returns Result with enriched workspaces
-   */
+  /** Enrich workspaces with detected metadata */
   async enrichWorkspaces(
     configs: ReadonlyArray<WorkspaceConfig>,
   ): Promise<Result<ReadonlyArray<Workspace>, WorkspaceDetectionError>> {
-    this.log.debug(
-      {
-        count: configs.length,
-        workspaces: configs.map((c) => ({ path: c.path, type: c.type })),
-      },
-      'Enriching workspaces',
-    );
-
-    const enriched: Workspace[] = [];
-
-    for (const config of configs) {
-      const adapter = getAdapter(config.type);
-      const detectResult = await adapter.detect(config.path);
-
-      if (!detectResult.ok) {
-        this.log.error({ path: config.path, type: config.type }, 'Failed to detect workspace info');
-        return err(detectResult.error);
-      }
-
-      const info = detectResult.value;
-
-      // Resolve absolute path for the workspace
-      // '.' becomes process.cwd(), relative paths are resolved against cwd
-      const absolutePath =
-        config.path === '.'
-          ? process.cwd()
-          : config.path.startsWith('/')
-            ? config.path
-            : `${process.cwd()}/${config.path}`;
-
-      const workspace: Workspace = {
-        ...config,
-        path: absolutePath,
-        name: info.name,
-        version: info.version,
-        hasChanges: false, // Will be set in detectChangedWorkspaces
-        changedFiles: [],
-      };
-
-      enriched.push(workspace);
-      this.log.debug(
-        {
-          originalPath: config.path,
-          absolutePath,
-          name: info.name,
-          version: info.version,
-        },
-        'Workspace enriched',
-      );
-    }
-
-    return ok(enriched);
+    return await this.workspaceService.enrichWorkspaces(configs);
   }
 
-  /**
-   * Detect workspaces with changes since last tag
-   *
-   * @param workspaces - Enriched workspaces
-   * @param lastTag - Last git tag
-   * @param branch - Branch to compare against (defaults to 'main')
-   * @returns Result with changed workspaces
-   */
+  /** Detect workspaces with changes since last tag */
   async detectChangedWorkspaces(
     workspaces: ReadonlyArray<Workspace>,
     lastTag: string | null,
     branch: string = 'main',
   ): Promise<Result<ReadonlyArray<Workspace>, GitOperationError>> {
-    this.log.debug(
-      {
-        lastTag,
-        branch,
-        workspaceCount: workspaces.length,
-        workspaces: workspaces.map((w) => ({ name: w.name, path: w.path, type: w.type })),
-      },
-      'Detecting changed workspaces',
-    );
-
-    // If no last tag, all workspaces are considered changed
-    if (!lastTag) {
-      this.log.info('No previous tag - all workspaces marked as changed');
-      return ok(
-        workspaces.map((w) => ({
-          ...w,
-          hasChanges: true,
-          changedFiles: ['*'], // Indicate all files changed
-        })),
-      );
-    }
-
-    // Get changed files since last tag
-    const changedFilesResult = await this.gitService.getChangedFiles(lastTag, branch);
-    if (!changedFilesResult.ok) {
-      return err(changedFilesResult.error);
-    }
-
-    const allChangedFiles = changedFilesResult.value.files;
-    this.log.debug(
-      {
-        fileCount: allChangedFiles.length,
-        files: allChangedFiles.map((f) => f.path),
-        commitCount: changedFilesResult.value.commits?.length,
-      },
-      'Changed files retrieved from comparison',
-    );
-
-    // Map workspaces to changed files
-    const cwd = process.cwd();
-    const updated: Workspace[] = workspaces.map((workspace) => {
-      // Convert absolute workspace path to relative path for git comparison
-      const relativePath = workspace.path === cwd ? '.' : workspace.path.replace(`${cwd}/`, '');
-      const workspacePath = relativePath === '.' ? '' : relativePath;
-
-      const changedInWorkspace = allChangedFiles.filter((file) => {
-        if (workspacePath === '') {
-          // Root workspace - all files belong to it
-          return true;
-        }
-        // Child workspace - only files within its path
-        return file.path.startsWith(workspacePath + '/') || file.path === workspacePath;
-      });
-
-      this.log.debug(
-        {
-          workspace: workspace.name,
-          workspacePath,
-          totalFiles: allChangedFiles.length,
-          matchedFiles: changedInWorkspace.length,
-          matchedFilenames: changedInWorkspace.map((f) => f.path),
-        },
-        'Workspace file matching',
-      );
-
-      return {
-        ...workspace,
-        hasChanges: changedInWorkspace.length > 0,
-        changedFiles: changedInWorkspace.map((f) => f.path),
-      };
-    });
-
-    const changedWorkspaces = updated.filter((w) => w.hasChanges);
-    this.log.info(
-      {
-        changedCount: changedWorkspaces.length,
-        changedWorkspaceNames: changedWorkspaces.map((w) => w.name),
-        totalWorkspaces: workspaces.length,
-      },
-      'Changed workspaces identified',
-    );
-
-    return ok(changedWorkspaces);
+    return await this.workspaceService.detectChangedWorkspaces(workspaces, lastTag, branch);
   }
 
-  /**
-   * Calculate new versions for changed workspaces
-   *
-   * @param workspaces - Changed workspaces
-   * @param lastTag - Last git tag
-   * @param branch - Current branch name for commit comparison
-   * @returns Result with workspaces with new versions
-   */
+  /** Calculate new versions for changed workspaces */
   async calculateVersions(
     workspaces: ReadonlyArray<Workspace>,
     lastTag: string | null,
     branch: string,
   ): Promise<Result<ReadonlyArray<WorkspaceWithVersion>, Error>> {
-    this.log.debug(
-      {
-        workspaceCount: workspaces.length,
-        lastTag,
-        branch,
-      },
-      'Calculating new versions',
-    );
-
-    // Get commits since last tag (use HEAD^ if no tag to get at least one commit)
-    const base = lastTag || 'HEAD^';
-    const commitsResult = await this.gitService.getCommitsSince(base, branch);
-    if (!commitsResult.ok) {
-      return err(commitsResult.error);
-    }
-
-    const commits = commitsResult.value;
-    const commitMessages = commits.map((c) => c.message);
-
-    this.log.debug(
-      {
-        base,
-        commitCount: commits.length,
-        firstMessage: commitMessages[0],
-        lastMessage: commitMessages[commitMessages.length - 1],
-      },
-      'Commits retrieved for version calculation',
-    );
-    commits.forEach((c, index) => {
-      const { sha, message } = c;
-      this.log.debug({ sha, message }, `Commit #${index + 1} detail`);
-    });
-
-    const workspacesWithVersions: WorkspaceWithVersion[] = [];
-
-    for (const workspace of workspaces) {
-      // Filter commits for this workspace
-      const workspaceCommits =
-        workspace.path === '.'
-          ? commitMessages // Root gets all commits
-          : commitMessages.filter(() => {
-              // Check if commit affects this workspace (simple heuristic)
-              // In practice, we'd check commit file changes
-              return true; // For now, include all commits
-            });
-
-      this.log.debug({ workspace: workspace.path, commits: workspaceCommits.length }, 'Workspace commit analysis');
-      workspaceCommits.forEach((message) => this.log.debug({ message }, 'Workspace commit detail'));
-
-      // Parse commits to get bump type
-      const analysis = parseCommitMessages(workspaceCommits);
-
-      let newVersion: Version;
-      if (analysis) {
-        // Calculate version based on commit analysis
-        newVersion = this.versionService.calculateNewVersion(workspace.version, analysis);
-        this.log.debug(
-          { workspace: workspace.path, oldVersion: workspace.version, newVersion, bumpType: analysis.type },
-          'Version calculated from commits',
-        );
-      } else {
-        // No conventional commits - default to patch bump
-        newVersion = this.versionService.increaseVersion(workspace.version, 'patch');
-        this.log.debug(
-          { workspace: workspace.path, oldVersion: workspace.version, newVersion },
-          'Version bumped (patch - no conventional commits)',
-        );
-      }
-
-      workspacesWithVersions.push({
-        ...workspace,
-        newVersion,
-      });
-    }
-
-    return ok(workspacesWithVersions);
+    return await this.versionService.calculateVersionsForWorkspaces(workspaces, lastTag, branch);
   }
 
-  /**
-   * Update version files for all workspaces
-   *
-   * @param workspaces - Workspaces with new versions
-   * @returns Result indicating success or failure
-   */
+  /** Update version files for all workspaces */
   async updateVersionFiles(workspaces: ReadonlyArray<WorkspaceWithVersion>): Promise<Result<void, FileOperationError>> {
     this.log.debug(
       {
@@ -726,13 +193,7 @@ export class WorkspaceManager extends Loggable {
     return ok(undefined);
   }
 
-  /**
-   * Generate changelogs for all workspaces
-   *
-   * @param tree - Workspace tree
-   * @param options - Workflow options
-   * @returns Result indicating success or failure
-   */
+  /** Generate changelogs for workspace tree */
   async generateChangelogs(tree: WorkspaceTree, options: WorkflowOptions): Promise<Result<void, FileOperationError>> {
     this.log.debug(
       {
@@ -743,10 +204,303 @@ export class WorkspaceManager extends Loggable {
       'Generating changelogs',
     );
 
-    // Get commits for changelog generation
+    const commitsResult = await this.getCommitsForChangelog(options);
+    if (!commitsResult.ok) {
+      return err(commitsResult.error);
+    }
+
+    return await this.generateRootChangelog(tree, options, commitsResult.value);
+  }
+
+  /** Create version pull request */
+  async createVersionPR(
+    tree: WorkspaceTree,
+    options: WorkflowOptions,
+    branchName: string,
+  ): Promise<Result<PRCreationResult, Error>> {
+    this.log.debug({ version: tree.masterVersion, branch: branchName }, 'Creating version PR');
+
+    const prResult = await this.createPR(tree, options, branchName);
+    if (!prResult.ok) {
+      return err(prResult.error);
+    }
+
+    const pr = prResult.value;
+    this.log.info({ prNumber: pr.number, prUrl: pr.htmlUrl }, 'Version PR created');
+
+    if (options.prOptions?.autoMerge) {
+      return await this.handleAutoMerge(pr.number, branchName);
+    }
+
+    this.log.info({ prNumber: pr.number }, 'PR created without auto-merge - waiting for manual merge');
+    return ok({
+      number: pr.number,
+      merged: false,
+      mergeCommitSha: undefined,
+    });
+  }
+
+  // ====================
+  // Workflow Execution
+  // ====================
+
+  /** Check for merged PR and handle tags-only mode */
+  private async handleMergedPR(options: WorkflowOptions): Promise<Result<WorkflowResult, Error> | null> {
+    const mergeInfo = await this.detectMergedPR(options);
+    if (!mergeInfo) {
+      return null;
+    }
+
+    const { commitSha, prNumber } = mergeInfo;
+    this.log.info('Detected merged version bump PR - creating tags only');
+
+    const tagsResult = await this.createTagsForMergedPR(options, commitSha);
+    if (!tagsResult.ok) {
+      return err(tagsResult.error);
+    }
+
+    const { tree, allTags } = tagsResult.value;
+    await this.cleanupPRBranch(prNumber, options.prOptions?.branchPrefix);
+
+    return ok({
+      tag: allTags.length > 0 ? `v${tree.masterVersion}` : '',
+      allTags,
+      prNumber,
+      prMerged: true,
+      tree,
+    });
+  }
+
+  /** Execute normal version bump workflow */
+  private async executeVersionBump(options: WorkflowOptions): Promise<Result<WorkflowResult, Error>> {
+    const branch = options.branch || 'main';
+
+    const lastTag = await this.getLastTag();
+    if (!lastTag.ok) {
+      return err(lastTag.error);
+    }
+
+    const enrichedWorkspaces = await this.enrichAndDetectChanges(options, lastTag.value, branch);
+    if (!enrichedWorkspaces.ok) {
+      return err(enrichedWorkspaces.error);
+    }
+
+    const tree = await this.buildWorkspaceTree(enrichedWorkspaces.value, lastTag.value, branch);
+    if (!tree.ok) {
+      return err(tree.error);
+    }
+
+    const updateResult = await this.updateFilesAndChangelogs(tree.value, { ...options, lastTag: lastTag.value });
+    if (!updateResult.ok) {
+      return err(updateResult.error);
+    }
+
+    return await this.createReleaseArtifacts(tree.value, options);
+  }
+
+  // ====================
+  // Merged PR Detection
+  // ====================
+
+  /** Detect if last commit is a merged PR */
+  private async detectMergedPR(options: WorkflowOptions): Promise<{ commitSha: string; prNumber?: number } | null> {
+    const targetBranch = options.branch || 'main';
+    const lastCommitResult = await this.gitService.getLastCommit(targetBranch);
+
+    if (!lastCommitResult.ok || !lastCommitResult.value) {
+      return null;
+    }
+
+    const { message, sha } = lastCommitResult.value;
+    this.log.info({ commitMessage: message, sha, branch: targetBranch }, 'Checking last commit');
+
+    if (!this.isVersionBumpCommit(message, options)) {
+      return null;
+    }
+
+    return {
+      commitSha: sha,
+      prNumber: this.extractPRNumber(message),
+    };
+  }
+
+  /** Check if commit message is a version bump */
+  private isVersionBumpCommit(message: string, options: WorkflowOptions): boolean {
+    const prTitle = options.prOptions?.title || 'chore: version update';
+    return message.startsWith('chore: bump version to') || message.startsWith(prTitle);
+  }
+
+  /** Extract PR number from commit message */
+  private extractPRNumber(commitMessage: string): number | undefined {
+    const prNumberMatch = commitMessage.match(/#(\d+)\)/);
+    return prNumberMatch ? parseInt(prNumberMatch[1], 10) : undefined;
+  }
+
+  /** Create tags for merged PR using current versions */
+  private async createTagsForMergedPR(
+    options: WorkflowOptions,
+    commitSha: string,
+  ): Promise<Result<{ tree: WorkspaceTree; allTags: string[] }, Error>> {
+    const enrichResult = await this.enrichWorkspaces(options.workspaces);
+    if (!enrichResult.ok) {
+      return err(enrichResult.error);
+    }
+
+    const workspacesWithVersion = enrichResult.value.map((ws) => ({
+      ...ws,
+      newVersion: ws.version,
+      hasChanges: true,
+    }));
+
+    const tree = this.treeBuilder.build(workspacesWithVersion);
+    const tagsResult = await this.createVersionTags(tree, options, commitSha);
+
+    if (!tagsResult.ok) {
+      return err(tagsResult.error);
+    }
+
+    const allTags = tagsResult.value;
+    this.log.info({ tagCount: allTags.length }, 'Tags created for merged PR');
+
+    return ok({ tree, allTags });
+  }
+
+  /** Clean up PR branch after merge */
+  private async cleanupPRBranch(prNumber: number | undefined, branchPrefix: string | undefined): Promise<void> {
+    if (!prNumber || !branchPrefix) {
+      return;
+    }
+
+    const prDetailsResult = await this.prService.getPullRequest(prNumber);
+    if (!prDetailsResult.ok) {
+      this.log.warn({ prNumber, error: prDetailsResult.error.message }, 'Failed to get PR details for cleanup');
+      return;
+    }
+
+    const branchName = prDetailsResult.value.headRef;
+    try {
+      await this.githubService.deleteBranch(branchName);
+      this.log.info({ branch: branchName, prNumber }, 'Version branch deleted after manual merge');
+    } catch (error) {
+      this.log.warn({ prNumber, branchName, error }, 'Failed to delete branch after manual merge');
+    }
+  }
+
+  // ====================
+  // Version Bump Pipeline
+  // ====================
+
+  /** Get last tag from repository */
+  private async getLastTag(): Promise<Result<string | null, Error>> {
+    const lastTagResult = await this.gitService.getLastTag();
+    if (!lastTagResult.ok) {
+      return err(lastTagResult.error);
+    }
+    const lastTag = lastTagResult.value?.name || null;
+    this.log.info({ lastTag }, 'Last tag retrieved');
+    return ok(lastTag);
+  }
+
+  /** Enrich workspaces and detect changes */
+  private async enrichAndDetectChanges(
+    options: WorkflowOptions,
+    lastTag: string | null,
+    branch: string,
+  ): Promise<Result<ReadonlyArray<Workspace>, Error>> {
+    const enrichResult = await this.enrichWorkspaces(options.workspaces);
+    if (!enrichResult.ok) {
+      return err(enrichResult.error);
+    }
+    const enrichedWorkspaces = enrichResult.value;
+    this.log.info({ count: enrichedWorkspaces.length }, 'Workspaces enriched');
+
+    const changedResult = await this.detectChangedWorkspaces(enrichedWorkspaces, lastTag, branch);
+    if (!changedResult.ok) {
+      return err(changedResult.error);
+    }
+    const changedWorkspaces = changedResult.value;
+
+    if (changedWorkspaces.length === 0) {
+      return err(
+        new WorkspaceValidationError(
+          `No workspaces have changed since last tag (${lastTag || 'none'}). Branch: ${branch}, Total workspaces: ${enrichedWorkspaces.length}`,
+        ),
+      );
+    }
+
+    this.log.info({ count: changedWorkspaces.length }, 'Changed workspaces detected');
+    return ok(changedWorkspaces);
+  }
+
+  /** Build workspace tree with versions */
+  private async buildWorkspaceTree(
+    changedWorkspaces: ReadonlyArray<Workspace>,
+    lastTag: string | null,
+    branch: string,
+  ): Promise<Result<WorkspaceTree, Error>> {
+    const versionsResult = await this.calculateVersions(changedWorkspaces, lastTag, branch);
+    if (!versionsResult.ok) {
+      return err(versionsResult.error);
+    }
+    const changedWorkspacesWithVersions = versionsResult.value;
+
+    const allWorkspacesWithVersions = this.mergeWorkspaceVersions(changedWorkspaces, changedWorkspacesWithVersions);
+    const tree = this.treeBuilder.build(allWorkspacesWithVersions);
+    this.log.info({ rootVersion: tree.masterVersion }, 'Workspace tree built');
+
+    return ok(tree);
+  }
+
+  /** Merge changed workspaces with their versions */
+  private mergeWorkspaceVersions(
+    allWorkspaces: ReadonlyArray<Workspace>,
+    changedWorkspaces: ReadonlyArray<WorkspaceWithVersion>,
+  ): WorkspaceWithVersion[] {
+    return allWorkspaces.map((workspace) => {
+      const changed = changedWorkspaces.find((w) => w.path === workspace.path);
+      if (changed) {
+        return changed;
+      }
+      return {
+        ...workspace,
+        newVersion: workspace.version,
+      };
+    });
+  }
+
+  /** Update version files and generate changelogs */
+  private async updateFilesAndChangelogs(tree: WorkspaceTree, options: WorkflowOptions): Promise<Result<void, Error>> {
+    // Get all workspaces that have changes (need version updates)
+    const workspacesToUpdate = tree.allWorkspaces.filter((ws) => ws.hasChanges);
+    const updateResult = await this.updateVersionFiles(workspacesToUpdate);
+    if (!updateResult.ok) {
+      return err(updateResult.error);
+    }
+    this.log.info('Version files updated');
+
+    if (!options.changelog?.skip) {
+      const changelogResult = await this.generateChangelogs(tree, options);
+      if (!changelogResult.ok) {
+        return err(changelogResult.error);
+      }
+      this.log.info('Changelogs generated');
+    }
+
+    return ok(undefined);
+  }
+
+  // ====================
+  // Changelog Generation
+  // ====================
+
+  /** Get commits for changelog generation */
+  private async getCommitsForChangelog(
+    options: WorkflowOptions,
+  ): Promise<Result<ReadonlyArray<GitCommit>, FileOperationError>> {
     const branch = options.branch || 'main';
     const base = options.lastTag || 'HEAD^';
     this.log.debug({ branch, base, hasLastTag: !!options.lastTag }, 'Getting commits for changelog');
+
     const commitsResult = await this.gitService.getCommitsSince(base, branch);
 
     if (!commitsResult.ok) {
@@ -762,10 +516,15 @@ export class WorkspaceManager extends Loggable {
     }
 
     this.log.debug({ rawCommitCount: commitsResult.value.length }, 'Raw commits retrieved');
+    return ok(commitsResult.value);
+  }
 
-    // Get commits for changelog (already in GitCommit format)
-    const commits = commitsResult.value;
-
+  /** Generate changelog for root workspace */
+  private async generateRootChangelog(
+    tree: WorkspaceTree,
+    options: WorkflowOptions,
+    commits: ReadonlyArray<GitCommit>,
+  ): Promise<Result<void, FileOperationError>> {
     this.log.debug(
       {
         commitCount: commits.length,
@@ -775,7 +534,6 @@ export class WorkspaceManager extends Loggable {
       'Retrieved commits for changelog generation',
     );
 
-    // Generate changelog for root workspace
     const rootChangelogPath = `${tree.root.workspace.path}/CHANGELOG.md`;
 
     const generateOptions = {
@@ -785,7 +543,7 @@ export class WorkspaceManager extends Loggable {
       childWorkspaces: tree.root.children,
       repository: options.repository,
       lastTag: options.lastTag,
-      commits, // Pass commits data!
+      commits,
     };
 
     this.log.debug({ path: rootChangelogPath }, 'Generating root changelog');
@@ -799,343 +557,217 @@ export class WorkspaceManager extends Loggable {
     return ok(undefined);
   }
 
-  /**
-   * Configure git user for commits
-   *
-   * Sets git user.name and user.email if not already configured.
-   * Uses github-actions[bot] as default.
-   */
-  private async configureGit(): Promise<void> {
-    try {
-      // Check if user.name is already configured
-      let hasUserName = false;
-      await exec.exec('git', ['config', 'user.name'], {
-        ignoreReturnCode: true,
-        listeners: {
-          stdout: (data: Buffer) => {
-            hasUserName = data.toString().trim().length > 0;
-          },
-        },
-      });
+  // ====================
+  // Release Artifacts
+  // ====================
 
-      if (!hasUserName) {
-        await exec.exec('git', ['config', 'user.name', 'github-actions[bot]']);
-        this.log.debug('Configured git user.name');
+  /** Create PR or direct commit with tags */
+  private async createReleaseArtifacts(
+    tree: WorkspaceTree,
+    options: WorkflowOptions,
+  ): Promise<Result<WorkflowResult, Error>> {
+    if (options.createPR) {
+      return await this.createPRWorkflow(tree, options);
+    }
+    return await this.createDirectCommitWorkflow(tree, options);
+  }
+
+  /** Create PR workflow with optional auto-merge */
+  private async createPRWorkflow(
+    tree: WorkspaceTree,
+    options: WorkflowOptions,
+  ): Promise<Result<WorkflowResult, Error>> {
+    const branchPrefix = options.prOptions?.branchPrefix || 'version-bump';
+    const branchResult = await this.localGitService.createVersionBranch(tree, branchPrefix);
+    if (!branchResult.ok) {
+      return err(branchResult.error);
+    }
+    this.log.info({ branch: branchResult.value }, 'Version branch created');
+
+    const prResult = await this.createVersionPR(tree, options, branchResult.value);
+    if (!prResult.ok) {
+      return err(prResult.error);
+    }
+
+    const { number: prNumber, merged: prMerged, mergeCommitSha } = prResult.value;
+    this.log.info({ prNumber, merged: prMerged }, 'Pull request created');
+
+    let allTags: string[] = [];
+    if (prMerged && mergeCommitSha) {
+      const tagsResult = await this.createVersionTags(tree, options, mergeCommitSha);
+      if (!tagsResult.ok) {
+        return err(tagsResult.error);
       }
-
-      // Check if user.email is already configured
-      let hasUserEmail = false;
-      await exec.exec('git', ['config', 'user.email'], {
-        ignoreReturnCode: true,
-        listeners: {
-          stdout: (data: Buffer) => {
-            hasUserEmail = data.toString().trim().length > 0;
-          },
-        },
-      });
-
-      if (!hasUserEmail) {
-        await exec.exec('git', ['config', 'user.email', 'github-actions[bot]@users.noreply.github.com']);
-        this.log.debug('Configured git user.email');
-      }
-    } catch (error) {
-      // Log but don't fail - let the commit fail if git config is truly broken
-      this.log.warn({ error }, 'Failed to configure git user, will proceed anyway');
+      allTags = tagsResult.value;
+      this.log.info({ tagCount: allTags.length }, 'Version tags created after PR merge');
+    } else {
+      this.log.info({ prNumber }, 'PR created without auto-merge - tags will be created after manual merge');
     }
+
+    return ok({
+      tag: allTags.length > 0 ? `v${tree.masterVersion}` : '',
+      allTags,
+      prNumber,
+      prMerged: allTags.length > 0,
+      tree,
+    });
   }
 
-  /**
-   * Create version commit
-   *
-   * Creates a Git commit with version changes using local Git commands.
-   * This method stages all changes and commits them with a version bump message.
-   *
-   * @param tree - Workspace tree
-   * @returns Result with commit SHA
-   */
-  async createVersionCommit(tree: WorkspaceTree): Promise<Result<string, GitOperationError>> {
-    this.log.debug({ version: tree.masterVersion }, 'Creating version commit');
-
-    try {
-      // Ensure git user is configured
-      await this.configureGit();
-
-      // Stage all changes (version files and changelogs)
-      await exec.exec('git', ['add', '-A']);
-
-      // Create commit
-      const commitMessage = `chore: bump version to ${tree.masterVersion}`;
-      await exec.exec('git', ['commit', '-m', commitMessage, '--no-verify']);
-
-      // Get the commit SHA
-      let commitSha = '';
-      await exec.exec('git', ['rev-parse', 'HEAD'], {
-        listeners: {
-          stdout: (data: Buffer) => {
-            commitSha += data.toString().trim();
-          },
-        },
-      });
-
-      // Get current branch name
-      let branchName = '';
-      await exec.exec('git', ['rev-parse', '--abbrev-ref', 'HEAD'], {
-        listeners: {
-          stdout: (data: Buffer) => {
-            branchName += data.toString().trim();
-          },
-        },
-      });
-
-      // Push the commit with upstream tracking
-      await exec.exec('git', ['push', '--set-upstream', 'origin', branchName, '--no-verify']);
-
-      this.log.info({ sha: commitSha, message: commitMessage }, 'Version commit created and pushed');
-      return ok(commitSha);
-    } catch (error) {
-      const gitError = new GitOperationError('createVersionCommit', 'Failed to create version commit', error);
-      this.log.error({ error: gitError }, 'Failed to create version commit');
-      return err(gitError);
+  /** Create direct commit workflow with tags */
+  private async createDirectCommitWorkflow(
+    tree: WorkspaceTree,
+    options: WorkflowOptions,
+  ): Promise<Result<WorkflowResult, Error>> {
+    const commitResult = await this.localGitService.createVersionCommit(tree);
+    if (!commitResult.ok) {
+      return err(commitResult.error);
     }
+    const commitSha = commitResult.value;
+    this.log.info({ sha: commitSha }, 'Version commit created');
+
+    const tagsResult = await this.createVersionTags(tree, options, commitSha);
+    if (!tagsResult.ok) {
+      return err(tagsResult.error);
+    }
+    const allTags = tagsResult.value;
+    this.log.info({ tagCount: allTags.length }, 'Version tags created');
+
+    return ok({
+      tag: `v${tree.masterVersion}`,
+      allTags,
+      tree,
+    });
   }
 
-  /**
-   * Create and push version branch for PR
-   *
-   * @param tree - Workspace tree
-   * @param options - Workflow options
-   * @returns Result with branch name
-   */
-  async createVersionBranch(tree: WorkspaceTree, options: WorkflowOptions): Promise<Result<string, GitOperationError>> {
-    // Add random suffix to avoid branch name collisions on retry
-    const randomSuffix = Math.floor(Math.random() * 10000).toString(36);
-    const branchName = `${options.prOptions?.branchPrefix || 'version-bump'}/v${tree.masterVersion}-${randomSuffix}`;
-    this.log.debug({ branch: branchName, version: tree.masterVersion }, 'Creating version branch');
+  // ====================
+  // PR Management
+  // ====================
 
-    try {
-      // Ensure git user is configured
-      await this.configureGit();
-
-      // Create and checkout new branch FIRST (before committing)
-      await exec.exec('git', ['checkout', '-b', branchName]);
-
-      // Stage all changes (version files and changelogs)
-      await exec.exec('git', ['add', '-A']);
-
-      // Create commit on the new branch
-      const commitMessage = `chore: bump version to ${tree.masterVersion}`;
-      await exec.exec('git', ['commit', '-m', commitMessage, '--no-verify']);
-
-      // Push the branch
-      await exec.exec('git', ['push', '--set-upstream', 'origin', branchName, '--no-verify']);
-
-      this.log.info({ branch: branchName, message: commitMessage }, 'Version branch created and pushed');
-      return ok(branchName);
-    } catch (error) {
-      const gitError = new GitOperationError('createVersionBranch', 'Failed to create version branch', error);
-      this.log.error({ error: gitError }, 'Failed to create version branch');
-      return err(gitError);
-    }
-  }
-
-  /**
-   * Create version pull request
-   *
-   * @param tree - Workspace tree
-   * @param options - Workflow options
-   * @param branchName - The actual branch name (with random suffix)
-   * @returns Result with PR creation details
-   */
-  async createVersionPR(
+  /** Create PR with title and body */
+  private async createPR(
     tree: WorkspaceTree,
     options: WorkflowOptions,
     branchName: string,
-  ): Promise<Result<PRCreationResult, Error>> {
-    this.log.debug({ version: tree.masterVersion, branch: branchName }, 'Creating version PR');
-
+  ): Promise<Result<{ number: number; htmlUrl: string }, Error>> {
     const title = `chore: bump version to ${tree.masterVersion}`;
-
-    // Build PR body with workspace tree
     const body = PRService.buildPRBody(tree);
 
-    // Create PR
-    const prResult = await this.prService.create({
+    return await this.prService.create({
       title,
       body,
       head: branchName,
       base: options.branch || 'main',
       draft: options.prOptions?.draft || false,
     });
+  }
 
-    if (!prResult.ok) {
-      return err(prResult.error);
+  /** Handle auto-merge: wait for checks, merge, cleanup */
+  private async handleAutoMerge(prNumber: number, branchName: string): Promise<Result<PRCreationResult, Error>> {
+    const checksResult = await this.waitForPRChecks(prNumber);
+    if (!checksResult.ok) {
+      return err(checksResult.error);
     }
 
-    const pr = prResult.value;
-    this.log.info({ prNumber: pr.number, prUrl: pr.htmlUrl }, 'Version PR created');
-
-    let merged = false;
-    let mergeCommitSha: string | undefined;
-
-    // Auto-merge if requested
-    if (options.prOptions?.autoMerge) {
-      // Wait for checks to complete before merging
-      this.log.debug({ prNumber: pr.number }, 'Waiting for PR checks to complete');
-
-      const checksResult = await this.prService.waitForChecks({
-        prNumber: pr.number,
-        timeout: 300000, // 5 minutes
-        interval: 10000, // 10 seconds
+    const mergeResult = await this.mergePR(prNumber);
+    if (!mergeResult.ok) {
+      return ok({
+        number: prNumber,
+        merged: false,
+        mergeCommitSha: undefined,
       });
-
-      if (!checksResult.ok) {
-        this.log.error({ prNumber: pr.number, error: checksResult.error.message }, 'Failed to wait for PR checks');
-        return err(checksResult.error);
-      }
-
-      const checksStatus = checksResult.value;
-
-      if (!checksStatus.allPassed) {
-        const checkError = new Error(
-          `PR checks did not pass. Failed checks: ${checksStatus.failedCheckNames?.join(', ') || 'unknown'}`,
-        );
-        this.log.error(
-          {
-            prNumber: pr.number,
-            failedChecks: checksStatus.failedChecks,
-            failedCheckNames: checksStatus.failedCheckNames,
-            mergeableState: checksStatus.mergeableState,
-          },
-          'PR checks failed',
-        );
-        return err(checkError);
-      }
-
-      this.log.info({ prNumber: pr.number }, 'All PR checks passed, proceeding with merge');
-
-      const mergeResult = await this.prService.merge({
-        prNumber: pr.number,
-        mergeMethod: 'squash',
-      });
-
-      if (!mergeResult.ok) {
-        this.log.warn({ prNumber: pr.number }, 'Auto-merge failed - PR remains open');
-        merged = false;
-      } else {
-        merged = true;
-        mergeCommitSha = mergeResult.value.sha;
-        this.log.info({ prNumber: pr.number, mergeCommitSha }, 'PR auto-merged');
-
-        // Delete the branch after successful merge to avoid collisions on retry
-        try {
-          await this.githubService.deleteBranch(branchName);
-          this.log.info({ branch: branchName }, 'Version branch deleted after merge');
-        } catch (error) {
-          this.log.warn({ branch: branchName, error }, 'Failed to delete branch after merge');
-        }
-      }
-    } else {
-      this.log.info({ prNumber: pr.number }, 'PR created without auto-merge - waiting for manual merge');
     }
+
+    const mergeCommitSha = mergeResult.value;
+    await this.cleanupBranch(branchName);
 
     return ok({
-      number: pr.number,
-      merged,
+      number: prNumber,
+      merged: true,
       mergeCommitSha,
     });
   }
 
-  /**
-   * Create version tags
-   *
-   * @param tree - Workspace tree
-   * @param options - Workflow options
-   * @returns Result with created tag names
-   */
-  async createVersionTags(
+  /** Wait for PR checks to complete */
+  private async waitForPRChecks(prNumber: number): Promise<Result<void, Error>> {
+    this.log.debug({ prNumber }, 'Waiting for PR checks to complete');
+
+    const checksResult = await this.prService.waitForChecks({
+      prNumber,
+      timeout: 300000,
+      interval: 10000,
+    });
+
+    if (!checksResult.ok) {
+      this.log.error({ prNumber, error: checksResult.error.message }, 'Failed to wait for PR checks');
+      return err(checksResult.error);
+    }
+
+    const checksStatus = checksResult.value;
+
+    if (!checksStatus.allPassed) {
+      const checkError = new Error(
+        `PR checks did not pass. Failed checks: ${checksStatus.failedCheckNames?.join(', ') || 'unknown'}`,
+      );
+      this.log.error(
+        {
+          prNumber,
+          failedChecks: checksStatus.failedChecks,
+          failedCheckNames: checksStatus.failedCheckNames,
+          mergeableState: checksStatus.mergeableState,
+        },
+        'PR checks failed',
+      );
+      return err(checkError);
+    }
+
+    this.log.info({ prNumber }, 'All PR checks passed');
+    return ok(undefined);
+  }
+
+  /** Merge PR and return commit SHA */
+  private async mergePR(prNumber: number): Promise<Result<string, Error>> {
+    this.log.debug({ prNumber }, 'Merging PR');
+
+    const mergeResult = await this.prService.merge({
+      prNumber,
+      mergeMethod: 'squash',
+    });
+
+    if (!mergeResult.ok) {
+      this.log.warn({ prNumber }, 'Auto-merge failed - PR remains open');
+      return err(mergeResult.error);
+    }
+
+    const mergeCommitSha = mergeResult.value.sha;
+    this.log.info({ prNumber, mergeCommitSha }, 'PR auto-merged');
+    return ok(mergeCommitSha);
+  }
+
+  /** Cleanup branch after merge */
+  private async cleanupBranch(branchName: string): Promise<void> {
+    try {
+      await this.githubService.deleteBranch(branchName);
+      this.log.info({ branch: branchName }, 'Version branch deleted after merge');
+    } catch (error) {
+      this.log.warn({ branch: branchName, error }, 'Failed to delete branch after merge');
+    }
+  }
+
+  // ====================
+  // Tag Management
+  // ====================
+
+  /** Create version tags */
+  private async createVersionTags(
     tree: WorkspaceTree,
     options: WorkflowOptions,
     providedCommitSha?: string,
   ): Promise<Result<string[], GitOperationError>> {
-    this.log.debug('Creating version tags');
-
-    const createdTags: string[] = [];
-
-    // Use provided SHA or get current branch HEAD SHA
-    let commitSha: string;
     if (providedCommitSha) {
-      commitSha = providedCommitSha;
-      this.log.debug({ commitSha }, 'Using provided commit SHA');
-    } else {
-      const branch = options.branch || 'main';
-      const branchRef = `heads/${branch}`;
-      const refResult = await this.gitService.getRef(branchRef);
-
-      if (!refResult.ok) {
-        this.log.error({ branch: branchRef }, 'Failed to get current branch HEAD SHA');
-        return err(refResult.error);
-      }
-
-      commitSha = refResult.value.sha;
-      this.log.debug({ commitSha, branch: branchRef }, 'Retrieved current HEAD SHA');
+      return await this.tagService.createVersionTags(tree.masterVersion, providedCommitSha, options.tagOptions);
     }
 
-    // Create master version tag
-    const masterTag = `v${tree.masterVersion}`;
-    const masterTagResult = await this.gitService.createTag({
-      tagName: masterTag,
-      message: `Release ${tree.masterVersion}`,
-      commitSha,
-    });
-
-    if (!masterTagResult.ok) {
-      return err(masterTagResult.error);
-    }
-
-    createdTags.push(masterTag);
-    this.log.debug({ tag: masterTag }, 'Master tag created');
-
-    // Create short tag if requested (force update to always point to latest version)
-    if (options.tagOptions?.shortTag) {
-      const parts = tree.masterVersion.split('.');
-      const shortTag = parts.length >= 2 ? `v${parts[0]}` : masterTag;
-
-      if (shortTag !== masterTag) {
-        const shortTagExists = await this.gitService.tagExists(shortTag);
-        if (shortTagExists.ok && shortTagExists.value) {
-          this.log.debug({ tag: shortTag }, 'Short tag already exists and will be updated to latest version');
-          // Delete existing short tag if it exists (to force update to latest version)
-          const deleteResult = await this.gitService.deleteTag(shortTag);
-          if (!deleteResult.ok) {
-            this.log.warn({ tag: shortTag, error: deleteResult.error }, 'Failed to delete existing short tag');
-          }
-        } else {
-          this.log.debug({ tag: shortTag }, 'Short tag does not exist and will be created');
-        }
-
-        // Create the short tag pointing to the latest version
-        const shortTagResult = await this.gitService.createTag({
-          tagName: shortTag,
-          message: `Release ${shortTag} (latest: ${tree.masterVersion})`,
-          commitSha,
-        });
-
-        if (!shortTagResult.ok) {
-          this.log.warn({ tag: shortTag, version: tree.masterVersion }, 'Failed to create/update short tag');
-        } else {
-          createdTags.push(shortTag);
-          this.log.info(
-            { tag: shortTag, pointsTo: tree.masterVersion },
-            'Short tag created/updated to point to latest version',
-          );
-        }
-      }
-    }
-
-    // Only create root/master tag - no workspace-specific tags
-    // Workspace-specific tags should only be created if explicitly requested
-
-    this.log.info({ tagCount: createdTags.length, tags: createdTags }, 'Tags created');
-    return ok(createdTags);
+    const branch = options.branch || 'main';
+    return await this.tagService.createVersionTagsForBranch(tree.masterVersion, branch, options.tagOptions);
   }
 }

@@ -12,14 +12,17 @@
 
 import * as core from '@actions/core';
 import * as github from '@actions/github';
-import { ChangelogService } from './core/ChangelogService.js';
-import type { ChangelogPreset } from './core/ChangelogService.js';
-import { VersionService } from './core/VersionService.js';
 import { WorkspaceManager } from './core/WorkspaceManager.js';
 import { WorkspaceTreeBuilder } from './core/WorkspaceTreeBuilder.js';
+import type { ChangelogPreset } from './services/ChangelogService.js';
+import { ChangelogService } from './services/ChangelogService.js';
 import { GitHubService } from './services/GitHubService.js';
 import { GitService } from './services/GitService.js';
+import { LocalGitService } from './services/LocalGitService.js';
 import { PRService } from './services/PRService.js';
+import { TagService } from './services/TagService.js';
+import { VersionService } from './services/VersionService.js';
+import { WorkspaceService } from './services/WorkspaceService.js';
 import type { ActionBumpType } from './types/action.js';
 import type { WorkspaceNode } from './types/workspace.js';
 import { logger } from './utils/logger.js';
@@ -99,14 +102,20 @@ async function run(): Promise<void> {
     });
 
     const gitService = new GitService(githubService);
+    const localGitService = new LocalGitService();
+    const tagService = new TagService(gitService);
+    const workspaceService = new WorkspaceService(gitService);
     const prService = new PRService(githubService);
-    const versionService = new VersionService();
+    const versionService = new VersionService(gitService);
     const changelogService = new ChangelogService();
     const treeBuilder = new WorkspaceTreeBuilder();
 
     const workspaceManager = new WorkspaceManager({
       gitService,
       githubService,
+      localGitService,
+      tagService,
+      workspaceService,
       prService,
       versionService,
       changelogService,

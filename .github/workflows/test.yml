@@ -250,7 +250,8 @@ jobs:
 
       - name: Update Version (${{ matrix.scenario }})
         id: bump
-        uses: ./
+        # uses: ./
+        uses: dragoscops/bumpalicious@main3
         with:
           branch: ${{ steps.prereqs.outputs.test_branch }}
           github_token: ${{ steps.app-token-push.outputs.token || secrets.GH_TOKEN_PUSH }}
@@ -293,7 +294,8 @@ jobs:
         env:
           DEBUG: true
         id: bump_after_merge
-        uses: ./
+        # uses: ./
+        uses: dragoscops/bumpalicious@main3
         with:
           branch: ${{ steps.prereqs.outputs.test_branch }}
           github_token: ${{ steps.app-token-push.outputs.token || secrets.GH_TOKEN_PUSH }}

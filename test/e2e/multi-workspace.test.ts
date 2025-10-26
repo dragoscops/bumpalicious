@@ -5,8 +5,8 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { VersionService } from '../../src/core/VersionService.js';
 import { WorkspaceTreeBuilder } from '../../src/core/WorkspaceTreeBuilder.js';
+import { VersionService } from '../../src/services/VersionService.js';
 import { toVersion } from '../../src/types/version.js';
 import type { WorkspaceWithVersion } from '../../src/types/workspace.js';
 

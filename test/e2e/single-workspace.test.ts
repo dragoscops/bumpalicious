@@ -6,8 +6,8 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { getAdapter } from '../../src/core/adapters/AdapterFactory.js';
-import { VersionService } from '../../src/core/VersionService.js';
 import { parseCommitMessages } from '../../src/parsers/ConventionalCommitParser.js';
+import { VersionService } from '../../src/services/VersionService.js';
 import { toVersion } from '../../src/types/version.js';
 import { setupTestRepo, type TestRepo } from '../fixtures/repos/setup.js';
 

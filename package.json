@@ -4,8 +4,8 @@
   "description": "GitHub Action for automated version management based on conventional commits",
   "main": "dist/index.js",
   "scripts": {
-    "build": "run-s typecheck build:*",
-    "build:rollup": "rollup -c rollup.config.mjs",
+    "build": "run-s typecheck build:tsc",
+    "build:tsc": "tsc",
     "clean": "rimraf dist coverage .nyc_output docs",
     "docs": "typedoc",
     "duplicate-check": "jscpd src/",
@@ -14,7 +14,6 @@
     "license-check": "licensee --errors-only",
     "lint": "eslint --fix .",
     "lint:check": "eslint .",
-    "prepare": "husky",
     "prebuild": "run-s clean",
     "pretest": "run-s clean build",
     "serve": "npx --yes serve .",
@@ -29,7 +28,14 @@
     "type": "git",
     "url": "git+https://github.com/dragoscops/version-update.git"
   },
-  "keywords": ["github", "actions", "version", "semver", "release", "conventional-commits"],
+  "keywords": [
+    "github",
+    "actions",
+    "version",
+    "semver",
+    "release",
+    "conventional-commits"
+  ],
   "author": "dragoscops",
   "license": "MIT",
   "bugs": {
@@ -65,10 +71,6 @@
   "devDependencies": {
     "@jscpd/badge-reporter": "^4.0.1",
     "@jscpd/html-reporter": "^4.0.1",
-    "@rollup/plugin-commonjs": "^28.0.9",
-    "@rollup/plugin-json": "^6.1.0",
-    "@rollup/plugin-node-resolve": "^16.0.3",
-    "@rollup/plugin-typescript": "^12.3.0",
     "@templ-project/eslint": "^1.2.2",
     "@templ-project/prettier": "^1.0.6",
     "@templ-project/tsconfig": "^0.4.2",
@@ -84,8 +86,6 @@
     "lint-staged": "^16.2.5",
     "npm-run-all2": "^8.0.4",
     "rimraf": "^6.0.1",
-    "rollup": "^4.52.5",
-    "rollup-plugin-copy": "^3.5.0",
     "tslib": "^2.8.1",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3"
@@ -94,8 +94,13 @@
     "node": ">=20"
   },
   "lint-staged": {
-    "*.{js,mjs,cjs,ts,json,jsonc,md}": ["prettier --write", "eslint --fix"],
-    "*.{yml,yaml}": ["eslint --fix"],
+    "*.{js,mjs,cjs,ts,json,jsonc,md}": [
+      "prettier --write",
+      "eslint --fix"
+    ],
+    "*.{yml,yaml}": [
+      "eslint --fix"
+    ],
     "node_modules/**": []
   }
 }
