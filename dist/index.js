@@ -37986,11 +37986,9 @@ class ChangelogService extends Loggable {
             const presetConfig = await createPreset();
             const parserOpts = presetConfig.parser || {};
             const writerOpts = presetConfig.writer || {};
-            const { isBundledMode, loadTemplates } = await Promise.resolve().then(function () { return templateLoader; });
-            const bundled = await isBundledMode();
-            if (bundled) {
-                this.log.debug({ preset }, 'Running in bundled mode, loading templates from dist/');
-                const templates = await loadTemplates(preset);
+            this.log.debug({ preset }, 'Loading templates as strings');
+            const templates = await this.loadTemplates(preset);
+            if (templates) {
                 writerOpts.mainTemplate = templates.template;
                 writerOpts.headerPartial = templates.header;
                 writerOpts.commitPartial = templates.commit;
@@ -38112,6 +38110,28 @@ class ChangelogService extends Loggable {
         }
         catch {
             return false;
+        }
+    }
+    async loadTemplates(preset) {
+        const paths = [
+            path.join(__dirname, 'templates', preset),
+            path.join(__dirname, '..', '..', 'node_modules', `conventional-changelog-${preset}`, 'src', 'templates'),
+        ];
+        for (const p of paths) {
+            try {
+                this.log.debug({ preset, p }, 'Loading templates from bundled path');
+                const results = await Promise.all([
+                    node_fs.promises.readFile(path.join(p, 'template.hbs'), 'utf-8'),
+                    node_fs.promises.readFile(path.join(p, 'header.hbs'), 'utf-8'),
+                    node_fs.promises.readFile(path.join(p, 'commit.hbs'), 'utf-8'),
+                    node_fs.promises.readFile(path.join(p, 'footer.hbs'), 'utf-8').catch(() => ''),
+                ]);
+                const [template, header, commit, footer] = results;
+                return { template, header, commit, footer: footer || undefined };
+            }
+            catch (e) {
+                this.log.warn({ preset, path: p, error: e }, 'Failed to load templates from path');
+            }
         }
     }
 }
@@ -58817,7 +58837,7 @@ const dirname = require$$1$3.fileURLToPath(new URL('.', (typeof document === 'un
  * @param options
  * @returns Templates strings object.
  */
-async function loadTemplates$1(options = {}) {
+async function loadTemplates(options = {}) {
     const [mainTemplate, headerPartial, commitPartial, footerPartial] = await Promise.all([
         options.mainTemplate || promises.readFile(require$$3$3.join(dirname, '..', 'templates', 'template.hbs'), 'utf-8'),
         options.headerPartial || promises.readFile(require$$3$3.join(dirname, '..', 'templates', 'header.hbs'), 'utf-8'),
@@ -58922,7 +58942,7 @@ async function transformCommit(commit, transform, context, options) {
 }
 
 async function getRequirements(context = {}, options = {}) {
-    const templates = await loadTemplates$1(options);
+    const templates = await loadTemplates(options);
     const finalOptions = getFinalOptions(options, templates);
     const finalContext = getFinalContext(context, finalOptions);
     const generateOn = getGenerateOnFunction(finalContext, finalOptions);
@@ -59007,40 +59027,6 @@ var index$1 = /*#__PURE__*/Object.freeze({
 	defaultCommitTransform: defaultCommitTransform,
 	writeChangelog: writeChangelog,
 	writeChangelogStream: writeChangelogStream
-});
-
-function getTemplatesBasePath() {
-    if (__dirname.endsWith('dist')) {
-        return path.join(__dirname, 'templates');
-    }
-    return path.join(__dirname, '..', '..', 'dist', 'templates');
-}
-async function loadTemplates(preset) {
-    const basePath = getTemplatesBasePath();
-    const presetPath = path.join(basePath, preset);
-    const [template, header, commit, footer] = await Promise.all([
-        node_fs.promises.readFile(path.join(presetPath, 'template.hbs'), 'utf-8'),
-        node_fs.promises.readFile(path.join(presetPath, 'header.hbs'), 'utf-8'),
-        node_fs.promises.readFile(path.join(presetPath, 'commit.hbs'), 'utf-8'),
-        node_fs.promises.readFile(path.join(presetPath, 'footer.hbs'), 'utf-8').catch(() => ''),
-    ]);
-    return { template, header, commit, footer: footer || undefined };
-}
-async function isBundledMode() {
-    try {
-        const templatesPath = getTemplatesBasePath();
-        await node_fs.promises.access(templatesPath);
-        return true;
-    }
-    catch {
-        return false;
-    }
-}
-
-var templateLoader = /*#__PURE__*/Object.freeze({
-	__proto__: null,
-	isBundledMode: isBundledMode,
-	loadTemplates: loadTemplates
 });
 
 /* HELPERS */
