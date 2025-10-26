@@ -124,7 +124,7 @@ describe('PR Creation Workflow Integration', () => {
       if (result.ok) {
         expect(result.value).toBe(false);
       }
-      expect(mockGitHubService.executeWithRetry).toHaveBeenCalledWith('getPR', expect.any(Function));
+      expect(mockGitHubService.executeWithRetry).toHaveBeenCalledWith('getPullRequest', expect.any(Function));
     });
   });
 });

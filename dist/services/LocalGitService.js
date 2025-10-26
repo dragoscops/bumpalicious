@@ -45,89 +45,113 @@ class LocalGitService extends Loggable_js_1.Loggable {
     }
     async configureGit() {
         try {
-            let hasUserName = false;
-            await exec.exec('git', ['config', 'user.name'], {
-                ignoreReturnCode: true,
-                listeners: {
-                    stdout: (data) => {
-                        hasUserName = data.toString().trim().length > 0;
-                    },
-                },
-            });
-            if (!hasUserName) {
-                await exec.exec('git', ['config', 'user.name', 'github-actions[bot]']);
-                this.log.debug('Configured git user.name');
-            }
-            let hasUserEmail = false;
-            await exec.exec('git', ['config', 'user.email'], {
-                ignoreReturnCode: true,
-                listeners: {
-                    stdout: (data) => {
-                        hasUserEmail = data.toString().trim().length > 0;
-                    },
-                },
-            });
-            if (!hasUserEmail) {
-                await exec.exec('git', ['config', 'user.email', 'github-actions[bot]@users.noreply.github.com']);
-                this.log.debug('Configured git user.email');
-            }
+            await this.ensureUserName();
+            await this.ensureUserEmail();
         }
         catch (error) {
-            this.log.warn({ error }, 'Failed to configure git user, will proceed anyway');
+            this.log.warn({ error }, 'Failed to configure git user');
         }
     }
     async createVersionCommit(tree) {
         this.log.debug({ version: tree.masterVersion }, 'Creating version commit');
         try {
             await this.configureGit();
-            await exec.exec('git', ['add', '-A']);
-            const commitMessage = `chore: bump version to ${tree.masterVersion}`;
-            await exec.exec('git', ['commit', '-m', commitMessage, '--no-verify']);
-            let commitSha = '';
-            await exec.exec('git', ['rev-parse', 'HEAD'], {
-                listeners: {
-                    stdout: (data) => {
-                        commitSha += data.toString().trim();
-                    },
-                },
-            });
-            let branchName = '';
-            await exec.exec('git', ['rev-parse', '--abbrev-ref', 'HEAD'], {
-                listeners: {
-                    stdout: (data) => {
-                        branchName += data.toString().trim();
-                    },
-                },
-            });
-            await exec.exec('git', ['push', '--set-upstream', 'origin', branchName, '--no-verify']);
+            const commitMessage = this.buildCommitMessage(tree.masterVersion);
+            await this.stageChanges();
+            await this.createCommit(commitMessage);
+            const commitSha = await this.getCommitSha();
+            const branchName = await this.getCurrentBranch();
+            await this.pushBranch(branchName);
             this.log.info({ sha: commitSha, message: commitMessage }, 'Version commit created and pushed');
             return (0, result_js_1.ok)(commitSha);
         }
         catch (error) {
-            const gitError = new errors_js_1.GitOperationError('createVersionCommit', 'Failed to create version commit', error);
-            this.log.error({ error: gitError }, 'Failed to create version commit');
-            return (0, result_js_1.err)(gitError);
+            return this.handleError('createVersionCommit', 'Failed to create version commit', error);
         }
     }
     async createVersionBranch(tree, branchPrefix) {
-        const randomSuffix = Math.floor(Math.random() * 10000).toString(36);
-        const branchName = `${branchPrefix}/v${tree.masterVersion}-${randomSuffix}`;
+        const branchName = this.generateBranchName(branchPrefix, tree.masterVersion);
         this.log.debug({ branch: branchName, version: tree.masterVersion }, 'Creating version branch');
         try {
             await this.configureGit();
-            await exec.exec('git', ['checkout', '-b', branchName]);
-            await exec.exec('git', ['add', '-A']);
-            const commitMessage = `chore: bump version to ${tree.masterVersion}`;
-            await exec.exec('git', ['commit', '-m', commitMessage, '--no-verify']);
-            await exec.exec('git', ['push', '--set-upstream', 'origin', branchName, '--no-verify']);
+            const commitMessage = this.buildCommitMessage(tree.masterVersion);
+            await this.createAndCheckoutBranch(branchName);
+            await this.stageChanges();
+            await this.createCommit(commitMessage);
+            await this.pushBranch(branchName);
             this.log.info({ branch: branchName, message: commitMessage }, 'Version branch created and pushed');
             return (0, result_js_1.ok)(branchName);
         }
         catch (error) {
-            const gitError = new errors_js_1.GitOperationError('createVersionBranch', 'Failed to create version branch', error);
-            this.log.error({ error: gitError }, 'Failed to create version branch');
-            return (0, result_js_1.err)(gitError);
+            return this.handleError('createVersionBranch', 'Failed to create version branch', error);
         }
+    }
+    async ensureUserName() {
+        const hasUserName = await this.checkGitConfig('user.name');
+        if (!hasUserName) {
+            await exec.exec('git', ['config', 'user.name', 'github-actions[bot]']);
+            this.log.debug('Configured git user.name');
+        }
+    }
+    async ensureUserEmail() {
+        const hasUserEmail = await this.checkGitConfig('user.email');
+        if (!hasUserEmail) {
+            await exec.exec('git', ['config', 'user.email', 'github-actions[bot]@users.noreply.github.com']);
+            this.log.debug('Configured git user.email');
+        }
+    }
+    async checkGitConfig(key) {
+        let hasValue = false;
+        await exec.exec('git', ['config', key], {
+            ignoreReturnCode: true,
+            listeners: {
+                stdout: (data) => {
+                    hasValue = data.toString().trim().length > 0;
+                },
+            },
+        });
+        return hasValue;
+    }
+    async stageChanges() {
+        await exec.exec('git', ['add', '-A']);
+    }
+    async createCommit(message) {
+        await exec.exec('git', ['commit', '-m', message, '--no-verify']);
+    }
+    async createAndCheckoutBranch(branchName) {
+        await exec.exec('git', ['checkout', '-b', branchName]);
+    }
+    async pushBranch(branchName) {
+        await exec.exec('git', ['push', '--set-upstream', 'origin', branchName, '--no-verify']);
+    }
+    async getCommitSha() {
+        return this.captureGitOutput('rev-parse', 'HEAD');
+    }
+    async getCurrentBranch() {
+        return this.captureGitOutput('rev-parse', '--abbrev-ref', 'HEAD');
+    }
+    async captureGitOutput(...args) {
+        let output = '';
+        await exec.exec('git', args, {
+            listeners: {
+                stdout: (data) => {
+                    output += data.toString().trim();
+                },
+            },
+        });
+        return output;
+    }
+    buildCommitMessage(version) {
+        return `chore: bump version to ${version}`;
+    }
+    generateBranchName(prefix, version) {
+        const randomSuffix = Math.floor(Math.random() * 10000).toString(36);
+        return `${prefix}/v${version}-${randomSuffix}`;
+    }
+    handleError(operation, message, error) {
+        const gitError = new errors_js_1.GitOperationError(operation, message, error);
+        this.log.error({ error: gitError }, `${operation} failed`);
+        return (0, result_js_1.err)(gitError);
     }
 }
 exports.LocalGitService = LocalGitService;

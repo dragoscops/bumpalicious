@@ -1,22 +1,4 @@
-/**
- * Pull Request Service
- *
- * Service for creating and managing GitHub pull requests.
- * Provides methods for PR lifecycle management including creation,
- * merging, status checking, and existence validation.
- *
- * Usage:
- * ```typescript
- * const prService = new PRService(githubService);
- *
- * const createResult = await prService.create({
- *   title: 'Version Update 1.0.0',
- *   body: 'Update workspace versions',
- *   base: 'main',
- *   head: 'version_bump_v1.0.0',
- * });
- * ```
- */
+/** Pull request service for GitHub PR operations */
 
 import type { GitHubService } from './GitHubService.js';
 import { ok, err, type Result } from '../types/result.js';
@@ -24,266 +6,81 @@ import type { WorkspaceTree, WorkspaceNode } from '../types/workspace.js';
 import { GitHubAPIError } from '../utils/errors.js';
 import { Loggable } from '../utils/Loggable.js';
 
-/**
- * Parameters for creating a pull request
- */
 export interface CreatePRParams {
-  /**
-   * PR title
-   */
   readonly title: string;
-
-  /**
-   * PR body (markdown formatted)
-   */
   readonly body: string;
-
-  /**
-   * Base branch (target branch for PR)
-   */
   readonly base: string;
-
-  /**
-   * Head branch (source branch with changes)
-   */
   readonly head: string;
-
-  /**
-   * Draft PR flag (optional)
-   */
   readonly draft?: boolean;
 }
 
-/**
- * Parameters for merging a pull request
- */
 export interface MergePRParams {
-  /**
-   * Pull request number
-   */
   readonly prNumber: number;
-
-  /**
-   * Merge method (merge, squash, or rebase)
-   */
   readonly mergeMethod?: 'merge' | 'squash' | 'rebase';
-
-  /**
-   * Commit title for merge (optional)
-   */
   readonly commitTitle?: string;
-
-  /**
-   * Commit message for merge (optional)
-   */
   readonly commitMessage?: string;
 }
 
-/**
- * Parameters for checking PR merge status
- */
 export interface HasMergedParams {
-  /**
-   * Pull request number
-   */
   readonly prNumber: number;
-
-  /**
-   * Timeout in milliseconds (default: 60000)
-   */
   readonly timeout?: number;
-
-  /**
-   * Polling interval in milliseconds (default: 5000)
-   */
   readonly interval?: number;
 }
 
-/**
- * Parameters for checking PR existence
- */
 export interface ExistsPRParams {
-  /**
-   * Base branch
-   */
   readonly base: string;
-
-  /**
-   * Head branch
-   */
   readonly head: string;
 }
 
-/**
- * Parameters for waiting for PR checks
- */
 export interface WaitForChecksParams {
-  /**
-   * Pull request number
-   */
   readonly prNumber: number;
-
-  /**
-   * Timeout in milliseconds (default: 300000 = 5 minutes)
-   */
   readonly timeout?: number;
-
-  /**
-   * Polling interval in milliseconds (default: 10000 = 10 seconds)
-   */
   readonly interval?: number;
 }
 
-/**
- * PR checks status result
- */
 export interface ChecksStatusResult {
-  /**
-   * Whether all checks passed
-   */
   readonly allPassed: boolean;
-
-  /**
-   * Whether checks are still pending
-   */
   readonly pending: boolean;
-
-  /**
-   * Total number of checks
-   */
   readonly totalChecks: number;
-
-  /**
-   * Number of passed checks
-   */
   readonly passedChecks: number;
-
-  /**
-   * Number of failed checks
-   */
   readonly failedChecks: number;
-
-  /**
-   * Mergeable state from GitHub
-   */
   readonly mergeableState: string;
-
-  /**
-   * Failed check details
-   */
   readonly failedCheckNames?: string[];
 }
 
-/**
- * Pull request creation response
- */
 export interface PRCreateResponse {
-  /**
-   * Pull request number
-   */
   readonly number: number;
-
-  /**
-   * Pull request HTML URL
-   */
   readonly htmlUrl: string;
-
-  /**
-   * PR state (open, closed, merged)
-   */
   readonly state: string;
 }
 
-/**
- * Pull request merge response
- */
 export interface PRMergeResponse {
-  /**
-   * Whether the merge was successful
-   */
   readonly merged: boolean;
-
-  /**
-   * Merge commit SHA
-   */
   readonly sha: string;
-
-  /**
-   * Merge message
-   */
   readonly message: string;
 }
 
-/**
- * Pull request existence response
- */
 export interface PRExistsResponse {
-  /**
-   * Whether a PR exists
-   */
   readonly exists: boolean;
-
-  /**
-   * PR number if exists
-   */
   readonly number?: number;
-
-  /**
-   * PR state if exists
-   */
   readonly state?: string;
 }
 
-/**
- * Pull Request Service
- *
- * Manages GitHub pull request operations with:
- * - PR creation with formatted body
- * - PR merging with auto-merge support
- * - Merge status polling
- * - PR existence checking
- */
+/** Pull request service for creation, merging, and status checking */
 export class PRService extends Loggable {
   private readonly github: GitHubService;
 
-  /**
-   * Create a new PR service instance
-   *
-   * @param github - GitHub service instance
-   *
-   * @example
-   * ```typescript
-   * const prService = new PRService(githubService);
-   * ```
-   */
   constructor(github: GitHubService) {
     super();
     this.github = github;
-
-    this.log.info(
-      {
-        ...github.getRepository(),
-      },
-      'PRService initialized',
-    );
+    this.log.info({ ...github.getRepository() }, 'PRService initialized');
   }
 
-  /**
-   * Create a new pull request
-   *
-   * @param params - PR creation parameters
-   * @returns Result containing PR response or error
-   *
-   * @example
-   * ```typescript
-   * const result = await prService.create({
-   *   title: 'Version Update 1.0.0',
-   *   body: buildPRBody(workspaceTree),
-   *   base: 'main',
-   *   head: 'version_bump_v1.0.0',
-   * });
-   * ```
-   */
+  // ====================
+  // Public API
+  // ====================
+
+  /** Create pull request */
   async create(params: CreatePRParams): Promise<Result<PRCreateResponse, GitHubAPIError>> {
     this.log.debug(
       {
@@ -293,107 +90,37 @@ export class PRService extends Loggable {
         draft: params.draft ?? false,
         bodyLength: params.body.length,
       },
-      'Creating pull request',
+      'Creating PR',
     );
 
     try {
-      const { owner, repo } = this.github.getRepository();
-
-      const response = await this.github.executeWithRetry('createPR', (octokit) =>
-        octokit.rest.pulls.create({
-          owner,
-          repo,
-          title: params.title,
-          body: params.body,
-          base: params.base,
-          head: params.head,
-          draft: params.draft ?? false,
-        }),
-      );
-
-      const result: PRCreateResponse = {
-        number: response.data.number,
-        htmlUrl: response.data.html_url,
-        state: response.data.state,
-      };
+      const response = await this.createPR(params);
+      const result = this.mapCreateResponse(response.data);
 
       this.log.info(
-        {
-          prNumber: result.number,
-          htmlUrl: result.htmlUrl,
-          state: result.state,
-          title: params.title,
-        },
-        'Pull request created successfully',
+        { prNumber: result.number, htmlUrl: result.htmlUrl, state: result.state, title: params.title },
+        'PR created',
       );
-
       return ok(result);
     } catch (error) {
-      const apiError =
-        error instanceof GitHubAPIError
-          ? error
-          : new GitHubAPIError('createPR', 'Failed to create pull request', undefined, error);
-
-      this.log.error(
-        {
-          operation: 'createPR',
-          title: params.title,
-          base: params.base,
-          head: params.head,
-          error: apiError.message,
-          statusCode: apiError.statusCode,
-        },
-        'Failed to create pull request',
-      );
-
-      return err(apiError);
+      return this.handleError('createPR', 'Failed to create pull request', error, {
+        title: params.title,
+        base: params.base,
+        head: params.head,
+      });
     }
   }
 
-  /**
-   * Merge a pull request
-   *
-   * @param params - PR merge parameters
-   * @returns Result containing merge response or error
-   *
-   * @example
-   * ```typescript
-   * const result = await prService.merge({
-   *   prNumber: 123,
-   *   mergeMethod: 'squash',
-   * });
-   * ```
-   */
+  /** Merge pull request */
   async merge(params: MergePRParams): Promise<Result<PRMergeResponse, GitHubAPIError>> {
     this.log.debug(
-      {
-        prNumber: params.prNumber,
-        mergeMethod: params.mergeMethod ?? 'merge',
-        hasCommitTitle: !!params.commitTitle,
-        hasCommitMessage: !!params.commitMessage,
-      },
-      'Merging pull request',
+      { prNumber: params.prNumber, mergeMethod: params.mergeMethod ?? 'merge', hasCommitTitle: !!params.commitTitle },
+      'Merging PR',
     );
 
     try {
-      const { owner, repo } = this.github.getRepository();
-
-      const response = await this.github.executeWithRetry('mergePR', (octokit) =>
-        octokit.rest.pulls.merge({
-          owner,
-          repo,
-          pull_number: params.prNumber,
-          merge_method: params.mergeMethod ?? 'merge',
-          commit_title: params.commitTitle,
-          commit_message: params.commitMessage,
-        }),
-      );
-
-      const result: PRMergeResponse = {
-        merged: response.data.merged,
-        sha: response.data.sha,
-        message: response.data.message,
-      };
+      const response = await this.mergePR(params);
+      const result = this.mapMergeResponse(response.data);
 
       this.log.info(
         {
@@ -402,492 +129,25 @@ export class PRService extends Loggable {
           sha: result.sha,
           mergeMethod: params.mergeMethod ?? 'merge',
         },
-        'Pull request merged successfully',
+        'PR merged',
       );
-
       return ok(result);
     } catch (error) {
-      const apiError =
-        error instanceof GitHubAPIError
-          ? error
-          : new GitHubAPIError('mergePR', 'Failed to merge pull request', undefined, error);
-
-      this.log.error(
-        {
-          operation: 'mergePR',
-          prNumber: params.prNumber,
-          mergeMethod: params.mergeMethod ?? 'merge',
-          error: apiError.message,
-          statusCode: apiError.statusCode,
-        },
-        'Failed to merge pull request',
-      );
-
-      return err(apiError);
-    }
-  }
-
-  /**
-   * Check if a pull request has been merged (with polling)
-   *
-   * Polls the PR status until it's merged or timeout is reached.
-   *
-   * @param params - Merge check parameters with timeout and interval
-   * @returns Result containing boolean or error
-   *
-   * @example
-   * ```typescript
-   * const result = await prService.hasMerged({
-   *   prNumber: 123,
-   *   timeout: 60000,  // 60 seconds
-   *   interval: 5000,  // poll every 5 seconds
-   * });
-   * ```
-   */
-  async hasMerged(params: HasMergedParams): Promise<Result<boolean, GitHubAPIError>> {
-    const timeout = params.timeout ?? 60000; // Default 60 seconds
-    const interval = params.interval ?? 5000; // Default 5 seconds
-    const startTime = Date.now();
-
-    this.log.debug(
-      {
+      return this.handleError('mergePR', 'Failed to merge pull request', error, {
         prNumber: params.prNumber,
-        timeout,
-        interval,
-      },
-      'Starting merge status polling',
-    );
-
-    try {
-      const { owner, repo } = this.github.getRepository();
-
-      while (Date.now() - startTime < timeout) {
-        const response = await this.github.executeWithRetry('getPR', (octokit) =>
-          octokit.rest.pulls.get({
-            owner,
-            repo,
-            pull_number: params.prNumber,
-          }),
-        );
-
-        if (response.data.merged) {
-          this.log.info(
-            {
-              prNumber: params.prNumber,
-              mergedAt: response.data.merged_at,
-            },
-            'Pull request has been merged',
-          );
-          return ok(true);
-        }
-
-        if (response.data.state === 'closed' && !response.data.merged) {
-          this.log.info(
-            {
-              prNumber: params.prNumber,
-              state: response.data.state,
-            },
-            'Pull request is closed but not merged',
-          );
-          return ok(false);
-        }
-
-        // Wait before next poll
-        await new Promise((resolve) => setTimeout(resolve, interval));
-      }
-
-      // Timeout reached
-      this.log.warn(
-        {
-          prNumber: params.prNumber,
-          timeout,
-          elapsed: Date.now() - startTime,
-        },
-        'Timeout reached while waiting for PR to merge',
-      );
-
-      return ok(false);
-    } catch (error) {
-      const apiError =
-        error instanceof GitHubAPIError
-          ? error
-          : new GitHubAPIError('hasMerged', 'Failed to check if pull request is merged', undefined, error);
-
-      this.log.error(
-        {
-          operation: 'hasMerged',
-          prNumber: params.prNumber,
-          elapsedMs: Date.now() - startTime,
-          error: apiError.message,
-          statusCode: apiError.statusCode,
-        },
-        'Failed to check PR merge status',
-      );
-
-      return err(apiError);
+        mergeMethod: params.mergeMethod ?? 'merge',
+      });
     }
   }
 
-  /**
-   * Check if a pull request exists for given base and head branches
-   *
-   * @param params - PR existence check parameters
-   * @returns Result containing existence response or error
-   *
-   * @example
-   * ```typescript
-   * const result = await prService.exists({
-   *   base: 'main',
-   *   head: 'version_bump_v1.0.0',
-   * });
-   *
-   * if (result.ok && result.value.exists) {
-   *   console.log('PR exists:', result.value.number);
-   * }
-   * ```
-   */
-  async exists(params: ExistsPRParams): Promise<Result<PRExistsResponse, GitHubAPIError>> {
-    this.log.debug(
-      {
-        base: params.base,
-        head: params.head,
-      },
-      'Checking if pull request exists',
-    );
+  /** Get pull request details */
+  async getPullRequest(
+    prNumber: number,
+  ): Promise<Result<{ headRef: string; baseRef: string; merged: boolean; state: string }, GitHubAPIError>> {
+    this.log.debug({ prNumber }, 'Getting PR details');
 
     try {
-      const { owner, repo } = this.github.getRepository();
-
-      const response = await this.github.executeWithRetry('listPRs', (octokit) =>
-        octokit.rest.pulls.list({
-          owner,
-          repo,
-          state: 'open',
-          base: params.base,
-          head: `${owner}:${params.head}`,
-        }),
-      );
-
-      if (response.data.length > 0) {
-        const pr = response.data[0];
-        const result: PRExistsResponse = {
-          exists: true,
-          number: pr.number,
-          state: pr.state,
-        };
-
-        this.log.info(
-          {
-            prNumber: result.number,
-            state: result.state,
-          },
-          'Pull request exists',
-        );
-
-        return ok(result);
-      }
-
-      this.log.info(
-        {
-          base: params.base,
-          head: params.head,
-        },
-        'No pull request found',
-      );
-
-      return ok({ exists: false });
-    } catch (error) {
-      const apiError =
-        error instanceof GitHubAPIError
-          ? error
-          : new GitHubAPIError('existsPR', 'Failed to check if pull request exists', undefined, error);
-
-      this.log.error(
-        {
-          operation: 'existsPR',
-          base: params.base,
-          head: params.head,
-          error: apiError.message,
-          statusCode: apiError.statusCode,
-        },
-        'Failed to check PR existence',
-      );
-
-      return err(apiError);
-    }
-  }
-
-  /**
-   * Wait for PR checks to complete and verify they pass
-   *
-   * Polls the PR status until all checks complete or timeout is reached.
-   * Checks both status checks (legacy) and check runs (modern GitHub checks).
-   *
-   * @param params - Check waiting parameters
-   * @returns Result containing checks status or error
-   *
-   * @example
-   * ```typescript
-   * const result = await prService.waitForChecks({
-   *   prNumber: 123,
-   *   timeout: 300000,  // 5 minutes
-   *   interval: 10000,  // 10 seconds
-   * });
-   *
-   * if (result.ok && result.value.allPassed) {
-   *   // Checks passed, safe to merge
-   * }
-   * ```
-   */
-  async waitForChecks(params: WaitForChecksParams): Promise<Result<ChecksStatusResult, GitHubAPIError>> {
-    const timeout = params.timeout ?? 300000; // 5 minutes default
-    const interval = params.interval ?? 10000; // 10 seconds default
-    const startTime = Date.now();
-
-    this.log.debug(
-      {
-        prNumber: params.prNumber,
-        timeout,
-        interval,
-      },
-      'Waiting for PR checks to complete',
-    );
-
-    try {
-      const { owner, repo } = this.github.getRepository();
-
-      while (Date.now() - startTime < timeout) {
-        // Get PR details to check mergeable state and head SHA
-        const prResponse = await this.github.executeWithRetry('getPR', (octokit) =>
-          octokit.rest.pulls.get({
-            owner,
-            repo,
-            pull_number: params.prNumber,
-          }),
-        );
-
-        const pr = prResponse.data;
-        const headSha = pr.head.sha;
-        const mergeableState = pr.mergeable_state || 'unknown';
-
-        this.log.debug(
-          {
-            prNumber: params.prNumber,
-            mergeableState,
-            mergeable: pr.mergeable,
-            headSha,
-          },
-          'PR status checked',
-        );
-
-        // Get combined status (legacy status checks)
-        const statusResponse = await this.github.executeWithRetry('getCombinedStatus', (octokit) =>
-          octokit.rest.repos.getCombinedStatusForRef({
-            owner,
-            repo,
-            ref: headSha,
-          }),
-        );
-
-        const combinedStatus = statusResponse.data;
-
-        // Get check runs (modern GitHub checks)
-        const checkRunsResponse = await this.github.executeWithRetry('listCheckRuns', (octokit) =>
-          octokit.rest.checks.listForRef({
-            owner,
-            repo,
-            ref: headSha,
-          }),
-        );
-
-        const checkRuns = checkRunsResponse.data.check_runs;
-
-        // Count totals
-        const statusChecks = combinedStatus.statuses;
-        const totalStatusChecks = statusChecks.length;
-        const totalCheckRuns = checkRuns.length;
-        const totalChecks = totalStatusChecks + totalCheckRuns;
-
-        // Count completed and passed
-        const passedStatusChecks = statusChecks.filter((s) => s.state === 'success').length;
-        const failedStatusChecks = statusChecks.filter((s) => s.state === 'failure' || s.state === 'error').length;
-        const pendingStatusChecks = statusChecks.filter((s) => s.state === 'pending').length;
-
-        const passedCheckRuns = checkRuns.filter((c) => c.conclusion === 'success').length;
-        const failedCheckRuns = checkRuns.filter(
-          (c) => c.conclusion === 'failure' || c.conclusion === 'cancelled' || c.conclusion === 'timed_out',
-        ).length;
-        const pendingCheckRuns = checkRuns.filter((c) => c.status !== 'completed').length;
-
-        const passedChecks = passedStatusChecks + passedCheckRuns;
-        const failedChecks = failedStatusChecks + failedCheckRuns;
-        const pendingChecks = pendingStatusChecks + pendingCheckRuns;
-
-        // Collect failed check names for debugging
-        const failedCheckNames = [
-          ...statusChecks.filter((s) => s.state === 'failure' || s.state === 'error').map((s) => s.context),
-          ...checkRuns
-            .filter((c) => c.conclusion === 'failure' || c.conclusion === 'cancelled' || c.conclusion === 'timed_out')
-            .map((c) => c.name),
-        ];
-
-        this.log.debug(
-          {
-            prNumber: params.prNumber,
-            totalChecks,
-            passedChecks,
-            failedChecks,
-            pendingChecks,
-            mergeableState,
-            combinedState: combinedStatus.state,
-          },
-          'Checks status',
-        );
-
-        // If there are no checks at all, consider it ready
-        const noChecks = totalChecks === 0;
-
-        // Check if all checks are complete and passed
-        const allComplete = pendingChecks === 0 && totalChecks > 0;
-        const allPassed = allComplete && failedChecks === 0;
-
-        // Check if we should return (success or failure)
-        if (failedChecks > 0) {
-          // Checks failed - return immediately
-          const result: ChecksStatusResult = {
-            allPassed: false,
-            pending: false,
-            totalChecks,
-            passedChecks,
-            failedChecks,
-            mergeableState,
-            failedCheckNames,
-          };
-
-          this.log.warn(
-            {
-              prNumber: params.prNumber,
-              failedChecks,
-              failedCheckNames,
-            },
-            'PR checks failed',
-          );
-
-          return ok(result);
-        }
-
-        if (allPassed || noChecks) {
-          // All checks passed or no checks required
-          const result: ChecksStatusResult = {
-            allPassed: true,
-            pending: false,
-            totalChecks,
-            passedChecks,
-            failedChecks: 0,
-            mergeableState,
-          };
-
-          this.log.info(
-            {
-              prNumber: params.prNumber,
-              totalChecks,
-              passedChecks,
-              noChecks,
-            },
-            'All PR checks passed',
-          );
-
-          return ok(result);
-        }
-
-        // Checks still pending - wait and retry
-        this.log.debug(
-          {
-            prNumber: params.prNumber,
-            pendingChecks,
-            waitingMs: interval,
-          },
-          'Checks still pending, waiting...',
-        );
-
-        await new Promise((resolve) => setTimeout(resolve, interval));
-      }
-
-      // Timeout reached
-      const apiError = new GitHubAPIError(
-        'waitForChecks',
-        `Timeout waiting for PR checks to complete after ${timeout}ms`,
-        undefined,
-      );
-
-      this.log.error(
-        {
-          operation: 'waitForChecks',
-          prNumber: params.prNumber,
-          timeout,
-        },
-        'Timeout waiting for PR checks',
-      );
-
-      return err(apiError);
-    } catch (error) {
-      const apiError =
-        error instanceof GitHubAPIError
-          ? error
-          : new GitHubAPIError('waitForChecks', 'Failed to check PR status', undefined, error);
-
-      this.log.error(
-        {
-          operation: 'waitForChecks',
-          prNumber: params.prNumber,
-          error: apiError.message,
-          statusCode: apiError.statusCode,
-        },
-        'Failed to wait for PR checks',
-      );
-
-      return err(apiError);
-    }
-  }
-
-  /**
-   * Get pull request details
-   *
-   * @param prNumber - Pull request number
-   * @returns Result containing PR details or error
-   *
-   * @example
-   * ```typescript
-   * const result = await prService.getPullRequest(123);
-   * if (result.ok) {
-   *   console.log('Head branch:', result.value.headRef);
-   * }
-   * ```
-   */
-  async getPullRequest(prNumber: number): Promise<
-    Result<
-      {
-        headRef: string;
-        baseRef: string;
-        merged: boolean;
-        state: string;
-      },
-      GitHubAPIError
-    >
-  > {
-    this.log.debug({ prNumber }, 'Getting pull request details');
-
-    try {
-      const { owner, repo } = this.github.getRepository();
-
-      const response = await this.github.executeWithRetry('getPullRequest', (octokit) =>
-        octokit.rest.pulls.get({
-          owner,
-          repo,
-          pull_number: prNumber,
-        }),
-      );
-
+      const response = await this.fetchPR(prNumber);
       const result = {
         headRef: response.data.head.ref,
         baseRef: response.data.base.ref,
@@ -896,72 +156,331 @@ export class PRService extends Loggable {
       };
 
       this.log.info(
-        {
-          prNumber,
-          headRef: result.headRef,
-          merged: result.merged,
-          state: result.state,
-        },
-        'Pull request details retrieved',
+        { prNumber, headRef: result.headRef, merged: result.merged, state: result.state },
+        'PR details retrieved',
       );
-
       return ok(result);
     } catch (error) {
-      const apiError =
-        error instanceof GitHubAPIError
-          ? error
-          : new GitHubAPIError('getPullRequest', 'Failed to get pull request details', undefined, error);
-
-      this.log.error(
-        {
-          operation: 'getPullRequest',
-          prNumber,
-          error: apiError.message,
-          statusCode: apiError.statusCode,
-        },
-        'Failed to get pull request details',
-      );
-
-      return err(apiError);
+      return this.handleError('getPullRequest', 'Failed to get pull request details', error, { prNumber });
     }
   }
 
-  /**
-   * Build PR body from workspace tree
-   *
-   * Formats workspace tree into markdown PR body with:
-   * - Version summary
-   * - Workspace hierarchy
-   * - Changed files indicators
-   *
-   * @param tree - Workspace tree with versions
-   * @returns Formatted PR body in markdown
-   *
-   * @example
-   * ```typescript
-   * const body = PRService.buildPRBody(workspaceTree);
-   * ```
-   */
+  /** Check if PR has merged (with polling) */
+  async hasMerged(params: HasMergedParams): Promise<Result<boolean, GitHubAPIError>> {
+    const timeout = params.timeout ?? 60000;
+    const interval = params.interval ?? 5000;
+    const startTime = Date.now();
+
+    this.log.debug({ prNumber: params.prNumber, timeout, interval }, 'Polling for merge status');
+
+    try {
+      return await this.pollUntilMerged(params.prNumber, timeout, interval, startTime);
+    } catch (error) {
+      return this.handleError('hasMerged', 'Failed to check if pull request is merged', error, {
+        prNumber: params.prNumber,
+        elapsedMs: Date.now() - startTime,
+      });
+    }
+  }
+
+  /** Check if PR exists */
+  async exists(params: ExistsPRParams): Promise<Result<PRExistsResponse, GitHubAPIError>> {
+    this.log.debug({ base: params.base, head: params.head }, 'Checking PR existence');
+
+    try {
+      const response = await this.listPRs(params);
+
+      if (response.data.length > 0) {
+        const pr = response.data[0];
+        this.log.info({ prNumber: pr.number, state: pr.state }, 'PR exists');
+        return ok({ exists: true, number: pr.number, state: pr.state });
+      }
+
+      this.log.info({ base: params.base, head: params.head }, 'No PR found');
+      return ok({ exists: false });
+    } catch (error) {
+      return this.handleError('existsPR', 'Failed to check if pull request exists', error, {
+        base: params.base,
+        head: params.head,
+      });
+    }
+  }
+
+  /** Wait for PR checks to complete */
+  async waitForChecks(params: WaitForChecksParams): Promise<Result<ChecksStatusResult, GitHubAPIError>> {
+    const timeout = params.timeout ?? 300000;
+    const interval = params.interval ?? 10000;
+    const startTime = Date.now();
+
+    this.log.debug({ prNumber: params.prNumber, timeout, interval }, 'Waiting for checks');
+
+    try {
+      return await this.pollUntilChecksComplete(params.prNumber, timeout, interval, startTime);
+    } catch (error) {
+      return this.handleError('waitForChecks', 'Failed to check PR status', error, { prNumber: params.prNumber });
+    }
+  }
+
+  // ====================
+  // Polling Operations
+  // ====================
+
+  /** Poll until PR is merged or timeout */
+  private async pollUntilMerged(
+    prNumber: number,
+    timeout: number,
+    interval: number,
+    startTime: number,
+  ): Promise<Result<boolean, GitHubAPIError>> {
+    while (Date.now() - startTime < timeout) {
+      const response = await this.fetchPR(prNumber);
+
+      if (response.data.merged) {
+        this.log.info({ prNumber, mergedAt: response.data.merged_at }, 'PR merged');
+        return ok(true);
+      }
+
+      if (response.data.state === 'closed' && !response.data.merged) {
+        this.log.info({ prNumber, state: response.data.state }, 'PR closed but not merged');
+        return ok(false);
+      }
+
+      await this.wait(interval);
+    }
+
+    this.log.warn({ prNumber, timeout, elapsed: Date.now() - startTime }, 'Timeout waiting for merge');
+    return ok(false);
+  }
+
+  /** Poll until checks complete or timeout */
+  private async pollUntilChecksComplete(
+    prNumber: number,
+    timeout: number,
+    interval: number,
+    startTime: number,
+  ): Promise<Result<ChecksStatusResult, GitHubAPIError>> {
+    while (Date.now() - startTime < timeout) {
+      const pr = await this.fetchPR(prNumber);
+      const headSha = pr.data.head.sha;
+      const mergeableState = pr.data.mergeable_state || 'unknown';
+
+      this.log.debug({ prNumber, mergeableState, mergeable: pr.data.mergeable, headSha }, 'PR status checked');
+
+      const checksStatus = await this.getChecksStatus(headSha, mergeableState);
+
+      if (checksStatus.failedChecks > 0) {
+        this.log.warn(
+          { prNumber, failedChecks: checksStatus.failedChecks, failedCheckNames: checksStatus.failedCheckNames },
+          'Checks failed',
+        );
+        return ok(checksStatus);
+      }
+
+      if (checksStatus.allPassed || checksStatus.totalChecks === 0) {
+        this.log.info(
+          { prNumber, totalChecks: checksStatus.totalChecks, passedChecks: checksStatus.passedChecks },
+          'All checks passed',
+        );
+        return ok(checksStatus);
+      }
+
+      this.log.debug(
+        { prNumber, pendingChecks: checksStatus.totalChecks - checksStatus.passedChecks },
+        'Checks pending',
+      );
+      await this.wait(interval);
+    }
+
+    return err(new GitHubAPIError('waitForChecks', `Timeout waiting for PR checks after ${timeout}ms`, undefined));
+  }
+
+  /** Get current status of all PR checks */
+  private async getChecksStatus(headSha: string, mergeableState: string): Promise<ChecksStatusResult> {
+    const { owner, repo } = this.github.getRepository();
+
+    const [statusResponse, checkRunsResponse] = await Promise.all([
+      this.github.executeWithRetry('getCombinedStatus', (octokit) =>
+        octokit.rest.repos.getCombinedStatusForRef({ owner, repo, ref: headSha }),
+      ),
+      this.github.executeWithRetry('listCheckRuns', (octokit) =>
+        octokit.rest.checks.listForRef({ owner, repo, ref: headSha }),
+      ),
+    ]);
+
+    const statusChecks = statusResponse.data.statuses;
+    const checkRuns = checkRunsResponse.data.check_runs;
+
+    const statusStats = this.countStatusChecks(statusChecks);
+    const checkRunStats = this.countCheckRuns(checkRuns);
+
+    const totalChecks = statusStats.total + checkRunStats.total;
+    const passedChecks = statusStats.passed + checkRunStats.passed;
+    const failedChecks = statusStats.failed + checkRunStats.failed;
+    const pendingChecks = statusStats.pending + checkRunStats.pending;
+
+    const failedCheckNames = [
+      ...statusChecks.filter((s) => s.state === 'failure' || s.state === 'error').map((s) => s.context),
+      ...checkRuns
+        .filter((c) => c.conclusion === 'failure' || c.conclusion === 'cancelled' || c.conclusion === 'timed_out')
+        .map((c) => c.name),
+    ];
+
+    return {
+      allPassed: pendingChecks === 0 && failedChecks === 0 && totalChecks > 0,
+      pending: pendingChecks > 0,
+      totalChecks,
+      passedChecks,
+      failedChecks,
+      mergeableState,
+      failedCheckNames: failedCheckNames.length > 0 ? failedCheckNames : undefined,
+    };
+  }
+
+  // ====================
+  // Check Counting Helpers
+  // ====================
+
+  /** Count status check results */
+  private countStatusChecks(statuses: Array<{ state: string }>): {
+    total: number;
+    passed: number;
+    failed: number;
+    pending: number;
+  } {
+    return {
+      total: statuses.length,
+      passed: statuses.filter((s) => s.state === 'success').length,
+      failed: statuses.filter((s) => s.state === 'failure' || s.state === 'error').length,
+      pending: statuses.filter((s) => s.state === 'pending').length,
+    };
+  }
+
+  /** Count check run results */
+  private countCheckRuns(checkRuns: Array<{ status: string; conclusion: string | null }>): {
+    total: number;
+    passed: number;
+    failed: number;
+    pending: number;
+  } {
+    return {
+      total: checkRuns.length,
+      passed: checkRuns.filter((c) => c.conclusion === 'success').length,
+      failed: checkRuns.filter(
+        (c) => c.conclusion === 'failure' || c.conclusion === 'cancelled' || c.conclusion === 'timed_out',
+      ).length,
+      pending: checkRuns.filter((c) => c.status !== 'completed').length,
+    };
+  }
+
+  // ====================
+  // API Helpers
+  // ====================
+
+  /** Create PR via API */
+  private async createPR(params: CreatePRParams) {
+    const { owner, repo } = this.github.getRepository();
+    return this.github.executeWithRetry('createPR', (octokit) =>
+      octokit.rest.pulls.create({
+        owner,
+        repo,
+        title: params.title,
+        body: params.body,
+        base: params.base,
+        head: params.head,
+        draft: params.draft ?? false,
+      }),
+    );
+  }
+
+  /** Merge PR via API */
+  private async mergePR(params: MergePRParams) {
+    const { owner, repo } = this.github.getRepository();
+    return this.github.executeWithRetry('mergePR', (octokit) =>
+      octokit.rest.pulls.merge({
+        owner,
+        repo,
+        pull_number: params.prNumber,
+        merge_method: params.mergeMethod ?? 'merge',
+        commit_title: params.commitTitle,
+        commit_message: params.commitMessage,
+      }),
+    );
+  }
+
+  /** Fetch PR details */
+  private async fetchPR(prNumber: number) {
+    const { owner, repo } = this.github.getRepository();
+    return this.github.executeWithRetry('getPullRequest', (octokit) =>
+      octokit.rest.pulls.get({ owner, repo, pull_number: prNumber }),
+    );
+  }
+
+  /** List PRs for base and head */
+  private async listPRs(params: ExistsPRParams) {
+    const { owner, repo } = this.github.getRepository();
+    return this.github.executeWithRetry('listPRs', (octokit) =>
+      octokit.rest.pulls.list({ owner, repo, state: 'open', base: params.base, head: `${owner}:${params.head}` }),
+    );
+  }
+
+  // ====================
+  // Response Mapping
+  // ====================
+
+  /** Map API create response */
+  private mapCreateResponse(data: { number: number; html_url: string; state: string }): PRCreateResponse {
+    return { number: data.number, htmlUrl: data.html_url, state: data.state };
+  }
+
+  /** Map API merge response */
+  private mapMergeResponse(data: { merged: boolean; sha: string; message: string }): PRMergeResponse {
+    return { merged: data.merged, sha: data.sha, message: data.message };
+  }
+
+  // ====================
+  // Utilities
+  // ====================
+
+  /** Wait for specified milliseconds */
+  private async wait(ms: number): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  /** Handle and wrap errors */
+  private handleError(
+    operation: string,
+    message: string,
+    error: unknown,
+    context?: Record<string, unknown>,
+  ): Result<never, GitHubAPIError> {
+    const apiError = error instanceof GitHubAPIError ? error : new GitHubAPIError(operation, message, undefined, error);
+    this.log.error(
+      { operation, error: apiError.message, statusCode: apiError.statusCode, ...context },
+      `${operation} failed`,
+    );
+    return err(apiError);
+  }
+
+  // ====================
+  // PR Body Formatting
+  // ====================
+
+  /** Build PR body from workspace tree */
   static buildPRBody(tree: WorkspaceTree): string {
     const sections: string[] = [
       `# Version Update: ${tree.root.workspace.name} ${tree.masterVersion}`,
       '',
       '## 📦 Workspace Versions',
       '',
+      `### 🏠 Root: ${tree.root.workspace.name}`,
+      `**Version**: \`${tree.root.workspace.version}\`  `,
+      `**Path**: \`${tree.root.workspace.path}\`  `,
+      `**Type**: \`${tree.root.workspace.type}\`  `,
+      '',
     ];
 
-    // Root workspace
-    sections.push(`### 🏠 Root: ${tree.root.workspace.name}`);
-    sections.push(`**Version**: \`${tree.root.workspace.version}\`  `);
-    sections.push(`**Path**: \`${tree.root.workspace.path}\`  `);
-    sections.push(`**Type**: \`${tree.root.workspace.type}\`  `);
-    sections.push('');
-
-    // Child workspaces (if any)
     if (tree.root.children.length > 0) {
-      sections.push('### 📁 Child Workspaces');
-      sections.push('');
-
+      sections.push('### 📁 Child Workspaces', '');
       for (const child of tree.root.children) {
         sections.push(...PRService.formatWorkspaceNode(child, 0));
       }
@@ -970,13 +489,7 @@ export class PRService extends Loggable {
     return sections.join('\n');
   }
 
-  /**
-   * Format a workspace node with indentation
-   *
-   * @param node - Workspace node to format
-   * @param indentLevel - Indentation level (0-based)
-   * @returns Array of formatted lines
-   */
+  /** Format workspace node recursively */
   private static formatWorkspaceNode(node: WorkspaceNode, indentLevel: number): string[] {
     const indent = '  '.repeat(indentLevel);
     const changeIndicator = node.workspace.hasChanges ? '🔄' : '✓';
@@ -987,7 +500,6 @@ export class PRService extends Loggable {
       `${indent}  - Type: \`${node.workspace.type}\``,
     ];
 
-    // Recursively add children
     if (node.children.length > 0) {
       for (const child of node.children) {
         lines.push(...PRService.formatWorkspaceNode(child, indentLevel + 1));

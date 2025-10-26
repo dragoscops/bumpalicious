@@ -59,15 +59,28 @@ export declare class PRService extends Loggable {
     constructor(github: GitHubService);
     create(params: CreatePRParams): Promise<Result<PRCreateResponse, GitHubAPIError>>;
     merge(params: MergePRParams): Promise<Result<PRMergeResponse, GitHubAPIError>>;
-    hasMerged(params: HasMergedParams): Promise<Result<boolean, GitHubAPIError>>;
-    exists(params: ExistsPRParams): Promise<Result<PRExistsResponse, GitHubAPIError>>;
-    waitForChecks(params: WaitForChecksParams): Promise<Result<ChecksStatusResult, GitHubAPIError>>;
     getPullRequest(prNumber: number): Promise<Result<{
         headRef: string;
         baseRef: string;
         merged: boolean;
         state: string;
     }, GitHubAPIError>>;
+    hasMerged(params: HasMergedParams): Promise<Result<boolean, GitHubAPIError>>;
+    exists(params: ExistsPRParams): Promise<Result<PRExistsResponse, GitHubAPIError>>;
+    waitForChecks(params: WaitForChecksParams): Promise<Result<ChecksStatusResult, GitHubAPIError>>;
+    private pollUntilMerged;
+    private pollUntilChecksComplete;
+    private getChecksStatus;
+    private countStatusChecks;
+    private countCheckRuns;
+    private createPR;
+    private mergePR;
+    private fetchPR;
+    private listPRs;
+    private mapCreateResponse;
+    private mapMergeResponse;
+    private wait;
+    private handleError;
     static buildPRBody(tree: WorkspaceTree): string;
     private static formatWorkspaceNode;
 }
