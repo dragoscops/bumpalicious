@@ -1,0 +1,1 @@
+{"version":3,"file":"Loggable.js","sourceRoot":"","sources":["../../src/utils/Loggable.ts"],"names":[],"mappings":";;;AAuBA,2CAAqC;AAQrC,MAAsB,QAAQ;IAYT,GAAG,CAAS;IAO/B;QACE,IAAI,CAAC,GAAG,GAAG,kBAAM,CAAC,KAAK,CAAC,EAAE,KAAK,EAAE,IAAI,CAAC,WAAW,CAAC,IAAI,EAAE,CAAC,CAAC;IAC5D,CAAC;CACF;AAtBD,4BAsBC"}

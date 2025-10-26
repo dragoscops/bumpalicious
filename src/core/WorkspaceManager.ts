@@ -50,6 +50,7 @@ import {
   FileOperationError,
 } from '../utils/errors.js';
 import { Loggable } from '../utils/Loggable.js';
+import { RepositoryInfo } from '../types/git.js';
 
 /**
  * Workspace Manager dependencies
@@ -84,10 +85,7 @@ export interface WorkflowOptions {
     readonly tagPrefix?: string;
   };
   /** Repository context */
-  readonly repository: {
-    readonly owner: string;
-    readonly repo: string;
-  };
+  readonly repository: RepositoryInfo;
   /** Branch to use for operations (defaults to 'main') */
   readonly branch?: string;
   /** Changelog options */

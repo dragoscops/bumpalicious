@@ -57,6 +57,7 @@ outputs:
 runs:
   using: 'node20'
   main: 'dist/index.js'
+  pre: 'scripts/setup.js'
 
 branding:
   icon: 'tag'

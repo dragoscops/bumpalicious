@@ -27,37 +27,10 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { Readable } from 'node:stream';
-
-// Import all preset factories statically so Rollup can bundle them
-import angularPreset from 'conventional-changelog-angular';
-import atomPreset from 'conventional-changelog-atom';
-import codemirrorPreset from 'conventional-changelog-codemirror';
-import conventionalcommitsPreset from 'conventional-changelog-conventionalcommits';
-import emberPreset from 'conventional-changelog-ember';
-import eslintPreset from 'conventional-changelog-eslint';
-import expressPreset from 'conventional-changelog-express';
-import jqueryPreset from 'conventional-changelog-jquery';
-import jshintPreset from 'conventional-changelog-jshint';
-import { GitCommit } from '../types/git.js';
+import { GitCommit, RepositoryInfo } from '../types/git.js';
 import type { Version } from '../types/version.js';
-import type { WorkspaceWithVersion, WorkspaceNode } from '../types/workspace.js';
+import type { WorkspaceNode, WorkspaceWithVersion } from '../types/workspace.js';
 import { Loggable } from '../utils/Loggable.js';
-
-/**
- * Map of preset names to their factory functions
- * Using static imports so Rollup can bundle them properly
- */
-const PRESET_MAP = {
-  angular: angularPreset,
-  atom: atomPreset,
-  codemirror: codemirrorPreset,
-  conventionalcommits: conventionalcommitsPreset,
-  ember: emberPreset,
-  eslint: eslintPreset,
-  express: expressPreset,
-  jquery: jqueryPreset,
-  jshint: jshintPreset,
-} as const;
 
 /**
  * Preset formats for conventional-changelog
@@ -108,10 +81,7 @@ export interface GenerateChangelogOptions {
   /** Child workspace nodes (for root workspace summary) */
   readonly childWorkspaces?: ReadonlyArray<WorkspaceNode>;
   /** Repository context (owner/repo) */
-  readonly repository: {
-    readonly owner: string;
-    readonly repo: string;
-  };
+  readonly repository: RepositoryInfo;
   /** Last git tag to generate changelog from (optional, for incremental changelogs) */
   readonly lastTag?: string | null;
   /** Commits to include in changelog (instead of reading from git) */
@@ -263,49 +233,20 @@ export class ChangelogService extends Loggable {
     const { commits = [], preset = 'conventionalcommits', workspace, repository } = options;
 
     try {
-      // Get the preset factory from our static map (so Rollup can bundle everything)
-      const createPreset = PRESET_MAP[preset];
-      if (!createPreset) {
-        throw new Error(`Unknown preset: ${preset}`);
-      }
+      // Load preset dynamically
+      const presetModule = await import(`conventional-changelog-${preset}`);
+      const createPreset = presetModule.default;
       const presetConfig = await createPreset();
 
-      // The preset returns { parser, writer, commits } - not parserOpts/writerOpts!
+      // The preset returns { parser, writer, commits }
       const parserOpts = presetConfig.parser || {};
       const writerOpts = presetConfig.writer || {};
-
-      // Check if we're in bundled mode and override templates if needed
-      const { isBundledMode, loadTemplates } = await import('./template-loader.js');
-      const bundled = await isBundledMode();
-
-      if (bundled) {
-        this.log.debug({ preset }, 'Running in bundled mode, loading templates from dist/');
-        const templates = await loadTemplates(preset);
-        writerOpts.mainTemplate = templates.template;
-        writerOpts.headerPartial = templates.header;
-        writerOpts.commitPartial = templates.commit;
-        if (templates.footer) {
-          writerOpts.footerPartial = templates.footer;
-        }
-      }
 
       // Parse the commits using conventional-commits-parser
       const parsedCommits = await this.parseGitCommits(commits, parserOpts);
 
       // Build context for the writer (needed for link generation)
-      const date = new Date().toISOString().split('T')[0];
-      const context = {
-        version: workspace.newVersion,
-        date,
-        host: 'https://github.com',
-        owner: repository.owner,
-        repository: repository.repo,
-        linkReferences: true,
-        commitUrlFormat: `https://github.com/${repository.owner}/${repository.repo}/commit/{{hash}}`,
-        compareUrlFormat: `https://github.com/${repository.owner}/${repository.repo}/compare/{{previousTag}}...{{currentTag}}`,
-        issueUrlFormat: `https://github.com/${repository.owner}/${repository.repo}/issues/{{id}}`,
-        userUrlFormat: 'https://github.com/{{user}}',
-      };
+      const context = this.buildContext({ workspace, repository });
 
       // Convert parsed commits to changelog markdown
       const changelogChunks = await this.parsedCommitsToChangelog(parsedCommits, writerOpts, context);
@@ -514,5 +455,21 @@ export class ChangelogService extends Loggable {
     } catch {
       return false;
     }
+  }
+
+  private buildContext({ workspace, repository }: { workspace: WorkspaceWithVersion; repository: RepositoryInfo }) {
+    const date = new Date().toISOString().split('T')[0];
+    return {
+      version: workspace.newVersion,
+      date,
+      host: 'https://github.com',
+      owner: repository.owner,
+      repository: repository.repo,
+      linkReferences: true,
+      commitUrlFormat: `https://github.com/${repository.owner}/${repository.repo}/commit/{{hash}}`,
+      compareUrlFormat: `https://github.com/${repository.owner}/${repository.repo}/compare/{{previousTag}}...{{currentTag}}`,
+      issueUrlFormat: `https://github.com/${repository.owner}/${repository.repo}/issues/{{id}}`,
+      userUrlFormat: 'https://github.com/{{user}}',
+    };
   }
 }

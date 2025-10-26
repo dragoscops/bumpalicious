@@ -99,7 +99,8 @@ jobs:
       # debug
       - name: Increase Version
         id: version_step
-        uses: ./
+        # uses: ./
+        uses: dragoscops/bumpalicious@main3
         with:
           github_token:  ${{ steps.app-token-push.outputs.token || secrets.GH_TOKEN_PUSH }}
           workspaces: .:node
