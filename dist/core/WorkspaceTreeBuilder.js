@@ -9,46 +9,27 @@ class WorkspaceTreeBuilder extends Loggable_js_1.Loggable {
         this.log.info('WorkspaceTreeBuilder initialized');
     }
     build(workspaces) {
-        this.log.debug({
-            count: workspaces.length,
-            workspaces: workspaces.map((w) => ({ name: w.name, path: w.path, hasChanges: w.hasChanges })),
-        }, 'Building workspace tree');
-        if (!workspaces || workspaces.length === 0) {
-            throw new errors_js_1.WorkspaceValidationError('No workspaces provided');
-        }
+        this.log.debug({ count: workspaces.length }, 'Building workspace tree');
+        this.validateInput(workspaces);
         const root = this.identifyRoot(workspaces);
-        this.log.debug({
-            rootPath: root.path,
-            rootName: root.name,
-            rootVersion: root.version,
-            rootHasChanges: root.hasChanges,
-        }, 'Root workspace identified');
-        this.log.debug('Creating workspace nodes');
+        this.log.debug({ rootPath: root.path, rootName: root.name }, 'Root workspace identified');
         const nodes = this.buildNodes(workspaces);
-        this.log.debug({
-            nodeCount: nodes.length,
-        }, 'Establishing parent-child relationships');
         this.establishRelationships(nodes);
-        const rootNode = nodes.find((node) => node.workspace === root);
-        if (!rootNode) {
-            throw new errors_js_1.WorkspaceValidationError('Root workspace not found in nodes');
-        }
-        this.log.debug('Validating single root constraint');
+        const rootNode = this.getRootNode(nodes, root);
         this.validateSingleRoot(nodes);
-        this.log.debug('Validating change propagation rule');
         this.validateChangePropagation(rootNode);
         const tree = {
             root: this.toImmutableNode(rootNode),
             masterVersion: root.newVersion,
             allWorkspaces: [...workspaces],
         };
-        this.log.info({
-            rootName: root.name,
-            rootVersion: root.newVersion,
-            totalWorkspaces: workspaces.length,
-            childrenCount: rootNode.children.length,
-        }, 'Workspace tree built successfully');
+        this.log.info({ rootName: root.name, rootVersion: root.newVersion, totalWorkspaces: workspaces.length }, 'Workspace tree built');
         return tree;
+    }
+    validateInput(workspaces) {
+        if (!workspaces || workspaces.length === 0) {
+            throw new errors_js_1.WorkspaceValidationError('No workspaces provided');
+        }
     }
     identifyRoot(workspaces) {
         let root = workspaces[0];
@@ -62,19 +43,6 @@ class WorkspaceTreeBuilder extends Loggable_js_1.Loggable {
             }
         }
         return root;
-    }
-    normalizePath(path) {
-        let normalized = path.trim();
-        if (normalized === '.' || normalized === './') {
-            return '';
-        }
-        if (normalized.startsWith('./')) {
-            normalized = normalized.slice(2);
-        }
-        if (normalized.endsWith('/') && normalized.length > 1) {
-            normalized = normalized.slice(0, -1);
-        }
-        return normalized;
     }
     buildNodes(workspaces) {
         return workspaces.map((workspace) => ({
@@ -91,31 +59,47 @@ class WorkspaceTreeBuilder extends Loggable_js_1.Loggable {
             if (childPath === '') {
                 continue;
             }
-            let closestParent = null;
-            let closestParentPath = '';
-            for (let j = 0; j < nodes.length; j++) {
-                if (i === j)
-                    continue;
-                const potentialParent = nodes[j];
-                const parentPath = this.normalizePath(potentialParent.workspace.path);
-                const isChild = parentPath === '' ? true : childPath.startsWith(`${parentPath}/`);
-                if (isChild) {
-                    if (!closestParent || parentPath.length > closestParentPath.length) {
-                        closestParent = potentialParent;
-                        closestParentPath = parentPath;
-                    }
-                }
-            }
+            const closestParent = this.findClosestParent(nodes, childPath, i);
             if (closestParent) {
                 childNode.parent = closestParent;
                 closestParent.children.push(childNode);
             }
         }
+        this.markRootNodes(nodes);
+    }
+    findClosestParent(nodes, childPath, childIndex) {
+        let closestParent = null;
+        let closestParentPath = '';
+        for (let j = 0; j < nodes.length; j++) {
+            if (childIndex === j)
+                continue;
+            const potentialParent = nodes[j];
+            const parentPath = this.normalizePath(potentialParent.workspace.path);
+            if (this.isParentOf(parentPath, childPath)) {
+                if (!closestParent || parentPath.length > closestParentPath.length) {
+                    closestParent = potentialParent;
+                    closestParentPath = parentPath;
+                }
+            }
+        }
+        return closestParent;
+    }
+    isParentOf(parentPath, childPath) {
+        return parentPath === '' || childPath.startsWith(`${parentPath}/`);
+    }
+    markRootNodes(nodes) {
         for (const node of nodes) {
             if (!node.parent) {
                 node.isRoot = true;
             }
         }
+    }
+    getRootNode(nodes, root) {
+        const rootNode = nodes.find((node) => node.workspace === root);
+        if (!rootNode) {
+            throw new errors_js_1.WorkspaceValidationError('Root workspace not found in nodes');
+        }
+        return rootNode;
     }
     validateSingleRoot(nodes) {
         const roots = nodes.filter((node) => node.parent === null);
@@ -138,10 +122,7 @@ class WorkspaceTreeBuilder extends Loggable_js_1.Loggable {
     }
     hasDescendantWithChanges(node) {
         for (const child of node.children) {
-            if (child.workspace.hasChanges) {
-                return true;
-            }
-            if (this.hasDescendantWithChanges(child)) {
+            if (child.workspace.hasChanges || this.hasDescendantWithChanges(child)) {
                 return true;
             }
         }
@@ -156,6 +137,19 @@ class WorkspaceTreeBuilder extends Loggable_js_1.Loggable {
             changed.push(...this.findChangedDescendants(child));
         }
         return changed;
+    }
+    normalizePath(path) {
+        let normalized = path.trim();
+        if (normalized === '.' || normalized === './') {
+            return '';
+        }
+        if (normalized.startsWith('./')) {
+            normalized = normalized.slice(2);
+        }
+        if (normalized.endsWith('/') && normalized.length > 1) {
+            normalized = normalized.slice(0, -1);
+        }
+        return normalized;
     }
     toImmutableNode(node) {
         return {

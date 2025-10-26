@@ -8,7 +8,11 @@ export declare class WorkspaceService extends Loggable {
     constructor(gitService: GitService);
     enrichWorkspaces(configs: ReadonlyArray<WorkspaceConfig>): Promise<Result<ReadonlyArray<Workspace>, WorkspaceDetectionError>>;
     detectChangedWorkspaces(workspaces: ReadonlyArray<Workspace>, lastTag: string | null, branch?: string): Promise<Result<ReadonlyArray<Workspace>, GitOperationError>>;
+    private enrichSingleWorkspace;
+    private markAllAsChanged;
     private matchFilesToWorkspaces;
+    private getRelativePath;
+    private filterFilesForWorkspace;
     private resolveAbsolutePath;
 }
 //# sourceMappingURL=WorkspaceService.d.ts.map

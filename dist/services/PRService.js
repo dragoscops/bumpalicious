@@ -172,8 +172,9 @@ class PRService extends Loggable_js_1.Loggable {
                 .filter((c) => c.conclusion === 'failure' || c.conclusion === 'cancelled' || c.conclusion === 'timed_out')
                 .map((c) => c.name),
         ];
+        const allPassed = totalChecks === 0 || (pendingChecks === 0 && failedChecks === 0);
         return {
-            allPassed: pendingChecks === 0 && failedChecks === 0 && totalChecks > 0,
+            allPassed,
             pending: pendingChecks > 0,
             totalChecks,
             passedChecks,

@@ -325,8 +325,12 @@ export class PRService extends Loggable {
         .map((c) => c.name),
     ];
 
+    // If no checks exist at all, consider it passing (repository might not have checks configured)
+    // If checks exist, all must pass (pendingChecks === 0 && failedChecks === 0)
+    const allPassed = totalChecks === 0 || (pendingChecks === 0 && failedChecks === 0);
+
     return {
-      allPassed: pendingChecks === 0 && failedChecks === 0 && totalChecks > 0,
+      allPassed,
       pending: pendingChecks > 0,
       totalChecks,
       passedChecks,
