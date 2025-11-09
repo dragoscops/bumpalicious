@@ -70,7 +70,7 @@ export declare class WorkspaceManager extends Loggable {
     execute(options: WorkflowOptions): Promise<Result<WorkflowResult, Error>>;
     enrichWorkspaces(configs: ReadonlyArray<WorkspaceConfig>): Promise<Result<ReadonlyArray<Workspace>, WorkspaceDetectionError>>;
     detectChangedWorkspaces(workspaces: ReadonlyArray<Workspace>, lastTag: string | null, branch?: string): Promise<Result<ReadonlyArray<Workspace>, GitOperationError>>;
-    calculateVersions(workspaces: ReadonlyArray<Workspace>, lastTag: string | null, branch: string): Promise<Result<ReadonlyArray<WorkspaceWithVersion>, Error>>;
+    calculateVersions(workspaces: ReadonlyArray<Workspace>, lastTag: string | null, branch: string): Promise<Result<import('../services/VersionService.js').WorkspaceVersionResult, Error>>;
     updateVersionFiles(workspaces: ReadonlyArray<WorkspaceWithVersion>): Promise<Result<void, FileOperationError>>;
     generateChangelogs(tree: WorkspaceTree, options: WorkflowOptions): Promise<Result<void, FileOperationError>>;
     createVersionPR(tree: WorkspaceTree, options: WorkflowOptions, branchName: string): Promise<Result<PRCreationResult, Error>>;

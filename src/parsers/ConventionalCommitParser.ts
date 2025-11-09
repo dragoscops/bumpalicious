@@ -17,7 +17,7 @@
  * ```
  */
 
-import type { CommitAnalysis, BumpType, PreReleaseIdentifier } from '../types/index.js';
+import type { BumpType, CommitAnalysis, PreReleaseIdentifier } from '../types/index.js';
 import { logger } from '../utils/logger.js';
 
 const childLogger = logger.child({ parser: 'ConventionalCommit' });
@@ -224,5 +224,64 @@ export function parseCommitMessages(messages: string[]): CommitAnalysis | null {
     scope: scopes.size > 0 ? Array.from(scopes).join(', ') : undefined,
     preRelease,
     message: `Combined analysis of ${validAnalyses.length} commit(s)`,
+  };
+}
+
+/**
+ * Result of analyzing commit messages
+ */
+export interface CommitParseResult {
+  /** Analysis result if bumping commits found */
+  analysis: CommitAnalysis | null;
+  /** Whether any conventional commits were found (including non-bumping ones) */
+  hasConventionalCommits: boolean;
+  /** Total number of commits analyzed */
+  totalCommits: number;
+  /** Number of conventional commits (including non-bumping) */
+  conventionalCommitCount: number;
+}
+
+/**
+ * Parse commit messages with detailed result including whether conventional commits were found
+ *
+ * @param messages - Array of commit messages
+ * @returns Detailed parse result
+ */
+export function analyzeCommitMessages(messages: string[]): CommitParseResult {
+  childLogger.debug({ messageCount: messages.length }, 'Analyzing commit messages');
+
+  if (messages.length === 0) {
+    return {
+      analysis: null,
+      hasConventionalCommits: false,
+      totalCommits: 0,
+      conventionalCommitCount: 0,
+    };
+  }
+
+  let conventionalCommitCount = 0;
+
+  // Count all conventional commits (including non-bumping)
+  for (const message of messages) {
+    const trimmedMessage = message.trim();
+    if (!trimmedMessage) continue;
+
+    const match = CONVENTIONAL_COMMIT_REGEX.exec(trimmedMessage);
+    if (match && match.groups) {
+      const { type } = match.groups;
+      // Check if it's a valid conventional commit type (bumping or non-bumping)
+      if (type in BUMP_TYPES || NON_BUMP_TYPES.has(type)) {
+        conventionalCommitCount++;
+      }
+    }
+  }
+
+  const analysis = parseCommitMessages(messages);
+
+  return {
+    analysis,
+    hasConventionalCommits: conventionalCommitCount > 0,
+    totalCommits: messages.length,
+    conventionalCommitCount,
   };
 }

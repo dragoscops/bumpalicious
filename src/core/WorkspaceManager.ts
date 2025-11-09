@@ -164,7 +164,7 @@ export class WorkspaceManager extends Loggable {
     workspaces: ReadonlyArray<Workspace>,
     lastTag: string | null,
     branch: string,
-  ): Promise<Result<ReadonlyArray<WorkspaceWithVersion>, Error>> {
+  ): Promise<Result<import('../services/VersionService.js').WorkspaceVersionResult, Error>> {
     return await this.versionService.calculateVersionsForWorkspaces(workspaces, lastTag, branch);
   }
 
@@ -285,17 +285,40 @@ export class WorkspaceManager extends Loggable {
       return err(enrichedWorkspaces.error);
     }
 
-    const tree = await this.buildWorkspaceTree(enrichedWorkspaces.value, lastTag.value, branch);
-    if (!tree.ok) {
-      return err(tree.error);
+    const treeResult = await this.buildWorkspaceTree(enrichedWorkspaces.value, lastTag.value, branch);
+    if (!treeResult.ok) {
+      return err(treeResult.error);
     }
 
-    const updateResult = await this.updateFilesAndChangelogs(tree.value, { ...options, lastTag: lastTag.value });
+    // If no version changes, return empty result (this is not an error)
+    if (treeResult.value === null) {
+      // Build a minimal tree with current versions for output
+      const enrichResult = await this.enrichWorkspaces(options.workspaces);
+      if (!enrichResult.ok) {
+        return err(enrichResult.error);
+      }
+      const workspacesWithVersion = enrichResult.value.map((ws) => ({
+        ...ws,
+        newVersion: ws.version,
+        hasChanges: false,
+      }));
+      const emptyTree = this.treeBuilder.build(workspacesWithVersion);
+
+      return ok({
+        tag: '',
+        allTags: [],
+        tree: emptyTree,
+      });
+    }
+
+    const tree = treeResult.value;
+
+    const updateResult = await this.updateFilesAndChangelogs(tree, { ...options, lastTag: lastTag.value });
     if (!updateResult.ok) {
       return err(updateResult.error);
     }
 
-    return await this.createReleaseArtifacts(tree.value, options);
+    return await this.createReleaseArtifacts(tree, options);
   }
 
   // ====================
@@ -437,12 +460,13 @@ export class WorkspaceManager extends Loggable {
     changedWorkspaces: ReadonlyArray<Workspace>,
     lastTag: string | null,
     branch: string,
-  ): Promise<Result<WorkspaceTree, Error>> {
+  ): Promise<Result<WorkspaceTree | null, Error>> {
     const versionsResult = await this.calculateVersions(changedWorkspaces, lastTag, branch);
     if (!versionsResult.ok) {
       return err(versionsResult.error);
     }
-    const changedWorkspacesWithVersions = versionsResult.value;
+
+    const { workspaces: changedWorkspacesWithVersions, hasConventionalCommits } = versionsResult.value;
 
     // Check if any workspace actually has a new version
     const hasVersionChanges = changedWorkspacesWithVersions.some(
@@ -450,11 +474,20 @@ export class WorkspaceManager extends Loggable {
     );
 
     if (!hasVersionChanges) {
-      return err(
-        new WorkspaceValidationError(
-          `No version changes detected. All workspaces remain at their current versions. This typically happens when changes don't include conventional commits that trigger version bumps.`,
-        ),
+      // If no conventional commits at all → ERROR (developer forgot to use conventional commits)
+      if (!hasConventionalCommits) {
+        return err(
+          new WorkspaceValidationError(
+            'No conventional commits detected. Please use conventional commit format (feat:, fix:, etc.) to trigger version bumps.',
+          ),
+        );
+      }
+
+      // If has conventional commits but no version changes → OK (non-bumping commits like chore:, docs:)
+      this.log.info(
+        'No version changes detected. Changes include only non-bumping conventional commits (chore, docs, style, etc.).',
       );
+      return ok(null);
     }
 
     const allWorkspacesWithVersions = this.mergeWorkspaceVersions(changedWorkspaces, changedWorkspacesWithVersions);

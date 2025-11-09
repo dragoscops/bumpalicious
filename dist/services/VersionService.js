@@ -40,19 +40,23 @@ class VersionService extends Loggable_js_1.Loggable {
             lastMessage: commitMessages[commitMessages.length - 1],
         }, 'Commits retrieved for version calculation');
         const workspacesWithVersions = [];
+        let hasConventionalCommits = false;
         for (const workspace of workspaces) {
             const workspaceCommits = workspace.path === '.' ? commitMessages : commitMessages.filter(() => true);
             this.log.debug({ workspace: workspace.path, commits: workspaceCommits.length }, 'Analyzing workspace commits');
-            const analysis = (0, ConventionalCommitParser_js_1.parseCommitMessages)(workspaceCommits);
-            if (analysis) {
-                const newVersion = this.calculateNewVersion(workspace.version, analysis);
+            const parseResult = (0, ConventionalCommitParser_js_1.analyzeCommitMessages)(workspaceCommits);
+            if (parseResult.hasConventionalCommits) {
+                hasConventionalCommits = true;
+            }
+            if (parseResult.analysis) {
+                const newVersion = this.calculateNewVersion(workspace.version, parseResult.analysis);
                 this.log.info({
                     workspace: workspace.path,
                     oldVersion: workspace.version,
                     newVersion,
-                    bumpType: analysis.type,
-                    breaking: analysis.breaking,
-                    preRelease: analysis.preRelease,
+                    bumpType: parseResult.analysis.type,
+                    breaking: parseResult.analysis.breaking,
+                    preRelease: parseResult.analysis.preRelease,
                 }, 'Version bumped based on conventional commits');
                 workspacesWithVersions.push({
                     ...workspace,
@@ -60,18 +64,25 @@ class VersionService extends Loggable_js_1.Loggable {
                 });
             }
             else {
+                const reason = parseResult.hasConventionalCommits
+                    ? 'Only non-bumping conventional commits found (chore, docs, etc.)'
+                    : 'No conventional commits found';
                 this.log.info({
                     workspace: workspace.path,
                     version: workspace.version,
                     commitCount: workspaceCommits.length,
-                }, 'No conventional commits found - version unchanged');
+                    conventionalCommitCount: parseResult.conventionalCommitCount,
+                }, reason);
                 workspacesWithVersions.push({
                     ...workspace,
                     newVersion: workspace.version,
                 });
             }
         }
-        return (0, result_js_1.ok)(workspacesWithVersions);
+        return (0, result_js_1.ok)({
+            workspaces: workspacesWithVersions,
+            hasConventionalCommits,
+        });
     }
     calculateNewVersion(currentVersion, analysis) {
         this.log.debug({

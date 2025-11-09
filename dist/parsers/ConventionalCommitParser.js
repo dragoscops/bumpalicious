@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.parseConventionalCommit = parseConventionalCommit;
 exports.parseCommitMessages = parseCommitMessages;
+exports.analyzeCommitMessages = analyzeCommitMessages;
 const logger_js_1 = require("../utils/logger.js");
 const childLogger = logger_js_1.logger.child({ parser: 'ConventionalCommit' });
 const BUMP_TYPES = {
@@ -96,6 +97,37 @@ function parseCommitMessages(messages) {
         scope: scopes.size > 0 ? Array.from(scopes).join(', ') : undefined,
         preRelease,
         message: `Combined analysis of ${validAnalyses.length} commit(s)`,
+    };
+}
+function analyzeCommitMessages(messages) {
+    childLogger.debug({ messageCount: messages.length }, 'Analyzing commit messages');
+    if (messages.length === 0) {
+        return {
+            analysis: null,
+            hasConventionalCommits: false,
+            totalCommits: 0,
+            conventionalCommitCount: 0,
+        };
+    }
+    let conventionalCommitCount = 0;
+    for (const message of messages) {
+        const trimmedMessage = message.trim();
+        if (!trimmedMessage)
+            continue;
+        const match = CONVENTIONAL_COMMIT_REGEX.exec(trimmedMessage);
+        if (match && match.groups) {
+            const { type } = match.groups;
+            if (type in BUMP_TYPES || NON_BUMP_TYPES.has(type)) {
+                conventionalCommitCount++;
+            }
+        }
+    }
+    const analysis = parseCommitMessages(messages);
+    return {
+        analysis,
+        hasConventionalCommits: conventionalCommitCount > 0,
+        totalCommits: messages.length,
+        conventionalCommitCount,
     };
 }
 //# sourceMappingURL=ConventionalCommitParser.js.map

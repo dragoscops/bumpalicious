@@ -225,6 +225,9 @@ async function run() {
         else if (prNumber && !prMerged) {
             core.notice(`✨ Version PR #${prNumber} created: ${tree.masterVersion} - awaiting merge`);
         }
+        else if (bumpType === 'none') {
+            core.notice(`ℹ️ No version changes - all workspaces remain at current versions`);
+        }
         else {
             core.notice(`✨ Version bump successful: ${tree.masterVersion}`);
         }

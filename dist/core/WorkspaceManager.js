@@ -136,15 +136,33 @@ class WorkspaceManager extends Loggable_js_1.Loggable {
         if (!enrichedWorkspaces.ok) {
             return (0, result_js_1.err)(enrichedWorkspaces.error);
         }
-        const tree = await this.buildWorkspaceTree(enrichedWorkspaces.value, lastTag.value, branch);
-        if (!tree.ok) {
-            return (0, result_js_1.err)(tree.error);
+        const treeResult = await this.buildWorkspaceTree(enrichedWorkspaces.value, lastTag.value, branch);
+        if (!treeResult.ok) {
+            return (0, result_js_1.err)(treeResult.error);
         }
-        const updateResult = await this.updateFilesAndChangelogs(tree.value, { ...options, lastTag: lastTag.value });
+        if (treeResult.value === null) {
+            const enrichResult = await this.enrichWorkspaces(options.workspaces);
+            if (!enrichResult.ok) {
+                return (0, result_js_1.err)(enrichResult.error);
+            }
+            const workspacesWithVersion = enrichResult.value.map((ws) => ({
+                ...ws,
+                newVersion: ws.version,
+                hasChanges: false,
+            }));
+            const emptyTree = this.treeBuilder.build(workspacesWithVersion);
+            return (0, result_js_1.ok)({
+                tag: '',
+                allTags: [],
+                tree: emptyTree,
+            });
+        }
+        const tree = treeResult.value;
+        const updateResult = await this.updateFilesAndChangelogs(tree, { ...options, lastTag: lastTag.value });
         if (!updateResult.ok) {
             return (0, result_js_1.err)(updateResult.error);
         }
-        return await this.createReleaseArtifacts(tree.value, options);
+        return await this.createReleaseArtifacts(tree, options);
     }
     async detectMergedPR(options) {
         const targetBranch = options.branch || 'main';
@@ -239,10 +257,14 @@ class WorkspaceManager extends Loggable_js_1.Loggable {
         if (!versionsResult.ok) {
             return (0, result_js_1.err)(versionsResult.error);
         }
-        const changedWorkspacesWithVersions = versionsResult.value;
+        const { workspaces: changedWorkspacesWithVersions, hasConventionalCommits } = versionsResult.value;
         const hasVersionChanges = changedWorkspacesWithVersions.some((workspace) => workspace.newVersion !== workspace.version);
         if (!hasVersionChanges) {
-            return (0, result_js_1.err)(new errors_js_1.WorkspaceValidationError(`No version changes detected. All workspaces remain at their current versions. This typically happens when changes don't include conventional commits that trigger version bumps.`));
+            if (!hasConventionalCommits) {
+                return (0, result_js_1.err)(new errors_js_1.WorkspaceValidationError('No conventional commits detected. Please use conventional commit format (feat:, fix:, etc.) to trigger version bumps.'));
+            }
+            this.log.info('No version changes detected. Changes include only non-bumping conventional commits (chore, docs, style, etc.).');
+            return (0, result_js_1.ok)(null);
         }
         const allWorkspacesWithVersions = this.mergeWorkspaceVersions(changedWorkspaces, changedWorkspacesWithVersions);
         const tree = this.treeBuilder.build(allWorkspacesWithVersions);
