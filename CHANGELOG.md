@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 3.1.5 (2025-11-09)
 
+## 3.1.5 (2025-11-09)
+
 ### Bug Fixes
 
 * fixed version service to bump version only from conventional commits messages ([32e0620](https://github.com/dragoscops/bumpalicious/commit/32e06206f842ffb48868f991ec11661ddec89d4c))
