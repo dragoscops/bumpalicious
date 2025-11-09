@@ -1,6 +1,6 @@
 import type { GitService } from './GitService.js';
 import type { Result } from '../types/result.js';
-import type { Version, BumpType, CommitAnalysis } from '../types/version.js';
+import type { BumpType, CommitAnalysis, Version } from '../types/version.js';
 import type { Workspace, WorkspaceWithVersion } from '../types/workspace.js';
 import { Loggable } from '../utils/Loggable.js';
 export declare class VersionService extends Loggable {

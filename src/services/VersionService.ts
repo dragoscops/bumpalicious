@@ -35,9 +35,9 @@ import semver from 'semver';
 import type { GitService } from './GitService.js';
 import { parseCommitMessages } from '../parsers/ConventionalCommitParser.js';
 import type { Result } from '../types/result.js';
-import { ok, err } from '../types/result.js';
-import { toVersion, isVersion } from '../types/version.js';
-import type { Version, BumpType, CommitAnalysis, PreReleaseIdentifier } from '../types/version.js';
+import { err, ok } from '../types/result.js';
+import type { BumpType, CommitAnalysis, PreReleaseIdentifier, Version } from '../types/version.js';
+import { isVersion, toVersion } from '../types/version.js';
 import type { Workspace, WorkspaceWithVersion } from '../types/workspace.js';
 import { VersionCalculationError } from '../utils/errors.js';
 import { Loggable } from '../utils/Loggable.js';
@@ -116,36 +116,41 @@ export class VersionService extends Loggable {
       // Parse commits to get bump type
       const analysis = parseCommitMessages(workspaceCommits);
 
-      let newVersion: Version;
       if (analysis) {
-        // Calculate version based on commit analysis
-        newVersion = this.calculateNewVersion(workspace.version, analysis);
-        this.log.debug(
+        // Conventional commits found - calculate new version
+        const newVersion = this.calculateNewVersion(workspace.version, analysis);
+        this.log.info(
           {
             workspace: workspace.path,
             oldVersion: workspace.version,
             newVersion,
             bumpType: analysis.type,
+            breaking: analysis.breaking,
+            preRelease: analysis.preRelease,
           },
-          'Version calculated from commits',
+          'Version bumped based on conventional commits',
         );
+
+        workspacesWithVersions.push({
+          ...workspace,
+          newVersion,
+        });
       } else {
-        // No conventional commits - default to patch bump
-        newVersion = this.increaseVersion(workspace.version, 'patch');
-        this.log.debug(
+        // No conventional commits found - version remains unchanged
+        this.log.info(
           {
             workspace: workspace.path,
-            oldVersion: workspace.version,
-            newVersion,
+            version: workspace.version,
+            commitCount: workspaceCommits.length,
           },
-          'Version bumped (patch - no conventional commits)',
+          'No conventional commits found - version unchanged',
         );
-      }
 
-      workspacesWithVersions.push({
-        ...workspace,
-        newVersion,
-      });
+        workspacesWithVersions.push({
+          ...workspace,
+          newVersion: workspace.version,
+        });
+      }
     }
 
     return ok(workspacesWithVersions);

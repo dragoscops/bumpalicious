@@ -44,28 +44,32 @@ class VersionService extends Loggable_js_1.Loggable {
             const workspaceCommits = workspace.path === '.' ? commitMessages : commitMessages.filter(() => true);
             this.log.debug({ workspace: workspace.path, commits: workspaceCommits.length }, 'Analyzing workspace commits');
             const analysis = (0, ConventionalCommitParser_js_1.parseCommitMessages)(workspaceCommits);
-            let newVersion;
             if (analysis) {
-                newVersion = this.calculateNewVersion(workspace.version, analysis);
-                this.log.debug({
+                const newVersion = this.calculateNewVersion(workspace.version, analysis);
+                this.log.info({
                     workspace: workspace.path,
                     oldVersion: workspace.version,
                     newVersion,
                     bumpType: analysis.type,
-                }, 'Version calculated from commits');
+                    breaking: analysis.breaking,
+                    preRelease: analysis.preRelease,
+                }, 'Version bumped based on conventional commits');
+                workspacesWithVersions.push({
+                    ...workspace,
+                    newVersion,
+                });
             }
             else {
-                newVersion = this.increaseVersion(workspace.version, 'patch');
-                this.log.debug({
+                this.log.info({
                     workspace: workspace.path,
-                    oldVersion: workspace.version,
-                    newVersion,
-                }, 'Version bumped (patch - no conventional commits)');
+                    version: workspace.version,
+                    commitCount: workspaceCommits.length,
+                }, 'No conventional commits found - version unchanged');
+                workspacesWithVersions.push({
+                    ...workspace,
+                    newVersion: workspace.version,
+                });
             }
-            workspacesWithVersions.push({
-                ...workspace,
-                newVersion,
-            });
         }
         return (0, result_js_1.ok)(workspacesWithVersions);
     }
