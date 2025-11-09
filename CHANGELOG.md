@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 3.1.5 (2025-11-09)
+
+### Bug Fixes
+
+* fixed version service to bump version only from conventional commits messages ([32e0620](https://github.com/dragoscops/bumpalicious/commit/32e06206f842ffb48868f991ec11661ddec89d4c))
+* fixed version service to bump version only from conventional commits messages - Sun Nov  9 16:32:47 EET 2025 ([d50d394](https://github.com/dragoscops/bumpalicious/commit/d50d394ff34259f3c26c02dd1faf732d4d41516b))
+
 ## 3.1.4 (2025-10-26)
 
 ### Bug Fixes
