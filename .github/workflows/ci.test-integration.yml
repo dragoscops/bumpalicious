@@ -5,8 +5,8 @@ on:
   workflow_call: {}
 
 env:
-  GIT_USER_NAME: 'github-actions[bot]'
-  GIT_USER_EMAIL: 'github-actions[bot]@users.noreply.github.com'
+  GIT_USER_NAME: "github-actions[bot]"
+  GIT_USER_EMAIL: "github-actions[bot]@users.noreply.github.com"
   # ACTIONS_STEP_DEBUG: true
   DEBUG: true
   SKIP_CHANGELOG_GENERATION: true
@@ -28,30 +28,30 @@ jobs:
           - pr: false
             auto_merge: false
             workspaces: test:node
-            scenario: 'Direct Commit (Single)'
+            scenario: "Direct Commit (Single)"
           - pr: false
             auto_merge: false
             workspaces: test:node,test/workspaces1:node,test/workspaces2:node
-            scenario: 'Direct Commit (Multi)'
+            scenario: "Direct Commit (Multi)"
           # PR with auto-merge
           - pr: true
             auto_merge: true
             workspaces: test:node
-            scenario: 'PR Auto-Merge (Single)'
+            scenario: "PR Auto-Merge (Single)"
           - pr: true
             auto_merge: true
             workspaces: test:node,test/workspaces1:node,test/workspaces2:node
-            scenario: 'PR Auto-Merge (Multi)'
+            scenario: "PR Auto-Merge (Multi)"
           # PR without auto-merge (manual merge)
           - pr: true
             auto_merge: false
             workspaces: test:node
-            scenario: 'PR Manual Merge (Single)'
+            scenario: "PR Manual Merge (Single)"
           - pr: true
             auto_merge: false
             workspaces: test:node,test/workspaces1:node,test/workspaces2:node
-            scenario: 'PR Manual Merge (Multi)'
-    name: 'Test: ${{ matrix.scenario }}'
+            scenario: "PR Manual Merge (Multi)"
+    name: "Test: ${{ matrix.scenario }}"
     steps:
       - name: Cleanup Old Tags (First Test Only)
         if: strategy.job-index == 0
@@ -221,7 +221,7 @@ jobs:
             echo "❌ ERROR: No changes detected to commit!"
             exit 1
           fi
-          git commit -m "fix: patch commit test" --no-verify
+          git commit -m "fix: provide test commit for version bump" --no-verify
           COMMIT_SHA=$(git rev-parse HEAD)
           echo "📌 Commit SHA: $COMMIT_SHA"
 

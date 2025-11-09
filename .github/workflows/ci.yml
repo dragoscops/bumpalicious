@@ -70,7 +70,7 @@ jobs:
     needs: tests
     if: ${{ ! contains(github.event.head_commit.author.name, '[bot]') }}
     # if: ${{ ! contains(github.actor, '[bot]') && ! contains(github.event.head_commit.message, 'chore: bump version') }}
-    uses: ./.github/workflows/test.yml
+    uses: ./.github/workflows/ci.test-integration.yml
     secrets: inherit
 
   version-bump:
@@ -102,7 +102,7 @@ jobs:
         # uses: ./
         uses: dragoscops/bumpalicious@main3
         with:
-          github_token:  ${{ steps.app-token-push.outputs.token || secrets.GH_TOKEN_PUSH }}
+          github_token: ${{ steps.app-token-push.outputs.token || secrets.GH_TOKEN_PUSH }}
           workspaces: .:node
           branch: ${{ github.ref }}
           pr: true
