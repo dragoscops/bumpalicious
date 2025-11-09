@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 3.1.6 (2025-11-09)
+
+### Bug Fixes
+
+* PR should not be created if no new version is pushed ([014a4a1](https://github.com/dragoscops/bumpalicious/commit/014a4a1983fe091b5ff801567277b308409309ae))
+
 ## 3.1.5 (2025-11-09)
 
 ### Bug Fixes
