@@ -31,12 +31,10 @@ jobs:
           echo "Current retry count: ${retry_count}"
           retry_count=$((retry_count + 1))
           echo $retry_count > .retry
-
-          MAX_RETRIES=3
-
           echo "attempts=${retry_count}" >> $GITHUB_OUTPUT
 
           # Only retry up to $MAX_RETRIES times total
+          MAX_RETRIES=3
           if [ "${retry_count}" -le $MAX_RETRIES ]; then
             echo "Will retry (attempt ${retry_count}/3)"
             echo "should_retry=true" >> $GITHUB_OUTPUT
