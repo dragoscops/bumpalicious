@@ -4,9 +4,7 @@
  * Orchestrates version bumping workflow from detection to release
  */
 
-import { getAdapter } from './adapters/AdapterFactory.js';
-import type { WorkspaceTreeBuilder } from './WorkspaceTreeBuilder.js';
-import type { ChangelogService, ChangelogPreset } from '../services/ChangelogService.js';
+import type { ChangelogPreset, ChangelogService } from '../services/ChangelogService.js';
 import type { GitHubService } from '../services/GitHubService.js';
 import type { GitService } from '../services/GitService.js';
 import { LocalGitService } from '../services/LocalGitService.js';
@@ -14,17 +12,19 @@ import { PRService } from '../services/PRService.js';
 import { TagService } from '../services/TagService.js';
 import type { VersionService } from '../services/VersionService.js';
 import { WorkspaceService } from '../services/WorkspaceService.js';
-import { RepositoryInfo, GitCommit } from '../types/git.js';
+import { GitCommit, RepositoryInfo } from '../types/git.js';
 import type { Result } from '../types/result.js';
-import { ok, err } from '../types/result.js';
-import type { WorkspaceConfig, Workspace, WorkspaceWithVersion, WorkspaceTree } from '../types/workspace.js';
+import { err, ok } from '../types/result.js';
+import type { Workspace, WorkspaceConfig, WorkspaceTree, WorkspaceWithVersion } from '../types/workspace.js';
 import {
+  FileOperationError,
+  GitOperationError,
   WorkspaceDetectionError,
   WorkspaceValidationError,
-  GitOperationError,
-  FileOperationError,
 } from '../utils/errors.js';
 import { Loggable } from '../utils/Loggable.js';
+import { getAdapter } from './adapters/AdapterFactory.js';
+import type { WorkspaceTreeBuilder } from './WorkspaceTreeBuilder.js';
 
 /**
  * Service dependencies required by WorkspaceManager
@@ -443,6 +443,19 @@ export class WorkspaceManager extends Loggable {
       return err(versionsResult.error);
     }
     const changedWorkspacesWithVersions = versionsResult.value;
+
+    // Check if any workspace actually has a new version
+    const hasVersionChanges = changedWorkspacesWithVersions.some(
+      (workspace) => workspace.newVersion !== workspace.version,
+    );
+
+    if (!hasVersionChanges) {
+      return err(
+        new WorkspaceValidationError(
+          `No version changes detected. All workspaces remain at their current versions. This typically happens when changes don't include conventional commits that trigger version bumps.`,
+        ),
+      );
+    }
 
     const allWorkspacesWithVersions = this.mergeWorkspaceVersions(changedWorkspaces, changedWorkspacesWithVersions);
     const tree = this.treeBuilder.build(allWorkspacesWithVersions);

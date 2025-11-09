@@ -1,4 +1,3 @@
-import type { WorkspaceTreeBuilder } from './WorkspaceTreeBuilder.js';
 import type { ChangelogService } from '../services/ChangelogService.js';
 import type { GitHubService } from '../services/GitHubService.js';
 import type { GitService } from '../services/GitService.js';
@@ -9,9 +8,10 @@ import type { VersionService } from '../services/VersionService.js';
 import { WorkspaceService } from '../services/WorkspaceService.js';
 import { RepositoryInfo } from '../types/git.js';
 import type { Result } from '../types/result.js';
-import type { WorkspaceConfig, Workspace, WorkspaceWithVersion, WorkspaceTree } from '../types/workspace.js';
-import { WorkspaceDetectionError, GitOperationError, FileOperationError } from '../utils/errors.js';
+import type { Workspace, WorkspaceConfig, WorkspaceTree, WorkspaceWithVersion } from '../types/workspace.js';
+import { FileOperationError, GitOperationError, WorkspaceDetectionError } from '../utils/errors.js';
 import { Loggable } from '../utils/Loggable.js';
+import type { WorkspaceTreeBuilder } from './WorkspaceTreeBuilder.js';
 export interface WorkspaceManagerDependencies {
     readonly gitService: GitService;
     readonly githubService: GitHubService;

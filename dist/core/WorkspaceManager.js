@@ -1,11 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.WorkspaceManager = void 0;
-const AdapterFactory_js_1 = require("./adapters/AdapterFactory.js");
 const PRService_js_1 = require("../services/PRService.js");
 const result_js_1 = require("../types/result.js");
 const errors_js_1 = require("../utils/errors.js");
 const Loggable_js_1 = require("../utils/Loggable.js");
+const AdapterFactory_js_1 = require("./adapters/AdapterFactory.js");
 class WorkspaceManager extends Loggable_js_1.Loggable {
     gitService;
     githubService;
@@ -240,6 +240,10 @@ class WorkspaceManager extends Loggable_js_1.Loggable {
             return (0, result_js_1.err)(versionsResult.error);
         }
         const changedWorkspacesWithVersions = versionsResult.value;
+        const hasVersionChanges = changedWorkspacesWithVersions.some((workspace) => workspace.newVersion !== workspace.version);
+        if (!hasVersionChanges) {
+            return (0, result_js_1.err)(new errors_js_1.WorkspaceValidationError(`No version changes detected. All workspaces remain at their current versions. This typically happens when changes don't include conventional commits that trigger version bumps.`));
+        }
         const allWorkspacesWithVersions = this.mergeWorkspaceVersions(changedWorkspaces, changedWorkspacesWithVersions);
         const tree = this.treeBuilder.build(allWorkspacesWithVersions);
         this.log.info({ rootVersion: tree.masterVersion }, 'Workspace tree built');
