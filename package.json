@@ -1,6 +1,6 @@
 {
   "name": "bumpalicious",
-  "version": "3.1.7",
+  "version": "3.1.8",
   "description": "GitHub Action for automated version management based on conventional commits",
   "main": "dist/index.js",
   "scripts": {
@@ -28,7 +28,14 @@
     "type": "git",
     "url": "git+https://github.com/dragoscops/version-update.git"
   },
-  "keywords": ["github", "actions", "version", "semver", "release", "conventional-commits"],
+  "keywords": [
+    "github",
+    "actions",
+    "version",
+    "semver",
+    "release",
+    "conventional-commits"
+  ],
   "author": "dragoscops",
   "license": "MIT",
   "bugs": {
@@ -87,8 +94,13 @@
     "node": ">=20"
   },
   "lint-staged": {
-    "*.{js,mjs,cjs,ts,json,jsonc,md}": ["prettier --write", "eslint --fix"],
-    "*.{yml,yaml}": ["eslint --fix"],
+    "*.{js,mjs,cjs,ts,json,jsonc,md}": [
+      "prettier --write",
+      "eslint --fix"
+    ],
+    "*.{yml,yaml}": [
+      "eslint --fix"
+    ],
     "node_modules/**": []
   }
 }
