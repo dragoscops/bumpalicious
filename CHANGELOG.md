@@ -9,36 +9,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Bug Fixes
 
-* not bumping the version when changes are found should be an error ONLY if no conventional commits are found ([62b1076](https://github.com/dragoscops/bumpalicious/commit/62b10762f18192eb4e8e8d7f1e574e0d1d95fce7))
+- not bumping the version when changes are found should be an error ONLY if no conventional commits are found ([62b1076](https://github.com/dragoscops/bumpalicious/commit/62b10762f18192eb4e8e8d7f1e574e0d1d95fce7))
 
 ## 3.1.6 (2025-11-09)
 
 ### Bug Fixes
 
-* PR should not be created if no new version is pushed ([014a4a1](https://github.com/dragoscops/bumpalicious/commit/014a4a1983fe091b5ff801567277b308409309ae))
+- PR should not be created if no new version is pushed ([014a4a1](https://github.com/dragoscops/bumpalicious/commit/014a4a1983fe091b5ff801567277b308409309ae))
 
 ## 3.1.5 (2025-11-09)
 
 ### Bug Fixes
 
-* fixed version service to bump version only from conventional commits messages ([32e0620](https://github.com/dragoscops/bumpalicious/commit/32e06206f842ffb48868f991ec11661ddec89d4c))
-* fixed version service to bump version only from conventional commits messages - Sun Nov  9 16:32:47 EET 2025 ([d50d394](https://github.com/dragoscops/bumpalicious/commit/d50d394ff34259f3c26c02dd1faf732d4d41516b))
+- fixed version service to bump version only from conventional commits messages ([32e0620](https://github.com/dragoscops/bumpalicious/commit/32e06206f842ffb48868f991ec11661ddec89d4c))
+- fixed version service to bump version only from conventional commits messages - Sun Nov 9 16:32:47 EET 2025 ([d50d394](https://github.com/dragoscops/bumpalicious/commit/d50d394ff34259f3c26c02dd1faf732d4d41516b))
 
 ## 3.1.4 (2025-10-26)
 
 ### Bug Fixes
 
-*  changelog to generate commit references ([82036ad](https://github.com/dragoscops/bumpalicious/commit/82036ade678d02b3f2c67ecfbfcdf604c2c330d9))
-* add cwd option to conventional-changelog-core to ensure git commands run in correct directory ([f2e58b9](https://github.com/dragoscops/bumpalicious/commit/f2e58b9f32d1a62986e507a0567158c69e0681a3))
-* correct cwd placement - belongs in options (1st param) not gitRawCommitsOpts ([18dc57e](https://github.com/dragoscops/bumpalicious/commit/18dc57e6f4cf94e70805eda8dbebbdb7885ce887))
-* correct repository context format for conventional-changelog ([ece4427](https://github.com/dragoscops/bumpalicious/commit/ece4427aaed138808c07a9dc0ece71c2aa6667c5))
-* move cwd to gitRawCommitsOpts (3rd parameter) instead of options ([214a3cb](https://github.com/dragoscops/bumpalicious/commit/214a3cbd3706f3e10fbc77ed0f225162d5aaaf4a))
-* pass lastTag to changelog generation for proper commit links ([ae44a64](https://github.com/dragoscops/bumpalicious/commit/ae44a64e96626046461cbd2fad0f847815e41a31))
-* pass preset config function to conventional-changelog-core instead of resolved config ([d8d55a6](https://github.com/dragoscops/bumpalicious/commit/d8d55a65b39e4bda2880f1a41cd13ba3310c47bb))
-* pass URL format configuration to conventional-changelog preset ([b865fbf](https://github.com/dragoscops/bumpalicious/commit/b865fbfeb6f9c815c9ca2fb011eac9b6e2823c53))
-* properly resolve preset config before passing to changelog core ([5413190](https://github.com/dragoscops/bumpalicious/commit/54131907f0573f31c413c55bd40c8438de324745))
-* use repoUrl for changelog commit link generation ([3e24abc](https://github.com/dragoscops/bumpalicious/commit/3e24abcc43a5293a00b37cbfea90fbfef7a660a1))
-* use v2-style conventional-changelog configuration ([66bbc7b](https://github.com/dragoscops/bumpalicious/commit/66bbc7bce4f17cc9b9bb68596f31d558e51ceeb4))
+- changelog to generate commit references ([82036ad](https://github.com/dragoscops/bumpalicious/commit/82036ade678d02b3f2c67ecfbfcdf604c2c330d9))
+- add cwd option to conventional-changelog-core to ensure git commands run in correct directory ([f2e58b9](https://github.com/dragoscops/bumpalicious/commit/f2e58b9f32d1a62986e507a0567158c69e0681a3))
+- correct cwd placement - belongs in options (1st param) not gitRawCommitsOpts ([18dc57e](https://github.com/dragoscops/bumpalicious/commit/18dc57e6f4cf94e70805eda8dbebbdb7885ce887))
+- correct repository context format for conventional-changelog ([ece4427](https://github.com/dragoscops/bumpalicious/commit/ece4427aaed138808c07a9dc0ece71c2aa6667c5))
+- move cwd to gitRawCommitsOpts (3rd parameter) instead of options ([214a3cb](https://github.com/dragoscops/bumpalicious/commit/214a3cbd3706f3e10fbc77ed0f225162d5aaaf4a))
+- pass lastTag to changelog generation for proper commit links ([ae44a64](https://github.com/dragoscops/bumpalicious/commit/ae44a64e96626046461cbd2fad0f847815e41a31))
+- pass preset config function to conventional-changelog-core instead of resolved config ([d8d55a6](https://github.com/dragoscops/bumpalicious/commit/d8d55a65b39e4bda2880f1a41cd13ba3310c47bb))
+- pass URL format configuration to conventional-changelog preset ([b865fbf](https://github.com/dragoscops/bumpalicious/commit/b865fbfeb6f9c815c9ca2fb011eac9b6e2823c53))
+- properly resolve preset config before passing to changelog core ([5413190](https://github.com/dragoscops/bumpalicious/commit/54131907f0573f31c413c55bd40c8438de324745))
+- use repoUrl for changelog commit link generation ([3e24abc](https://github.com/dragoscops/bumpalicious/commit/3e24abcc43a5293a00b37cbfea90fbfef7a660a1))
+- use v2-style conventional-changelog configuration ([66bbc7b](https://github.com/dragoscops/bumpalicious/commit/66bbc7bce4f17cc9b9bb68596f31d558e51ceeb4))
 
 ## [3.1.3]() (2025-10-23)
 

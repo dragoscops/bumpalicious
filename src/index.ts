@@ -217,19 +217,19 @@ async function run(): Promise<void> {
         bumpType = 'patch';
         core.debug(`Patch bump detected: ${oldPatch} → ${newPatch}`);
       }
+
+      core.debug(`Final bump type: ${bumpType}`);
+
+      // Set all outputs
+      core.setOutput('tag', tag);
+      core.setOutput('version', tree.masterVersion);
+      core.setOutput('pr', prNumber?.toString() ?? '');
+      core.setOutput('all_tags', allTags.join(','));
+      core.setOutput('changed_workspaces', JSON.stringify(changedWorkspaces));
+      core.setOutput('bump_type', bumpType);
     } else {
       core.debug('No version change detected');
     }
-
-    core.debug(`Final bump type: ${bumpType}`);
-
-    // Set all outputs
-    core.setOutput('tag', tag);
-    core.setOutput('version', tree.masterVersion);
-    core.setOutput('pr', prNumber?.toString() ?? '');
-    core.setOutput('all_tags', allTags.join(','));
-    core.setOutput('changed_workspaces', JSON.stringify(changedWorkspaces));
-    core.setOutput('bump_type', bumpType);
 
     core.debug(
       `Outputs set: tag=${tag}, version=${tree.masterVersion}, pr=${prNumber ?? 'none'}, all_tags=${allTags.length}, changed_workspaces=${changedWorkspaces.length}, bump_type=${bumpType}`,
