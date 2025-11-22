@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 3.1.9 (2025-11-22)
+
+### Bug Fixes
+
+* moved set output closer to outputed events ([a1aae26](https://github.com/dragoscops/bumpalicious/commit/a1aae26642cfc9f7fdf8ecbd6fba39afc9a577ca))
+
 ## 3.1.8 (2025-11-18)
 
 ### Bug Fixes
