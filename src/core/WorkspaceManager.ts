@@ -360,8 +360,8 @@ export class WorkspaceManager extends Loggable {
 
   /** Check if commit message is a version bump */
   private isVersionBumpCommit(message: string, options: WorkflowOptions): boolean {
-    const prTitle = options.prOptions?.title || 'chore: version update';
-    return message.startsWith('chore: bump version to') || message.startsWith(prTitle);
+    const prTitle = options.prOptions?.title || 'chore: bump version to';
+    return message.includes('chore: bump version to') || message.includes(prTitle);
   }
 
   /** Extract PR number from commit message */
