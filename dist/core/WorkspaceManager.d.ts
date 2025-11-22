@@ -43,6 +43,7 @@ export interface WorkflowOptions {
         readonly skip?: boolean;
     };
     readonly lastTag?: string | null;
+    readonly setOutput?: (name: string, value: string) => void;
 }
 export interface WorkflowResult {
     readonly tag: string;
@@ -97,5 +98,7 @@ export declare class WorkspaceManager extends Loggable {
     private mergePR;
     private cleanupBranch;
     private createVersionTags;
+    private extractChangedWorkspaces;
+    private calculateBumpType;
 }
 //# sourceMappingURL=WorkspaceManager.d.ts.map

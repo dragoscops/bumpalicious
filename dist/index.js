@@ -142,6 +142,10 @@ async function run() {
                 preset: inputs.changelogPreset,
                 skip: process.env.SKIP_CHANGELOG_GENERATION === 'true' || false,
             },
+            setOutput: (name, value) => {
+                core.setOutput(name, value);
+                core.debug(`Output set: ${name}=${value.substring(0, 50)}${value.length > 50 ? '...' : ''}`);
+            },
         };
         core.debug(`Workflow options: ${JSON.stringify({ ...workflowOptions, workspaces: workflowOptions.workspaces.length })}`);
         const result = await workspaceManager.execute(workflowOptions);
@@ -150,64 +154,14 @@ async function run() {
         if (!result.ok) {
             throw result.error;
         }
-        core.startGroup('📤 Setting outputs');
+        core.startGroup('📤 Results Summary');
         const { tag, allTags, prNumber, prMerged, tree } = result.value;
-        core.debug(`Result value structure: ${JSON.stringify({ tag, allTags: allTags.length, prNumber, treeKeys: Object.keys(tree) })}`);
-        core.debug(`Tree root: ${JSON.stringify({ hasWorkspace: !!tree.root.workspace, hasChildren: !!tree.root.children, childrenCount: tree.root.children?.length })}`);
-        const changedWorkspaces = tree.root.children
-            .filter((node) => node.workspace.hasChanges)
-            .map((node) => node.workspace.path);
-        core.debug(`Changed workspaces from children: ${JSON.stringify(changedWorkspaces)}`);
-        if (tree.root.workspace.hasChanges) {
-            changedWorkspaces.unshift(tree.root.workspace.path);
-            core.debug(`Root has changes, prepended: ${tree.root.workspace.path}`);
-        }
-        const oldVersion = tree.root.workspace.version;
-        const newVersion = tree.root.workspace.newVersion;
-        core.debug(`Version comparison: ${oldVersion} → ${newVersion}`);
-        let bumpType = 'none';
-        if (oldVersion !== newVersion) {
-            const [oldMajor, oldMinor, oldPatch] = oldVersion.split('-')[0].split('.').map(Number);
-            const [newMajor, newMinor, newPatch] = newVersion.split('-')[0].split('.').map(Number);
-            core.debug(`Parsed versions: old=[${oldMajor}.${oldMinor}.${oldPatch}] new=[${newMajor}.${newMinor}.${newPatch}]`);
-            if (newVersion.includes('-')) {
-                bumpType = 'pre-release';
-                core.debug(`Detected pre-release version: ${newVersion}`);
-            }
-            else if (newMajor > oldMajor) {
-                bumpType = 'major';
-                core.debug(`Major bump detected: ${oldMajor} → ${newMajor}`);
-            }
-            else if (newMinor > oldMinor) {
-                bumpType = 'minor';
-                core.debug(`Minor bump detected: ${oldMinor} → ${newMinor}`);
-            }
-            else if (newPatch > oldPatch) {
-                bumpType = 'patch';
-                core.debug(`Patch bump detected: ${oldPatch} → ${newPatch}`);
-            }
-            core.debug(`Final bump type: ${bumpType}`);
-            core.setOutput('tag', tag);
-            core.setOutput('version', tree.masterVersion);
-            core.setOutput('pr', prNumber?.toString() ?? '');
-            core.setOutput('all_tags', allTags.join(','));
-            core.setOutput('changed_workspaces', JSON.stringify(changedWorkspaces));
-            core.setOutput('bump_type', bumpType);
-        }
-        else {
-            core.debug('No version change detected');
-        }
-        core.debug(`Outputs set: tag=${tag}, version=${tree.masterVersion}, pr=${prNumber ?? 'none'}, all_tags=${allTags.length}, changed_workspaces=${changedWorkspaces.length}, bump_type=${bumpType}`);
         if (tag) {
             core.info(`✓ Version tag: ${tag}`);
         }
         core.info(`✓ Version: ${tree.masterVersion}`);
-        core.info(`✓ Bump type: ${bumpType}`);
         if (allTags.length > 1) {
             core.info(`✓ All tags: ${allTags.join(', ')}`);
-        }
-        if (changedWorkspaces.length > 0) {
-            core.info(`✓ Changed workspaces: ${changedWorkspaces.join(', ')}`);
         }
         if (prNumber) {
             core.info(`✓ Pull Request: #${prNumber}`);
@@ -224,9 +178,6 @@ async function run() {
         }
         else if (prNumber && !prMerged) {
             core.notice(`✨ Version PR #${prNumber} created: ${tree.masterVersion} - awaiting merge`);
-        }
-        else if (bumpType === 'none') {
-            core.notice(`ℹ️ No version changes - all workspaces remain at current versions`);
         }
         else {
             core.notice(`✨ Version bump successful: ${tree.masterVersion}`);

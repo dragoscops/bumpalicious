@@ -158,6 +158,13 @@ class WorkspaceManager extends Loggable_js_1.Loggable {
             });
         }
         const tree = treeResult.value;
+        if (options.setOutput) {
+            options.setOutput('version', tree.masterVersion);
+            const changedWorkspaces = this.extractChangedWorkspaces(tree);
+            options.setOutput('changed_workspaces', JSON.stringify(changedWorkspaces));
+            const bumpType = this.calculateBumpType(tree.root.workspace.version, tree.masterVersion);
+            options.setOutput('bump_type', bumpType);
+        }
         const updateResult = await this.updateFilesAndChangelogs(tree, { ...options, lastTag: lastTag.value });
         if (!updateResult.ok) {
             return (0, result_js_1.err)(updateResult.error);
@@ -353,6 +360,9 @@ class WorkspaceManager extends Loggable_js_1.Loggable {
         }
         const { number: prNumber, merged: prMerged, mergeCommitSha } = prResult.value;
         this.log.info({ prNumber, merged: prMerged }, 'Pull request created');
+        if (options.setOutput) {
+            options.setOutput('pr', prNumber.toString());
+        }
         let allTags = [];
         if (prMerged && mergeCommitSha) {
             const tagsResult = await this.createVersionTags(tree, options, mergeCommitSha);
@@ -473,11 +483,49 @@ class WorkspaceManager extends Loggable_js_1.Loggable {
         }
     }
     async createVersionTags(tree, options, providedCommitSha) {
+        let tagsResult;
         if (providedCommitSha) {
-            return await this.tagService.createVersionTags(tree.masterVersion, providedCommitSha, options.tagOptions);
+            tagsResult = await this.tagService.createVersionTags(tree.masterVersion, providedCommitSha, options.tagOptions);
         }
-        const branch = options.branch || 'main';
-        return await this.tagService.createVersionTagsForBranch(tree.masterVersion, branch, options.tagOptions);
+        else {
+            const branch = options.branch || 'main';
+            tagsResult = await this.tagService.createVersionTagsForBranch(tree.masterVersion, branch, options.tagOptions);
+        }
+        if (tagsResult.ok && options.setOutput) {
+            const allTags = tagsResult.value;
+            options.setOutput('tag', `v${tree.masterVersion}`);
+            options.setOutput('all_tags', allTags.join(','));
+        }
+        return tagsResult;
+    }
+    extractChangedWorkspaces(tree) {
+        const changedWorkspaces = tree.root.children
+            .filter((node) => node.workspace.hasChanges)
+            .map((node) => node.workspace.path);
+        if (tree.root.workspace.hasChanges) {
+            changedWorkspaces.unshift(tree.root.workspace.path);
+        }
+        return changedWorkspaces;
+    }
+    calculateBumpType(oldVersion, newVersion) {
+        if (oldVersion === newVersion) {
+            return 'none';
+        }
+        const [oldMajor, oldMinor, oldPatch] = oldVersion.split('-')[0].split('.').map(Number);
+        const [newMajor, newMinor, newPatch] = newVersion.split('-')[0].split('.').map(Number);
+        if (newVersion.includes('-')) {
+            return 'pre-release';
+        }
+        if (newMajor > oldMajor) {
+            return 'major';
+        }
+        if (newMinor > oldMinor) {
+            return 'minor';
+        }
+        if (newPatch > oldPatch) {
+            return 'patch';
+        }
+        return 'none';
     }
 }
 exports.WorkspaceManager = WorkspaceManager;

@@ -62,6 +62,7 @@ export interface WorkflowOptions {
     readonly skip?: boolean;
   };
   readonly lastTag?: string | null;
+  readonly setOutput?: (name: string, value: string) => void;
 }
 
 /** Result of workflow execution */
@@ -260,6 +261,7 @@ export class WorkspaceManager extends Loggable {
     }
 
     const { tree, allTags } = tagsResult.value;
+
     await this.cleanupPRBranch(prNumber, options.prOptions?.branchPrefix);
 
     return ok({
@@ -312,6 +314,15 @@ export class WorkspaceManager extends Loggable {
     }
 
     const tree = treeResult.value;
+
+    // Report version and metadata immediately after tree is built
+    if (options.setOutput) {
+      options.setOutput('version', tree.masterVersion);
+      const changedWorkspaces = this.extractChangedWorkspaces(tree);
+      options.setOutput('changed_workspaces', JSON.stringify(changedWorkspaces));
+      const bumpType = this.calculateBumpType(tree.root.workspace.version, tree.masterVersion);
+      options.setOutput('bump_type', bumpType);
+    }
 
     const updateResult = await this.updateFilesAndChangelogs(tree, { ...options, lastTag: lastTag.value });
     if (!updateResult.ok) {
@@ -638,6 +649,11 @@ export class WorkspaceManager extends Loggable {
     const { number: prNumber, merged: prMerged, mergeCommitSha } = prResult.value;
     this.log.info({ prNumber, merged: prMerged }, 'Pull request created');
 
+    // Report PR number immediately after creation
+    if (options.setOutput) {
+      options.setOutput('pr', prNumber.toString());
+    }
+
     let allTags: string[] = [];
     if (prMerged && mergeCommitSha) {
       const tagsResult = await this.createVersionTags(tree, options, mergeCommitSha);
@@ -809,11 +825,64 @@ export class WorkspaceManager extends Loggable {
     options: WorkflowOptions,
     providedCommitSha?: string,
   ): Promise<Result<string[], GitOperationError>> {
+    let tagsResult: Result<string[], GitOperationError>;
+
     if (providedCommitSha) {
-      return await this.tagService.createVersionTags(tree.masterVersion, providedCommitSha, options.tagOptions);
+      tagsResult = await this.tagService.createVersionTags(tree.masterVersion, providedCommitSha, options.tagOptions);
+    } else {
+      const branch = options.branch || 'main';
+      tagsResult = await this.tagService.createVersionTagsForBranch(tree.masterVersion, branch, options.tagOptions);
     }
 
-    const branch = options.branch || 'main';
-    return await this.tagService.createVersionTagsForBranch(tree.masterVersion, branch, options.tagOptions);
+    // Report tag outputs immediately after tags are created
+    if (tagsResult.ok && options.setOutput) {
+      const allTags = tagsResult.value;
+      options.setOutput('tag', `v${tree.masterVersion}`);
+      options.setOutput('all_tags', allTags.join(','));
+    }
+
+    return tagsResult;
+  }
+
+  // ====================
+  // Output Helpers
+  // ====================
+
+  /** Extract changed workspace paths from tree */
+  private extractChangedWorkspaces(tree: WorkspaceTree): string[] {
+    const changedWorkspaces = tree.root.children
+      .filter((node) => node.workspace.hasChanges)
+      .map((node) => node.workspace.path);
+
+    if (tree.root.workspace.hasChanges) {
+      changedWorkspaces.unshift(tree.root.workspace.path);
+    }
+
+    return changedWorkspaces;
+  }
+
+  /** Calculate bump type by comparing versions */
+  private calculateBumpType(oldVersion: string, newVersion: string): string {
+    if (oldVersion === newVersion) {
+      return 'none';
+    }
+
+    const [oldMajor, oldMinor, oldPatch] = oldVersion.split('-')[0].split('.').map(Number);
+    const [newMajor, newMinor, newPatch] = newVersion.split('-')[0].split('.').map(Number);
+
+    if (newVersion.includes('-')) {
+      return 'pre-release';
+    }
+    if (newMajor > oldMajor) {
+      return 'major';
+    }
+    if (newMinor > oldMinor) {
+      return 'minor';
+    }
+    if (newPatch > oldPatch) {
+      return 'patch';
+    }
+
+    return 'none';
   }
 }
