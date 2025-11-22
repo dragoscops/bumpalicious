@@ -188,8 +188,8 @@ class WorkspaceManager extends Loggable_js_1.Loggable {
         };
     }
     isVersionBumpCommit(message, options) {
-        const prTitle = options.prOptions?.title || 'chore: version update';
-        return message.startsWith('chore: bump version to') || message.startsWith(prTitle);
+        const prTitle = options.prOptions?.title || 'chore: bump version to';
+        return message.includes('chore: bump version to') || message.includes(prTitle);
     }
     extractPRNumber(commitMessage) {
         const prNumberMatch = commitMessage.match(/#(\d+)\)/);
