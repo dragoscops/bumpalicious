@@ -171,6 +171,16 @@ async function run(): Promise<void> {
     core.startGroup('📤 Results Summary');
     const { tag, allTags, prNumber, prMerged, tree } = result.value;
 
+    // Check if a version bump actually occurred
+    const hasVersionBump = tag !== '' || allTags.length > 0 || prNumber !== undefined;
+
+    if (!hasVersionBump) {
+      core.info('ℹ️  No version bump detected');
+      core.endGroup();
+      core.notice('ℹ️  No version bump detected');
+      return;
+    }
+
     // Log outputs for visibility
     if (tag) {
       core.info(`✓ Version tag: ${tag}`);

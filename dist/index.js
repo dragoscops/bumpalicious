@@ -156,6 +156,13 @@ async function run() {
         }
         core.startGroup('📤 Results Summary');
         const { tag, allTags, prNumber, prMerged, tree } = result.value;
+        const hasVersionBump = tag !== '' || allTags.length > 0 || prNumber !== undefined;
+        if (!hasVersionBump) {
+            core.info('ℹ️  No version bump detected');
+            core.endGroup();
+            core.notice('ℹ️  No version bump detected');
+            return;
+        }
         if (tag) {
             core.info(`✓ Version tag: ${tag}`);
         }
