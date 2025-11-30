@@ -25,7 +25,7 @@ class GoAdapter extends BaseAdapter_js_1.BaseWorkspaceAdapter {
         },
         {
             filename: 'version.txt',
-            versionPattern: /^(\d+\.\d+\.\d+(?:[-+][\da-zA-Z.]+)*)$/m,
+            versionPattern: /^v?(\d+\.\d+\.\d+(?:[-+][\da-zA-Z.]+)*)$/m,
             versionReplacement: '$VERSION',
             defaultName: '',
         },

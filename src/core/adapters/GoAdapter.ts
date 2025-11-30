@@ -18,14 +18,14 @@
  */
 
 import { access, readFile } from 'node:fs/promises';
-import { join, basename } from 'node:path';
+import { basename, join } from 'node:path';
 import { BaseWorkspaceAdapter } from './BaseAdapter.js';
-import type { WorkspaceType, ProjectInfo, Version } from '../../types/index.js';
+import type { ProjectInfo, Version, WorkspaceType } from '../../types/index.js';
 import type { Result } from '../../types/result.js';
-import { ok, err, isOk } from '../../types/result.js';
+import { err, isOk, ok } from '../../types/result.js';
 import { isVersion } from '../../types/version.js';
-import type { WorkspaceDetectionError, FileOperationError } from '../../utils/errors.js';
-import { WorkspaceDetectionError as WDError, FileOperationError as FOError } from '../../utils/errors.js';
+import type { FileOperationError, WorkspaceDetectionError } from '../../utils/errors.js';
+import { FileOperationError as FOError, WorkspaceDetectionError as WDError } from '../../utils/errors.js';
 
 /**
  * Configuration for a Go file format
@@ -66,7 +66,8 @@ export class GoAdapter extends BaseWorkspaceAdapter {
     },
     {
       filename: 'version.txt',
-      versionPattern: /^(\d+\.\d+\.\d+(?:[-+][\da-zA-Z.]+)*)$/m,
+      // Support optional 'v' prefix (e.g., v1.0.0 or 1.0.0)
+      versionPattern: /^v?(\d+\.\d+\.\d+(?:[-+][\da-zA-Z.]+)*)$/m,
       versionReplacement: '$VERSION',
       defaultName: '', // No name in plain text file
     },

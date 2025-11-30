@@ -5,9 +5,9 @@
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { GoAdapter } from './GoAdapter.js';
-import { isOk, isErr } from '../../types/result.js';
+import { isErr, isOk } from '../../types/result.js';
 import { toVersion } from '../../types/version.js';
 
 describe('GoAdapter', () => {
@@ -188,6 +188,17 @@ const version = "0.9.5"`;
         expect(isOk(result)).toBe(true);
         if (isOk(result)) {
           expect(result.value.version).toBe('3.0.0-rc.2');
+        }
+      });
+
+      it('should handle version.txt with v prefix', async () => {
+        await writeFile(join(tempDir, 'version.txt'), 'v1.2.3\n');
+
+        const result = await adapter.detect(tempDir);
+
+        expect(isOk(result)).toBe(true);
+        if (isOk(result)) {
+          expect(result.value.version).toBe('1.2.3');
         }
       });
     });
