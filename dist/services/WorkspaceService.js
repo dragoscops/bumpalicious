@@ -40,14 +40,14 @@ class WorkspaceService extends Loggable_js_1.Loggable {
         return (0, result_js_1.ok)(changedWorkspaces);
     }
     async enrichSingleWorkspace(config) {
+        const absolutePath = this.resolveAbsolutePath(config.path);
         const adapter = (0, AdapterFactory_js_1.getAdapter)(config.type);
-        const detectResult = await adapter.detect(config.path);
+        const detectResult = await adapter.detect(absolutePath);
         if (!detectResult.ok) {
-            this.log.error({ path: config.path, type: config.type }, 'Failed to detect workspace info');
+            this.log.error({ path: config.path, absolutePath, type: config.type }, 'Failed to detect workspace info');
             return (0, result_js_1.err)(detectResult.error);
         }
         const info = detectResult.value;
-        const absolutePath = this.resolveAbsolutePath(config.path);
         const workspace = {
             ...config,
             path: absolutePath,
@@ -56,7 +56,7 @@ class WorkspaceService extends Loggable_js_1.Loggable {
             hasChanges: false,
             changedFiles: [],
         };
-        this.log.debug({ path: config.path, name: info.name, version: info.version }, 'Workspace enriched');
+        this.log.debug({ path: config.path, absolutePath, name: info.name, version: info.version }, 'Workspace enriched');
         return (0, result_js_1.ok)(workspace);
     }
     markAllAsChanged(workspaces) {

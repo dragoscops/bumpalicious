@@ -1,7 +1,7 @@
 import type { GitService } from './GitService.js';
 import type { Result } from '../types/result.js';
-import type { WorkspaceConfig, Workspace } from '../types/workspace.js';
-import { WorkspaceDetectionError, GitOperationError } from '../utils/errors.js';
+import type { Workspace, WorkspaceConfig } from '../types/workspace.js';
+import { GitOperationError, WorkspaceDetectionError } from '../utils/errors.js';
 import { Loggable } from '../utils/Loggable.js';
 export declare class WorkspaceService extends Loggable {
     private readonly gitService;

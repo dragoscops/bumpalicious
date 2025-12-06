@@ -3,9 +3,9 @@
 import type { GitService } from './GitService.js';
 import { getAdapter } from '../core/adapters/AdapterFactory.js';
 import type { Result } from '../types/result.js';
-import { ok, err } from '../types/result.js';
-import type { WorkspaceConfig, Workspace } from '../types/workspace.js';
-import { WorkspaceDetectionError, GitOperationError } from '../utils/errors.js';
+import { err, ok } from '../types/result.js';
+import type { Workspace, WorkspaceConfig } from '../types/workspace.js';
+import { GitOperationError, WorkspaceDetectionError } from '../utils/errors.js';
 import { Loggable } from '../utils/Loggable.js';
 
 /** Workspace service for enrichment and change detection */
@@ -78,16 +78,16 @@ export class WorkspaceService extends Loggable {
 
   /** Enrich single workspace config */
   private async enrichSingleWorkspace(config: WorkspaceConfig): Promise<Result<Workspace, WorkspaceDetectionError>> {
+    const absolutePath = this.resolveAbsolutePath(config.path);
     const adapter = getAdapter(config.type);
-    const detectResult = await adapter.detect(config.path);
+    const detectResult = await adapter.detect(absolutePath);
 
     if (!detectResult.ok) {
-      this.log.error({ path: config.path, type: config.type }, 'Failed to detect workspace info');
+      this.log.error({ path: config.path, absolutePath, type: config.type }, 'Failed to detect workspace info');
       return err(detectResult.error);
     }
 
     const info = detectResult.value;
-    const absolutePath = this.resolveAbsolutePath(config.path);
 
     const workspace: Workspace = {
       ...config,
@@ -98,7 +98,7 @@ export class WorkspaceService extends Loggable {
       changedFiles: [],
     };
 
-    this.log.debug({ path: config.path, name: info.name, version: info.version }, 'Workspace enriched');
+    this.log.debug({ path: config.path, absolutePath, name: info.name, version: info.version }, 'Workspace enriched');
     return ok(workspace);
   }
 
