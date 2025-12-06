@@ -17,7 +17,7 @@
  * ```
  */
 
-import { access, readFile } from 'node:fs/promises';
+import { access, readdir, readFile } from 'node:fs/promises';
 import { basename, join } from 'node:path';
 import { BaseWorkspaceAdapter } from './BaseAdapter.js';
 import type { ProjectInfo, Version, WorkspaceType } from '../../types/index.js';
@@ -46,7 +46,7 @@ interface GoFileConfig {
  */
 export class GoAdapter extends BaseWorkspaceAdapter {
   readonly type: WorkspaceType = 'go';
-  readonly supportedFiles = ['go.mod', 'version.go', 'version.txt'] as const;
+  readonly supportedFiles = ['go.mod', 'version.go', 'VERSION.txt', 'version.txt'] as const;
 
   /**
    * File configurations in priority order
@@ -63,6 +63,13 @@ export class GoAdapter extends BaseWorkspaceAdapter {
       versionPattern: /(?:const|var)\s+[vV]ersion\s*=\s*"([^"]*)"/m,
       versionReplacement: 'const Version = "$VERSION"',
       namePattern: /package\s+(\w+)/m,
+    },
+    {
+      filename: 'VERSION.txt',
+      // Support optional 'v' prefix (e.g., v1.0.0 or 1.0.0)
+      versionPattern: /^v?(\d+\.\d+\.\d+(?:[-+][\da-zA-Z.]+)*)$/m,
+      versionReplacement: '$VERSION',
+      defaultName: '', // No name in plain text file
     },
     {
       filename: 'version.txt',
@@ -96,6 +103,12 @@ export class GoAdapter extends BaseWorkspaceAdapter {
       const debug = process.env.ACTIONS_STEP_DEBUG === 'true' || process.env.RUNNER_DEBUG === '1';
       if (debug) {
         console.log(`[GoAdapter] Detecting in workspace: ${workspacePath}`);
+        try {
+          const files = await readdir(workspacePath);
+          console.log(`[GoAdapter] Directory contents: ${files.join(', ')}`);
+        } catch (e) {
+          console.log(`[GoAdapter] Failed to list directory: ${e}`);
+        }
       }
 
       // Try each config file in priority order
@@ -120,25 +133,25 @@ export class GoAdapter extends BaseWorkspaceAdapter {
         }
 
         // Parse the file
-        // Special handling for version.txt (no name pattern)
-        if (config.filename === 'version.txt') {
+        // Special handling for version.txt and VERSION.txt (no name pattern)
+        if (config.filename === 'version.txt' || config.filename === 'VERSION.txt') {
           try {
             const content = await readFile(filePath, 'utf-8');
             if (debug) {
-              console.log(`[GoAdapter] version.txt content: "${content.trim()}"`);
+              console.log(`[GoAdapter] ${config.filename} content: "${content.trim()}"`);
             }
             const versionMatch = content.match(config.versionPattern);
             if (debug) {
-              console.log(`[GoAdapter] version.txt match: ${JSON.stringify(versionMatch)}`);
+              console.log(`[GoAdapter] ${config.filename} match: ${JSON.stringify(versionMatch)}`);
             }
             if (versionMatch && versionMatch[1] && isVersion(versionMatch[1])) {
               if (debug) {
-                console.log(`[GoAdapter] Detected version from version.txt: ${versionMatch[1]}`);
+                console.log(`[GoAdapter] Detected version from ${config.filename}: ${versionMatch[1]}`);
               }
               return ok({ name: basename(workspacePath), version: versionMatch[1] as Version });
             }
             if (debug) {
-              console.log(`[GoAdapter] version.txt parse failed, continuing...`);
+              console.log(`[GoAdapter] ${config.filename} parse failed, continuing...`);
             }
             continue; // Try next file if parse failed
           } catch (readError) {
@@ -246,12 +259,18 @@ export class GoAdapter extends BaseWorkspaceAdapter {
    */
   private async findAllConfigFiles(workspacePath: string): Promise<GoFileConfig[]> {
     const existingFiles: GoFileConfig[] = [];
+    const foundFilenames = new Set<string>();
 
     for (const config of this.FILE_CONFIGS) {
       const filePath = join(workspacePath, config.filename);
       try {
         await access(filePath);
-        existingFiles.push(config);
+        // Deduplicate by lowercase filename to handle case-insensitive filesystems
+        const normalizedName = config.filename.toLowerCase();
+        if (!foundFilenames.has(normalizedName)) {
+          foundFilenames.add(normalizedName);
+          existingFiles.push(config);
+        }
       } catch {
         // File doesn't exist, skip
         continue;

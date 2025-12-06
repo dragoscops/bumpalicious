@@ -31,7 +31,7 @@ describe('GoAdapter', () => {
     });
 
     it('should have correct supported files', () => {
-      expect(adapter.supportedFiles).toEqual(['go.mod', 'version.go', 'version.txt']);
+      expect(adapter.supportedFiles).toEqual(['go.mod', 'version.go', 'VERSION.txt', 'version.txt']);
     });
   });
 
@@ -199,6 +199,17 @@ const version = "0.9.5"`;
         expect(isOk(result)).toBe(true);
         if (isOk(result)) {
           expect(result.value.version).toBe('1.2.3');
+        }
+      });
+
+      it('should detect version from VERSION.txt (uppercase)', async () => {
+        await writeFile(join(tempDir, 'VERSION.txt'), '2.0.0\n');
+
+        const result = await adapter.detect(tempDir);
+
+        expect(isOk(result)).toBe(true);
+        if (isOk(result)) {
+          expect(result.value.version).toBe('2.0.0');
         }
       });
     });

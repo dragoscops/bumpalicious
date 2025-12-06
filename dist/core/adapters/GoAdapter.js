@@ -9,7 +9,7 @@ const version_js_1 = require("../../types/version.js");
 const errors_js_1 = require("../../utils/errors.js");
 class GoAdapter extends BaseAdapter_js_1.BaseWorkspaceAdapter {
     type = 'go';
-    supportedFiles = ['go.mod', 'version.go', 'version.txt'];
+    supportedFiles = ['go.mod', 'version.go', 'VERSION.txt', 'version.txt'];
     FILE_CONFIGS = [
         {
             filename: 'go.mod',
@@ -24,6 +24,12 @@ class GoAdapter extends BaseAdapter_js_1.BaseWorkspaceAdapter {
             namePattern: /package\s+(\w+)/m,
         },
         {
+            filename: 'VERSION.txt',
+            versionPattern: /^v?(\d+\.\d+\.\d+(?:[-+][\da-zA-Z.]+)*)$/m,
+            versionReplacement: '$VERSION',
+            defaultName: '',
+        },
+        {
             filename: 'version.txt',
             versionPattern: /^v?(\d+\.\d+\.\d+(?:[-+][\da-zA-Z.]+)*)$/m,
             versionReplacement: '$VERSION',
@@ -35,6 +41,13 @@ class GoAdapter extends BaseAdapter_js_1.BaseWorkspaceAdapter {
             const debug = process.env.ACTIONS_STEP_DEBUG === 'true' || process.env.RUNNER_DEBUG === '1';
             if (debug) {
                 console.log(`[GoAdapter] Detecting in workspace: ${workspacePath}`);
+                try {
+                    const files = await (0, promises_1.readdir)(workspacePath);
+                    console.log(`[GoAdapter] Directory contents: ${files.join(', ')}`);
+                }
+                catch (e) {
+                    console.log(`[GoAdapter] Failed to list directory: ${e}`);
+                }
             }
             for (const config of this.FILE_CONFIGS) {
                 const filePath = (0, node_path_1.join)(workspacePath, config.filename);
@@ -53,24 +66,24 @@ class GoAdapter extends BaseAdapter_js_1.BaseWorkspaceAdapter {
                     }
                     continue;
                 }
-                if (config.filename === 'version.txt') {
+                if (config.filename === 'version.txt' || config.filename === 'VERSION.txt') {
                     try {
                         const content = await (0, promises_1.readFile)(filePath, 'utf-8');
                         if (debug) {
-                            console.log(`[GoAdapter] version.txt content: "${content.trim()}"`);
+                            console.log(`[GoAdapter] ${config.filename} content: "${content.trim()}"`);
                         }
                         const versionMatch = content.match(config.versionPattern);
                         if (debug) {
-                            console.log(`[GoAdapter] version.txt match: ${JSON.stringify(versionMatch)}`);
+                            console.log(`[GoAdapter] ${config.filename} match: ${JSON.stringify(versionMatch)}`);
                         }
                         if (versionMatch && versionMatch[1] && (0, version_js_1.isVersion)(versionMatch[1])) {
                             if (debug) {
-                                console.log(`[GoAdapter] Detected version from version.txt: ${versionMatch[1]}`);
+                                console.log(`[GoAdapter] Detected version from ${config.filename}: ${versionMatch[1]}`);
                             }
                             return (0, result_js_1.ok)({ name: (0, node_path_1.basename)(workspacePath), version: versionMatch[1] });
                         }
                         if (debug) {
-                            console.log(`[GoAdapter] version.txt parse failed, continuing...`);
+                            console.log(`[GoAdapter] ${config.filename} parse failed, continuing...`);
                         }
                         continue;
                     }
@@ -131,11 +144,16 @@ class GoAdapter extends BaseAdapter_js_1.BaseWorkspaceAdapter {
     }
     async findAllConfigFiles(workspacePath) {
         const existingFiles = [];
+        const foundFilenames = new Set();
         for (const config of this.FILE_CONFIGS) {
             const filePath = (0, node_path_1.join)(workspacePath, config.filename);
             try {
                 await (0, promises_1.access)(filePath);
-                existingFiles.push(config);
+                const normalizedName = config.filename.toLowerCase();
+                if (!foundFilenames.has(normalizedName)) {
+                    foundFilenames.add(normalizedName);
+                    existingFiles.push(config);
+                }
             }
             catch {
                 continue;
