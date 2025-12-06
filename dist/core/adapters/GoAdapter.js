@@ -32,26 +32,57 @@ class GoAdapter extends BaseAdapter_js_1.BaseWorkspaceAdapter {
     ];
     async detect(workspacePath) {
         try {
+            const debug = process.env.ACTIONS_STEP_DEBUG === 'true' || process.env.RUNNER_DEBUG === '1';
+            if (debug) {
+                console.log(`[GoAdapter] Detecting in workspace: ${workspacePath}`);
+            }
             for (const config of this.FILE_CONFIGS) {
                 const filePath = (0, node_path_1.join)(workspacePath, config.filename);
+                if (debug) {
+                    console.log(`[GoAdapter] Checking file: ${filePath}`);
+                }
                 try {
                     await (0, promises_1.access)(filePath);
+                    if (debug) {
+                        console.log(`[GoAdapter] File exists: ${config.filename}`);
+                    }
                 }
                 catch {
+                    if (debug) {
+                        console.log(`[GoAdapter] File not found: ${config.filename}`);
+                    }
                     continue;
                 }
                 if (config.filename === 'version.txt') {
                     try {
                         const content = await (0, promises_1.readFile)(filePath, 'utf-8');
+                        if (debug) {
+                            console.log(`[GoAdapter] version.txt content: "${content.trim()}"`);
+                        }
                         const versionMatch = content.match(config.versionPattern);
+                        if (debug) {
+                            console.log(`[GoAdapter] version.txt match: ${JSON.stringify(versionMatch)}`);
+                        }
                         if (versionMatch && versionMatch[1] && (0, version_js_1.isVersion)(versionMatch[1])) {
+                            if (debug) {
+                                console.log(`[GoAdapter] Detected version from version.txt: ${versionMatch[1]}`);
+                            }
                             return (0, result_js_1.ok)({ name: (0, node_path_1.basename)(workspacePath), version: versionMatch[1] });
+                        }
+                        if (debug) {
+                            console.log(`[GoAdapter] version.txt parse failed, continuing...`);
                         }
                         continue;
                     }
-                    catch {
+                    catch (readError) {
+                        if (debug) {
+                            console.log(`[GoAdapter] Error reading version.txt: ${readError}`);
+                        }
                         continue;
                     }
+                }
+                if (debug) {
+                    console.log(`[GoAdapter] Parsing ${config.filename} with regex`);
                 }
                 const parseResult = await this.parseFile(filePath, {
                     format: 'regex',
@@ -59,7 +90,13 @@ class GoAdapter extends BaseAdapter_js_1.BaseWorkspaceAdapter {
                     namePattern: config.namePattern,
                 });
                 if ((0, result_js_1.isOk)(parseResult)) {
+                    if (debug) {
+                        console.log(`[GoAdapter] Detected from ${config.filename}: ${JSON.stringify(parseResult.value)}`);
+                    }
                     return (0, result_js_1.ok)(parseResult.value);
+                }
+                if (debug) {
+                    console.log(`[GoAdapter] Parse failed for ${config.filename}, trying next...`);
                 }
                 continue;
             }

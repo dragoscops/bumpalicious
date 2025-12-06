@@ -93,14 +93,29 @@ export class GoAdapter extends BaseWorkspaceAdapter {
    */
   async detect(workspacePath: string): Promise<Result<ProjectInfo, WorkspaceDetectionError>> {
     try {
+      const debug = process.env.ACTIONS_STEP_DEBUG === 'true' || process.env.RUNNER_DEBUG === '1';
+      if (debug) {
+        console.log(`[GoAdapter] Detecting in workspace: ${workspacePath}`);
+      }
+
       // Try each config file in priority order
       for (const config of this.FILE_CONFIGS) {
         const filePath = join(workspacePath, config.filename);
 
+        if (debug) {
+          console.log(`[GoAdapter] Checking file: ${filePath}`);
+        }
+
         try {
           await access(filePath);
+          if (debug) {
+            console.log(`[GoAdapter] File exists: ${config.filename}`);
+          }
         } catch {
           // File doesn't exist, try next
+          if (debug) {
+            console.log(`[GoAdapter] File not found: ${config.filename}`);
+          }
           continue;
         }
 
@@ -109,17 +124,35 @@ export class GoAdapter extends BaseWorkspaceAdapter {
         if (config.filename === 'version.txt') {
           try {
             const content = await readFile(filePath, 'utf-8');
+            if (debug) {
+              console.log(`[GoAdapter] version.txt content: "${content.trim()}"`);
+            }
             const versionMatch = content.match(config.versionPattern);
+            if (debug) {
+              console.log(`[GoAdapter] version.txt match: ${JSON.stringify(versionMatch)}`);
+            }
             if (versionMatch && versionMatch[1] && isVersion(versionMatch[1])) {
+              if (debug) {
+                console.log(`[GoAdapter] Detected version from version.txt: ${versionMatch[1]}`);
+              }
               return ok({ name: basename(workspacePath), version: versionMatch[1] as Version });
             }
+            if (debug) {
+              console.log(`[GoAdapter] version.txt parse failed, continuing...`);
+            }
             continue; // Try next file if parse failed
-          } catch {
+          } catch (readError) {
+            if (debug) {
+              console.log(`[GoAdapter] Error reading version.txt: ${readError}`);
+            }
             continue;
           }
         }
 
         // Standard parsing for go.mod and version.go
+        if (debug) {
+          console.log(`[GoAdapter] Parsing ${config.filename} with regex`);
+        }
         const parseResult = await this.parseFile(filePath, {
           format: 'regex',
           versionPattern: config.versionPattern,
@@ -127,10 +160,16 @@ export class GoAdapter extends BaseWorkspaceAdapter {
         });
 
         if (isOk(parseResult)) {
+          if (debug) {
+            console.log(`[GoAdapter] Detected from ${config.filename}: ${JSON.stringify(parseResult.value)}`);
+          }
           return ok(parseResult.value);
         }
 
         // If parse failed, continue to next file
+        if (debug) {
+          console.log(`[GoAdapter] Parse failed for ${config.filename}, trying next...`);
+        }
         continue;
       }
 
