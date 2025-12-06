@@ -150,7 +150,12 @@ class GoAdapter extends BaseAdapter_js_1.BaseWorkspaceAdapter {
             try {
                 await (0, promises_1.access)(filePath);
                 const normalizedName = config.filename.toLowerCase();
-                if (!foundFilenames.has(normalizedName)) {
+                if (foundFilenames.has(normalizedName)) {
+                    continue;
+                }
+                const content = await (0, promises_1.readFile)(filePath, 'utf-8');
+                const versionMatch = content.match(config.versionPattern);
+                if (versionMatch && versionMatch[1] && (0, version_js_1.isVersion)(versionMatch[1])) {
                     foundFilenames.add(normalizedName);
                     existingFiles.push(config);
                 }

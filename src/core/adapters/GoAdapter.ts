@@ -252,10 +252,13 @@ export class GoAdapter extends BaseWorkspaceAdapter {
   }
 
   /**
-   * Find all existing configuration files
+   * Find all existing configuration files that contain a valid version
+   *
+   * Only returns files that both exist AND contain a matchable version pattern.
+   * This ensures we only try to update files that actually have versions.
    *
    * @param workspacePath - Path to the workspace directory
-   * @returns Array of configuration file configs that exist
+   * @returns Array of configuration file configs that exist and have versions
    */
   private async findAllConfigFiles(workspacePath: string): Promise<GoFileConfig[]> {
     const existingFiles: GoFileConfig[] = [];
@@ -265,14 +268,22 @@ export class GoAdapter extends BaseWorkspaceAdapter {
       const filePath = join(workspacePath, config.filename);
       try {
         await access(filePath);
+
         // Deduplicate by lowercase filename to handle case-insensitive filesystems
         const normalizedName = config.filename.toLowerCase();
-        if (!foundFilenames.has(normalizedName)) {
+        if (foundFilenames.has(normalizedName)) {
+          continue;
+        }
+
+        // Verify the file actually contains a matchable version pattern
+        const content = await readFile(filePath, 'utf-8');
+        const versionMatch = content.match(config.versionPattern);
+        if (versionMatch && versionMatch[1] && isVersion(versionMatch[1])) {
           foundFilenames.add(normalizedName);
           existingFiles.push(config);
         }
       } catch {
-        // File doesn't exist, skip
+        // File doesn't exist or can't be read, skip
         continue;
       }
     }
